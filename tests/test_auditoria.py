@@ -651,6 +651,70 @@ def _cenario_alocacao_removida():
     return email_de("dono-aloc"), f"Zeca — Cliente em {empresa}"
 
 
+def _loja_com_gente_da_fila():
+    """A Matriz com a Zeca na fila, e a dona logada com as permissões da fila.
+
+    Pelo domínio (`fila.acoes`) e não pela tela: o que este arquivo prova é a
+    LINHA da trilha, e a tela da fila tem os testes dela
+    (`tests/test_fila_pagina.py`)."""
+    from contas.models import Usuario
+    from fila.acoes import bater_ponto
+    from tests.fila_cenario import cadastros
+
+    _cliente_logado("dona-fila", permissoes=(
+        "fila_ver", "fila_participar", "fila_gerenciar", "fila_cadastros"))
+    dona = Usuario.objects.get(email=email_de("dona-fila"))
+    empresa, matriz = empresa_do_teste(), matriz_do_teste()
+    zeca = Usuario.objects.create_user(email=email_de("zeca"), password=SENHA,
+                                       nome="Zeca")
+    alocar(zeca, empresa, "vendedor", filial=matriz)
+    bater_ponto(zeca, matriz)
+    return dona, zeca, matriz, cadastros(empresa)
+
+
+def _cenario_fila_pessoa_tirada():
+    from fila.correcoes import tirar_da_loja
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    tirar_da_loja(dona, matriz, zeca.pk)
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
+def _cenario_fila_atendimento_fechado():
+    from fila.acoes import Lancamento, vou_atender
+    from fila.correcoes import fechar_atendimento
+
+    dona, zeca, matriz, cad = _loja_com_gente_da_fila()
+    vou_atender(zeca, matriz)
+    fechar_atendimento(dona, matriz, zeca.pk,
+                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
+def _cenario_fila_pausa_encerrada():
+    from fila.acoes import pausar
+    from fila.correcoes import tirar_da_pausa
+
+    dona, zeca, matriz, cad = _loja_com_gente_da_fila()
+    pausar(zeca, matriz, cad.tipo.pk)
+    tirar_da_pausa(dona, matriz, zeca.pk)
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
+def _cenario_fila_lancamento_corrigido():
+    from fila.acoes import Lancamento, finalizar, vou_atender
+    from fila.correcoes import editar_lancamento
+    from fila.models import Atendimento
+
+    dona, zeca, matriz, cad = _loja_com_gente_da_fila()
+    vou_atender(zeca, matriz)
+    finalizar(zeca, matriz, Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
+    editar_lancamento(dona, matriz, Atendimento.irrestritos.get().pk,
+                      Lancamento("nao_vendeu", motivo_id=cad.motivo.pk,
+                                 observacao="voltou depois"))
+    return email_de("dona-fila"), f"Atendimento de Zeca em {matriz}"
+
+
 _CENARIOS = {
     "ENTROU": _cenario_entrou,
     "ENTRADA_RECUSADA": _cenario_entrada_recusada,
@@ -685,6 +749,10 @@ _CENARIOS = {
     "FILIAL_REMOVIDA": _cenario_filial_removida,
     "PARAMETRO_ALTERADO": _cenario_parametro_alterado,
     "PARAMETRO_RESTAURADO": _cenario_parametro_restaurado,
+    "FILA_PESSOA_TIRADA": _cenario_fila_pessoa_tirada,
+    "FILA_ATENDIMENTO_FECHADO": _cenario_fila_atendimento_fechado,
+    "FILA_PAUSA_ENCERRADA": _cenario_fila_pausa_encerrada,
+    "FILA_LANCAMENTO_CORRIGIDO": _cenario_fila_lancamento_corrigido,
 }
 
 

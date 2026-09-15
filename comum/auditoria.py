@@ -72,6 +72,13 @@ class ACOES:
     LOGO_REMOVIDO = "logo_removido"
     # As ações dos módulos de negócio de cada SaaS entram aqui, cada uma com o
     # rótulo em `ROTULOS` e o cenário que `tests/test_auditoria.py` exige.
+    # As correções da fila do Fila Zero (`fila/correcoes.py`). As ações do
+    # próprio vendedor NÃO entram: já são o histórico da fila, e uma linha de
+    # trilha por clique afogaria o que a auditoria existe para mostrar.
+    FILA_PESSOA_TIRADA = "fila_pessoa_tirada"
+    FILA_ATENDIMENTO_FECHADO = "fila_atendimento_fechado"
+    FILA_PAUSA_ENCERRADA = "fila_pausa_encerrada"
+    FILA_LANCAMENTO_CORRIGIDO = "fila_lancamento_corrigido"
 
 
 #: O que a pessoa lê, por valor gravado no banco — a mesma tradução que a
@@ -115,6 +122,10 @@ ROTULOS = {
     ACOES.PARAMETRO_RESTAURADO: "Parâmetro restaurado",
     ACOES.LOGO_ALTERADO: "Logo alterado",
     ACOES.LOGO_REMOVIDO: "Logo removido",
+    ACOES.FILA_PESSOA_TIRADA: "Pessoa tirada da loja",
+    ACOES.FILA_ATENDIMENTO_FECHADO: "Atendimento fechado pelo gerente",
+    ACOES.FILA_PAUSA_ENCERRADA: "Pausa encerrada pelo gerente",
+    ACOES.FILA_LANCAMENTO_CORRIGIDO: "Lançamento corrigido",
 }
 
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
-__all__ = ["ler_valor"]
+__all__ = ["em_reais", "ler_valor"]
 
 _NUMERO = re.compile(r"\d+(?:\.\d+)?")
 #: Um ponto só, seguido de exatamente três dígitos: é milhar ("2.000"), e não
@@ -37,3 +37,11 @@ def ler_valor(texto: str) -> "Decimal | None":
         return Decimal(limpo).quantize(Decimal("0.01"))
     except InvalidOperation:
         return None
+
+
+def em_reais(valor: Decimal) -> str:
+    """`Decimal("1800.5")` -> `"R$ 1.800,50"`. Escrito à mão, e não pelo
+    `locale` do sistema: o contêiner da VPS não tem `pt_BR` instalado, e a
+    tela sairia "R$ 1,800.50" só em produção."""
+    inteiro, _ponto, centavos = f"{valor:,.2f}".partition(".")
+    return f"R$ {inteiro.replace(',', '.')},{centavos}"
