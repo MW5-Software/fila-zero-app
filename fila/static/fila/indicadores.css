@@ -1,0 +1,22 @@
+/* A tela de indicadores da fila. Só tokens do tema: é uma tela do dashboard
+   como as outras. O que esta folha acrescenta é a variação ao lado do número,
+   que o `StatCard` do design system não tem. */
+
+.ind-numero { display: flex; flex-direction: column; gap: 4px; }
+.ind-numero-l { font-size: 13px; font-weight: 600; color: var(--on-surface-2); }
+.ind-numero-n {
+  font-family: var(--font-display); font-size: 30px; font-weight: 800;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.ind-numero-apoio { font-size: 12.5px; color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+.ind-variacao { display: inline-flex; align-items: center; gap: 3px; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ind-variacao.sobe { color: var(--ok); }
+.ind-variacao.desce { color: var(--danger); }
+.ind-variacao.igual { color: var(--on-surface-2); }
+
+/* Os filtros alinham pela base: o botão fica na linha dos campos, e não
+   acima deles. */
+form[action="/fila/indicadores"] .formgrid { align-items: end; }
+[data-esquecidos] ul { margin: 6px 0 0; padding-left: 18px; }
+[data-esquecidos] li + li { margin-top: 2px; }
+.ind-vazio { padding: 28px 12px; text-align: center; color: var(--on-surface-2); font-size: 13px; }
