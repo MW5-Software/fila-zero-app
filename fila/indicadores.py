@@ -16,8 +16,10 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from django.db.models import (Count, DateTimeField, DecimalField, DurationField,
-                              ExpressionWrapper, Q, Sum, Value)
+from django.db.models import (Case, Count, DateTimeField, DecimalField,
+                              DurationField, ExpressionWrapper, F, FloatField,
+                              IntegerField,
+                              OuterRef, Q, Subquery, Sum, Value, When)
 from django.db.models.functions import Coalesce, Greatest, Least, TruncDate, TruncHour
 from django.utils import timezone
 
@@ -25,9 +27,10 @@ from .estado import nome_de
 from .models import Atendimento, ItemVendido, Pausa, Presenca, Resultado
 from .periodo import Periodo, inicio_do_dia
 
-__all__ = ["Esquecido", "Numeros", "Recorte", "Variacao", "esquecidos",
+__all__ = ["ORDENAVEIS_DO_RANKING", "PADRAO_DO_RANKING", "Esquecido",
+           "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
            "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
-           "por_dia", "por_grupo", "variacao"]
+           "por_dia", "por_grupo", "posicao_no_mes", "ranking", "variacao"]
 
 ZERO = Decimal("0")
 _DINHEIRO = DecimalField(max_digits=14, decimal_places=2)
@@ -214,3 +217,93 @@ def lojas_com_relatorio(pessoa, empresa) -> list:
     return [loja for loja in filiais_da_pessoa(pessoa, empresa)
             if pessoa.is_superuser
             or _cobre_relatorios(permissoes_em(pessoa, empresa, loja))]
+
+
+def _por_pessoa(consulta, campo_da_pessoa: str, expressao, saida, zero):
+    """Uma subconsulta que agrega `consulta` para a pessoa da linha de fora.
+
+    Subconsulta, e não `annotate` pela relação: `Atendimento.vendedor` e
+    `Pausa.pessoa` não têm relação reversa (`related_name="+"`), de propósito,
+    para ninguém atravessar do usuário para o histórico sem passar pela
+    empresa.
+    """
+    return Coalesce(
+        Subquery(consulta.filter(**{campo_da_pessoa: OuterRef("pk")})
+                 .order_by().values(campo_da_pessoa)
+                 .annotate(x=expressao).values("x")[:1], output_field=saida),
+        Value(zero, output_field=saida), output_field=saida)
+
+
+ORDENAVEIS_DO_RANKING = {
+    "nome": ("nome",),
+    "vendido": ("vendido", "conversao", "nome"),
+    "atendimentos": ("atendimentos", "nome"),
+    "vendas": ("vendas", "nome"),
+    "conversao": ("conversao", "nome"),
+    "ticket": ("ticket", "nome"),
+    "pediu": ("pediu", "nome"),
+    "pausa": ("pausa", "nome"),
+}
+PADRAO_DO_RANKING = "-vendido"
+
+
+def ranking(recorte: Recorte):
+    """As pessoas que fecharam atendimento como vendedor no recorte, com as
+    colunas do ranking. Quem fechou no lugar delas (`fechado_por`) não
+    aparece por isso: a venda é de quem atendeu."""
+    from contas.models import Usuario
+
+    base = _atendimentos(recorte)
+    venda = Q(resultado=Resultado.VENDEU)
+    de, ate = recorte.periodo.de, recorte.periodo.ate
+    pausas = (Pausa.objects.da_empresa(recorte.empresa)
+              .filter(filial__in=recorte.lojas, fim__isnull=False,
+                      inicio__lt=ate, fim__gt=de)
+              .annotate(dentro=ExpressionWrapper(
+                  Least("fim", Value(ate, output_field=DateTimeField()))
+                  - Greatest("inicio", Value(de, output_field=DateTimeField())),
+                  output_field=DurationField())))
+    inteiro = IntegerField()
+    return (Usuario.objects.filter(pk__in=base.values("vendedor"))
+            .defer("avatar")
+            .annotate(
+                atendimentos=_por_pessoa(base, "vendedor", Count("pk"), inteiro, 0),
+                vendas=_por_pessoa(base, "vendedor", Count("pk", filter=venda), inteiro, 0),
+                vendido=_por_pessoa(base, "vendedor", Sum("total", filter=venda), _DINHEIRO, ZERO),
+                pediu=_por_pessoa(base, "vendedor", Count("pk", filter=Q(cliente_pediu=True)), inteiro, 0),
+                pausa=_por_pessoa(pausas, "pessoa", Sum("dentro"), DurationField(), timedelta(0)),
+            )
+            .annotate(
+                conversao=Case(When(atendimentos=0, then=Value(None)),
+                               default=ExpressionWrapper(F("vendas") * 100.0 / F("atendimentos"),
+                                                         output_field=FloatField()),
+                               output_field=FloatField()),
+                ticket=Case(When(vendas=0, then=Value(None)),
+                            default=ExpressionWrapper(F("vendido") / F("vendas"),
+                                                      output_field=_DINHEIRO),
+                            output_field=_DINHEIRO),
+            ))
+
+
+@dataclass(frozen=True)
+class Posicao:
+    posicao: int
+    total: int
+
+
+def posicao_no_mes(pessoa, loja, agora: "datetime | None" = None) -> "Posicao | None":
+    """A posição da pessoa no ranking de vendido da loja, no mês corrente,
+    entre quem vendeu algo. Mesmo valor, mesma posição."""
+    agora = agora or timezone.now()
+    hoje = timezone.localdate(agora)
+    mes = Periodo(inicio_do_dia(hoje.replace(day=1)),
+                  inicio_do_dia(hoje + timedelta(days=1)), "mes", "Este mês")
+    totais = dict(
+        _atendimentos(Recorte(loja.empresa, (loja,), mes))
+        .filter(resultado=Resultado.VENDEU)
+        .values("vendedor").annotate(v=Sum("total"))
+        .values_list("vendedor", "v"))
+    meu = totais.get(pessoa.pk)
+    if not meu:
+        return None
+    return Posicao(1 + sum(1 for v in totais.values() if v > meu), len(totais))

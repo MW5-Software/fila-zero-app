@@ -10,7 +10,7 @@ from decimal import Decimal
 import pytest
 from django.utils import timezone
 
-from fila.indicadores import (Recorte, esquecidos, lojas_com_relatorio,
+from fila.indicadores import (Posicao, Recorte, esquecidos, lojas_com_relatorio,
                               motivos, numeros, pausa_por_tipo, por_dia,
                               por_grupo, variacao)
 from fila.periodo import Periodo
@@ -216,3 +216,75 @@ def test_lojas_com_relatorio_pelo_alcance(loja):
     assert set(lojas_com_relatorio(sara, loja.empresa)) == {loja.matriz, centro}
     assert set(lojas_com_relatorio(loja.titular, loja.empresa)) == {loja.matriz, centro}
     assert lojas_com_relatorio(loja.ana, loja.empresa) == []
+
+
+def test_ranking_e_de_quem_atendeu_e_nao_de_quem_fechou(loja):
+    from fila.indicadores import ranking
+
+    d = local(2026, 9, 10, 10)
+    a = atendimento(loja, loja.ana, d, d, vendeu="400")
+    a.fechado_por = loja.bia
+    a.save(update_fields=["fechado_por"])
+    linhas = {p.pk: p for p in ranking(_recorte(loja))}
+    assert set(linhas) == {loja.ana.pk}
+    assert linhas[loja.ana.pk].vendido == Decimal("400")
+
+
+def test_ranking_anota_as_colunas(loja):
+    from fila.indicadores import ranking
+    from fila.models import Pausa
+
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="300")
+    atendimento(loja, loja.ana, d, d, vendeu="100", pediu=True)
+    atendimento(loja, loja.ana, d, d)
+    atendimento(loja, loja.ana, d, d)
+    Pausa.irrestritos.create(empresa=loja.empresa, filial=loja.matriz,
+                             pessoa=loja.ana, presenca=_presenca(loja, loja.ana),
+                             tipo=loja.cad.tipo, inicio=local(2026, 9, 10, 12),
+                             fim=local(2026, 9, 10, 12, 45))
+    ana = ranking(_recorte(loja)).get(pk=loja.ana.pk)
+    assert (ana.atendimentos, ana.vendas, ana.vendido, ana.pediu) == (4, 2, Decimal("400"), 1)
+    assert type(ana.atendimentos) is int
+    assert ana.conversao == 50.0
+    assert ana.ticket == Decimal("200")
+    assert ana.pausa == timedelta(minutes=45)
+
+
+def test_ranking_ordena_por_vendido_e_soma_entre_lojas(loja):
+    from fila.indicadores import PADRAO_DO_RANKING, ORDENAVEIS_DO_RANKING, ranking
+
+    centro = nova_loja(loja.empresa, "Centro")
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="300")
+    atendimento(loja, loja.ana, d, d, vendeu="300", filial=centro)
+    atendimento(loja, loja.bia, d, d, vendeu="500")
+    campos = tuple(f"-{c}" for c in ORDENAVEIS_DO_RANKING[PADRAO_DO_RANKING.lstrip("-")])
+    ordem = ranking(_recorte(loja, lojas=[loja.matriz, centro])).order_by(*campos)
+    assert [p.pk for p in ordem] == [loja.ana.pk, loja.bia.pk]
+
+
+def test_posicao_no_mes_com_empate(loja):
+    from fila.indicadores import posicao_no_mes
+
+    caio = pessoa_na_loja("caio", loja.empresa, loja.matriz)
+    agora = local(2026, 9, 20, 12)
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="500")
+    atendimento(loja, loja.bia, d, d, vendeu="500")
+    atendimento(loja, caio, d, d, vendeu="900")
+    atendimento(loja, caio, local(2026, 8, 30, 10), local(2026, 8, 30, 10), vendeu="9999")
+    # Quem só teve não venda no mês não entra na conta do "de N".
+    dora = pessoa_na_loja("dora", loja.empresa, loja.matriz)
+    atendimento(loja, dora, d, d)
+    assert posicao_no_mes(caio, loja.matriz, agora) == Posicao(1, 3)
+    assert posicao_no_mes(loja.ana, loja.matriz, agora) == Posicao(2, 3)
+    assert posicao_no_mes(loja.bia, loja.matriz, agora) == Posicao(2, 3)
+
+
+def test_posicao_sem_venda_no_mes(loja):
+    from fila.indicadores import posicao_no_mes
+
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d)
+    assert posicao_no_mes(loja.ana, loja.matriz, local(2026, 9, 20)) is None
