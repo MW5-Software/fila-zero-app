@@ -62,6 +62,33 @@ class TestOConversor:
         assert id_do_post(self._Pedido(alvo="-1"), "alvo") == -1
 
 
+class TestInteiroDoTexto:
+    """A mesma regra fora do POST: o `?editar=` da URL, a quantidade de um
+    carrinho, o campo de número de um cadastro. Veio do Portal de Vendas
+    (15/09/2026), onde cada tela tinha o seu `isdigit()` com o mesmo furo."""
+
+    def test_numero_e_sinal(self):
+        from comum.pedido import inteiro_do_texto
+
+        assert inteiro_do_texto(" 42 ") == 42
+        assert inteiro_do_texto("-7") == -7
+
+    def test_o_que_nao_e_numero_vira_none(self):
+        from comum.pedido import inteiro_do_texto
+
+        for bruto in ("", None, "abc", "²", "--5", "4 2", "1.5"):
+            assert inteiro_do_texto(bruto) is None, bruto
+
+    def test_o_teto_de_digitos_e_da_coluna(self):
+        """18 cabe no bigint dos ids; 9 no inteiro comum."""
+        from comum.pedido import inteiro_do_texto
+
+        assert inteiro_do_texto("9" * 18) == int("9" * 18)
+        assert inteiro_do_texto("9" * 19) is None
+        assert inteiro_do_texto("9" * 9, digitos=9) == 999_999_999
+        assert inteiro_do_texto("9" * 10, digitos=9) is None
+
+
 def _fontes():
     for pasta in PASTAS:
         for arquivo in (RAIZ / pasta).rglob("*.py"):

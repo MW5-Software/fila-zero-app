@@ -19,7 +19,7 @@ from comum.ambiente import ambiente
 from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
-from comum.pedido import id_do_post
+from comum.pedido import id_do_post, inteiro_do_texto
 from comum.personificacao import aviso as aviso_de_personificacao
 from contas.identidade import usuario_de
 from nucleo.components import (Alert, Box, Button, Card, Cell, Form, FormGrid,
@@ -39,11 +39,10 @@ __all__ = ["metas"]
 
 def _loja_escolhida(request, permitidas):
     """A loja do pedido, só entre as permitidas; a forjada cai na primeira."""
-    if request.method == "POST":
-        pk = id_do_post(request, "loja")
-    else:
-        bruto = request.GET.get("loja", "")
-        pk = int(bruto) if bruto.isascii() and bruto.isdigit() and len(bruto) <= 18 else None
+    # A mesma regra do id do POST para a URL: "²" e número gigante viram
+    # "nenhuma", e a tela cai na primeira loja em vez de 500.
+    pk = (id_do_post(request, "loja") if request.method == "POST"
+          else inteiro_do_texto(request.GET.get("loja", "")))
     return next((l for l in permitidas if l.pk == pk), permitidas[0])
 
 

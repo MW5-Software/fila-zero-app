@@ -45,6 +45,11 @@ def test_gerente_ve_so_a_loja_dele_e_a_forjada_e_descartada(rede):
     assert "Caio" in html and "Ana" not in html
 
 
+def test_loja_da_url_que_nao_e_numero_nao_derruba(rede):
+    for bruto in ("²", "9" * 30, "abc"):
+        assert "Metas de venda" in _get(logado("sara"), loja=bruto)
+
+
 def test_supervisor_escolhe_a_loja(rede):
     html = _get(logado("sara"), loja=str(rede.matriz.pk))
     assert "Ana" in html and "Caio" not in html
