@@ -13,7 +13,7 @@ Duas regras valem para toda função daqui:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
@@ -21,16 +21,17 @@ from django.db.models import (Case, Count, DateTimeField, DecimalField,
                               DurationField, ExpressionWrapper, F, FloatField,
                               IntegerField,
                               OuterRef, Q, Subquery, Sum, Value, When)
-from django.db.models.functions import Coalesce, Greatest, Least, TruncDate, TruncHour
+from django.db.models.functions import (Cast, Coalesce, Greatest, Least,
+                                       TruncDate, TruncHour)
 from django.utils import timezone
 
 from .estado import nome_de
 from .models import Atendimento, ItemVendido, Pausa, Presenca, Resultado
 from .periodo import Periodo, inicio_do_dia
 
-__all__ = ["ORDENAVEIS_DO_RANKING", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
+__all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
-           "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
+           "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
            "por_dia", "por_grupo", "posicao_no_mes", "ranking", "variacao"]
 
 ZERO = Decimal("0")
@@ -214,21 +215,22 @@ def esquecidos(empresa, lojas, agora: "datetime | None" = None) -> "list[Esqueci
     return sorted(achados, key=lambda e: e.desde)
 
 
-def _cobre_relatorios(permissoes) -> bool:
-    return "fila.relatorios" in permissoes or "fila.*" in permissoes
-
-
-def lojas_com_relatorio(pessoa, empresa) -> list:
-    """As lojas em que o cargo da pessoa traz `fila.relatorios`, pelo mesmo
-    `contas.lugar` que decide a permissão em toda tela. O gerente de uma loja
-    não tem a permissão em outra; supervisor e titular têm em todas."""
+def lojas_com_permissao(pessoa, empresa, permissao: str) -> list:
+    """As lojas em que o cargo da pessoa traz `permissao` (ou o coringa
+    `fila.*`), pelo mesmo `contas.lugar` que decide a permissão em toda tela.
+    O gerente de uma loja não a tem em outra; supervisor e titular, em todas.
+    Os indicadores e as metas saem daqui (decisão P-7 do plano das metas)."""
     from contas.lugar import filiais_da_pessoa, permissoes_em
 
     if pessoa is None or empresa is None:
         return []
     return [loja for loja in filiais_da_pessoa(pessoa, empresa)
             if pessoa.is_superuser
-            or _cobre_relatorios(permissoes_em(pessoa, empresa, loja))]
+            or {permissao, "fila.*"} & permissoes_em(pessoa, empresa, loja)]
+
+
+def lojas_com_relatorio(pessoa, empresa) -> list:
+    return lojas_com_permissao(pessoa, empresa, "fila.relatorios")
 
 
 def _por_pessoa(consulta, campo_da_pessoa: str, expressao, saida, zero):
@@ -256,10 +258,15 @@ ORDENAVEIS_DO_RANKING = {
     "pediu": ("pediu", "nome"),
     "pausa": ("pausa", "nome"),
 }
+ORDENAVEIS_DO_RANKING_COM_META = {
+    **ORDENAVEIS_DO_RANKING,
+    "meta": ("meta", "nome"),
+    "pct_meta": ("pct_meta", "nome"),
+}
 PADRAO_DO_RANKING = "-vendido"
 
 
-def ranking(recorte: Recorte):
+def ranking(recorte: Recorte, mes: "date | None" = None):
     """As pessoas que fecharam atendimento como vendedor no recorte, com as
     colunas do ranking. Quem fechou no lugar delas (`fechado_por`) não
     aparece por isso: a venda é de quem atendeu."""
@@ -276,7 +283,7 @@ def ranking(recorte: Recorte):
                   - Greatest("inicio", Value(de, output_field=DateTimeField())),
                   output_field=DurationField())))
     inteiro = IntegerField()
-    return (Usuario.objects.filter(pk__in=base.values("vendedor"))
+    consulta = (Usuario.objects.filter(pk__in=base.values("vendedor"))
             .defer("avatar")
             .annotate(
                 atendimentos=_por_pessoa(base, "vendedor", Count("pk"), inteiro, 0),
@@ -295,6 +302,26 @@ def ranking(recorte: Recorte):
                                                       output_field=_DINHEIRO),
                             output_field=_DINHEIRO),
             ))
+    if mes is None:
+        return consulta
+    # A meta do vendedor em "Todas as lojas" é a soma das metas dele nas lojas
+    # do recorte, e o % é o vendido dele nessas lojas sobre essa soma. Sem
+    # Coalesce: sem meta é "—", e não meta zero.
+    from .models import MetaDeVenda
+
+    metas = (MetaDeVenda.objects.da_empresa(recorte.empresa)
+             .filter(filial__in=recorte.lojas, mes=mes, pessoa__isnull=False))
+    real = FloatField()
+    return (consulta
+            .annotate(meta=Subquery(
+                metas.filter(pessoa=OuterRef("pk")).order_by().values("pessoa")
+                .annotate(x=Sum("valor")).values("x")[:1], output_field=_DINHEIRO))
+            .annotate(pct_meta=Case(
+                When(meta__isnull=True, then=Value(None)),
+                default=ExpressionWrapper(
+                    Cast("vendido", real) * 100.0 / Cast("meta", real),
+                    output_field=real),
+                output_field=real)))
 
 
 @dataclass(frozen=True)

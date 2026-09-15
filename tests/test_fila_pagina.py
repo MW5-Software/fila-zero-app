@@ -431,3 +431,48 @@ def test_quem_esta_em_duas_lojas_troca_de_loja_pela_propria_fila(loja):
                   if f"/filial/trocar?filial_id={pk}&amp;voltar=%2Ffila" in html}
     assert len(oferecidas) == 1
     assert "/filial/trocar?" not in _html(logado("bia"))
+
+
+# --- A meta em "Seus números" (entrega 3) -------------------------------------
+
+def _meta(loja, pessoa, valor, filial=None):
+    from decimal import Decimal
+
+    from django.utils import timezone
+
+    from fila.models import MetaDeVenda
+
+    return MetaDeVenda.irrestritos.create(
+        empresa=loja.empresa, filial=filial or loja.matriz, pessoa=pessoa,
+        mes=timezone.localdate().replace(day=1), valor=Decimal(valor))
+
+
+def test_seus_numeros_mostram_a_meta_da_propria_pessoa(loja):
+    _meta(loja, loja.ana, "4000")
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="atender")
+    _agir(ana, acao="finalizar", resultado="vendeu",
+          grupo=[str(loja.cad.grupo.pk)], valor=["1.000"])
+    html = _html(ana)
+    assert "Meta do mês" in html and "R$ 4.000,00" in html and "25%" in html
+    assert "Faltam R$ 3.000,00" in html
+    assert "Meta do mês" not in _html(logado("bia"))
+
+
+def test_meta_de_outra_loja_nao_aparece(loja):
+    centro = nova_loja(loja.empresa, "Centro")
+    _meta(loja, loja.ana, "4000", filial=centro)
+    assert "Meta do mês" not in _html(logado("ana"))
+
+
+def test_a_versao_muda_quando_a_meta_muda(loja):
+    from fila.estado import versao_da_fila
+
+    antes = versao_da_fila(loja.matriz)
+    m = _meta(loja, loja.ana, "4000")
+    depois = versao_da_fila(loja.matriz)
+    assert depois != antes
+    m.valor = m.valor + 1
+    m.save()
+    assert versao_da_fila(loja.matriz) != depois

@@ -166,26 +166,40 @@ def _trilha(r) -> list:
 @dataclass(frozen=True)
 class MeusNumeros:
     """A faixa do vendedor (spec 2026-09-15 dos indicadores, decisão P-2 do
-    plano): os números da loja em que ele está, hoje e no mês, e a posição."""
+    plano): os números da loja em que ele está, hoje e no mês, a posição e a
+    meta do mês, se houver."""
 
     hoje: object
     mes: object
     posicao: object
+    #: A meta do mês na loja em que a pessoa está, se houver (entrega 3).
+    meta: object = None
 
 
 def _meus_numeros(pessoa, filial) -> "MeusNumeros | None":
     from .indicadores import Recorte, numeros, posicao_no_mes
+    from .metas import acompanhar, primeiro_do_mes
+    from .models import MetaDeVenda
     from .periodo import periodo_do_pedido
 
     if pessoa is None:
         return None
     lojas = (filial,)
+    mes = numeros(Recorte(filial.empresa, lojas, periodo_do_pedido({"periodo": "mes"})),
+                  vendedor=pessoa)
+    # A meta da loja em que a pessoa está, como os números ao lado (P-2 do
+    # plano dos indicadores). Sem projeção: o vendedor precisa do "quanto por
+    # dia", e a projeção é conversa da gestão.
+    minha = (MetaDeVenda.objects.da_empresa(filial.empresa)
+             .filter(filial=filial, pessoa=pessoa,
+                     mes=primeiro_do_mes(timezone.localdate()))
+             .first())
     return MeusNumeros(
         hoje=numeros(Recorte(filial.empresa, lojas, periodo_do_pedido({"periodo": "hoje"})),
                      vendedor=pessoa),
-        mes=numeros(Recorte(filial.empresa, lojas, periodo_do_pedido({"periodo": "mes"})),
-                    vendedor=pessoa),
-        posicao=posicao_no_mes(pessoa, filial))
+        mes=mes,
+        posicao=posicao_no_mes(pessoa, filial),
+        meta=acompanhar(minha.valor, mes.vendido, minha.mes) if minha else None)
 
 
 def _contexto(request, filial, recusa=""):

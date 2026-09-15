@@ -108,7 +108,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 108 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 110 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -375,7 +375,6 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    mantém essa assinatura é decisão de produto.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
-5. **As metas da fila** são a entrega 3 e ainda não têm spec.
 
 ---
 
@@ -393,6 +392,7 @@ cinco ajustes que o spec não respondia (D-1 a D-5):
 | `fila.participar` | bater o ponto, atender, lançar, pausar, sair da loja |
 | `fila.gerenciar` | corrigir a fila e os lançamentos da loja em que está |
 | `fila.cadastros` | grupos de item, motivos de não venda e tipos de pausa |
+| `fila.metas` | a tela `/fila/metas`, nas lojas em que o cargo traz a permissão |
 
 Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
 `gerenciar`; Supervisor, `ver` e `gerenciar`; o titular, as quatro
@@ -480,6 +480,24 @@ Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
 - Permissão nova não chega sozinha às contas que já existem: a semeadura só
   cria cargo que falta.
 
+### As metas (entrega 3)
+
+Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
+`docs/superpowers/plans/2026-09-15-fila-metas.md`.
+
+- **Uma tabela, `MetaDeVenda`**, para a meta da loja (`pessoa` nula) e a do
+  vendedor naquela loja, por mês. As travas moram no banco: uma meta por loja
+  e mês, uma por pessoa, loja e mês, o mês no dia 1 e o valor positivo.
+- **As regras moram em `fila/metas.py`**, e toda conta recebe `agora`. O
+  painel, o ranking, "Seus números" e a tela de metas leem de lá.
+- **Ninguém define a própria meta e mês encerrado não se edita**, conferidos
+  em `gravar`, e não só na tela. O POST não carrega id de pessoa: o servidor
+  lê só os campos da lista que ele mesmo monta, e campo ausente não mexe.
+- **A projeção usa só os dias fechados**: com o dia de hoje pela metade, o
+  dia 1 projetaria o mês com uma venda.
+- **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
+  lojas", uma loja sem meta não faz a meta das outras parecer batida.
+
 ---
 
 ## Como rodar
@@ -490,7 +508,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 108 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 110 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

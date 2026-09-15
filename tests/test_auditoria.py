@@ -743,6 +743,29 @@ def _cenario_fila_cadastro_removido():
     return email_de("dona-cad"), "Tipo de pausa: Café"
 
 
+def _cenario_fila_meta_definida():
+    from django.utils import timezone
+
+    from fila.metas import gravar
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    mes = timezone.localdate().replace(day=1)
+    gravar(matriz, mes, dona, {str(zeca.pk): "5000"})
+    return email_de("dona-fila"), f"{matriz}: Zeca em {mes:%m/%Y}"
+
+
+def _cenario_fila_meta_removida():
+    from django.utils import timezone
+
+    from fila.metas import gravar
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    mes = timezone.localdate().replace(day=1)
+    gravar(matriz, mes, dona, {"loja": "90000"})
+    gravar(matriz, mes, dona, {"loja": ""})
+    return email_de("dona-fila"), f"{matriz}: a loja em {mes:%m/%Y}"
+
+
 _CENARIOS = {
     "ENTROU": _cenario_entrou,
     "ENTRADA_RECUSADA": _cenario_entrada_recusada,
@@ -784,6 +807,8 @@ _CENARIOS = {
     "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
     "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,
+    "FILA_META_DEFINIDA": _cenario_fila_meta_definida,
+    "FILA_META_REMOVIDA": _cenario_fila_meta_removida,
 }
 
 

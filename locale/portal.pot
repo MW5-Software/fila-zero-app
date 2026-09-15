@@ -533,6 +533,18 @@ msgstr ""
 msgid "O resultado não muda na correção."
 msgstr ""
 
+msgid "Mês encerrado: as metas não se editam mais."
+msgstr ""
+
+msgid "Digite um valor em reais."
+msgstr ""
+
+msgid "A meta precisa ser maior que zero."
+msgstr ""
+
+msgid "Valor alto demais."
+msgstr ""
+
 msgid "Na fila"
 msgstr ""
 
@@ -641,6 +653,18 @@ msgstr ""
 msgid "tipo"
 msgstr ""
 
+msgid "mês"
+msgstr ""
+
+msgid "alterada em"
+msgstr ""
+
+msgid "meta de venda"
+msgstr ""
+
+msgid "metas de venda"
+msgstr ""
+
 msgid "Fila da vez"
 msgstr ""
 
@@ -651,6 +675,9 @@ msgid "Motivos de não venda"
 msgstr ""
 
 msgid "Tipos de pausa"
+msgstr ""
+
+msgid "Metas"
 msgstr ""
 
 #, python-format
@@ -724,6 +751,46 @@ msgstr ""
 
 #, python-format
 msgid "Comparado a %(trecho)s"
+msgstr ""
+
+#, python-format
+msgid "Bateu a meta, %(acima)s acima."
+msgstr ""
+
+#, python-format
+msgid "Ficou em %(pct)s da meta, faltaram %(falta)s."
+msgstr ""
+
+#, python-format
+msgid "Meta batida, %(acima)s acima."
+msgstr ""
+
+#, python-format
+msgid "Faltam %(falta)s, %(por_dia)s por dia até %(ultimo)s."
+msgstr ""
+
+#, python-format
+msgid "No ritmo atual, fecha em %(projecao)s."
+msgstr ""
+
+msgid "Projeção a partir de amanhã."
+msgstr ""
+
+#, python-format
+msgid "As metas dos vendedores somam %(soma)s e cobrem a da loja."
+msgstr ""
+
+#, python-format
+msgid "As metas dos vendedores somam %(soma)s, abaixo da meta da loja."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(com)s de %(total)s lojas com meta: a meta e o vendido desta faixa são "
+"só delas."
+msgstr ""
+
+msgid "Meta do mês"
 msgstr ""
 
 msgid "Atendimentos"
@@ -839,7 +906,72 @@ msgstr ""
 msgid "Pausa"
 msgstr ""
 
+msgid "Meta"
+msgstr ""
+
+#, python-format
+msgid "% da meta"
+msgstr ""
+
 msgid "Ranking de vendedores"
+msgstr ""
+
+msgid "Mês"
+msgstr ""
+
+msgid "Abrir"
+msgstr ""
+
+msgid "Mês anterior"
+msgstr ""
+
+msgid "Mês seguinte"
+msgstr ""
+
+msgid "Sem meta"
+msgstr ""
+
+#, python-format
+msgid "Vendedores somam %(soma)s de %(loja)s"
+msgstr ""
+
+msgid "A sua meta é definida por outra pessoa."
+msgstr ""
+
+msgid "Não está mais nesta loja."
+msgstr ""
+
+msgid "Meta da loja"
+msgstr ""
+
+msgid "Metas dos vendedores"
+msgstr ""
+
+msgid "Ninguém participa da fila nesta loja."
+msgstr ""
+
+msgid "Salvar metas"
+msgstr ""
+
+msgid "Copiar metas do mês anterior"
+msgstr ""
+
+msgid "Metas de venda"
+msgstr ""
+
+msgid "Quanto cada loja e cada vendedor deve vender no mês."
+msgstr ""
+
+msgid "Metas do mês anterior copiadas nos campos vazios. Confira e salve."
+msgstr ""
+
+msgid "O mês anterior não tem meta para copiar."
+msgstr ""
+
+msgid "Corrija os valores marcados. Nada foi salvo."
+msgstr ""
+
+msgid "Nenhuma loja em que você define metas."
 msgstr ""
 
 msgid "Bater o ponto e entrar na fila"
@@ -975,6 +1107,15 @@ msgid "Hoje"
 msgstr ""
 
 msgid "Este mês"
+msgstr ""
+
+msgid "Meta batida"
+msgstr ""
+
+msgid "Faltam"
+msgstr ""
+
+msgid "por dia"
 msgstr ""
 
 msgid "Ordem da fila"

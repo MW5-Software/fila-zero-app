@@ -26,7 +26,7 @@ from contas.inquilino import ModeloDaEmpresa
 
 __all__ = [
     "Atendimento", "Estado", "GrupoDeItem", "ItemVendido", "LugarNaFila",
-    "MotivoDeNaoVenda", "Pausa", "Presenca", "Resultado", "TipoDePausa",
+    "MetaDeVenda", "MotivoDeNaoVenda", "Pausa", "Presenca", "Resultado", "TipoDePausa",
 ]
 
 
@@ -221,3 +221,41 @@ class Pausa(ModeloDaEmpresa):
         # período.
         indexes = [models.Index(fields=["filial", "inicio"],
                                 name="fila_pausa_periodo")]
+
+
+class MetaDeVenda(ModeloDaEmpresa):
+    """Quanto a loja, ou um vendedor naquela loja, deve vender no mês
+    (spec 2026-09-15-fila-metas).
+
+    **Uma tabela para as duas metas**: `pessoa` nula é a meta da loja. A regra,
+    a tela e as consultas são as mesmas, e duas tabelas duplicariam cada uma.
+    Chama-se `MetaDeVenda`, e não `Meta`, porque todo model já tem uma classe
+    interna `Meta` (decisão P-1 do plano).
+    """
+
+    filial = _loja()
+    pessoa = _pessoa(_("vendedor"), null=True, blank=True)
+    mes = models.DateField(_("mês"))
+    valor = models.DecimalField(_("valor"), max_digits=12, decimal_places=2)
+    #: A versão da página da fila olha para cá: trocar uma meta por outra com
+    #: a mesma soma não mudaria contagem nem total (decisão P-2 do plano).
+    alterada_em = models.DateTimeField(_("alterada em"), auto_now=True)
+
+    class Meta(ModeloDaEmpresa.Meta):
+        verbose_name = _("meta de venda")
+        verbose_name_plural = _("metas de venda")
+        # No banco, e não só na tela: quem grava por fora (shell, migração, a
+        # próxima tela) não cria a segunda meta do mês nem a meta do dia 15.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["filial", "mes"], condition=Q(pessoa__isnull=True),
+                name="fila_uma_meta_da_loja_por_mes"),
+            models.UniqueConstraint(
+                fields=["filial", "pessoa", "mes"],
+                condition=Q(pessoa__isnull=False),
+                name="fila_uma_meta_por_pessoa_loja_e_mes"),
+            models.CheckConstraint(condition=Q(mes__day=1),
+                                   name="fila_meta_no_dia_1"),
+            models.CheckConstraint(condition=Q(valor__gt=0),
+                                   name="fila_meta_positiva"),
+        ]

@@ -51,11 +51,12 @@ DE_FABRICA: dict[int, tuple[str, ...]] = {
     #: `contas/views_cargos.py`) —, e ela nunca é oferecida numa caixa de
     #: cargo.
     #:
-    #: **A fila (Fila Zero):** a Sylvia atende, corrige e mantém os cadastros.
+    #: **A fila (Fila Zero):** a Sylvia atende, corrige, mantém os cadastros,
+    #: lê os indicadores e define as metas.
     Nivel.TITULAR: (
         "cargos.editar", "empresa.editar",
         "filiais.editar",
-        "fila.cadastros", "fila.gerenciar", "fila.participar",
+        "fila.cadastros", "fila.gerenciar", "fila.metas", "fila.participar",
         "fila.relatorios", "fila.ver",
         "usuarios.editar",
     ),

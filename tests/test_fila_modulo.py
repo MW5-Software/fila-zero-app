@@ -10,7 +10,7 @@ import pytest
 from tests.conftest import abrir_conta, empresa_do_teste
 
 PERMISSOES_DA_FILA = ("fila.ver", "fila.participar", "fila.gerenciar",
-                      "fila.cadastros", "fila.relatorios")
+                      "fila.cadastros", "fila.relatorios", "fila.metas")
 
 
 def test_o_modulo_esta_declarado_com_as_quatro_permissoes():
@@ -22,9 +22,9 @@ def test_o_modulo_esta_declarado_com_as_quatro_permissoes():
     assert spec.rota == "/fila"
     assert spec.ativo_por_padrao is True
     assert {a.rota for a in spec.atalhos} == {
-        "/fila/grupos", "/fila/motivos", "/fila/pausas"}
+        "/fila/grupos", "/fila/motivos", "/fila/pausas", "/fila/metas"}
     # Os indicadores moram no Início (15/09/2026): não há atalho para eles.
-    assert {a.permissao for a in spec.atalhos} == {"fila.cadastros"}
+    assert {a.permissao for a in spec.atalhos} == {"fila.cadastros", "fila.metas"}
 
 
 @pytest.mark.django_db
@@ -38,8 +38,9 @@ def test_o_modulo_nasce_ligado():
 @pytest.mark.parametrize("cargo, esperadas", [
     ("vendedor", {"fila_ver", "fila_participar"}),
     ("gerente", {"fila_ver", "fila_participar", "fila_gerenciar",
-                 "fila_relatorios"}),
-    ("supervisor", {"fila_ver", "fila_gerenciar", "fila_relatorios"}),
+                 "fila_relatorios", "fila_metas"}),
+    ("supervisor", {"fila_ver", "fila_gerenciar", "fila_relatorios",
+                    "fila_metas"}),
     ("representante", set()),
     ("cliente", set()),
 ])

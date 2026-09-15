@@ -34,6 +34,7 @@ from nucleo.rendering import use_environment
 from nucleo.resposta import render
 
 from . import graficos
+from . import metas as regras_de_meta
 from . import indicadores as ind
 from .graficos import Coluna
 from .periodo import ATALHOS, periodo_anterior, periodo_do_pedido
@@ -127,7 +128,42 @@ def _por_cento(x) -> str:
     return f"{x:g}%".replace(".", ",")
 
 
-def _painel(periodo, loja, n, a, anterior, fatias):
+def _faixa_da_meta(m) -> str:
+    """A meta do mês dentro do painel, entre os números e o gráfico: é a régua
+    do vendido que está logo acima."""
+    a = m.acompanhamento
+    if a.encerrado:
+        apoio = (_("Bateu a meta, %(acima)s acima.") % {"acima": em_reais(a.excedente)}
+                 if a.batida else
+                 _("Ficou em %(pct)s da meta, faltaram %(falta)s.")
+                 % {"pct": _pct(a.atingido), "falta": em_reais(a.falta)})
+    elif a.batida:
+        apoio = _("Meta batida, %(acima)s acima.") % {"acima": em_reais(a.excedente)}
+    else:
+        apoio = (_("Faltam %(falta)s, %(por_dia)s por dia até %(ultimo)s.")
+                 % {"falta": em_reais(a.falta), "por_dia": em_reais(a.por_dia),
+                    "ultimo": f"{a.ultimo_dia:%d/%m}"})
+        apoio += " " + (_("No ritmo atual, fecha em %(projecao)s.")
+                        % {"projecao": em_reais(a.projecao)}
+                        if a.projecao is not None else _("Projeção a partir de amanhã."))
+    if m.soma_vendedores:
+        cobre = (_("As metas dos vendedores somam %(soma)s e cobrem a da loja.")
+                 if m.soma_vendedores >= a.meta else
+                 _("As metas dos vendedores somam %(soma)s, abaixo da meta da loja."))
+        apoio += " " + cobre % {"soma": em_reais(m.soma_vendedores)}
+    if m.lojas_com_meta < m.lojas:
+        apoio += " " + (_("%(com)s de %(total)s lojas com meta: a meta e o vendido desta faixa são só delas.")
+                        % {"com": m.lojas_com_meta, "total": m.lojas})
+    return format_html(
+        '<div class="ind-meta" data-ind="meta">'
+        '<div class="ind-meta-cab"><span>{} <b>{}</b></span><strong>{}</strong></div>'
+        '<div class="ind-meta-barra{}"><span style="width: {}%"></span></div>'
+        '<p class="ind-meta-apoio">{}</p></div>',
+        _("Meta do mês"), em_reais(a.meta), _pct(a.atingido),
+        " batida" if a.batida else "", f"{min(a.atingido, 100):.1f}", apoio)
+
+
+def _painel(periodo, loja, n, a, anterior, fatias, meta=None):
     """Os quatro números do período em cima e, embaixo, a série de um deles no
     tempo. Um cartão só: o número e o dia a dia dele são a mesma pergunta, e
     antes eram seis cartões soltos que repetiam o período em cada um."""
@@ -187,8 +223,9 @@ def _painel(periodo, loja, n, a, anterior, fatias):
         padded=False, attrs={"data-ind": "painel"},
         body=Raw(html=format_html(
             '<div class="ind-painel"><div class="ind-abas" role="radiogroup" aria-label="{}">{}</div>'
-            '<div class="ind-series">{}</div></div>',
-            _("Número mostrado no gráfico"), abas, series)))
+            '{}<div class="ind-series">{}</div></div>',
+            _("Número mostrado no gráfico"), abas,
+            _faixa_da_meta(meta) if meta else "", series)))
 
 
 def _minutos_por_extenso(minutos: int) -> str:
@@ -290,8 +327,8 @@ def _esquecidos(lista):
 _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 
 
-def _colunas(pagina):
-    return [
+def _colunas(pagina, com_meta=False):
+    colunas = [
         Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
                render=lambda p: p.nome or p.email),
         Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
@@ -306,6 +343,14 @@ def _colunas(pagina):
         Column("pausa", pagina.cabecalho("pausa", str(_("Pausa"))), align="num",
                render=lambda p: f"{int(p.pausa.total_seconds() // 60)} min"),
     ]
+    if com_meta:
+        colunas += [
+            Column("meta", pagina.cabecalho("meta", str(_("Meta"))), align="num",
+                   render=lambda p: _dinheiro(p.meta)),
+            Column("pct_meta", pagina.cabecalho("pct_meta", str(_("% da meta"))),
+                   align="num", render=lambda p: _pct(p.pct_meta)),
+        ]
+    return colunas
 
 
 def blocos_dos_indicadores(request, empresa, permitidas) -> list:
@@ -317,20 +362,24 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     recorte = ind.Recorte(empresa, tuple(lojas), periodo)
     anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo))
     n, a = ind.numeros(recorte), ind.numeros(anterior)
+    mes_da_meta = regras_de_meta.mes_do_periodo(periodo)
     blocos = [
         _filtros(request, periodo, permitidas, loja),
         _esquecidos(ind.esquecidos(empresa, lojas)),
-        _painel(periodo, loja, n, a, anterior, ind.por_dia(recorte)),
+        _painel(periodo, loja, n, a, anterior, ind.por_dia(recorte),
+                meta=regras_de_meta.meta_do_recorte(recorte)),
         _listas(recorte, n),
     ]
-    listagem = montar_pagina(request, ind.ranking(recorte),
-                             ordenaveis=ind.ORDENAVEIS_DO_RANKING,
+    listagem = montar_pagina(request, ind.ranking(recorte, mes_da_meta),
+                             ordenaveis=(ind.ORDENAVEIS_DO_RANKING_COM_META
+                                         if mes_da_meta else ind.ORDENAVEIS_DO_RANKING),
                              padrao=ind.PADRAO_DO_RANKING,
                              filtraveis=_FILTRAVEIS,
                              preservar=("periodo", "de", "ate", "loja"))
     blocos.append(Card(title=_("Ranking de vendedores"), padded=False, body=[
         listagem.barra,
-        Table(columns=_colunas(listagem), rows=listagem.linhas),
+        Table(columns=_colunas(listagem, com_meta=mes_da_meta is not None),
+              rows=listagem.linhas),
         listagem.paginacao,
     ]))
     return blocos

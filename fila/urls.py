@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_cadastros, views_indicadores
+from . import views, views_cadastros, views_indicadores, views_metas
 
 urlpatterns = [
     path("", views.inicio, name="inicio"),
@@ -12,4 +12,5 @@ urlpatterns = [
     path("fila/grupos", views_cadastros.grupos, name="fila_grupos"),
     path("fila/motivos", views_cadastros.motivos, name="fila_motivos"),
     path("fila/pausas", views_cadastros.pausas, name="fila_pausas"),
+    path("fila/metas", views_metas.metas, name="fila_metas"),
 ]
