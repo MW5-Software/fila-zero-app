@@ -1,7 +1,7 @@
 # Fila Zero — os indicadores da fila
 
 **Data:** 15/09/2026
-**Estado:** desenho aprovado, execução não começou.
+**Estado:** desenho aprovado e implementado na branch `fila-da-vez` (plano de 15/09/2026).
 **Entrega:** 2 de 3. A entrega 1 é a fila
 (`docs/superpowers/specs/2026-09-15-fila-da-vez-design.md`); a entrega 3 são as
 metas, com spec próprio.

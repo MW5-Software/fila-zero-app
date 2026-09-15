@@ -377,9 +377,10 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    continuam por fazer.
 5. **As frases de recusa da fila não têm castelhano.** São montadas com nome e
    número (`"A vez é de Ana. Você é o 2º da fila."`) em `fila/acoes.py` e
-   `fila/correcoes.py`, e traduzir pede `%(nome)s` em cada uma.
-6. **O dashboard da fila** (atendimentos, conversão, vendas por grupo, ranking,
-   metas) é a entrega 2 e ainda não tem spec.
+   `fila/correcoes.py`, e traduzir pede `%(nome)s` em cada uma. O mesmo vale
+   para as linhas de apoio montadas com número nos indicadores
+   (`Cliente pediu: …`) e para os rótulos das colunas do ranking.
+6. **As metas da fila** são a entrega 3 e ainda não têm spec.
 
 ---
 
@@ -450,6 +451,26 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 - **Quem só tem `fila.ver` e `fila.participar` cai em `/fila`** ao pedir a
   raiz (`fila.views.inicio`, antes do `nucleo` em `config/urls.py`). Teste da
   base que pede a raiz com um vendedor precisa de outro cargo.
+
+
+### Os indicadores (entrega 2)
+
+Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
+`docs/superpowers/plans/2026-09-15-fila-indicadores.md`.
+
+- `fila.relatorios` abre `/fila/indicadores`; as lojas saem de
+  `fila.indicadores.lojas_com_relatorio` (o cargo no lugar), e a `?loja=` só
+  filtra dentro delas.
+- `fila/periodo.py` resolve o período e o anterior (em andamento compara até
+  o mesmo ponto); `fila/indicadores.py` faz as contas, na hora, sempre por
+  `objects.da_empresa`.
+- **Atendimento entra pela hora do fim**, e aberto não entra. Conversão sem
+  atendimento é "—".
+- **O ranking é por subconsulta**: `Atendimento.vendedor` e `Pausa.pessoa`
+  não têm relação reversa, e é de propósito.
+- "Seus números" na página da fila são os da loja em que a pessoa está.
+- Permissão nova não chega sozinha às contas que já existem: a semeadura só
+  cria cargo que falta.
 
 ---
 

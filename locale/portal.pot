@@ -571,6 +571,9 @@ msgstr ""
 msgid "Tipos de pausa"
 msgstr ""
 
+msgid "Indicadores da fila"
+msgstr ""
+
 msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."
 msgstr ""
 
@@ -611,6 +614,78 @@ msgid "Escolha uma empresa no cabeçalho antes de cadastrar."
 msgstr ""
 
 msgid "Informe o nome."
+msgstr ""
+
+msgid "Nada no período."
+msgstr ""
+
+msgid "Período"
+msgstr ""
+
+msgid "Intervalo"
+msgstr ""
+
+msgid "De"
+msgstr ""
+
+msgid "Até"
+msgstr ""
+
+msgid "Loja"
+msgstr ""
+
+msgid "Todas as lojas"
+msgstr ""
+
+msgid "Aplicar"
+msgstr ""
+
+msgid "Abrir a fila"
+msgstr ""
+
+msgid "Ficou aberto de um dia para o outro"
+msgstr ""
+
+msgid "Nenhuma loja para mostrar"
+msgstr ""
+
+msgid "Os indicadores aparecem para as lojas em que o seu cargo traz a permissão."
+msgstr ""
+
+msgid "todas as lojas"
+msgstr ""
+
+msgid "Atendimentos"
+msgstr ""
+
+msgid "Conversão"
+msgstr ""
+
+msgid "Vendido"
+msgstr ""
+
+msgid "Ticket médio"
+msgstr ""
+
+msgid "Atendimentos por hora"
+msgstr ""
+
+msgid "Atendimentos por dia"
+msgstr ""
+
+msgid "Vendido por hora"
+msgstr ""
+
+msgid "Vendido por dia"
+msgstr ""
+
+msgid "Vendido por grupo de item"
+msgstr ""
+
+msgid "Minutos em pausa por tipo"
+msgstr ""
+
+msgid "Ranking de vendedores"
 msgstr ""
 
 msgid "Bater o ponto e entrar na fila"
@@ -709,15 +784,6 @@ msgstr ""
 msgid "Lançamentos de hoje"
 msgstr ""
 
-msgid "Atendimentos"
-msgstr ""
-
-msgid "Conversão"
-msgstr ""
-
-msgid "Vendido"
-msgstr ""
-
 msgid "às"
 msgstr ""
 
@@ -740,6 +806,24 @@ msgid "Ninguém atendendo agora."
 msgstr ""
 
 msgid "Ninguém em pausa."
+msgstr ""
+
+msgid "Seus números"
+msgstr ""
+
+msgid "de"
+msgstr ""
+
+msgid "em vendas no mês"
+msgstr ""
+
+msgid "Sem vendas no mês"
+msgstr ""
+
+msgid "Hoje"
+msgstr ""
+
+msgid "Este mês"
 msgstr ""
 
 msgid "Ordem da fila"

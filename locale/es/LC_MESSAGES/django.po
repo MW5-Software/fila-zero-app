@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 00:44-0300\n"
+"POT-Creation-Date: 2026-09-15 01:42-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -601,6 +601,9 @@ msgstr "Motivos de no venta"
 msgid "Tipos de pausa"
 msgstr "Tipos de pausa"
 
+msgid "Indicadores da fila"
+msgstr "Indicadores de la fila"
+
 msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."
 msgstr "Lo que se vende: el vendedor elige el grupo al registrar la venta."
 
@@ -644,6 +647,80 @@ msgstr "Elija una empresa en el encabezado antes de registrar."
 
 msgid "Informe o nome."
 msgstr "Indique el nombre."
+
+msgid "Nada no período."
+msgstr "Nada en el período."
+
+msgid "Período"
+msgstr "Período"
+
+msgid "Intervalo"
+msgstr "Intervalo"
+
+msgid "De"
+msgstr "Desde"
+
+msgid "Até"
+msgstr "Hasta"
+
+msgid "Loja"
+msgstr "Tienda"
+
+msgid "Todas as lojas"
+msgstr "Todas las tiendas"
+
+msgid "Aplicar"
+msgstr "Aplicar"
+
+msgid "Abrir a fila"
+msgstr "Abrir la fila"
+
+msgid "Ficou aberto de um dia para o outro"
+msgstr "Quedó abierto de un día para otro"
+
+msgid "Nenhuma loja para mostrar"
+msgstr "Ninguna tienda para mostrar"
+
+msgid "Os indicadores aparecem para as lojas em que o seu cargo traz a permissão."
+msgstr ""
+"Los indicadores aparecen para las tiendas en las que su cargo tiene el "
+"permiso."
+
+msgid "todas as lojas"
+msgstr "todas las tiendas"
+
+msgid "Atendimentos"
+msgstr "Atenciones"
+
+msgid "Conversão"
+msgstr "Conversión"
+
+msgid "Vendido"
+msgstr "Vendido"
+
+msgid "Ticket médio"
+msgstr "Ticket promedio"
+
+msgid "Atendimentos por hora"
+msgstr "Atenciones por hora"
+
+msgid "Atendimentos por dia"
+msgstr "Atenciones por día"
+
+msgid "Vendido por hora"
+msgstr "Vendido por hora"
+
+msgid "Vendido por dia"
+msgstr "Vendido por día"
+
+msgid "Vendido por grupo de item"
+msgstr "Vendido por grupo de artículo"
+
+msgid "Minutos em pausa por tipo"
+msgstr "Minutos en pausa por tipo"
+
+msgid "Ranking de vendedores"
+msgstr "Ranking de vendedores"
 
 msgid "Bater o ponto e entrar na fila"
 msgstr "Marcar llegada y entrar a la fila"
@@ -741,15 +818,6 @@ msgstr "Guardar corrección"
 msgid "Lançamentos de hoje"
 msgstr "Registros de hoy"
 
-msgid "Atendimentos"
-msgstr "Atenciones"
-
-msgid "Conversão"
-msgstr "Conversión"
-
-msgid "Vendido"
-msgstr "Vendido"
-
 msgid "às"
 msgstr "a las"
 
@@ -773,6 +841,24 @@ msgstr "Nadie atendiendo ahora."
 
 msgid "Ninguém em pausa."
 msgstr "Nadie en pausa."
+
+msgid "Seus números"
+msgstr "Sus números"
+
+msgid "de"
+msgstr "de"
+
+msgid "em vendas no mês"
+msgstr "en ventas del mes"
+
+msgid "Sem vendas no mês"
+msgstr "Sin ventas en el mes"
+
+msgid "Hoje"
+msgstr "Hoy"
+
+msgid "Este mês"
+msgstr "Este mes"
 
 msgid "Ordem da fila"
 msgstr "Orden de la fila"
