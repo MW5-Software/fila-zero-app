@@ -154,3 +154,7 @@ form[action="/"] .formgrid { align-items: end; }
 @media (prefers-reduced-motion: no-preference) {
   .ind-col-barra { transition: opacity .12s; }
 }
+
+/* A escolha de mês e loja da tela de metas alinha pela base, como os
+   filtros do Início: os botões na linha dos campos. */
+[data-metas="escolha"] .formgrid { align-items: end; }
