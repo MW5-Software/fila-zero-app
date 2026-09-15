@@ -84,6 +84,10 @@ class ACOES:
     FILA_CADASTRO_CRIADO = "fila_cadastro_criado"
     FILA_CADASTRO_EDITADO = "fila_cadastro_editado"
     FILA_CADASTRO_REMOVIDO = "fila_cadastro_removido"
+    # As metas da fila (entrega 3); o alvo diz a loja, de quem e o mês, e o
+    # detalhe, o valor novo e o de antes.
+    FILA_META_DEFINIDA = "fila_meta_definida"
+    FILA_META_REMOVIDA = "fila_meta_removida"
 
 
 #: O que a pessoa lê, por valor gravado no banco — a mesma tradução que a
@@ -134,6 +138,8 @@ ROTULOS = {
     ACOES.FILA_CADASTRO_CRIADO: "Cadastro da fila criado",
     ACOES.FILA_CADASTRO_EDITADO: "Cadastro da fila editado",
     ACOES.FILA_CADASTRO_REMOVIDO: "Cadastro da fila removido",
+    ACOES.FILA_META_DEFINIDA: "Meta de venda definida",
+    ACOES.FILA_META_REMOVIDA: "Meta de venda removida",
 }
 
 

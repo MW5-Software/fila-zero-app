@@ -134,3 +134,107 @@ def test_mes_passado_sem_ritmo():
 def test_mes_futuro_nao_tem_acompanhamento():
     with pytest.raises(ValueError):
         acompanhar(Decimal("1"), Decimal("0"), date(2026, 10, 1), DIA_15)
+
+
+# --- A lista, gravar e copiar ---------------------------------------------------
+
+from fila import metas as regras  # noqa: E402
+
+
+def _chaves(linhas):
+    return [(l.pessoa.nome, l.na_loja, l.propria) for l in linhas]
+
+
+def test_lojas_com_metas_pelo_cargo(loja):
+    from fila.metas import lojas_com_metas
+
+    centro = nova_loja(loja.empresa, "Centro")
+    gil = pessoa_na_loja("gil", loja.empresa, centro, cargo="gerente")
+    sara = pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")
+    assert lojas_com_metas(gil, loja.empresa) == [centro]
+    assert set(lojas_com_metas(sara, loja.empresa)) == {loja.matriz, centro}
+    assert lojas_com_metas(loja.ana, loja.empresa) == []
+
+
+def test_a_lista_traz_quem_participa_e_quem_saiu_com_meta(loja):
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")  # não participa
+    centro = nova_loja(loja.empresa, "Centro")
+    caio = pessoa_na_loja("caio", loja.empresa, centro)
+    meta(loja, pessoa=caio, valor="5000")  # já teve meta aqui, hoje está no Centro
+    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
+    assert _chaves(linhas) == [("Ana", True, False), ("Bia", True, False),
+                               ("Caio", False, False), ("Gil", True, True)]
+    assert linhas[2].valor == Decimal("5000")
+
+
+def test_gravar_cria_altera_apaga_e_audita(loja):
+    from contas.models import RegistroDeAuditoria
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    dia = local(2026, 9, 10, 9)
+    assert regras.gravar(loja.matriz, SETEMBRO, gil,
+                         {"loja": "250.000,00", str(loja.ana.pk): "30000"},
+                         agora=dia) == 2
+    assert regras.meta_da_loja(loja.matriz, SETEMBRO) == Decimal("250000")
+    assert regras.gravar(loja.matriz, SETEMBRO, gil,
+                         {"loja": "250000", str(loja.ana.pk): ""}, agora=dia) == 1
+    assert not MetaDeVenda.irrestritos.filter(pessoa=loja.ana).exists()
+    acoes = list(RegistroDeAuditoria.objects.values_list("acao", flat=True))
+    assert acoes.count("fila_meta_definida") == 2
+    assert acoes.count("fila_meta_removida") == 1
+
+
+def test_campo_ausente_nao_mexe(loja):
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    meta(loja, pessoa=loja.ana, valor="30000")
+    regras.gravar(loja.matriz, SETEMBRO, gil, {"loja": "1000"}, agora=local(2026, 9, 10))
+    assert regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)[0].valor == Decimal("30000")
+
+
+def test_valor_invalido_recusa_tudo_e_nao_grava_nada(loja):
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    with pytest.raises(regras.ValoresInvalidos) as recusa:
+        regras.gravar(loja.matriz, SETEMBRO, gil,
+                      {"loja": "1000", str(loja.ana.pk): "abc", str(loja.bia.pk): "0"},
+                      agora=local(2026, 9, 10))
+    assert set(recusa.value.erros) == {str(loja.ana.pk), str(loja.bia.pk)}
+    assert not MetaDeVenda.irrestritos.exists()
+
+
+def test_ninguem_grava_a_propria_nem_de_fora_da_lista(loja):
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    de_fora = pessoa_na_loja("zeca", loja.empresa, nova_loja(loja.empresa, "Norte"))
+    regras.gravar(loja.matriz, SETEMBRO, gil,
+                  {str(gil.pk): "99999", str(de_fora.pk): "99999"},
+                  agora=local(2026, 9, 10))
+    assert not MetaDeVenda.irrestritos.exists()
+
+
+def test_mes_encerrado_recusa_gravar(loja):
+    from fila.acoes import Recusa
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    with pytest.raises(Recusa):
+        regras.gravar(loja.matriz, date(2026, 8, 1), gil, {"loja": "1000"},
+                      agora=local(2026, 9, 10))
+
+
+def test_copiar_preenche_so_o_vazio_e_nao_traz_quem_saiu(loja):
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    agosto = date(2026, 8, 1)
+    centro = nova_loja(loja.empresa, "Centro")
+    caio = pessoa_na_loja("caio", loja.empresa, centro)
+    meta(loja, valor="200000", mes=agosto)
+    meta(loja, pessoa=loja.ana, valor="25000", mes=agosto)
+    meta(loja, pessoa=loja.bia, valor="20000", mes=agosto)
+    meta(loja, pessoa=caio, valor="9000", mes=agosto)
+    meta(loja, pessoa=loja.bia, valor="22000")  # setembro já tem a da Bia
+    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
+    assert regras.copiar_do_anterior(loja.matriz, SETEMBRO, linhas) == {
+        "loja": "200000,00", str(loja.ana.pk): "25000,00"}

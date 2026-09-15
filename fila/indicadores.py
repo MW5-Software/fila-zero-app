@@ -30,7 +30,7 @@ from .periodo import Periodo, inicio_do_dia
 
 __all__ = ["ORDENAVEIS_DO_RANKING", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
-           "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
+           "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
            "por_dia", "por_grupo", "posicao_no_mes", "ranking", "variacao"]
 
 ZERO = Decimal("0")
@@ -214,21 +214,22 @@ def esquecidos(empresa, lojas, agora: "datetime | None" = None) -> "list[Esqueci
     return sorted(achados, key=lambda e: e.desde)
 
 
-def _cobre_relatorios(permissoes) -> bool:
-    return "fila.relatorios" in permissoes or "fila.*" in permissoes
-
-
-def lojas_com_relatorio(pessoa, empresa) -> list:
-    """As lojas em que o cargo da pessoa traz `fila.relatorios`, pelo mesmo
-    `contas.lugar` que decide a permissão em toda tela. O gerente de uma loja
-    não tem a permissão em outra; supervisor e titular têm em todas."""
+def lojas_com_permissao(pessoa, empresa, permissao: str) -> list:
+    """As lojas em que o cargo da pessoa traz `permissao` (ou o coringa
+    `fila.*`), pelo mesmo `contas.lugar` que decide a permissão em toda tela.
+    O gerente de uma loja não a tem em outra; supervisor e titular, em todas.
+    Os indicadores e as metas saem daqui (decisão P-7 do plano das metas)."""
     from contas.lugar import filiais_da_pessoa, permissoes_em
 
     if pessoa is None or empresa is None:
         return []
     return [loja for loja in filiais_da_pessoa(pessoa, empresa)
             if pessoa.is_superuser
-            or _cobre_relatorios(permissoes_em(pessoa, empresa, loja))]
+            or {permissao, "fila.*"} & permissoes_em(pessoa, empresa, loja)]
+
+
+def lojas_com_relatorio(pessoa, empresa) -> list:
+    return lojas_com_permissao(pessoa, empresa, "fila.relatorios")
 
 
 def _por_pessoa(consulta, campo_da_pessoa: str, expressao, saida, zero):

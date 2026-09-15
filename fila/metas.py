@@ -13,12 +13,19 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from .periodo import ANOS_ACEITOS
 
-__all__ = ["Acompanhamento", "acompanhar", "mes_anterior", "mes_do_texto",
-           "mes_encerrado", "mes_seguinte", "primeiro_do_mes", "ultimo_do_mes"]
+__all__ = ["Acompanhamento", "Linha", "MES_ENCERRADO", "ValoresInvalidos",
+           "acompanhar", "copiar_do_anterior", "gravar", "lojas_com_metas",
+           "mes_anterior", "mes_do_texto", "mes_encerrado", "mes_seguinte",
+           "meta_da_loja", "pessoas_da_lista", "primeiro_do_mes",
+           "ultimo_do_mes", "valor_do_campo"]
 
 ZERO = Decimal("0")
 CENTAVO = Decimal("0.01")
@@ -118,3 +125,190 @@ def acompanhar(meta: Decimal, vendido: Decimal, mes: date,
                 .quantize(CENTAVO, ROUND_HALF_UP))
     return Acompanhamento(meta, vendido, atingido, falta, excedente, False,
                           ultimo, dias_restantes, por_dia, projecao)
+
+
+#: `gettext_lazy`: constante de módulo, lida no idioma de quem abre a tela.
+MES_ENCERRADO = gettext_lazy("Mês encerrado: as metas não se editam mais.")
+
+
+def lojas_com_metas(pessoa, empresa) -> list:
+    from .indicadores import lojas_com_permissao
+
+    return lojas_com_permissao(pessoa, empresa, "fila.metas")
+
+
+def _metas_do_mes(loja, mes):
+    from .models import MetaDeVenda
+
+    return MetaDeVenda.objects.da_empresa(loja.empresa).filter(filial=loja, mes=mes)
+
+
+def meta_da_loja(loja, mes) -> "Decimal | None":
+    return (_metas_do_mes(loja, mes).filter(pessoa__isnull=True)
+            .values_list("valor", flat=True).first())
+
+
+@dataclass(frozen=True)
+class Linha:
+    pessoa: object
+    valor: "Decimal | None"
+    na_loja: bool
+    propria: bool
+
+
+def _participa(pessoa, loja) -> bool:
+    from contas.lugar import permissoes_em
+
+    return bool({"fila.participar", "fila.*"}
+                & permissoes_em(pessoa, loja.empresa, loja))
+
+
+def pessoas_da_lista(loja, mes, editor) -> "list[Linha]":
+    """Quem tem meta de pessoa nesta loja e mês (decisão P-5 do plano):
+
+    - quem está alocado na loja (ou na empresa inteira) e, NESTE lugar,
+      participa da fila;
+    - mais quem já tem meta aqui neste mês e não está mais na loja: a meta
+      continua valendo, e sumir com ela da tela a esconderia de quem edita.
+
+    O titular não entra: não tem alocação, e a meta é de quem trabalha na fila.
+    """
+    from contas.models import Usuario
+
+    valores = dict(_metas_do_mes(loja, mes).filter(pessoa__isnull=False)
+                   .values_list("pessoa_id", "valor"))
+    candidatas = (Usuario.objects
+                  .filter(Q(alocacoes__filial=loja)
+                          | Q(alocacoes__empresa=loja.empresa,
+                              alocacoes__filial__isnull=True))
+                  .filter(is_active=True).distinct().defer("avatar"))
+    na_loja = {p.pk: p for p in candidatas if _participa(p, loja)}
+    sairam = Usuario.objects.filter(pk__in=set(valores) - set(na_loja)).defer("avatar")
+    linhas = [Linha(p, valores.get(p.pk), True, p.pk == editor.pk)
+              for p in na_loja.values()]
+    linhas += [Linha(p, valores[p.pk], False, p.pk == editor.pk) for p in sairam]
+    return sorted(linhas, key=lambda l: ((l.pessoa.nome or l.pessoa.email).lower(),
+                                         l.pessoa.pk))
+
+
+def valor_do_campo(valor: "Decimal | None") -> str:
+    return "" if valor is None else f"{valor:.2f}".replace(".", ",")
+
+
+class ValoresInvalidos(Exception):
+    """Algum valor não serve; `erros` diz qual campo e por quê. Nada foi
+    gravado: meia tela salva deixaria a loja com metas que ninguém conferiu."""
+
+    def __init__(self, erros: "dict[str, str]"):
+        super().__init__("valores inválidos")
+        self.erros = erros
+
+
+def _ler(texto: str) -> "tuple[Decimal | None, str | None]":
+    """(valor, erro). Vazio é (None, None): apagar a meta."""
+    from .acoes import MAIOR_VALOR
+    from .valores import ler_valor
+
+    if not texto.strip():
+        return None, None
+    valor = ler_valor(texto)
+    if valor is None:
+        return None, _("Digite um valor em reais.")
+    if valor <= ZERO:
+        return None, _("A meta precisa ser maior que zero.")
+    if valor > MAIOR_VALOR:
+        return None, _("Valor alto demais.")
+    return valor, None
+
+
+def _alvo(loja, pessoa, mes) -> str:
+    from .estado import nome_de
+
+    quem = nome_de(pessoa) if pessoa is not None else "a loja"
+    return f"{loja}: {quem} em {mes:%m/%Y}"
+
+
+def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
+           agora: "datetime | None" = None, request=None) -> int:
+    """Grava as metas do mês desta loja, tudo ou nada.
+
+    Só as chaves da lista montada AQUI valem (decisão P-3 do plano): a da
+    loja e a de cada pessoa da lista que não é quem edita. Campo ausente não
+    mexe (P-4); vazio apaga. A linha da loja é trancada, como na fila: dois
+    gerentes salvando juntos estourariam a trava do banco com 500.
+    """
+    from comum.auditoria import ACOES, registrar
+
+    from .acoes import Recusa, _travar
+    from .models import MetaDeVenda
+
+    if mes_encerrado(mes, agora):
+        raise Recusa(str(MES_ENCERRADO))
+    alvos: "dict[str, object | None]" = {"loja": None}
+    for linha in pessoas_da_lista(loja, mes, editor):
+        if not linha.propria:
+            alvos[str(linha.pessoa.pk)] = linha.pessoa
+
+    lidos, erros = {}, {}
+    for chave in alvos:
+        texto = valores.get(chave)
+        if texto is None:
+            continue
+        valor, erro = _ler(texto)
+        if erro:
+            erros[chave] = erro
+        else:
+            lidos[chave] = valor
+    if erros:
+        raise ValoresInvalidos(erros)
+
+    mudancas = 0
+    with transaction.atomic():
+        _travar(loja)
+        for chave, valor in lidos.items():
+            pessoa = alvos[chave]
+            atual = _metas_do_mes(loja, mes).filter(pessoa=pessoa).first()
+            antes = valor_do_campo(atual.valor) if atual else "sem meta"
+            if valor is None:
+                if atual is None:
+                    continue
+                atual.delete()
+                registrar(ACOES.FILA_META_REMOVIDA, editor,
+                          alvo=_alvo(loja, pessoa, mes), detalhe=f"era {antes}",
+                          request=request)
+            elif atual is None or atual.valor != valor:
+                if atual is None:
+                    MetaDeVenda.objects.create(empresa=loja.empresa, filial=loja,
+                                               pessoa=pessoa, mes=mes, valor=valor)
+                else:
+                    atual.valor = valor
+                    atual.save(update_fields=["valor", "alterada_em"])
+                registrar(ACOES.FILA_META_DEFINIDA, editor,
+                          alvo=_alvo(loja, pessoa, mes),
+                          detalhe=f"{valor_do_campo(valor)}; era {antes}",
+                          request=request)
+            else:
+                continue
+            mudancas += 1
+    return mudancas
+
+
+def copiar_do_anterior(loja, mes, linhas: "list[Linha]") -> "dict[str, str]":
+    """O que o mês anterior tinha, só para os campos vazios deste mês.
+
+    Não grava (M6): a pessoa confere e salva. A meta que já existe neste mês
+    não é trocada. Quem saiu da loja não volta a ter meta por cópia: ele só
+    está em `linhas` quando já tem meta neste mês, e aí o campo não é vazio.
+    """
+    anterior = mes_anterior(mes)
+    antes = dict(_metas_do_mes(loja, anterior).filter(pessoa__isnull=False)
+                 .values_list("pessoa_id", "valor"))
+    copia = {}
+    if meta_da_loja(loja, mes) is None:
+        da_loja = meta_da_loja(loja, anterior)
+        if da_loja is not None:
+            copia["loja"] = valor_do_campo(da_loja)
+    for linha in linhas:
+        if linha.valor is None and linha.pessoa.pk in antes:
+            copia[str(linha.pessoa.pk)] = valor_do_campo(antes[linha.pessoa.pk])
+    return copia
