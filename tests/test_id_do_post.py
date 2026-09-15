@@ -48,6 +48,14 @@ class TestOConversor:
     def test_texto_vira_none(self):
         assert id_do_post(self._Pedido(alvo="'; drop"), "alvo") is None
 
+    def test_digito_que_nao_e_ascii_vira_none(self):
+        """"²".isdigit() é verdade e int("²") estoura: virava 500."""
+        assert id_do_post(self._Pedido(alvo="²"), "alvo") is None
+
+    def test_numero_maior_que_o_bigint_vira_none(self):
+        """Um id maior que o bigint estoura a consulta no Postgres."""
+        assert id_do_post(self._Pedido(alvo="9" * 19), "alvo") is None
+
     def test_negativo_passa(self):
         """Não é id de nada nesta casa; quem decide se alcança é a consulta
         com o filtro de inquilino, não este conversor."""
