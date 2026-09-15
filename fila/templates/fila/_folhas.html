@@ -1,0 +1,112 @@
+{% macro itens(linhas) %}
+<div class="itens">
+  {% for item in linhas %}
+  <div class="item-vendido">
+    <select name="grupo" aria-label="{{ traduzir('Grupo de item') }}">
+      <option value="">{{ traduzir("Grupo") }}</option>
+      {% for g in grupos %}<option value="{{ g.pk }}"{% if item and item.grupo_id == g.pk %} selected{% endif %}>{{ g.nome }}</option>{% endfor %}
+    </select>
+    <input name="valor" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="{{ traduzir('Valor') }}" value="{{ (item.valor|reais)[3:] if item else '' }}">
+  </div>
+  {% endfor %}
+</div>
+<button type="button" class="outro-grupo" data-outro-grupo>{{ traduzir("+ outro grupo") }}</button>
+<p class="total-linha">{{ traduzir("Total") }} <output class="total">R$ 0,00</output></p>
+{% endmacro %}
+
+{% macro motivos_de(escolhido=None) %}
+<fieldset class="motivos">
+  <legend>{{ traduzir("Por que não comprou?") }}</legend>
+  {% for m in motivos %}
+  <label class="opcao"><input type="radio" name="motivo" value="{{ m.pk }}"{% if escolhido == m.pk %} checked{% endif %}> {{ m.nome }}</label>
+  {% endfor %}
+</fieldset>
+{% endmacro %}
+
+{% macro fechamento(acao, titulo, pessoa_id) %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  {{ csrf }}
+  <input type="hidden" name="acao" value="{{ acao }}">
+  {# A folha do gerente sempre tem o campo: o JavaScript preenche a pessoa ao abrir. #}
+  {% if acao != "finalizar" %}<input type="hidden" name="pessoa" value="{{ pessoa_id or '' }}">{% endif %}
+  <h2 class="folha-titulo">{{ titulo }}</h2>
+  <div class="resultado">
+    <label class="resultado-opcao resultado-vendeu"><input type="radio" name="resultado" value="vendeu" required> {{ traduzir("Vendeu") }}</label>
+    <label class="resultado-opcao resultado-nao"><input type="radio" name="resultado" value="nao_vendeu" required> {{ traduzir("Não vendeu") }}</label>
+  </div>
+  <div class="so-venda">{{ itens([none, none, none]) }}</div>
+  <div class="so-nao-venda">
+    {{ motivos_de() }}
+    <label class="campo">{{ traduzir("Observação") }} <textarea name="observacao" maxlength="280" rows="2"></textarea></label>
+  </div>
+  <div class="folha-acoes">
+    <a href="{{ url_fila }}" data-fechar-folha>{{ traduzir("Cancelar") }}</a>
+    <button type="submit" class="principal">{{ traduzir("Lançar") }}</button>
+  </div>
+</form>
+{% endmacro %}
+
+{% if pode_participar %}
+<dialog id="folha-finalizar" class="folha"{% if folha == "finalizar" %} open{% endif %}>
+  {{ fechamento("finalizar", traduzir("Como terminou o atendimento?"), none) }}
+</dialog>
+
+<dialog id="folha-pausa" class="folha"{% if folha == "pausa" %} open{% endif %}>
+  <form method="post" action="{{ url_agir }}" data-acao>
+    {{ csrf }}<input type="hidden" name="acao" value="pausar">
+    <h2 class="folha-titulo">{{ traduzir("Pausa para quê?") }}</h2>
+    <fieldset class="motivos">
+      {% for t in tipos %}
+      <label class="opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required> {{ t.nome }}</label>
+      {% endfor %}
+    </fieldset>
+    <p class="folha-apoio">{{ traduzir("Ao voltar, você entra no fim da fila.") }}</p>
+    <div class="folha-acoes">
+      <a href="{{ url_fila }}" data-fechar-folha>{{ traduzir("Cancelar") }}</a>
+      <button type="submit" class="principal">{{ traduzir("Sair para a pausa") }}</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
+
+{% if pode_gerenciar %}
+<dialog id="folha-fechar" class="folha"{% if folha == "fechar" and alvo %} open{% endif %}>
+  {{ fechamento("fechar", traduzir("Fechar o atendimento"), alvo.pessoa_id if alvo else "") }}
+</dialog>
+
+<dialog id="folha-tirar" class="folha"{% if folha == "tirar" and alvo %} open{% endif %}>
+  <form method="post" action="{{ url_agir }}" data-acao>
+    {{ csrf }}<input type="hidden" name="acao" value="tirar">
+    <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+    <input type="hidden" name="resultado" value="nao_vendeu">
+    <h2 class="folha-titulo">{{ traduzir("Tirar da loja") }} <span data-nome>{{ alvo.nome if alvo else "" }}</span></h2>
+    <p class="folha-apoio">{{ traduzir("Ela está atendendo. O atendimento fecha como não venda.") }}</p>
+    {{ motivos_de() }}
+    <div class="folha-acoes">
+      <a href="{{ url_fila }}" data-fechar-folha>{{ traduzir("Cancelar") }}</a>
+      <button type="submit" class="principal">{{ traduzir("Tirar da loja") }}</button>
+    </div>
+  </form>
+</dialog>
+
+{% if editando %}
+<dialog id="folha-editar" class="folha" open>
+  <form method="post" action="{{ url_agir }}">
+    {{ csrf }}<input type="hidden" name="acao" value="editar">
+    <input type="hidden" name="atendimento" value="{{ editando.pk }}">
+    <input type="hidden" name="resultado" value="{{ editando.resultado }}">
+    <h2 class="folha-titulo">{{ traduzir("Corrigir o lançamento de") }} {{ editando.vendedor.nome or editando.vendedor.email }}</h2>
+    {% if editando.resultado == "vendeu" %}
+      {{ itens(editando.itens.all()|list + [none]) }}
+    {% else %}
+      {{ motivos_de(editando.motivo_id) }}
+      <label class="campo">{{ traduzir("Observação") }} <textarea name="observacao" maxlength="280" rows="2">{{ editando.observacao }}</textarea></label>
+    {% endif %}
+    <div class="folha-acoes">
+      <a href="{{ url_fila }}">{{ traduzir("Cancelar") }}</a>
+      <button type="submit" class="principal">{{ traduzir("Salvar correção") }}</button>
+    </div>
+  </form>
+</dialog>
+{% endif %}
+{% endif %}

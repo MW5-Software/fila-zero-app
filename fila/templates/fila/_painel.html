@@ -1,0 +1,34 @@
+{% set meu = r.meu %}
+{% if not pode_participar %}
+<div class="painel painel-so-ve">
+  <p class="painel-rotulo">{{ traduzir("Fila de agora") }}</p>
+  <p class="painel-numero">{{ r.fila|length }}</p>
+  <p class="painel-apoio">{{ r.atendendo|length }} {{ traduzir("atendendo") }}, {{ r.em_pausa|length }} {{ traduzir("em pausa") }}</p>
+</div>
+{% elif meu is none %}
+<div class="painel painel-fora">
+  <p class="painel-titulo">{{ traduzir("Você não está na fila") }}</p>
+  <p class="painel-apoio">{{ traduzir("Bata o ponto quando chegar na loja para entrar no fim da fila.") }}</p>
+</div>
+{% elif meu.estado == Estado.NA_FILA and meu.posicao == 1 %}
+<div class="painel painel-sua-vez">
+  <p class="painel-titulo painel-grande">{{ traduzir("É a sua vez") }}</p>
+  <p class="painel-apoio">{{ traduzir("O próximo cliente que entrar é seu.") }}</p>
+</div>
+{% elif meu.estado == Estado.NA_FILA %}
+<div class="painel painel-na-fila">
+  <p class="painel-rotulo">{{ traduzir("Sua vez em") }}</p>
+  <p class="painel-numero">{{ meu.posicao }}</p>
+  <p class="painel-apoio">{{ meu.posicao|na_frente }}</p>
+</div>
+{% elif meu.estado == Estado.ATENDENDO %}
+<div class="painel painel-atendendo">
+  <p class="painel-titulo">{{ traduzir("Atendendo") }}</p>
+  <p class="painel-apoio">{{ traduzir("Começou às") }} {{ meu.desde|hora }}, <time data-desde="{{ meu.desde.isoformat() }}">{{ meu.desde|ha_quanto(agora) }}</time>.</p>
+</div>
+{% else %}
+<div class="painel painel-pausa">
+  <p class="painel-titulo">{{ traduzir("Em pausa") }}</p>
+  <p class="painel-apoio">{{ meu.tipo_de_pausa }}, <time data-desde="{{ meu.desde.isoformat() }}">{{ meu.desde|ha_quanto(agora) }}</time>.</p>
+</div>
+{% endif %}

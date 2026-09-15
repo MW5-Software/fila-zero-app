@@ -284,8 +284,11 @@ class TestDesativarNaoTrancaQuemEstaUsando:
 
         loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
         zeca = Usuario.objects.create_user(email="zeca@teste.com", password=SENHA)
-        alocar(zeca, matriz.empresa, "vendedor", filial=matriz)
-        alocar(zeca, matriz.empresa, "vendedor", filial=loja)
+        # Representante, e não Vendedor: no Fila Zero quem só tem a fila de
+        # vendedor cai em /fila ao pedir a raiz, e esta prova é pela tela do
+        # shell. Os dois cargos têm o mesmo alcance de filial.
+        alocar(zeca, matriz.empresa, "representante", filial=matriz)
+        alocar(zeca, matriz.empresa, "representante", filial=loja)
 
         sessao_de_zeca = Client()
         sessao_de_zeca.post(reverse("entrar"), {"usuario": "zeca@teste.com", "senha": SENHA})

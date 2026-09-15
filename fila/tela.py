@@ -1,0 +1,162 @@
+"""O que a página da fila mostra, montado a partir do retrato da loja.
+
+Separado da view para o POST com JavaScript, a consulta de 3 em 3 segundos e
+a página inteira desenharem os MESMOS pedaços: se cada um montasse o próprio
+HTML, a tela mudaria de cara depois da primeira consulta.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from django.urls import reverse
+from django.utils import timezone
+from markupsafe import Markup
+
+from comum.csrf import campo_csrf
+from comum.personificacao import aviso as aviso_de_personificacao
+from contas.identidade import usuario_de
+from nucleo.permissoes import pode
+from nucleo.rendering import use_environment
+
+from .ambiente import ambiente_da_fila
+from .correcoes import lancamentos_de_hoje
+from .estado import nome_de, retrato
+from .models import (Atendimento, Estado, GrupoDeItem, LugarNaFila,
+                     MotivoDeNaoVenda, TipoDePausa)
+
+__all__ = ["PEDACOS", "ha_quanto", "hora_local", "pagina", "pedacos",
+           "pessoas_na_frente", "sem_loja", "so_a_fila"]
+
+#: Os pedaços que a consulta troca, com o template de cada um.
+PEDACOS = {"painel": "fila/_painel.html", "lista": "fila/_lista.html",
+           "barra": "fila/_barra.html", "lancamentos": "fila/_lancamentos.html"}
+
+#: O que o vendedor tem. Quem tem SÓ isto não tem o que fazer no dashboard.
+_SO_DO_VENDEDOR = frozenset({"fila.ver", "fila.participar"})
+
+@dataclass(frozen=True)
+class Alvo:
+    """A pessoa sobre quem o gerente abriu uma folha de correção."""
+
+    pessoa_id: int
+    nome: str
+
+
+_POR_EXTENSO = ("", "uma", "duas", "três", "quatro", "cinco", "seis", "sete",
+                "oito", "nove", "dez")
+
+
+def so_a_fila(user) -> bool:
+    """Desvio D-4: cai direto em `/fila` quem só tem a fila de vendedor."""
+    if user is None or user.superuser:
+        return False
+    permissoes = frozenset(user.permissions)
+    return "fila.participar" in permissoes and permissoes <= _SO_DO_VENDEDOR
+
+
+def ha_quanto(instante, agora=None) -> str:
+    minutos = int(((agora or timezone.now()) - instante).total_seconds() // 60)
+    if minutos < 1:
+        return "agora"
+    if minutos < 60:
+        return f"há {minutos} min"
+    return f"há {minutos // 60} h {minutos % 60:02d} min"
+
+
+def hora_local(instante) -> str:
+    return timezone.localtime(instante).strftime("%H:%M")
+
+
+def pessoas_na_frente(posicao: int) -> str:
+    frente = posicao - 1
+    numero = _POR_EXTENSO[frente] if frente < len(_POR_EXTENSO) else str(frente)
+    return f"{numero} {'pessoa' if frente == 1 else 'pessoas'} na sua frente"
+
+
+def _lancamento_em_edicao(request, filial):
+    if request.GET.get("folha") != "editar":
+        return None
+    try:
+        atendimento_id = int(request.GET.get("atendimento", ""))
+    except ValueError:
+        return None
+    return (Atendimento.objects.da_empresa(filial.empresa)
+            .filter(pk=atendimento_id, filial=filial, fim__isnull=False)
+            .select_related("vendedor", "motivo").first())
+
+
+def _alvo_da_folha(request, filial):
+    """A pessoa sobre quem o gerente abriu uma folha (`?pessoa=`), se ela está
+    nesta loja. Id forjado ou de outra loja vira `None`, e a folha abre sem
+    alvo — o POST confere de novo."""
+    try:
+        pessoa_id = int(request.GET.get("pessoa", ""))
+    except ValueError:
+        return None
+    lugar = (LugarNaFila.objects.da_empresa(filial.empresa)
+             .filter(filial=filial, pessoa_id=pessoa_id)
+             .select_related("pessoa").first())
+    return Alvo(lugar.pessoa_id, nome_de(lugar.pessoa)) if lugar else None
+
+
+def _contexto(request, filial, recusa=""):
+    pessoa = usuario_de(request.usuario)
+    empresa = filial.empresa
+    pode_gerenciar = pode(request.usuario, "fila.gerenciar")
+    return {
+        "r": retrato(filial, pessoa),
+        "Estado": Estado,
+        "filial": filial,
+        "nome": nome_de(pessoa) if pessoa else "",
+        "eu_id": pessoa.pk if pessoa else None,
+        "agora": timezone.now(),
+        "pode_participar": pode(request.usuario, "fila.participar"),
+        "pode_gerenciar": pode_gerenciar,
+        "mostra_painel": not so_a_fila(request.usuario),
+        "csrf": Markup(campo_csrf(request)),
+        "url_fila": reverse("fila"),
+        "url_agir": reverse("fila_agir"),
+        "url_estado": reverse("fila_estado"),
+        "url_sair": reverse("sair"),
+        "grupos": list(GrupoDeItem.objects.da_empresa(empresa).filter(ativo=True)),
+        "motivos": list(MotivoDeNaoVenda.objects.da_empresa(empresa).filter(ativo=True)),
+        "tipos": list(TipoDePausa.objects.da_empresa(empresa).filter(ativo=True)),
+        "lancamentos": list(lancamentos_de_hoje(filial)) if pode_gerenciar else [],
+        "folha": request.GET.get("folha", ""),
+        "alvo": _alvo_da_folha(request, filial) if pode_gerenciar else None,
+        "editando": _lancamento_em_edicao(request, filial) if pode_gerenciar else None,
+        "recusa": recusa,
+    }
+
+
+def _aviso(request, env) -> Markup:
+    componente = aviso_de_personificacao(request)
+    if not componente:
+        return Markup("")
+    with use_environment(env):
+        return Markup(componente.render(env))
+
+
+def pagina(request, filial, recusa="") -> str:
+    env = ambiente_da_fila()
+    contexto = _contexto(request, filial, recusa)
+    contexto["aviso"] = _aviso(request, env)
+    return env.get_template("fila/pagina.html").render(**contexto)
+
+
+def pedacos(request, filial) -> "tuple[str, dict[str, str]]":
+    """`(versao, {pedaço: html})` de UMA leitura: a versão devolvida é a do
+    retrato que desenhou o HTML, e não uma lida antes ou depois."""
+    env = ambiente_da_fila()
+    contexto = _contexto(request, filial)
+    html = {nome: env.get_template(template).render(**contexto)
+            for nome, template in PEDACOS.items()}
+    return contexto["r"].versao, html
+
+
+def sem_loja(request) -> str:
+    env = ambiente_da_fila()
+    return env.get_template("fila/sem_loja.html").render(
+        aviso=_aviso(request, env), url_sair=reverse("sair"),
+        mostra_painel=not so_a_fila(request.usuario))

@@ -1,0 +1,18 @@
+{% if pode_gerenciar %}
+<h2 class="secao">{{ traduzir("Lançamentos de hoje") }}</h2>
+{% if lancamentos %}
+<ul class="lista lancamentos">
+  {% for a in lancamentos %}
+  <li class="linha">
+    <span class="linha-nome">{{ a.vendedor.nome or a.vendedor.email }}
+      <small>{% if a.resultado == "vendeu" %}{{ a.total|reais }}{% else %}{{ traduzir("Não vendeu") }}: {{ a.motivo.nome }}{% endif %}{% if a.cliente_pediu %}, {{ traduzir("cliente pediu") }}{% endif %}</small>
+    </span>
+    <span class="linha-tempo">{{ a.fim|hora }}</span>
+    {% if a.vendedor_id != eu_id %}
+    <a class="linha-editar" href="{{ url_fila }}?folha=editar&atendimento={{ a.pk }}">{{ traduzir("Editar") }}</a>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<p class="vazio">{{ traduzir("Nenhum atendimento fechado hoje.") }}</p>{% endif %}
+{% endif %}

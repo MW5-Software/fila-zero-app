@@ -1,0 +1,60 @@
+{% macro corrigir(l) %}
+{% if pode_gerenciar and not l.e_voce %}
+<details class="corrigir">
+  <summary>{{ traduzir("Corrigir") }}</summary>
+  <div class="corrigir-opcoes">
+  {% if l.estado == Estado.ATENDENDO %}
+    <a href="{{ url_fila }}?folha=fechar&pessoa={{ l.pessoa_id }}" data-folha="fechar" data-pessoa="{{ l.pessoa_id }}" data-nome="{{ l.nome }}">{{ traduzir("Fechar atendimento") }}</a>
+    <a href="{{ url_fila }}?folha=tirar&pessoa={{ l.pessoa_id }}" data-folha="tirar" data-pessoa="{{ l.pessoa_id }}" data-nome="{{ l.nome }}">{{ traduzir("Tirar da loja") }}</a>
+  {% else %}
+    {% if l.estado == Estado.EM_PAUSA %}
+    <form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="tirar_pausa"><input type="hidden" name="pessoa" value="{{ l.pessoa_id }}"><button type="submit">{{ traduzir("Tirar da pausa") }}</button></form>
+    {% endif %}
+    <form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="tirar"><input type="hidden" name="pessoa" value="{{ l.pessoa_id }}"><button type="submit">{{ traduzir("Tirar da loja") }}</button></form>
+  {% endif %}
+  </div>
+</details>
+{% endif %}
+{% endmacro %}
+
+<h2 class="secao">{{ traduzir("Atendendo") }}</h2>
+{% if r.atendendo %}
+<ul class="lista">
+  {% for l in r.atendendo %}
+  <li class="linha linha-atendendo{% if l.e_voce %} linha-voce{% endif %}">
+    <span class="linha-marca" aria-hidden="true">{{ icon("user", "sm") }}</span>
+    <span class="linha-nome">{{ l.nome }}{% if l.e_voce %} <em>{{ traduzir("(você)") }}</em>{% endif %}</span>
+    <time class="linha-tempo" data-desde="{{ l.desde.isoformat() }}">{{ l.desde|ha_quanto(agora) }}</time>
+    {{ corrigir(l) }}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<p class="vazio">{{ traduzir("Ninguém atendendo agora.") }}</p>{% endif %}
+
+<h2 class="secao">{{ traduzir("Na fila") }}</h2>
+{% if r.fila %}
+<ol class="lista">
+  {% for l in r.fila %}
+  <li class="linha linha-na-fila{% if l.e_voce %} linha-voce{% endif %}">
+    <span class="linha-marca linha-posicao">{{ l.posicao }}</span>
+    <span class="linha-nome">{{ l.nome }}{% if l.e_voce %} <em>{{ traduzir("(você)") }}</em>{% endif %}</span>
+    <time class="linha-tempo" data-desde="{{ l.desde.isoformat() }}">{{ l.desde|ha_quanto(agora) }}</time>
+    {{ corrigir(l) }}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}<p class="vazio">{{ traduzir("A fila está vazia.") }}</p>{% endif %}
+
+{% if r.em_pausa %}
+<h2 class="secao">{{ traduzir("Em pausa") }}</h2>
+<ul class="lista">
+  {% for l in r.em_pausa %}
+  <li class="linha linha-pausa{% if l.e_voce %} linha-voce{% endif %}">
+    <span class="linha-marca" aria-hidden="true">{{ icon("clock", "sm") }}</span>
+    <span class="linha-nome">{{ l.nome }}{% if l.e_voce %} <em>{{ traduzir("(você)") }}</em>{% endif %} <small>{{ l.tipo_de_pausa }}</small></span>
+    <time class="linha-tempo" data-desde="{{ l.desde.isoformat() }}">{{ l.desde|ha_quanto(agora) }}</time>
+    {{ corrigir(l) }}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
