@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 09:27-0300\n"
+"POT-Creation-Date: 2026-09-15 11:25-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -563,6 +563,18 @@ msgstr "Registro no encontrado."
 msgid "O resultado não muda na correção."
 msgstr "El resultado no cambia en la corrección."
 
+msgid "Mês encerrado: as metas não se editam mais."
+msgstr "Mes cerrado: las metas ya no se editan."
+
+msgid "Digite um valor em reais."
+msgstr "Ingrese un valor en reales."
+
+msgid "A meta precisa ser maior que zero."
+msgstr "La meta debe ser mayor que cero."
+
+msgid "Valor alto demais."
+msgstr "Valor demasiado alto."
+
 msgid "Na fila"
 msgstr "En la fila"
 
@@ -671,6 +683,18 @@ msgstr "valor"
 msgid "tipo"
 msgstr "tipo"
 
+msgid "mês"
+msgstr "mes"
+
+msgid "alterada em"
+msgstr "modificada el"
+
+msgid "meta de venda"
+msgstr "meta de venta"
+
+msgid "metas de venda"
+msgstr "metas de venta"
+
 msgid "Fila da vez"
 msgstr "Turno de atención"
 
@@ -682,6 +706,9 @@ msgstr "Motivos de no venta"
 
 msgid "Tipos de pausa"
 msgstr "Tipos de pausa"
+
+msgid "Metas"
+msgstr "Metas"
 
 #, python-format
 msgid ""
@@ -761,6 +788,50 @@ msgstr "hasta las %(hora)s"
 #, python-format
 msgid "Comparado a %(trecho)s"
 msgstr "Comparado con %(trecho)s"
+
+#, python-format
+msgid "Bateu a meta, %(acima)s acima."
+msgstr "Alcanzó la meta, %(acima)s por encima."
+
+#, python-format
+msgid "Ficou em %(pct)s da meta, faltaram %(falta)s."
+msgstr "Llegó al %(pct)s de la meta, faltaron %(falta)s."
+
+#, python-format
+msgid "Meta batida, %(acima)s acima."
+msgstr "Meta alcanzada, %(acima)s por encima."
+
+#, python-format
+msgid "Faltam %(falta)s, %(por_dia)s por dia até %(ultimo)s."
+msgstr "Faltan %(falta)s, %(por_dia)s por día hasta el %(ultimo)s."
+
+#, python-format
+msgid "No ritmo atual, fecha em %(projecao)s."
+msgstr "Al ritmo actual, cierra en %(projecao)s."
+
+msgid "Projeção a partir de amanhã."
+msgstr "Proyección a partir de mañana."
+
+#, python-format
+msgid "As metas dos vendedores somam %(soma)s e cobrem a da loja."
+msgstr "Las metas de los vendedores suman %(soma)s y cubren la de la tienda."
+
+#, python-format
+msgid "As metas dos vendedores somam %(soma)s, abaixo da meta da loja."
+msgstr ""
+"Las metas de los vendedores suman %(soma)s, por debajo de la meta de la "
+"tienda."
+
+#, python-format
+msgid ""
+"%(com)s de %(total)s lojas com meta: a meta e o vendido desta faixa são "
+"só delas."
+msgstr ""
+"%(com)s de %(total)s tiendas con meta: la meta y lo vendido de esta "
+"franja son solo de ellas."
+
+msgid "Meta do mês"
+msgstr "Meta del mes"
 
 msgid "Atendimentos"
 msgstr "Atenciones"
@@ -875,8 +946,73 @@ msgstr "El cliente lo pidió"
 msgid "Pausa"
 msgstr "Pausa"
 
+msgid "Meta"
+msgstr "Meta"
+
+#, python-format
+msgid "% da meta"
+msgstr "% de la meta"
+
 msgid "Ranking de vendedores"
 msgstr "Ranking de vendedores"
+
+msgid "Mês"
+msgstr "Mes"
+
+msgid "Abrir"
+msgstr "Abrir"
+
+msgid "Mês anterior"
+msgstr "Mes anterior"
+
+msgid "Mês seguinte"
+msgstr "Mes siguiente"
+
+msgid "Sem meta"
+msgstr "Sin meta"
+
+#, python-format
+msgid "Vendedores somam %(soma)s de %(loja)s"
+msgstr "Los vendedores suman %(soma)s de %(loja)s"
+
+msgid "A sua meta é definida por outra pessoa."
+msgstr "Su meta la define otra persona."
+
+msgid "Não está mais nesta loja."
+msgstr "Ya no está en esta tienda."
+
+msgid "Meta da loja"
+msgstr "Meta de la tienda"
+
+msgid "Metas dos vendedores"
+msgstr "Metas de los vendedores"
+
+msgid "Ninguém participa da fila nesta loja."
+msgstr "Nadie participa de la fila en esta tienda."
+
+msgid "Salvar metas"
+msgstr "Guardar metas"
+
+msgid "Copiar metas do mês anterior"
+msgstr "Copiar metas del mes anterior"
+
+msgid "Metas de venda"
+msgstr "Metas de venta"
+
+msgid "Quanto cada loja e cada vendedor deve vender no mês."
+msgstr "Cuánto debe vender cada tienda y cada vendedor en el mes."
+
+msgid "Metas do mês anterior copiadas nos campos vazios. Confira e salve."
+msgstr "Metas del mes anterior copiadas en los campos vacíos. Revise y guarde."
+
+msgid "O mês anterior não tem meta para copiar."
+msgstr "El mes anterior no tiene metas para copiar."
+
+msgid "Corrija os valores marcados. Nada foi salvo."
+msgstr "Corrija los valores marcados. No se guardó nada."
+
+msgid "Nenhuma loja em que você define metas."
+msgstr "Ninguna tienda en la que usted define metas."
 
 msgid "Bater o ponto e entrar na fila"
 msgstr "Marcar llegada y entrar a la fila"
@@ -1012,6 +1148,15 @@ msgstr "Hoy"
 
 msgid "Este mês"
 msgstr "Este mes"
+
+msgid "Meta batida"
+msgstr "Meta alcanzada"
+
+msgid "Faltam"
+msgstr "Faltan"
+
+msgid "por dia"
+msgstr "por día"
 
 msgid "Ordem da fila"
 msgstr "Orden de la fila"

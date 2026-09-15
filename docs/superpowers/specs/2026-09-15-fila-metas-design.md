@@ -1,7 +1,8 @@
 # Fila Zero — as metas da fila
 
 **Data:** 15/09/2026
-**Estado:** desenho aprovado pelo João em conversa (15/09/2026); falta o plano.
+**Estado:** desenho aprovado pelo João em conversa (15/09/2026) e implementado
+na branch `metas` (plano `docs/superpowers/plans/2026-09-15-fila-metas.md`).
 **Entrega:** 3 de 3. A entrega 1 é a fila
 (`docs/superpowers/specs/2026-09-15-fila-da-vez-design.md`); a entrega 2 são
 os indicadores (`docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`).
@@ -104,7 +105,7 @@ fábrica que ninguém editou.
 
 ## O registro
 
-Uma tabela, `fila.Meta` (herda `ModeloDaEmpresa`):
+Uma tabela, `fila.MetaDeVenda` (herda `ModeloDaEmpresa`; não se chama `Meta` porque todo model já tem a classe interna `Meta`):
 
 | campo | regra |
 |---|---|
@@ -234,7 +235,7 @@ Com `meta`, `vendido`, `hoje` (data local de `agora`) e o mês:
 
 ## Isolamento
 
-- Toda consulta passa por `Meta.objects.da_empresa(empresa)` e pelas lojas
+- Toda consulta passa por `MetaDeVenda.objects.da_empresa(empresa)` e pelas lojas
   permitidas. Nunca `irrestritos` numa tela.
 - A pessoa de uma meta sai sempre da lista da loja (alocação vigente, ou meta
   já existente naquele mês): um id de pessoa de outra conta chegando pelo POST
@@ -244,7 +245,7 @@ Com `meta`, `vendido`, `hoje` (data local de `agora`) e o mês:
 
 | arquivo | responsabilidade |
 |---|---|
-| `fila/models.py` | `Meta`, com as travas do banco |
+| `fila/models.py` | `MetaDeVenda`, com as travas do banco |
 | `fila/metas.py` | `mes_do_pedido`, `pode_editar(mes, agora)`, `pessoas_da_lista`, `gravar(...)` (transação e auditoria), `copiar_do_anterior`, `Acompanhamento` e `acompanhar(meta, vendido, mes, agora)` |
 | `fila/views_metas.py` | a tela de cadastro |
 | `fila/views_indicadores.py`, `fila/static/fila/indicadores.css` | a faixa da meta no painel e as colunas do ranking |

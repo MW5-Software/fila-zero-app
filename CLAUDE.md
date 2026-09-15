@@ -375,8 +375,6 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    mantém essa assinatura é decisão de produto.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
-5. **As metas da fila** são a entrega 3: spec em
-   `docs/superpowers/specs/2026-09-15-fila-metas-design.md`, sem plano ainda.
 
 ---
 
@@ -394,6 +392,7 @@ cinco ajustes que o spec não respondia (D-1 a D-5):
 | `fila.participar` | bater o ponto, atender, lançar, pausar, sair da loja |
 | `fila.gerenciar` | corrigir a fila e os lançamentos da loja em que está |
 | `fila.cadastros` | grupos de item, motivos de não venda e tipos de pausa |
+| `fila.metas` | a tela `/fila/metas`, nas lojas em que o cargo traz a permissão |
 
 Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
 `gerenciar`; Supervisor, `ver` e `gerenciar`; o titular, as quatro
@@ -480,6 +479,24 @@ Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
 - "Seus números" na página da fila são os da loja em que a pessoa está.
 - Permissão nova não chega sozinha às contas que já existem: a semeadura só
   cria cargo que falta.
+
+### As metas (entrega 3)
+
+Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
+`docs/superpowers/plans/2026-09-15-fila-metas.md`.
+
+- **Uma tabela, `MetaDeVenda`**, para a meta da loja (`pessoa` nula) e a do
+  vendedor naquela loja, por mês. As travas moram no banco: uma meta por loja
+  e mês, uma por pessoa, loja e mês, o mês no dia 1 e o valor positivo.
+- **As regras moram em `fila/metas.py`**, e toda conta recebe `agora`. O
+  painel, o ranking, "Seus números" e a tela de metas leem de lá.
+- **Ninguém define a própria meta e mês encerrado não se edita**, conferidos
+  em `gravar`, e não só na tela. O POST não carrega id de pessoa: o servidor
+  lê só os campos da lista que ele mesmo monta, e campo ausente não mexe.
+- **A projeção usa só os dias fechados**: com o dia de hoje pela metade, o
+  dia 1 projetaria o mês com uma venda.
+- **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
+  lojas", uma loja sem meta não faz a meta das outras parecer batida.
 
 ---
 
