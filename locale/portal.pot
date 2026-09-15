@@ -735,6 +735,27 @@ msgstr ""
 msgid "Ficou aberto de um dia para o outro"
 msgstr ""
 
+msgid "Vendedor"
+msgstr ""
+
+msgid "Vendido"
+msgstr ""
+
+msgid "Atendimentos"
+msgstr ""
+
+msgid "Conversão"
+msgstr ""
+
+msgid "Ticket médio"
+msgstr ""
+
+msgid "Cliente pediu"
+msgstr ""
+
+msgid "Pausa"
+msgstr ""
+
 msgid "Nenhuma loja para mostrar"
 msgstr ""
 
@@ -744,16 +765,8 @@ msgstr ""
 msgid "todas as lojas"
 msgstr ""
 
-msgid "Atendimentos"
-msgstr ""
-
-msgid "Conversão"
-msgstr ""
-
-msgid "Vendido"
-msgstr ""
-
-msgid "Ticket médio"
+#, python-format
+msgid "Cliente pediu: %(quantos)s, %(conversao)s"
 msgstr ""
 
 msgid "Atendimentos por hora"
@@ -778,9 +791,6 @@ msgid "Ranking de vendedores"
 msgstr ""
 
 msgid "Bater o ponto e entrar na fila"
-msgstr ""
-
-msgid "Pausa"
 msgstr ""
 
 msgid "Cliente pediu por mim"

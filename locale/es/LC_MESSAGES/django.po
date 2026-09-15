@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 02:28-0300\n"
+"POT-Creation-Date: 2026-09-15 02:31-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -767,6 +767,27 @@ msgstr "Abrir la fila de esta tienda"
 msgid "Ficou aberto de um dia para o outro"
 msgstr "Quedó abierto de un día para otro"
 
+msgid "Vendedor"
+msgstr "Vendedor"
+
+msgid "Vendido"
+msgstr "Vendido"
+
+msgid "Atendimentos"
+msgstr "Atenciones"
+
+msgid "Conversão"
+msgstr "Conversión"
+
+msgid "Ticket médio"
+msgstr "Ticket promedio"
+
+msgid "Cliente pediu"
+msgstr "El cliente lo pidió"
+
+msgid "Pausa"
+msgstr "Pausa"
+
 msgid "Nenhuma loja para mostrar"
 msgstr "Ninguna tienda para mostrar"
 
@@ -778,17 +799,9 @@ msgstr ""
 msgid "todas as lojas"
 msgstr "todas las tiendas"
 
-msgid "Atendimentos"
-msgstr "Atenciones"
-
-msgid "Conversão"
-msgstr "Conversión"
-
-msgid "Vendido"
-msgstr "Vendido"
-
-msgid "Ticket médio"
-msgstr "Ticket promedio"
+#, python-format
+msgid "Cliente pediu: %(quantos)s, %(conversao)s"
+msgstr "El cliente lo pidió: %(quantos)s, %(conversao)s"
 
 msgid "Atendimentos por hora"
 msgstr "Atenciones por hora"
@@ -813,9 +826,6 @@ msgstr "Ranking de vendedores"
 
 msgid "Bater o ponto e entrar na fila"
 msgstr "Marcar llegada y entrar a la fila"
-
-msgid "Pausa"
-msgstr "Pausa"
 
 msgid "Cliente pediu por mim"
 msgstr "El cliente me pidió a mí"

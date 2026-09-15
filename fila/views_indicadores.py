@@ -159,18 +159,18 @@ _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 
 def _colunas(pagina):
     return [
-        Column("nome", pagina.cabecalho("nome", "Vendedor"), strong=True,
+        Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
                render=lambda p: p.nome or p.email),
-        Column("vendido", pagina.cabecalho("vendido", "Vendido"), align="num",
+        Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
                render=lambda p: em_reais(p.vendido)),
-        Column("atendimentos", pagina.cabecalho("atendimentos", "Atendimentos"), align="num"),
-        Column("vendas", pagina.cabecalho("vendas", "Vendas"), align="num"),
-        Column("conversao", pagina.cabecalho("conversao", "Conversão"), align="num",
+        Column("atendimentos", pagina.cabecalho("atendimentos", str(_("Atendimentos"))), align="num"),
+        Column("vendas", pagina.cabecalho("vendas", str(_("Vendas"))), align="num"),
+        Column("conversao", pagina.cabecalho("conversao", str(_("Conversão"))), align="num",
                render=lambda p: _pct(p.conversao)),
-        Column("ticket", pagina.cabecalho("ticket", "Ticket médio"), align="num",
+        Column("ticket", pagina.cabecalho("ticket", str(_("Ticket médio"))), align="num",
                render=lambda p: _dinheiro(p.ticket)),
-        Column("pediu", pagina.cabecalho("pediu", "Cliente pediu"), align="num"),
-        Column("pausa", pagina.cabecalho("pausa", "Pausa"), align="num",
+        Column("pediu", pagina.cabecalho("pediu", str(_("Cliente pediu"))), align="num"),
+        Column("pausa", pagina.cabecalho("pausa", str(_("Pausa"))), align="num",
                render=lambda p: f"{int(p.pausa.total_seconds() // 60)} min"),
     ]
 
@@ -209,7 +209,8 @@ def indicadores(request) -> HttpResponse:
                     Cell(span=3, children=_numero(
                         _("Conversão"), _pct(n.conversao),
                         ind.variacao(n.conversao, a.conversao, pontos=True),
-                        f"Cliente pediu: {n.pediu}, {_pct(n.conversao_pediu)}")),
+                        _("Cliente pediu: %(quantos)s, %(conversao)s")
+                        % {"quantos": n.pediu, "conversao": _pct(n.conversao_pediu)})),
                     Cell(span=3, children=_numero(_("Vendido"), em_reais(n.vendido),
                                                   ind.variacao(n.vendido, a.vendido))),
                     Cell(span=3, children=_numero(_("Ticket médio"), _dinheiro(n.ticket),
