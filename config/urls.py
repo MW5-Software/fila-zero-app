@@ -10,6 +10,9 @@ handler500 = "plataforma.falhas.pagina_de_erro"
 
 urlpatterns = [
     path("", include("contas.urls")),
+    # Antes do `nucleo`: a raiz `/` da fila manda quem só tem a fila direto
+    # para ela, e o primeiro padrão que casa é o que vale.
+    path("", include("fila.urls")),
     path("", include("nucleo.urls")),
     path("", include("plataforma.urls")),
     path("", include("modulos.exemplo.urls")),

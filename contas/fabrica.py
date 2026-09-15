@@ -30,7 +30,7 @@ __all__ = ["DE_FABRICA", "aplicar"]
 #: módulo só porque ela nasceu. Quem ganha por omissão é só quem já pode tudo.
 DE_FABRICA: dict[int, tuple[str, ...]] = {
     Nivel.MASTER: (
-        "auditoria.*", "cargos.*", "empresa.*", "filiais.*",
+        "auditoria.*", "cargos.*", "empresa.*", "filiais.*", "fila.*",
         "parametros.*", "usuarios.*",
     ),
     #: O titular cadastra e aloca a gente da conta dele e mexe no cadastro da
@@ -50,9 +50,12 @@ DE_FABRICA: dict[int, tuple[str, ...]] = {
     #: titular. Não é ela que tranca — é o nível, na view (ver
     #: `contas/views_cargos.py`) —, e ela nunca é oferecida numa caixa de
     #: cargo.
+    #:
+    #: **A fila (Fila Zero):** a Sylvia atende, corrige e mantém os cadastros.
     Nivel.TITULAR: (
         "cargos.editar", "empresa.editar",
         "filiais.editar",
+        "fila.cadastros", "fila.gerenciar", "fila.participar", "fila.ver",
         "usuarios.editar",
     ),
 }

@@ -24,7 +24,7 @@ import ast
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-PASTAS = ("contas", "plataforma", "comum", "modulos",
+PASTAS = ("contas", "plataforma", "comum", "modulos", "fila",
           "config")
 
 

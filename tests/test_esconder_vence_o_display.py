@@ -35,7 +35,7 @@ import pytest
 #: script próprio põe a pasta dele aqui — no Portal de Vendas, a do catálogo,
 #: onde os três casos que deram nome a este arquivo aconteceram.
 PASTAS_ESTATICAS = (Path("contas/static"), Path("plataforma/static"),
-                    Path("modulos"))
+                    Path("modulos"), Path("fila/static"))
 
 #: `(classe, quem esconde)`. Toda classe que o script marca com `hidden` E que
 #: declara `display` na folha precisa estar aqui — e precisa ter a regra.

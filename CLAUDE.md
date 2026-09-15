@@ -98,7 +98,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 97 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 98 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -372,17 +372,17 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
 
 ```bash
 uv sync --extra dev
-docker compose up -d banco          # Postgres em 127.0.0.1:5435
-export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5435/kronos
+docker compose up -d banco          # Postgres em 127.0.0.1:5436
+export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 97 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 98 arquivos
 ```
 
-As portas são próprias de propósito: banco na **5435** e app na **8004**. O
-KRONOS.net usa 5433/8000/8001 e o Portal de Vendas usa 5434/8003. Apontar para a
-porta errada abre o banco de outro produto com as MESMAS tabelas da base, sem
-aviso nenhum.
+As portas são próprias de propósito: banco na **5436** e app na **8005**. O
+KRONOS.net usa 5433/8000/8001, o Portal de Vendas usa 5434/8003 e a KRONOS base
+usa 5435/8004. Apontar para a porta errada abre o banco de outro produto com
+as MESMAS tabelas da base, sem aviso nenhum.
 
 Os 9 testes do ciclo real de backup pulam sem `pg_dump`, `pg_restore`, `psql`,
 `createdb` e `dropdb` no `PATH`. Scripts que chamam o `postgres:16-alpine` por

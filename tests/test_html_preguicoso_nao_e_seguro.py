@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-PASTAS = ("contas", "plataforma", "comum", "modulos")
+PASTAS = ("contas", "plataforma", "comum", "modulos", "fila")
 
 #: Uma marcação de verdade, e não um "<" solto numa frase ("< 10 unidades").
 TEM_MARCACAO = re.compile(r"<[a-zA-Z/][^>]*>")

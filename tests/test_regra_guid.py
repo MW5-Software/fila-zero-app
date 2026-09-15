@@ -16,7 +16,7 @@ from django.apps import apps
 
 #: Os nossos apps. Um app novo entra aqui, e é de propósito que a lista seja
 #: explícita: `INSTALLED_APPS` inteiro traria os do Django junto.
-APPS_DA_CASA = ("contas", "plataforma", "comum")
+APPS_DA_CASA = ("contas", "plataforma", "comum", "fila")
 
 #: Sem GUID, com o motivo ao lado. Uma isenção sem motivo vira gaveta, e
 #: gaveta ninguém relê.

@@ -103,10 +103,10 @@ sem avisar — cadastrava-se num e olhava-se no outro.
 
 ```bash
 export DJANGO_SECRET_KEY=qualquer-coisa-local
-docker compose up -d banco          # o Postgres, publicado em 127.0.0.1:5435
+docker compose up -d banco          # o Postgres, publicado em 127.0.0.1:5436
 
 export DJANGO_DEBUG=1
-export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5435/kronos
+export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 
 uv sync --extra dev
 uv run python manage.py migrate
@@ -114,8 +114,8 @@ uv run python manage.py runserver
 uv run pytest -q
 ```
 
-A porta é **5435**: a 5432 é de outro projeto desta máquina, a 5433 é do
-KRONOS.net e a 5434 é do Portal de Vendas. Apontar para a porta errada abre o
+A porta é **5436**: a 5432 é de outro projeto desta máquina, a 5433 é do
+KRONOS.net, a 5434 é do Portal de Vendas e a 5435 é da KRONOS base. Apontar para a porta errada abre o
 banco de outro produto sem nenhum aviso — e todos têm as MESMAS tabelas da
 base, o que torna o engano invisível até alguém gravar no lugar errado. Ela
 atende só `127.0.0.1`: o banco responde a quem está na máquina, não à rede.

@@ -30,6 +30,7 @@ import pytest
 FOLHAS = [
     *sorted(Path("catalogo/static/catalogo").glob("*.css")),
     *sorted(Path("plataforma/static/plataforma").glob("*.css")),
+    *sorted(Path("fila/static/fila").glob("*.css")),
 ]
 
 #: Variáveis que a própria página injeta no `style=` de um elemento, e que
