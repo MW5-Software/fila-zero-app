@@ -118,6 +118,13 @@ lá com os mesmos filtros. O resto desta seção vale como está.
 4. **Gráficos**: vendido por grupo de item (barras deitadas); atendimentos e
    vendas por dia (por hora quando o período é um dia só); motivos de não
    venda; tempo em pausa por tipo.
+
+   **Mudou em 15/09/2026 (o João não gostou dos gráficos):** os quatro números
+   são as abas de um painel só, e embaixo aparece a série do número marcado
+   por dia (ou por hora), com o dia em andamento listrado. Grupo, motivos e
+   pausa viraram listas ranqueadas com barra, uma cor por lista. Tudo é HTML
+   desenhado no servidor (`fila/graficos.py`), e não o `Chart` do design
+   system, que escalava o texto com a largura da caixa.
 5. **Ranking de vendedores**: tabela da casa com filtro, ordenação e
    paginação.
 

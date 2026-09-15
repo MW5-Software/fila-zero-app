@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 08:50-0300\n"
+"POT-Creation-Date: 2026-09-15 09:13-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -745,11 +745,82 @@ msgstr "hasta las %(hora)s"
 msgid "Comparado a %(trecho)s"
 msgstr "Comparado con %(trecho)s"
 
+msgid "Atendimentos"
+msgstr "Atenciones"
+
+msgid "Conversão"
+msgstr "Conversión"
+
+#, python-format
+msgid "Cliente pediu: %(quantos)s, %(conversao)s"
+msgstr "El cliente lo pidió: %(quantos)s, %(conversao)s"
+
+msgid "Vendido"
+msgstr "Vendido"
+
+msgid "Ticket médio"
+msgstr "Ticket promedio"
+
+msgid "Nenhum atendimento fechado no período."
+msgstr "Ninguna atención cerrada en el período."
+
+msgid "até agora"
+msgstr "hasta ahora"
+
+msgid "Atendimentos por hora"
+msgstr "Atenciones por hora"
+
+msgid "Atendimentos por dia"
+msgstr "Atenciones por día"
+
+msgid "Conversão por hora"
+msgstr "Conversión por hora"
+
+msgid "Conversão por dia"
+msgstr "Conversión por día"
+
+msgid "Vendido por hora"
+msgstr "Vendido por hora"
+
+msgid "Vendido por dia"
+msgstr "Vendido por día"
+
+msgid "Ticket médio por hora"
+msgstr "Ticket promedio por hora"
+
+msgid "Ticket médio por dia"
+msgstr "Ticket promedio por día"
+
+msgid "todas as lojas"
+msgstr "todas las tiendas"
+
+msgid "Número mostrado no gráfico"
+msgstr "Número mostrado en el gráfico"
+
 msgid "Nada no período."
 msgstr "Nada en el período."
 
-msgid "Minutos em pausa por tipo"
-msgstr "Minutos en pausa por tipo"
+msgid "Vendido por grupo de item"
+msgstr "Vendido por grupo de artículo"
+
+#, python-format
+msgid "%(n)s venda"
+msgid_plural "%(n)s vendas"
+msgstr[0] "%(n)s venta"
+msgstr[1] "%(n)s ventas"
+
+#, python-format
+msgid "%(n)s atendimento sem venda"
+msgid_plural "%(n)s atendimentos sem venda"
+msgstr[0] "%(n)s atención sin venta"
+msgstr[1] "%(n)s atenciones sin venta"
+
+msgid "Tempo em pausa"
+msgstr "Tiempo en pausa"
+
+#, python-format
+msgid "%(total)s no total"
+msgstr "%(total)s en total"
 
 msgid "Período"
 msgstr "Período"
@@ -772,12 +843,6 @@ msgstr "Todas las tiendas"
 msgid "Aplicar"
 msgstr "Aplicar"
 
-msgid "Indicadores da fila"
-msgstr "Indicadores de la fila"
-
-msgid "todas as lojas"
-msgstr "todas las tiendas"
-
 msgid "Abrir a fila desta loja"
 msgstr "Abrir la fila de esta tienda"
 
@@ -787,42 +852,11 @@ msgstr "Quedó abierto de un día para otro"
 msgid "Vendedor"
 msgstr "Vendedor"
 
-msgid "Vendido"
-msgstr "Vendido"
-
-msgid "Atendimentos"
-msgstr "Atenciones"
-
-msgid "Conversão"
-msgstr "Conversión"
-
-msgid "Ticket médio"
-msgstr "Ticket promedio"
-
 msgid "Cliente pediu"
 msgstr "El cliente lo pidió"
 
 msgid "Pausa"
 msgstr "Pausa"
-
-#, python-format
-msgid "Cliente pediu: %(quantos)s, %(conversao)s"
-msgstr "El cliente lo pidió: %(quantos)s, %(conversao)s"
-
-msgid "Atendimentos por hora"
-msgstr "Atenciones por hora"
-
-msgid "Atendimentos por dia"
-msgstr "Atenciones por día"
-
-msgid "Vendido por hora"
-msgstr "Vendido por hora"
-
-msgid "Vendido por dia"
-msgstr "Vendido por día"
-
-msgid "Vendido por grupo de item"
-msgstr "Vendido por grupo de artículo"
 
 msgid "Ranking de vendedores"
 msgstr "Ranking de vendedores"

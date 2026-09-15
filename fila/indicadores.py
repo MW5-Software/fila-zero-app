@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import NamedTuple
 
 from django.db.models import (Case, Count, DateTimeField, DecimalField,
                               DurationField, ExpressionWrapper, F, FloatField,
@@ -27,7 +28,7 @@ from .estado import nome_de
 from .models import Atendimento, ItemVendido, Pausa, Presenca, Resultado
 from .periodo import Periodo, inicio_do_dia
 
-__all__ = ["ORDENAVEIS_DO_RANKING", "PADRAO_DO_RANKING", "Esquecido",
+__all__ = ["ORDENAVEIS_DO_RANKING", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
            "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
            "por_dia", "por_grupo", "posicao_no_mes", "ranking", "variacao"]
@@ -145,18 +146,26 @@ def pausa_por_tipo(recorte: Recorte) -> "list[tuple[str, int]]":
             for linha in linhas]
 
 
-def por_dia(recorte: Recorte) -> "list[tuple[str, int, Decimal]]":
-    """(rótulo, atendimentos, vendido) por dia; por hora quando o período é um
-    dia só. Os vazios aparecem com zero: um gráfico que pula o dia sem
-    atendimento esconde justamente o dia ruim."""
+class Fatia(NamedTuple):
+    rotulo: str
+    atendimentos: int
+    vendido: Decimal
+    vendas: int
+
+
+def por_dia(recorte: Recorte) -> "list[Fatia]":
+    """(rótulo, atendimentos, vendido, vendas) por dia; por hora quando o
+    período é um dia só. Os vazios aparecem com zero: um gráfico que pula o dia
+    sem atendimento esconde justamente o dia ruim. As vendas vêm junto para a
+    conversão e o ticket de cada dia, que o Início também desenha."""
     fuso = timezone.get_current_timezone()
     por_hora = recorte.periodo.dias == 1
     fatia = TruncHour("fim", tzinfo=fuso) if por_hora else TruncDate("fim", tzinfo=fuso)
     venda = Q(resultado=Resultado.VENDEU)
     achados = {
-        linha["fatia"]: (linha["n"], linha["v"]) for linha in (
+        linha["fatia"]: (linha["n"], linha["v"], linha["vendas"]) for linha in (
             _atendimentos(recorte).annotate(fatia=fatia).values("fatia")
-            .annotate(n=Count("pk"),
+            .annotate(n=Count("pk"), vendas=Count("pk", filter=venda),
                       v=Coalesce(Sum("total", filter=venda), Value(ZERO),
                                  output_field=_DINHEIRO))
             .order_by("fatia"))}
@@ -164,16 +173,19 @@ def por_dia(recorte: Recorte) -> "list[tuple[str, int, Decimal]]":
     if por_hora:
         for hora in range(24):
             momento = recorte.periodo.de + timedelta(hours=hora)
-            n, v = achados.get(momento, (0, ZERO))
-            linhas.append((f"{hora}h", n, v))
+            linhas.append(Fatia(f"{hora}h", *_numa_fatia(achados.get(momento))))
         return linhas
     dia = timezone.localdate(recorte.periodo.de)
     fim = timezone.localdate(recorte.periodo.ate)
     while dia < fim:
-        n, v = achados.get(dia, (0, ZERO))
-        linhas.append((dia.strftime("%d/%m"), n, v))
+        linhas.append(Fatia(dia.strftime("%d/%m"), *_numa_fatia(achados.get(dia))))
         dia += timedelta(days=1)
     return linhas
+
+
+def _numa_fatia(achado):
+    n, v, vendas = achado or (0, ZERO, 0)
+    return n, v, vendas
 
 
 @dataclass(frozen=True)

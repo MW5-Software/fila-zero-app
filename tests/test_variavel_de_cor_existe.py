@@ -37,8 +37,9 @@ FOLHAS = [
 #: portanto não aparecem declaradas em folha nenhuma. Cada uma com o motivo,
 #: como manda a casa — isenção sem motivo vira gaveta.
 DE_FORA: dict[str, str] = {
-    # Nenhuma hoje. O dicionário existe para a primeira ter onde entrar COM o
-    # motivo escrito ao lado, em vez de virar uma exceção solta na varredura.
+    "--h": "altura de cada coluna dos gráficos do Início, calculada no servidor "
+           "(`fila/graficos.py`) e posta no `style=` da coluna",
+    "--y": "altura de cada marca do eixo dos mesmos gráficos, também no `style=`",
 }
 
 

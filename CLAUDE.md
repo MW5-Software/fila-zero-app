@@ -471,6 +471,10 @@ Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
   atendimento é "—".
 - **O ranking é por subconsulta**: `Atendimento.vendedor` e `Pausa.pessoa`
   não têm relação reversa, e é de propósito.
+- **Os gráficos do Início não usam o `Chart` do design system**: ele escala
+  o texto junto com a caixa (ilegível num terço, enorme na largura toda).
+  `fila/graficos.py` desenha colunas e listas em HTML, com escala redonda
+  (inteira em contagem), e a troca de série entre as abas é CSS (`:has`).
 - "Seus números" na página da fila são os da loja em que a pessoa está.
 - Permissão nova não chega sozinha às contas que já existem: a semeadura só
   cria cargo que falta.

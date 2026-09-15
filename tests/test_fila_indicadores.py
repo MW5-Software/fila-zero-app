@@ -183,7 +183,8 @@ def test_por_dia_preenche_os_dias_vazios(loja):
     atendimento(loja, loja.ana, local(2026, 9, 3, 10), local(2026, 9, 3, 10))
     tres_dias = Periodo(local(2026, 9, 1), local(2026, 9, 4), "intervalo", "1 a 3")
     assert por_dia(_recorte(loja, tres_dias)) == [
-        ("01/09", 1, Decimal("100")), ("02/09", 0, Decimal("0")), ("03/09", 1, Decimal("0"))]
+        ("01/09", 1, Decimal("100"), 1), ("02/09", 0, Decimal("0"), 0),
+        ("03/09", 1, Decimal("0"), 0)]
 
 
 def test_por_dia_de_um_dia_so_e_por_hora(loja):
@@ -191,7 +192,7 @@ def test_por_dia_de_um_dia_so_e_por_hora(loja):
     um_dia = Periodo(local(2026, 9, 1), local(2026, 9, 2), "hoje", "Hoje")
     linhas = por_dia(_recorte(loja, um_dia))
     assert len(linhas) == 24
-    assert linhas[10] == ("10h", 1, Decimal("100"))
+    assert linhas[10] == ("10h", 1, Decimal("100"), 1)
 
 
 def test_esquecidos_so_o_que_virou_o_dia(loja):

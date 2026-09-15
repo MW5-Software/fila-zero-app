@@ -11,24 +11,31 @@ recorte, ela é descartada e a tela mostra as permitidas.
 
 from __future__ import annotations
 
+import math
+
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
+from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
 
 from comum.ambiente import ambiente
 from comum.guardas_de_acesso import exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
 from comum.listagem import ColunaFiltravel, montar_pagina
 from comum.personificacao import aviso as aviso_de_personificacao
-from nucleo.components import (Alert, Button, Card, Cell, Chart, Column,
-                               DataPoint, Form, FormGrid, Option,
-                               PageHeader, Raw, Select, Table, TextInput)
+from nucleo.components import (Alert, Button, Card, Cell, Column, Form,
+                               FormGrid, Option, PageHeader, Raw, Select,
+                               Table, TextInput)
 from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
 
+from . import graficos
 from . import indicadores as ind
+from .graficos import Coluna
 from .periodo import ATALHOS, periodo_anterior, periodo_do_pedido
 from .tela import trocar_e_abrir_a_fila
 from .valores import em_reais
@@ -80,70 +87,138 @@ def _comparado_a(periodo) -> str:
     return str(_("Comparado a %(trecho)s") % {"trecho": trecho})
 
 
-def _numero(rotulo, valor, variacao, apoio=""):
-    return Card(body=Raw(html=format_html(
-        '<div class="ind-numero"><span class="ind-numero-l">{}</span>'
-        '<span class="ind-numero-n">{}</span>{}'
-        '<span class="ind-numero-apoio">{}</span></div>',
-        rotulo, valor, _variacao_html(variacao), apoio)))
+def _aba(serie, rotulo, valor, variacao, apoio="", marcada=False):
+    """Um número do período que é também o botão da série do gráfico.
+
+    É um rádio de verdade dentro do rótulo: troca pelo teclado, funciona sem
+    JavaScript, e o CSS (`:has`) mostra a série marcada."""
+    return format_html(
+        '<label class="ind-aba"><input type="radio" name="ind-serie" value="{}"{}>'
+        '<span class="ind-aba-l">{}</span><span class="ind-aba-n">{}</span>{}'
+        '<span class="ind-aba-apoio">{}</span></label>',
+        serie, mark_safe(" checked") if marcada else "", rotulo, valor,
+        _variacao_html(variacao), apoio)
 
 
-def _serie_do_tempo(linhas, periodo):
-    """Os rótulos curtos da série por dia ou por hora, para caberem no eixo.
+def _fatias_do_grafico(fatias, periodo, agora):
+    """As colunas do gráfico: por hora, só o horário da loja (8h às 21h) e o
+    que tiver movimento fora dele, porque 24 colunas de madrugada vazia
+    espremem as do expediente; por dia, o número do dia no eixo.
 
-    Por dia com mais de dez dias, só o número do dia ("05"): "05/09" em trinta
-    barras se atropela. Por hora, só o horário da loja (8h às 21h) e o que
-    tiver movimento fora dele: 24 barras de madrugada vazia espremem as do
-    expediente.
+    O rótulo do eixo pula de tanto em tanto quando as colunas passam de 31:
+    um intervalo de meses teria centenas de "05" encavalados. A dica de cada
+    coluna continua com a data inteira.
     """
     if periodo.dias == 1:
-        horas = [i for i, (_r, n, _v) in enumerate(linhas) if n]
-        ini = min([8, *horas]) if horas else 8
-        fim = max([21, *horas]) if horas else 21
-        # Rótulo só nas horas pares: um por barra, em 14 ou mais barras, se
-        # atropela no eixo.
-        return [(r if i % 2 == 0 else "", n, v)
-                for i, (r, n, v) in enumerate(linhas[ini:fim + 1], start=ini)]
-    if len(linhas) > 10:
-        return [(r[:2], n, v) for r, n, v in linhas]
-    return linhas
+        com_movimento = [i for i, f in enumerate(fatias) if f.atendimentos]
+        ini = min([8, *com_movimento])
+        fim = max([21, *com_movimento])
+        fatias = fatias[ini:fim + 1]
+        atual = f"{agora.hour}h" if agora.date() == timezone.localtime(periodo.de).date() else None
+        return [(f, f.rotulo, f.rotulo == atual) for f in fatias]
+    # Período terminado não tem a coluna de hoje, e nenhuma fica listrada.
+    hoje = f"{agora:%d/%m}"
+    pulo = math.ceil(len(fatias) / 31)
+    return [(f, f.rotulo[:2] if i % pulo == 0 else "", f.rotulo == hoje)
+            for i, f in enumerate(fatias)]
 
 
-def _grafico_ou_vazio(pontos, tipo, altura=180):
-    if not any(p.value for p in pontos):
-        return Raw(html=format_html('<p class="ind-vazio">{}</p>',
-                                    _("Nada no período.")))
-    return Chart(kind=tipo, points=pontos, height=altura,
-                 legend="none" if tipo != "donut" else "right")
+def _por_cento(x) -> str:
+    return f"{x:g}%".replace(".", ",")
 
 
-def _grafico(titulo, pontos, tipo, span=6, altura=180):
-    return Cell(span=span, children=Card(title=titulo,
-                                         body=_grafico_ou_vazio(pontos, tipo, altura)))
+def _painel(periodo, loja, n, a, anterior, fatias):
+    """Os quatro números do período em cima e, embaixo, a série de um deles no
+    tempo. Um cartão só: o número e o dia a dia dele são a mesma pergunta, e
+    antes eram seis cartões soltos que repetiam o período em cada um."""
+    agora = timezone.localtime()
+    v_atendimentos = ind.variacao(n.atendimentos, a.atendimentos)
+    v_conversao = ind.variacao(n.conversao, a.conversao, pontos=True)
+    v_vendido = ind.variacao(n.vendido, a.vendido)
+    v_ticket = ind.variacao(n.ticket, a.ticket)
+    abas = format_html_join("", "{}", ((aba,) for aba in (
+        _aba("atendimentos", _("Atendimentos"), n.atendimentos, v_atendimentos),
+        _aba("conversao", _("Conversão"), _pct(n.conversao), v_conversao,
+             _("Cliente pediu: %(quantos)s, %(conversao)s")
+             % {"quantos": n.pediu, "conversao": _pct(n.conversao_pediu)}),
+        # O vendido abre marcado: é o número que a dona olha primeiro.
+        _aba("vendido", _("Vendido"), em_reais(n.vendido), v_vendido, marcada=True),
+        _aba("ticket", _("Ticket médio"), _dinheiro(n.ticket), v_ticket),
+    )))
+
+    if not n.atendimentos:
+        series = format_html('<p class="ind-vazio">{}</p>',
+                             _("Nenhum atendimento fechado no período."))
+    else:
+        linhas = _fatias_do_grafico(fatias, periodo, agora)
+        agora_texto = _("até agora")
+
+        def serie(chave, rotulo, valor, texto, marca, inteiro=False):
+            lista = []
+            for f, eixo, e_agora in linhas:
+                v = valor(f)
+                lista.append(Coluna(eixo, f.rotulo, v, "—" if v is None else texto(v), e_agora))
+            return graficos.colunas(chave, rotulo, lista, marca=marca, inteiro=inteiro,
+                                    visivel=chave == "vendido", agora_texto=agora_texto)
+
+        por_hora = periodo.dias == 1
+        series = format_html_join("", "{}", ((s_,) for s_ in (
+            serie("atendimentos",
+                  _("Atendimentos por hora") if por_hora else _("Atendimentos por dia"),
+                  lambda f: f.atendimentos, str, lambda x: str(int(x)), inteiro=True),
+            serie("conversao",
+                  _("Conversão por hora") if por_hora else _("Conversão por dia"),
+                  lambda f: round(100 * f.vendas / f.atendimentos, 1) if f.atendimentos else None,
+                  _pct, _por_cento),
+            serie("vendido", _("Vendido por hora") if por_hora else _("Vendido por dia"),
+                  lambda f: f.vendido, em_reais, graficos.dinheiro_curto),
+            serie("ticket",
+                  _("Ticket médio por hora") if por_hora else _("Ticket médio por dia"),
+                  lambda f: f.vendido / f.vendas if f.vendas else None,
+                  em_reais, graficos.dinheiro_curto),
+        )))
+
+    # "Comparado a …" uma vez, no cabeçalho, e só quando alguma seta existe:
+    # embaixo de quatro "Sem base para comparar" ele se contradiria.
+    tem_base = any(v is not None for v in (v_atendimentos, v_conversao, v_vendido, v_ticket))
+    return Card(
+        title=f"{periodo.rotulo}, {loja or _('todas as lojas')}",
+        subtitle=_comparado_a(anterior.periodo) if tem_base else None,
+        padded=False, attrs={"data-ind": "painel"},
+        body=Raw(html=format_html(
+            '<div class="ind-painel"><div class="ind-abas" role="radiogroup" aria-label="{}">{}</div>'
+            '<div class="ind-series">{}</div></div>',
+            _("Número mostrado no gráfico"), abas, series)))
 
 
 def _minutos_por_extenso(minutos: int) -> str:
     return f"{minutos} min" if minutos < 60 else f"{minutos // 60} h {minutos % 60:02d} min"
 
 
-def _pausas(linhas):
-    """A pausa na linha toda, sem buraco ao lado: o gráfico numa metade (a
-    mesma escala dos outros, porque o desenho escala o texto pela largura) e,
-    na outra, os mesmos números escritos, com a fatia de cada tipo."""
-    total = sum(m for _t, m in linhas) or 1
-    lista = format_html_join("", (
-        '<li><span class="ind-lista-nome">{}</span>'
-        '<span class="ind-lista-barra"><span style="width: {}%"></span></span>'
-        '<span class="ind-lista-valor">{}</span>'
-        '<span class="ind-lista-parte">{}%</span></li>'), (
-        (tipo, round(100 * m / total), _minutos_por_extenso(m), round(100 * m / total))
-        for tipo, m in linhas))
-    corpo = (FormGrid(attrs={"data-ind": "pausa"}, children=[
-        Cell(span=6, children=_grafico_ou_vazio(
-            [DataPoint(t, m) for t, m in linhas], "bar_h")),
-        Cell(span=6, children=Raw(html=format_html('<ul class="ind-lista">{}</ul>', lista))),
-    ]) if linhas else _grafico_ou_vazio([], "bar_h"))
-    return Cell(span=12, children=Card(title=_("Minutos em pausa por tipo"), body=corpo))
+def _lista(titulo, subtitulo, linhas, tom):
+    corpo = (Raw(html=graficos.lista_ranqueada(linhas, tom)) if linhas
+             else Raw(html=format_html('<p class="ind-vazio">{}</p>', _("Nada no período."))))
+    return Cell(span=4, children=Card(title=titulo, subtitle=subtitulo, body=corpo))
+
+
+def _listas(recorte, n):
+    grupos = ind.por_grupo(recorte)
+    motivos = ind.motivos(recorte)
+    pausas = ind.pausa_por_tipo(recorte)
+    sem_venda = sum(q for _m, q in motivos)
+    return FormGrid(attrs={"data-ind": "listas"}, children=[
+        _lista(_("Vendido por grupo de item"),
+               ngettext("%(n)s venda", "%(n)s vendas", n.vendas) % {"n": n.vendas},
+               [(g, v, em_reais(v)) for g, v in grupos], "venda"),
+        _lista(_("Motivos de não venda"),
+               ngettext("%(n)s atendimento sem venda", "%(n)s atendimentos sem venda",
+                        sem_venda) % {"n": sem_venda},
+               [(m, q, str(q)) for m, q in motivos], "perda"),
+        _lista(_("Tempo em pausa"),
+               _("%(total)s no total") % {"total": _minutos_por_extenso(
+                   sum(m for _t, m in pausas))},
+               [(t, m, _minutos_por_extenso(m)) for t, m in pausas], "pausa"),
+    ])
 
 
 def _lojas_do_pedido(request, permitidas):
@@ -183,8 +258,9 @@ def _filtros(request, periodo, permitidas, loja):
         if chave not in ("periodo", "de", "ate", "loja", "pagina") and valor:
             campos.append(Raw(html=format_html(
                 '<input type="hidden" name="{}" value="{}">', chave, valor)))
-    return Card(title=_("Indicadores da fila"),
-                subtitle=f"{periodo.rotulo}, {loja or _('todas as lojas')}",
+    # Sem título: o período e a loja escolhidos já estão nos campos, e o
+    # cabeçalho do painel logo abaixo diz os dois por extenso.
+    return Card(attrs={"data-ind": "filtros"},
                 body=Form(method="get", action=reverse("inicio"),
                           children=FormGrid(children=campos)))
 
@@ -241,49 +317,12 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     recorte = ind.Recorte(empresa, tuple(lojas), periodo)
     anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo))
     n, a = ind.numeros(recorte), ind.numeros(anterior)
-    texto_comparado = _comparado_a(anterior.periodo)
-    v_atendimentos = ind.variacao(n.atendimentos, a.atendimentos)
-    v_vendido = ind.variacao(n.vendido, a.vendido)
-    v_ticket = ind.variacao(n.ticket, a.ticket)
-
-    def comparado(variacao) -> str:
-        # "Comparado a …" embaixo de "Sem base para comparar" se contradiz:
-        # sem comparação, a linha sai. A altura igual vem do cartão esticado.
-        return texto_comparado if variacao is not None else ""
-
     blocos = [
         _filtros(request, periodo, permitidas, loja),
         _esquecidos(ind.esquecidos(empresa, lojas)),
-        FormGrid(attrs={"data-ind": "numeros"}, children=[
-            Cell(span=3, children=_numero(_("Atendimentos"), n.atendimentos,
-                                          v_atendimentos, comparado(v_atendimentos))),
-            Cell(span=3, children=_numero(
-                _("Conversão"), _pct(n.conversao),
-                ind.variacao(n.conversao, a.conversao, pontos=True),
-                _("Cliente pediu: %(quantos)s, %(conversao)s")
-                % {"quantos": n.pediu, "conversao": _pct(n.conversao_pediu)})),
-            Cell(span=3, children=_numero(_("Vendido"), em_reais(n.vendido),
-                                          v_vendido, comparado(v_vendido))),
-            Cell(span=3, children=_numero(_("Ticket médio"), _dinheiro(n.ticket),
-                                          v_ticket, comparado(v_ticket))),
-        ]),
+        _painel(periodo, loja, n, a, anterior, ind.por_dia(recorte)),
+        _listas(recorte, n),
     ]
-    dias = _serie_do_tempo(ind.por_dia(recorte), periodo)
-    # Série do tempo numa cor só: cor por barra, num gráfico de dias,
-    # sugere categorias diferentes onde só há o mesmo número no tempo.
-    cor = "var(--chart-1)"
-    blocos.append(FormGrid(attrs={"data-ind": "graficos"}, children=[
-        _grafico(_("Atendimentos por hora") if periodo.dias == 1 else _("Atendimentos por dia"),
-                 [DataPoint(r, n_, cor) for r, n_, _v in dias], "bar"),
-        _grafico(_("Vendido por hora") if periodo.dias == 1 else _("Vendido por dia"),
-                 [DataPoint(r, float(v)) for r, _n, v in dias], "line"),
-        _grafico(_("Vendido por grupo de item"),
-                 [DataPoint(g, float(v)) for g, v in ind.por_grupo(recorte)],
-                 "bar_h"),
-        _grafico(_("Motivos de não venda"),
-                 [DataPoint(m, q) for m, q in ind.motivos(recorte)], "donut"),
-        _pausas(ind.pausa_por_tipo(recorte)),
-    ]))
     listagem = montar_pagina(request, ind.ranking(recorte),
                              ordenaveis=ind.ORDENAVEIS_DO_RANKING,
                              padrao=ind.PADRAO_DO_RANKING,

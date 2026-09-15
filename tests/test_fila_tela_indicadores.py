@@ -189,3 +189,87 @@ def test_a_linha_de_comparacao_so_aparece_quando_ha_base(rede):
     # A venda de ontem caiu antes da mesma hora de hoje: é base para "Hoje".
     com_base = _html(logado("sylvia"), periodo="hoje")
     assert "Comparado a" in com_base
+
+
+# --- Os gráficos desenhados no servidor (15/09/2026) ------------------------
+# O `Chart` do design system saiu do Início: o texto escalava com a caixa, o
+# eixo cortava o número de cima e a escala de contagem saía "37,50".
+
+def test_escala_redonda_e_inteira_na_contagem():
+    from fila.graficos import escala
+
+    assert escala(93_000) == (100_000, 25_000)
+    assert escala(37) == (40, 10)
+    # Contagem nunca tem marca quebrada: 2,5 vira 5, e não 3.
+    assert escala(9, inteiro=True) == (10, 5)
+    assert escala(6, inteiro=True) == (6, 2)
+    assert escala(2, inteiro=True) == (2, 1)
+    assert escala(0) == (4, 1)
+
+
+def test_dinheiro_curto_do_eixo():
+    from fila.graficos import dinheiro_curto
+
+    assert dinheiro_curto(50_000) == "R$ 50 mil"
+    assert dinheiro_curto(62_500) == "R$ 62,5 mil"
+    assert dinheiro_curto(1_200_000) == "R$ 1,2 mi"
+    assert dinheiro_curto(850) == "R$ 850"
+    assert dinheiro_curto(0) == "R$ 0"
+
+
+def test_coluna_sem_valor_fica_vazia_e_a_dica_diz_traco():
+    """Conversão de um dia sem atendimento não é uma barra de zero: zero
+    diria que a loja atendeu e não vendeu."""
+    from fila.graficos import Coluna, colunas
+
+    html = colunas("conversao", "Conversão por dia", [
+        Coluna("01", "01/09", 50.0, "50,0%"),
+        Coluna("02", "02/09", None, "—"),
+    ], marca=str)
+    assert '<li class="ind-col borda-e" style="--h: 0.0000%">' in html
+    assert "<b>—</b>" in html
+    # A marca de cima cobre a maior barra, em passo redondo: 50 em passos
+    # de 20 vai até 60, e a barra de 50 fica em cinco sextos.
+    assert '<li style="--y: 100.0000%"><span>60</span></li>' in html
+    assert 'style="--h: 83.3333%"' in html
+
+
+def test_lista_ranqueada_mede_a_barra_pelo_maior_e_a_parte_pelo_total():
+    from fila.graficos import lista_ranqueada
+
+    html = lista_ranqueada([("Sofás", 300, "R$ 300,00"), ("Mesas", 100, "R$ 100,00")], "venda")
+    assert 'width: 100.00%' in html and 'width: 33.33%' in html
+    assert ">75%<" in html and ">25%<" in html
+
+
+def test_o_painel_abre_no_vendido_e_marca_o_dia_em_andamento(rede):
+    _venda_hoje(rede, rede.caio, rede.centro, "700")
+    html = _html(logado("sylvia"), periodo="mes")
+    assert '<input type="radio" name="ind-serie" value="vendido" checked>' in html
+    assert html.count('name="ind-serie"') == 4
+    assert 'class="ind-serie visivel" data-serie="vendido"' in html
+    # Hoje é a última coluna do mês em andamento, listrada e com "até agora".
+    assert "ind-col agora" in html and "até agora" in html
+    assert "<svg" not in html.split("Ranking de vendedores")[0].split("ind-painel")[1]
+
+
+def test_periodo_terminado_nao_tem_coluna_em_andamento(rede):
+    from fila.models import Atendimento
+
+    ontem = _venda_hoje(rede, rede.caio, rede.centro, "100")
+    Atendimento.irrestritos.filter(pk=ontem.pk).update(
+        inicio=ontem.inicio - timedelta(days=1), fim=ontem.fim - timedelta(days=1))
+    # Por hora (um dia só) e por dia (intervalo que acabou ontem): nenhum dos
+    # dois caminhos pode listrar a última coluna.
+    assert "ind-col agora" not in _html(logado("sylvia"), periodo="ontem")
+    ontem_local = timezone.localdate() - timedelta(days=1)
+    intervalo = _html(logado("sylvia"), de=str(ontem_local - timedelta(days=3)),
+                      ate=str(ontem_local))
+    assert "ind-serie" in intervalo and "ind-col agora" not in intervalo
+
+
+def test_as_listas_dizem_o_total_no_subtitulo(rede):
+    _venda_hoje(rede, rede.caio, rede.centro, "700")
+    html = _html(logado("sylvia"), periodo="hoje")
+    assert "1 venda" in html
+    assert "0 atendimentos sem venda" in html

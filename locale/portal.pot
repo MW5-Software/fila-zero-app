@@ -713,10 +713,81 @@ msgstr ""
 msgid "Comparado a %(trecho)s"
 msgstr ""
 
+msgid "Atendimentos"
+msgstr ""
+
+msgid "Conversão"
+msgstr ""
+
+#, python-format
+msgid "Cliente pediu: %(quantos)s, %(conversao)s"
+msgstr ""
+
+msgid "Vendido"
+msgstr ""
+
+msgid "Ticket médio"
+msgstr ""
+
+msgid "Nenhum atendimento fechado no período."
+msgstr ""
+
+msgid "até agora"
+msgstr ""
+
+msgid "Atendimentos por hora"
+msgstr ""
+
+msgid "Atendimentos por dia"
+msgstr ""
+
+msgid "Conversão por hora"
+msgstr ""
+
+msgid "Conversão por dia"
+msgstr ""
+
+msgid "Vendido por hora"
+msgstr ""
+
+msgid "Vendido por dia"
+msgstr ""
+
+msgid "Ticket médio por hora"
+msgstr ""
+
+msgid "Ticket médio por dia"
+msgstr ""
+
+msgid "todas as lojas"
+msgstr ""
+
+msgid "Número mostrado no gráfico"
+msgstr ""
+
 msgid "Nada no período."
 msgstr ""
 
-msgid "Minutos em pausa por tipo"
+msgid "Vendido por grupo de item"
+msgstr ""
+
+#, python-format
+msgid "%(n)s venda"
+msgid_plural "%(n)s vendas"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(n)s atendimento sem venda"
+msgid_plural "%(n)s atendimentos sem venda"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Tempo em pausa"
+msgstr ""
+
+#, python-format
+msgid "%(total)s no total"
 msgstr ""
 
 msgid "Período"
@@ -740,12 +811,6 @@ msgstr ""
 msgid "Aplicar"
 msgstr ""
 
-msgid "Indicadores da fila"
-msgstr ""
-
-msgid "todas as lojas"
-msgstr ""
-
 msgid "Abrir a fila desta loja"
 msgstr ""
 
@@ -755,41 +820,10 @@ msgstr ""
 msgid "Vendedor"
 msgstr ""
 
-msgid "Vendido"
-msgstr ""
-
-msgid "Atendimentos"
-msgstr ""
-
-msgid "Conversão"
-msgstr ""
-
-msgid "Ticket médio"
-msgstr ""
-
 msgid "Cliente pediu"
 msgstr ""
 
 msgid "Pausa"
-msgstr ""
-
-#, python-format
-msgid "Cliente pediu: %(quantos)s, %(conversao)s"
-msgstr ""
-
-msgid "Atendimentos por hora"
-msgstr ""
-
-msgid "Atendimentos por dia"
-msgstr ""
-
-msgid "Vendido por hora"
-msgstr ""
-
-msgid "Vendido por dia"
-msgstr ""
-
-msgid "Vendido por grupo de item"
 msgstr ""
 
 msgid "Ranking de vendedores"
