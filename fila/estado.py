@@ -59,8 +59,19 @@ def versao_da_fila(filial) -> str:
     def marca(instante: "datetime | None") -> str:
         return str(int(instante.timestamp() * 1_000_000)) if instante else "0"
 
+    # A meta do mês aparece em "Seus números": o gerente que troca uma meta
+    # precisa ver a tela do vendedor mudar sem ele recarregar (spec das metas).
+    from django.utils import timezone
+
+    from .models import MetaDeVenda
+
+    metas = (MetaDeVenda.objects.da_empresa(filial.empresa)
+             .filter(filial=filial, mes=timezone.localdate().replace(day=1))
+             .aggregate(n=Count("pk"), quando=Max("alterada_em")))
+
     return (f"{dados['linhas']}.{marca(dados['desde'])}.{marca(dados['fila'])}"
-            f".{hoje['n']}.{hoje['total'] or 0}.{hoje['motivos'] or 0}")
+            f".{hoje['n']}.{hoje['total'] or 0}.{hoje['motivos'] or 0}"
+            f".{metas['n']}.{marca(metas['quando'])}")
 
 
 def _lancamentos_de_hoje(filial):

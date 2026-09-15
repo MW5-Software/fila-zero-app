@@ -20,5 +20,13 @@
     {{ coluna(traduzir("Hoje"), meus.hoje) }}
     {{ coluna(traduzir("Este mês"), meus.mes) }}
   </div>
+  {% if meus.meta %}
+  {% set m = meus.meta %}
+  <div class="fila-meus-meta">
+    <p class="fila-meus-meta-cab"><span>{{ traduzir("Meta do mês") }} <b>{{ m.meta|reais }}</b></span><strong>{{ "%.0f"|format(m.atingido) }}%</strong></p>
+    <div class="fila-meus-meta-barra{% if m.batida %} batida{% endif %}"><span style="width: {{ "%.1f"|format([m.atingido, 100]|min) }}%"></span></div>
+    <p class="fila-meus-meta-apoio">{% if m.batida %}{{ traduzir("Meta batida") }}{% else %}{{ traduzir("Faltam") }} {{ m.falta|reais }}, {{ m.por_dia|reais }} {{ traduzir("por dia") }}{% endif %}</p>
+  </div>
+  {% endif %}
 </section>
 {% endif %}
