@@ -273,3 +273,39 @@ def test_as_listas_dizem_o_total_no_subtitulo(rede):
     html = _html(logado("sylvia"), periodo="hoje")
     assert "1 venda" in html
     assert "0 atendimentos sem venda" in html
+
+
+# --- A meta no painel e no ranking (entrega 3) -------------------------------
+
+def _meta_da_loja(rede, loja, valor, pessoa=None):
+    from fila.metas import primeiro_do_mes
+    from fila.models import MetaDeVenda
+
+    return MetaDeVenda.irrestritos.create(
+        empresa=rede.empresa, filial=loja, pessoa=pessoa,
+        mes=primeiro_do_mes(timezone.localdate()), valor=Decimal(valor))
+
+
+def test_a_faixa_da_meta_aparece_no_mes_e_some_em_7_dias(rede):
+    _meta_da_loja(rede, rede.centro, "1000")
+    _venda_hoje(rede, rede.caio, rede.centro, "250")
+    gil = logado("gil")
+    mes = _html(gil, periodo="mes")
+    assert 'data-ind="meta"' in mes and "25,0%" in mes and "Faltam R$ 750,00" in mes
+    assert 'data-ind="meta"' not in _html(gil, periodo="7dias")
+
+
+def test_todas_as_lojas_diz_quantas_tem_meta(rede):
+    _meta_da_loja(rede, rede.centro, "1000")
+    _meta_da_loja(rede, rede.centro, "600", pessoa=rede.caio)
+    html = _html(logado("sara"), periodo="mes")
+    assert "1 de 2 lojas com meta" in html
+    assert "As metas dos vendedores somam R$ 600,00, abaixo da meta da loja." in html
+
+
+def test_ranking_ganha_meta_e_porcentagem_ordenaveis(rede):
+    _meta_da_loja(rede, rede.centro, "1000", pessoa=rede.caio)
+    _venda_hoje(rede, rede.caio, rede.centro, "500")
+    html = _html(logado("gil"), periodo="mes", ordenar="-pct_meta")
+    assert "% da meta" in html and "50,0%" in html
+    assert "% da meta" not in _html(logado("gil"), periodo="hoje")

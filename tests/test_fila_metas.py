@@ -238,3 +238,55 @@ def test_copiar_preenche_so_o_vazio_e_nao_traz_quem_saiu(loja):
     linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
     assert regras.copiar_do_anterior(loja.matriz, SETEMBRO, linhas) == {
         "loja": "200000,00", str(loja.ana.pk): "25000,00"}
+
+
+# --- A meta do recorte (painel) e o ranking --------------------------------------
+
+from tests.test_fila_indicadores import atendimento  # noqa: E402
+
+
+def _periodo(chave):
+    from fila.periodo import periodo_do_pedido
+
+    return periodo_do_pedido({"periodo": chave})
+
+
+def test_meta_do_recorte_so_em_mes_e_so_das_lojas_com_meta(loja):
+    from fila.indicadores import Recorte
+    from fila.metas import meta_do_recorte, primeiro_do_mes
+
+    centro = nova_loja(loja.empresa, "Centro")
+    agora = timezone.now()
+    mes = primeiro_do_mes(timezone.localdate(agora))
+    meta(loja, valor="10000", mes=mes)
+    hoje = timezone.localtime(agora).replace(minute=0, second=0, microsecond=0)
+    atendimento(loja, loja.ana, hoje, hoje, vendeu="1000")
+    atendimento(loja, loja.bia, hoje, hoje, vendeu="9000", filial=centro)
+
+    duas = (loja.matriz, centro)
+    m = meta_do_recorte(Recorte(loja.empresa, duas, _periodo("mes")), agora)
+    # O Centro não tem meta: nem a meta nem o vendido dele entram.
+    assert (m.lojas_com_meta, m.lojas) == (1, 2)
+    assert m.acompanhamento.vendido == Decimal("1000")
+    assert m.acompanhamento.atingido == 10.0
+    meta(loja, pessoa=loja.ana, valor="6000", mes=mes)
+    meta(loja, pessoa=loja.bia, valor="9999", mes=mes, filial=centro)  # loja sem meta
+    m = meta_do_recorte(Recorte(loja.empresa, duas, _periodo("mes")), agora)
+    assert m.soma_vendedores == Decimal("6000")
+    assert meta_do_recorte(Recorte(loja.empresa, duas, _periodo("7dias")), agora) is None
+    assert meta_do_recorte(Recorte(loja.empresa, (centro,), _periodo("mes")), agora) is None
+
+
+def test_ranking_com_meta_e_porcentagem(loja):
+    from fila.indicadores import Recorte, ranking
+    from fila.metas import primeiro_do_mes
+
+    mes = primeiro_do_mes(timezone.localdate())
+    meta(loja, pessoa=loja.ana, valor="4000", mes=mes)
+    hoje = timezone.localtime().replace(minute=0, second=0, microsecond=0)
+    atendimento(loja, loja.ana, hoje, hoje, vendeu="1000")
+    atendimento(loja, loja.bia, hoje, hoje, vendeu="500")
+    linhas = {p.nome: p for p in ranking(
+        Recorte(loja.empresa, (loja.matriz,), _periodo("mes")), mes)}
+    assert linhas["Ana"].meta == Decimal("4000") and linhas["Ana"].pct_meta == 25.0
+    assert linhas["Bia"].meta is None and linhas["Bia"].pct_meta is None

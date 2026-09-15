@@ -21,9 +21,9 @@ from django.utils.translation import gettext_lazy
 
 from .periodo import ANOS_ACEITOS
 
-__all__ = ["Acompanhamento", "Linha", "MES_ENCERRADO", "ValoresInvalidos",
+__all__ = ["Acompanhamento", "Linha", "MES_ENCERRADO", "MetaDoRecorte", "ValoresInvalidos",
            "acompanhar", "copiar_do_anterior", "gravar", "lojas_com_metas",
-           "mes_anterior", "mes_do_texto", "mes_encerrado", "mes_seguinte",
+           "mes_anterior", "mes_do_texto", "mes_do_periodo", "mes_encerrado", "mes_seguinte", "meta_do_recorte",
            "meta_da_loja", "pessoas_da_lista", "primeiro_do_mes",
            "ultimo_do_mes", "valor_do_campo"]
 
@@ -312,3 +312,56 @@ def copiar_do_anterior(loja, mes, linhas: "list[Linha]") -> "dict[str, str]":
         if linha.valor is None and linha.pessoa.pk in antes:
             copia[str(linha.pessoa.pk)] = valor_do_campo(antes[linha.pessoa.pk])
     return copia
+
+
+def mes_do_periodo(periodo) -> "date | None":
+    """O mês do calendário do período, se ele for um mês inteiro dos atalhos.
+    Em "7 dias" ou num intervalo, a meta do mês não tem com o que comparar."""
+    if periodo.chave not in ("mes", "mes_passado"):
+        return None
+    return timezone.localdate(periodo.de).replace(day=1)
+
+
+@dataclass(frozen=True)
+class MetaDoRecorte:
+    acompanhamento: Acompanhamento
+    lojas_com_meta: int
+    lojas: int
+    soma_vendedores: Decimal
+
+
+def meta_do_recorte(recorte, agora: "datetime | None" = None) -> "MetaDoRecorte | None":
+    """A meta das lojas do recorte contra o vendido DESSAS lojas.
+
+    Em "Todas as lojas" com uma loja sem meta, somar a meta das outras e
+    comparar com o vendido de todas faria a meta parecer batida por causa da
+    loja sem meta; por isso as duas pontas saem das mesmas lojas.
+    """
+    from .indicadores import Recorte, numeros
+    from .models import MetaDeVenda
+    from .periodo import Periodo, inicio_do_dia
+
+    agora = agora or timezone.now()
+    mes = mes_do_periodo(recorte.periodo)
+    if mes is None:
+        return None
+    por_loja = dict(MetaDeVenda.objects.da_empresa(recorte.empresa)
+                    .filter(filial__in=recorte.lojas, mes=mes, pessoa__isnull=True)
+                    .values_list("filial_id", "valor"))
+    if not por_loja:
+        return None
+    com_meta = tuple(l for l in recorte.lojas if l.pk in por_loja)
+    # M2: o painel diz se as metas dos vendedores cobrem a da loja.
+    soma_vendedores = sum(
+        MetaDeVenda.objects.da_empresa(recorte.empresa)
+        .filter(filial__in=com_meta, mes=mes, pessoa__isnull=False)
+        .values_list("valor", flat=True), ZERO)
+    vendido = numeros(Recorte(recorte.empresa, com_meta, recorte.periodo)).vendido
+    ate_ontem = None
+    if recorte.periodo.ate > agora:
+        ontem = Periodo(recorte.periodo.de, inicio_do_dia(timezone.localdate(agora)),
+                        "intervalo", "")
+        ate_ontem = numeros(Recorte(recorte.empresa, com_meta, ontem)).vendido
+    return MetaDoRecorte(
+        acompanhar(sum(por_loja.values(), ZERO), vendido, mes, agora, ate_ontem),
+        len(com_meta), len(recorte.lojas), soma_vendedores)

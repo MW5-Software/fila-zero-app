@@ -61,6 +61,18 @@ form[action="/"] .formgrid { align-items: end; }
 .ind-painel:has(input[value="vendido"]:checked) .ind-serie[data-serie="vendido"],
 .ind-painel:has(input[value="ticket"]:checked) .ind-serie[data-serie="ticket"] { display: block; }
 
+/* --- A meta do mês, entre as abas e o gráfico ---------------------------- */
+
+.ind-meta { padding: 16px var(--card-pad) 4px; display: grid; gap: 8px; }
+.ind-meta-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 13.5px; color: var(--on-surface-2); }
+.ind-meta-cab b { color: var(--on-surface); font-variant-numeric: tabular-nums; }
+.ind-meta-cab strong { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--on-surface); font-variant-numeric: tabular-nums; }
+.ind-meta-barra { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.ind-meta-barra > span { display: block; height: 100%; border-radius: 5px; background: var(--primary); }
+/* Batida, a barra cheia fica verde: a mesma cor da seta que sobe. */
+.ind-meta-barra.batida > span { background: var(--ok); }
+.ind-meta-apoio { margin: 0; font-size: 13px; color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+
 /* --- As colunas no tempo -------------------------------------------------- */
 
 /* A margem da esquerda é a largura do eixo ("R$ 100 mil"); a de baixo, a dos
