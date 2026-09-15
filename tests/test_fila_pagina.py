@@ -414,3 +414,20 @@ def test_id_com_digito_unicode_nao_estoura(loja):
     ana = logado("ana")
     _agir(ana, acao="ponto")
     assert _agir(ana, acao="pausar", tipo="²").status_code == 302
+
+
+def test_quem_esta_em_duas_lojas_troca_de_loja_pela_propria_fila(loja):
+    """No celular o cabeçalho do sistema esconde o seletor de filial (abaixo de
+    1000px), e o vendedor de duas lojas não tinha como trocar pela fila."""
+    from contas.models import Alocacao, Cargo
+
+    centro = nova_loja(loja.empresa, "Centro")
+    Alocacao.objects.create(pessoa=loja.ana, empresa=loja.empresa, filial=centro,
+                            cargo=Cargo.objects.get(conta_id=loja.empresa.conta_id,
+                                                    nome="vendedor"))
+    html = _html(logado("ana"))
+    # A loja da sessão é uma das duas; o link oferecido é o da outra.
+    oferecidas = {pk for pk in (loja.matriz.pk, centro.pk)
+                  if f"/filial/trocar?filial_id={pk}&amp;voltar=%2Ffila" in html}
+    assert len(oferecidas) == 1
+    assert "/filial/trocar?" not in _html(logado("bia"))

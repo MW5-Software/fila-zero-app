@@ -17,6 +17,7 @@ from markupsafe import Markup
 from comum.csrf import campo_csrf
 from comum.personificacao import aviso as aviso_de_personificacao
 from contas.identidade import usuario_de
+from plataforma.contexto import filiais_de
 from nucleo.permissoes import pode
 from nucleo.rendering import use_environment
 
@@ -48,6 +49,17 @@ class Alvo:
 
 _POR_EXTENSO = ("", "uma", "duas", "três", "quatro", "cinco", "seis", "sete",
                 "oito", "nove", "dez")
+
+
+def trocar_e_abrir_a_fila(loja) -> str:
+    """O endereço que troca a filial da sessão para `loja` e volta para a
+    fila. A troca pede confirmação (`plataforma.views_filial.filial_trocar`),
+    porque GET não muda estado nesta casa."""
+    from urllib.parse import urlencode
+
+    from plataforma.contexto import CHAVE
+
+    return f"{reverse('filial_trocar')}?{urlencode({CHAVE: loja.pk, 'voltar': reverse('fila')})}"
 
 
 def so_a_fila(user) -> bool:
@@ -195,6 +207,11 @@ def _contexto(request, filial, recusa=""):
     return {
         "r": r,
         "trilha": _trilha(r),
+        # As outras lojas da pessoa, para trocar pela própria fila: no celular
+        # o cabeçalho do sistema esconde o seletor de filial.
+        "outras_lojas": [(loja, trocar_e_abrir_a_fila(loja))
+                         for loja in filiais_de(request.usuario, empresa)
+                         if loja.pk != filial.pk],
         "meus": (_meus_numeros(pessoa, filial)
                  if pode(request.usuario, "fila.participar") else None),
         "resumo": _resumo(lancamentos),

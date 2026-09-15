@@ -16,6 +16,23 @@ from .contexto import CHAVE, escolher, filial_permitida
 __all__ = ["filial_trocar"]
 
 
+def _voltar_seguro(request, voltar: str) -> str:
+    """O `voltar` pedido, se for um caminho DESTA instalação; senão, a raiz.
+
+    Existe para a página que trocou de filial receber a pessoa de volta (a
+    fila do Fila Zero, 15/09/2026). Só caminho local: aceitar um endereço de
+    fora faria a troca de filial virar um redirecionamento aberto.
+    """
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    if (voltar.startswith("/") and not voltar.startswith("//")
+            and url_has_allowed_host_and_scheme(
+                voltar, allowed_hosts={request.get_host()},
+                require_https=request.is_secure())):
+        return voltar
+    return "/"
+
+
 @exigir_login
 def filial_trocar(request) -> HttpResponse:
     """Troca a filial do contexto para o resto desta sessão.
@@ -48,12 +65,14 @@ def filial_trocar(request) -> HttpResponse:
         filial = filial_permitida(request, request.GET.get(CHAVE, ""))
         if filial is None:
             return HttpResponseNotFound()
+        voltar = _voltar_seguro(request, request.GET.get("voltar", ""))
         return tela_de_confirmacao(
             request, titulo=_("Trocar filial"),
             pergunta=f"Trabalhar em {filial}?",
             rotulo_botao="Confirmar",
             action=reverse("filial_trocar"),
-            campos_ocultos={CHAVE: str(filial.pk)},
+            voltar_href=voltar,
+            campos_ocultos={CHAVE: str(filial.pk), "voltar": voltar},
         )
     if request.method != "POST":
         return HttpResponseNotAllowed(["GET", "POST"])
@@ -63,4 +82,4 @@ def filial_trocar(request) -> HttpResponse:
         return HttpResponseNotFound()
 
     registrar(ACOES.FILIAL_TROCADA, request.usuario, alvo=str(filial), request=request)
-    return HttpResponseRedirect("/")
+    return HttpResponseRedirect(_voltar_seguro(request, request.POST.get("voltar", "")))

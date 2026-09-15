@@ -7,7 +7,17 @@
 
   <section class="fila-hero" aria-live="polite">
     <div class="fila-hero-topo">
+      {% if outras_lojas %}
+      <details class="fila-hero-loja fila-trocar-loja">
+        <summary>{{ icon("store", "sm") }}<span>{{ filial }}</span>{{ icon("chevron-down", "sm") }}</summary>
+        <div class="fila-trocar-loja-menu">
+          <p>{{ traduzir("Trocar de loja") }}</p>
+          {% for loja, endereco in outras_lojas %}<a href="{{ endereco }}">{{ loja }}</a>{% endfor %}
+        </div>
+      </details>
+      {% else %}
       <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
+      {% endif %}
       <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>
     </div>
     <div class="fila-hero-corpo">

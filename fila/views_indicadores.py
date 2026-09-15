@@ -28,6 +28,7 @@ from plataforma.contexto import empresa_atual
 
 from . import indicadores as ind
 from .periodo import ATALHOS, periodo_anterior, periodo_do_pedido
+from .tela import trocar_e_abrir_a_fila
 from .valores import em_reais
 
 __all__ = ["indicadores"]
@@ -142,9 +143,12 @@ def _desde(instante) -> str:
 def _esquecidos(lista):
     if not lista:
         return ""
+    # O link troca para a loja DO ITEM e volta para a fila: apontar para
+    # `/fila` abria a loja da sessão, onde a pessoa esquecida não está
+    # (revisão final, 15/09/2026).
     itens = format_html_join("", '<li>{}: {} em {}, desde {}. <a href="{}">{}</a></li>', (
         (e.o_que, e.nome, e.loja, _desde(e.desde),
-         reverse("fila"), _("Abrir a fila")) for e in lista))
+         trocar_e_abrir_a_fila(e.loja), _("Abrir a fila desta loja")) for e in lista))
     return Alert(tone="warn", title=_("Ficou aberto de um dia para o outro"),
                  attrs={"data-esquecidos": ""},
                  message=Raw(html=format_html("<ul>{}</ul>", itens)))

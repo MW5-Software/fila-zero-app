@@ -137,3 +137,14 @@ def test_aplicar_os_filtros_mantem_a_ordenacao_do_ranking(rede):
     # Duas vezes: a barra do ranking já levava a ordenação; o que faltava era
     # o formulário do período e da loja levar também.
     assert html.count('<input type="hidden" name="ordenar" value="-atendimentos">') == 2
+
+
+def test_esquecido_leva_a_fila_da_loja_do_item(rede):
+    """B7: o link abria a fila da loja da sessão, e não a do esquecido."""
+    from fila.models import Presenca
+
+    Presenca.irrestritos.create(empresa=rede.empresa, filial=rede.centro,
+                                pessoa=rede.caio,
+                                entrada=timezone.now() - timedelta(days=2))
+    html = _html(logado("sara"), periodo="hoje")
+    assert f"/filial/trocar?filial_id={rede.centro.pk}&amp;voltar=%2Ffila" in html
