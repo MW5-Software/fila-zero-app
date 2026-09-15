@@ -22,8 +22,10 @@ MODULO = ModuloSpec(
     icone="users",
     grupo="Vendas",
     rota="/fila",
+    # fila.relatorios (entrega 2) no fim: fila.ver continua a primeira, que é
+    # a do menu.
     permissoes=("fila.ver", "fila.participar", "fila.gerenciar",
-                "fila.cadastros"),
+                "fila.cadastros", "fila.relatorios"),
     atalhos=(
         Atalho(rotulo=_("Grupos de item"), rota="/fila/grupos",
                permissao="fila.cadastros", grupo="Cadastro",
@@ -34,6 +36,8 @@ MODULO = ModuloSpec(
         Atalho(rotulo=_("Tipos de pausa"), rota="/fila/pausas",
                permissao="fila.cadastros", grupo="Cadastro",
                pai="Fila da vez"),
+        Atalho(rotulo=_("Indicadores da fila"), rota="/fila/indicadores",
+               permissao="fila.relatorios", grupo="Vendas"),
     ),
     ativo_por_padrao=True,
 )

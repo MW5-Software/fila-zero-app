@@ -41,11 +41,14 @@ __all__ = ["DE_FABRICA", "garantir_cargos_de_fabrica", "semear_cargos"]
 #: cargos", e o desvio D-1 do plano: `fila.ver` acompanha toda permissão da
 #: fila, porque é ela que põe a fila no menu). Representante e Cliente não
 #: estão na loja atendendo, e por isso não trazem nada da fila.
+#: `fila.relatorios` (entrega 2): gerente e supervisor leem os indicadores do
+#: alcance deles.
 DE_FABRICA: "tuple[tuple[str, str, str, bool, tuple[str, ...]], ...]" = (
     ("supervisor", "Supervisor", "empresa", False,
-     ("usuarios.editar", "fila.ver", "fila.gerenciar")),
+     ("usuarios.editar", "fila.ver", "fila.gerenciar", "fila.relatorios")),
     ("gerente", "Gerente", "filial", False,
-     ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar")),
+     ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar",
+      "fila.relatorios")),
     ("vendedor", "Vendedor", "filial", False,
      ("fila.ver", "fila.participar")),
     ("representante", "Representante", "filial", False, ()),

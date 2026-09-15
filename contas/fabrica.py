@@ -55,7 +55,8 @@ DE_FABRICA: dict[int, tuple[str, ...]] = {
     Nivel.TITULAR: (
         "cargos.editar", "empresa.editar",
         "filiais.editar",
-        "fila.cadastros", "fila.gerenciar", "fila.participar", "fila.ver",
+        "fila.cadastros", "fila.gerenciar", "fila.participar",
+        "fila.relatorios", "fila.ver",
         "usuarios.editar",
     ),
 }

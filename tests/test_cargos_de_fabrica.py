@@ -50,9 +50,10 @@ def test_as_permissoes_iniciais(titular):
     # acrescenta a fila (spec 2026-09-15): o supervisor corrige, o gerente
     # atende e corrige, o vendedor atende. O representante não está na loja.
     assert _permissoes(cargos["supervisor"]) == {
-        "usuarios_editar", "fila_ver", "fila_gerenciar"}
+        "usuarios_editar", "fila_ver", "fila_gerenciar", "fila_relatorios"}
     assert _permissoes(cargos["gerente"]) == {
-        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar"}
+        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
+        "fila_relatorios"}
     assert _permissoes(cargos["vendedor"]) == {"fila_ver", "fila_participar"}
     assert _permissoes(cargos["representante"]) == set()
     assert _permissoes(cargos["cliente"]) == set()
@@ -148,4 +149,5 @@ def test_o_migrate_de_verdade_semeia_o_titular_que_ja_existia():
     assert set(cargos) == {"supervisor", "gerente", "vendedor",
                            "representante", "cliente"}
     assert _permissoes(cargos["gerente"]) == {
-        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar"}
+        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
+        "fila_relatorios"}

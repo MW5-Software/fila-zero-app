@@ -179,7 +179,11 @@ class Atendimento(ModeloDaEmpresa):
                 name="fila_um_atendimento_aberto_por_vendedor"),
         ]
         indexes = [models.Index(fields=["filial", "fim"],
-                                name="fila_atendimento_do_dia")]
+                                name="fila_atendimento_do_dia"),
+                   # Os indicadores (entrega 2) filtram por empresa, loja e
+                   # período a cada tela aberta.
+                   models.Index(fields=["empresa", "filial", "fim"],
+                                name="fila_atendimento_periodo")]
 
 
 class ItemVendido(ModeloDaEmpresa):
@@ -213,3 +217,7 @@ class Pausa(ModeloDaEmpresa):
                 fields=["pessoa"], condition=Q(fim__isnull=True),
                 name="fila_uma_pausa_aberta_por_pessoa"),
         ]
+        # O tempo em pausa dos indicadores (entrega 2) filtra por loja e
+        # período.
+        indexes = [models.Index(fields=["filial", "inicio"],
+                                name="fila_pausa_periodo")]
