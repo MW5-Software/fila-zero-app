@@ -33,10 +33,16 @@
     document.querySelectorAll("time[data-desde]").forEach(function (t) {
       t.textContent = haQuanto(t.dataset.desde);
     });
+    // Os cronômetros de quem atende ou pausa: só o número; o "min" é do HTML.
+    document.querySelectorAll("[data-minutos]").forEach(function (n) {
+      var minutos = Math.max(0, Math.floor((Date.now() - new Date(n.dataset.minutos).getTime()) / 60000));
+      var texto = n.firstChild;
+      if (texto && texto.nodeType === 3) texto.nodeValue = String(minutos);
+    });
   }
 
   function numeroDaPosicao() {
-    var n = document.querySelector("#fila-painel .painel-numero");
+    var n = document.querySelector("#fila-painel .painel-na-fila .fila-numeral-n");
     return n ? n.textContent.trim() : "";
   }
 
@@ -61,6 +67,13 @@
       corpo.classList.add("fila-mudou");
     }
     atualizarTempos();
+    rolarTrilha();
+  }
+
+  // Na trilha estreita do celular, a pessoa é o último nó: rola até ela.
+  function rolarTrilha() {
+    var trilha = document.querySelector(".fila-trilha");
+    if (trilha) trilha.scrollLeft = trilha.scrollWidth;
   }
 
   function mostrarRecusa(frase) {
@@ -68,6 +81,11 @@
     if (!caixa) return;
     caixa.textContent = frase || "";
     caixa.hidden = !frase;
+  }
+
+  function textoAoVivo(texto) {
+    var alvo = document.querySelector("[data-ao-vivo-texto]");
+    if (alvo) alvo.textContent = texto;
   }
 
   function agendar(espera) {
@@ -84,12 +102,14 @@
       return r.json();
     }).then(function (dados) {
       corpo.classList.remove("fila-sem-sinal");
+      textoAoVivo("Ao vivo");
       if (dados.mudou) trocar(dados.html, dados.versao);
       agendar(INTERVALO);
     }).catch(function () {
       // Celular que perde sinal: avisa e tenta de novo mais devagar, sem
       // derrubar a página nem empilhar pedidos.
       corpo.classList.add("fila-sem-sinal");
+      textoAoVivo("Sem conexão");
       agendar(INTERVALO_SEM_SINAL);
     });
   }
@@ -227,6 +247,7 @@
     if (!document.hidden) agendar(0);
   });
 
+  rolarTrilha();
   setInterval(atualizarTempos, 30000);
   if (urlEstado) agendar(INTERVALO);
 })();

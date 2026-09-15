@@ -15,6 +15,7 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta
 
 from django.db import transaction
+from django.db.models import BooleanField, ExpressionWrapper, Q
 from django.utils import timezone
 
 from comum.auditoria import ACOES, registrar
@@ -162,4 +163,7 @@ def lancamentos_de_hoje(filial, dia=None):
     return (Atendimento.objects.da_empresa(filial.empresa)
             .filter(filial=filial, fim__gte=inicio,
                     fim__lt=inicio + timedelta(days=1))
-            .select_related("vendedor", "motivo").order_by("-fim"))
+            .select_related("vendedor", "motivo").defer("vendedor__avatar")
+            .annotate(tem_foto=ExpressionWrapper(
+                Q(vendedor__avatar__isnull=False), output_field=BooleanField()))
+            .order_by("-fim"))

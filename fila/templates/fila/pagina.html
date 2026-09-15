@@ -1,22 +1,22 @@
 {# O miolo da página da fila, posto dentro do shell do sistema (`fila.tela`).
    Os ids `fila-*` são os pedaços que o script troca a cada consulta. #}
 <div class="fila" id="fila" data-estado-url="{{ url_estado }}" data-agir-url="{{ url_agir }}" data-versao="{{ r.versao }}">
-  <div class="fila-topo">
-    <div class="fila-topo-txt">
-      <h1 class="fila-titulo">{{ traduzir("Fila da vez") }}</h1>
-      <p class="fila-loja">{{ icon("store", "sm") }} {{ filial }}</p>
-    </div>
-    <span class="pill ok fila-ao-vivo" data-ao-vivo>{{ traduzir("Ao vivo") }}</span>
-  </div>
+  <h1 class="visually-hidden">{{ traduzir("Fila da vez") }}, {{ filial }}</h1>
 
   <div id="fila-recusa" class="alert warn fila-recusa" role="alert"{% if not recusa %} hidden{% endif %}>{{ icon("alert") }}<div>{{ recusa }}</div></div>
 
-  <section class="card fila-eu" aria-live="polite">
-    <div id="fila-painel" class="fila-eu-painel">{% include "fila/_painel.html" %}</div>
-    <div id="fila-barra" class="fila-eu-acoes">{% include "fila/_barra.html" %}</div>
+  <section class="fila-hero" aria-live="polite">
+    <div class="fila-hero-topo">
+      <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
+      <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>
+    </div>
+    <div class="fila-hero-corpo">
+      <div id="fila-painel" class="fila-hero-painel">{% include "fila/_painel.html" %}</div>
+      <div id="fila-barra" class="fila-hero-acoes">{% include "fila/_barra.html" %}</div>
+    </div>
   </section>
 
-  <div id="fila-lista" class="fila-quadro">{% include "fila/_lista.html" %}</div>
+  <div id="fila-lista">{% include "fila/_lista.html" %}</div>
 
   <div id="fila-lancamentos"{% if not pode_gerenciar %} hidden{% endif %}>{% include "fila/_lancamentos.html" %}</div>
 </div>

@@ -25,7 +25,7 @@ from .estado import nome_de, retrato
 from .models import (Atendimento, Estado, GrupoDeItem, LugarNaFila,
                      MotivoDeNaoVenda, TipoDePausa)
 
-__all__ = ["PEDACOS", "ha_quanto", "hora_local", "iniciais", "pagina",
+__all__ = ["PEDACOS", "ha_quanto", "hora_local", "iniciais", "minutos", "pagina",
            "pedacos", "pessoas_na_frente", "sem_loja", "so_a_fila"]
 
 #: Os pedaços que a consulta troca, com o template de cada um.
@@ -63,6 +63,11 @@ def ha_quanto(instante, agora=None) -> str:
     if minutos < 60:
         return f"há {minutos} min"
     return f"há {minutos // 60} h {minutos % 60:02d} min"
+
+
+def minutos(instante, agora=None) -> int:
+    """Minutos inteiros desde `instante`: o cronômetro de quem atende ou pausa."""
+    return max(0, int(((agora or timezone.now()) - instante).total_seconds() // 60))
 
 
 def hora_local(instante) -> str:
@@ -113,12 +118,47 @@ def _alvo_da_folha(request, filial):
             if lugar else None)
 
 
+@dataclass(frozen=True)
+class Resumo:
+    """O dia da loja em quatro números, no topo dos lançamentos do gerente."""
+
+    atendimentos: int
+    vendas: int
+    total: "Decimal"
+    conversao: int
+
+
+def _resumo(lancamentos) -> Resumo:
+    from decimal import Decimal
+
+    vendas = [a for a in lancamentos if a.resultado == "vendeu"]
+    total = sum((a.total for a in vendas), Decimal("0"))
+    conversao = round(100 * len(vendas) / len(lancamentos)) if lancamentos else 0
+    return Resumo(len(lancamentos), len(vendas), total, conversao)
+
+
+def _trilha(r) -> list:
+    """Quem está na frente, até a própria pessoa (ou a fila inteira para quem
+    não está nela), no máximo seis: a trilha mostra o caminho até a vez, e não
+    a fila toda — essa está logo abaixo."""
+    fila = r.fila
+    ate = next((i for i, l in enumerate(fila) if l.e_voce), len(fila) - 1)
+    caminho = fila[:ate + 1]
+    if len(caminho) <= 6:
+        return list(caminho)
+    return [*caminho[:2], None, *caminho[-3:]]
+
+
 def _contexto(request, filial, recusa=""):
     pessoa = usuario_de(request.usuario)
     empresa = filial.empresa
     pode_gerenciar = pode(request.usuario, "fila.gerenciar")
+    r = retrato(filial, pessoa)
+    lancamentos = list(lancamentos_de_hoje(filial)) if pode_gerenciar else []
     return {
-        "r": retrato(filial, pessoa),
+        "r": r,
+        "trilha": _trilha(r),
+        "resumo": _resumo(lancamentos),
         "Estado": Estado,
         "filial": filial,
         "nome": nome_de(pessoa) if pessoa else "",
@@ -135,7 +175,7 @@ def _contexto(request, filial, recusa=""):
         "grupos": list(GrupoDeItem.objects.da_empresa(empresa).filter(ativo=True)),
         "motivos": list(MotivoDeNaoVenda.objects.da_empresa(empresa).filter(ativo=True)),
         "tipos": list(TipoDePausa.objects.da_empresa(empresa).filter(ativo=True)),
-        "lancamentos": list(lancamentos_de_hoje(filial)) if pode_gerenciar else [],
+        "lancamentos": lancamentos,
         "folha": request.GET.get("folha", ""),
         "alvo": _alvo_da_folha(request, filial) if pode_gerenciar else None,
         "editando": _lancamento_em_edicao(request, filial) if pode_gerenciar else None,

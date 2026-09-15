@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 00:28-0300\n"
+"POT-Creation-Date: 2026-09-15 00:44-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -741,8 +741,14 @@ msgstr "Guardar corrección"
 msgid "Lançamentos de hoje"
 msgstr "Registros de hoy"
 
-msgid "Atendimentos fechados nesta loja hoje."
-msgstr "Atenciones cerradas hoy en esta tienda."
+msgid "Atendimentos"
+msgstr "Atenciones"
+
+msgid "Conversão"
+msgstr "Conversión"
+
+msgid "Vendido"
+msgstr "Vendido"
 
 msgid "às"
 msgstr "a las"
@@ -753,11 +759,14 @@ msgstr "Ninguna atención cerrada hoy."
 msgid "você"
 msgstr "usted"
 
-msgid "Esperando"
-msgstr "Esperando"
+msgid "Próximo a atender"
+msgstr "Próximo en atender"
 
 msgid "A fila está vazia."
 msgstr "La fila está vacía."
+
+msgid "Quem bater o ponto entra aqui, na ordem de chegada."
+msgstr "Quien marque su llegada entra aquí, en orden de llegada."
 
 msgid "Ninguém atendendo agora."
 msgstr "Nadie atendiendo ahora."
@@ -765,11 +774,14 @@ msgstr "Nadie atendiendo ahora."
 msgid "Ninguém em pausa."
 msgstr "Nadie en pausa."
 
-msgid "Acompanhando a loja"
-msgstr "Siguiendo la tienda"
+msgid "Ordem da fila"
+msgstr "Orden de la fila"
 
-msgid "na fila"
-msgstr "en la fila"
+msgid "Você"
+msgstr "Usted"
+
+msgid "na fila agora"
+msgstr "en la fila ahora"
 
 msgid "atendendo"
 msgstr "atendiendo"
@@ -782,6 +794,9 @@ msgstr "Usted no está en la fila"
 
 msgid "Bata o ponto quando chegar na loja para entrar no fim da fila."
 msgstr "Marque su llegada al entrar a la tienda para ponerse al final de la fila."
+
+msgid "na fila agora."
+msgstr "en la fila ahora."
 
 msgid "É a sua vez"
 msgstr "Es su turno"
@@ -800,6 +815,9 @@ msgstr "esperando"
 
 msgid "Começou às"
 msgstr "Empezó a las"
+
+msgid "Ao terminar, lance se vendeu."
+msgstr "Al terminar, registre si vendió."
 
 msgid "Desde"
 msgstr "Desde"

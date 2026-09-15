@@ -709,7 +709,13 @@ msgstr ""
 msgid "Lançamentos de hoje"
 msgstr ""
 
-msgid "Atendimentos fechados nesta loja hoje."
+msgid "Atendimentos"
+msgstr ""
+
+msgid "Conversão"
+msgstr ""
+
+msgid "Vendido"
 msgstr ""
 
 msgid "às"
@@ -721,10 +727,13 @@ msgstr ""
 msgid "você"
 msgstr ""
 
-msgid "Esperando"
+msgid "Próximo a atender"
 msgstr ""
 
 msgid "A fila está vazia."
+msgstr ""
+
+msgid "Quem bater o ponto entra aqui, na ordem de chegada."
 msgstr ""
 
 msgid "Ninguém atendendo agora."
@@ -733,10 +742,13 @@ msgstr ""
 msgid "Ninguém em pausa."
 msgstr ""
 
-msgid "Acompanhando a loja"
+msgid "Ordem da fila"
 msgstr ""
 
-msgid "na fila"
+msgid "Você"
+msgstr ""
+
+msgid "na fila agora"
 msgstr ""
 
 msgid "atendendo"
@@ -749,6 +761,9 @@ msgid "Você não está na fila"
 msgstr ""
 
 msgid "Bata o ponto quando chegar na loja para entrar no fim da fila."
+msgstr ""
+
+msgid "na fila agora."
 msgstr ""
 
 msgid "É a sua vez"
@@ -767,6 +782,9 @@ msgid "esperando"
 msgstr ""
 
 msgid "Começou às"
+msgstr ""
+
+msgid "Ao terminar, lance se vendeu."
 msgstr ""
 
 msgid "Desde"
