@@ -44,8 +44,10 @@ jobs:
           push: true
           build-args: | 
             GIT_SHA=${{ github.event.workflow_run.head_sha }}
+          # Só pelo commit, nunca `latest` (guia da VPS MW5): a VPS implanta
+          # um commit, e voltar versão é pedir o commit anterior. `latest` não
+          # diz o que está rodando.
           tags: |
-            ghcr.io/mw5-software/fila-zero:latest
             ghcr.io/mw5-software/fila-zero:${{ github.event.workflow_run.head_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

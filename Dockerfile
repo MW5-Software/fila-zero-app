@@ -66,6 +66,23 @@ RUN DJANGO_DEBUG=1 \
     KRONOS_BANCO=postgresql://build:build@127.0.0.1:5432/build \
     python manage.py collectstatic --noinput
 
+# Usuário sem privilégio (guia "preparar-repositorio" da VPS MW5): como root,
+# um furo da aplicação vira root no container. Criado depois do
+# `collectstatic`, que só lê o código; `midia/` e `backups/` são as duas
+# pastas em que o sistema grava em tempo de execução, e nascem dele. Na VPS a
+# mídia é um volume de `/srv/data/<slug>`, e o dono do volume precisa bater
+# com este usuário.
+RUN useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin app \
+    && mkdir -p /app/midia /app/backups \
+    && chown -R app:app /app/midia /app/backups
+USER app
+# O gunicorn 26 abre um socket de controle na pasta de trabalho, e `/app` não
+# é do `app`: sem isto, todo boot registrava "Permission denied:
+# '/app/.gunicorn'" no log. Variável, e não argumento do `CMD`, porque o
+# compose da VPS troca o comando (migra antes de subir) e o argumento se
+# perderia. Não é segredo: é um caminho.
+ENV GUNICORN_CMD_ARGS="--control-socket /tmp/gunicorn.ctl"
+
 EXPOSE 8000
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

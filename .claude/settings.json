@@ -1,0 +1,6 @@
+{
+  "extraKnownMarketplaces": {
+    "mw5": { "source": { "source": "github", "repo": "MW5-Software/claude-mw5" } }
+  },
+  "enabledPlugins": { "mw5@mw5": true }
+}

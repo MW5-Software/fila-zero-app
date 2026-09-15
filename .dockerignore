@@ -3,7 +3,12 @@
 __pycache__/
 *.py[cod]
 *.sqlite3
-.env
+# Qualquer `.env` (`.env.local`, `.env.hml`…): segredo de quem constrói, que
+# dentro da imagem iria para o registry.
+.env*
+# Dado da máquina de quem constrói, e não código: fotos e dumps do banco.
+midia/
+backups/
 *.log
 .pytest_cache/
 .superpowers/

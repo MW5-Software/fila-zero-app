@@ -108,7 +108,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 110 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 111 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -508,7 +508,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 110 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 111 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O
@@ -519,6 +519,14 @@ as MESMAS tabelas da base, sem aviso nenhum.
 Os 9 testes do ciclo real de backup pulam sem `pg_dump`, `pg_restore`, `psql`,
 `createdb` e `dropdb` no `PATH`. Scripts que chamam o `postgres:16-alpine` por
 `docker run --network host` servem.
+
+**Publicar é pela VPS MW5** (plugin `mw5`, em `.claude/settings.json`), e o
+padrão de verdade é o que a própria VPS devolve (`mw5_padrao
+preparar-repositorio`). O que este repositório já cumpre, e
+`tests/test_preparo_da_vps.py` cobra: a imagem roda sem root, publica só pelo
+commit (nunca `latest`), e o CI implanta em homologação o commit que a suíte
+testou; produção nunca entra no CI. `deploy/docker-compose.vps.yml` e
+`deploy/atualizar.sh` são do modelo antigo, anterior à VPS.
 
 `config/settings.py` **falha fechado**: fora de `DJANGO_DEBUG=1`, esquecer
 `DJANGO_SECRET_KEY` trava a subida em vez de cair num padrão conhecido. Ver o
