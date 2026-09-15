@@ -258,3 +258,70 @@ def test_as_folhas_abrem_pela_url(loja):
     assert '<dialog id="folha-tirar" class="folha" open>' in tirar
     forjada = _html(gil, "/fila?folha=tirar&pessoa=999999")
     assert '<dialog id="folha-tirar" class="folha" open>' not in forjada
+
+
+class TestOVisualTemOQueFoiAprovado:
+    """Sem navegador (regra da casa): o que se prova aqui é que a folha e o
+    script estão servidos e carregam o combinado — a cor de cada estado, a
+    fonte auto-hospedada e o respeito a quem pediu menos movimento."""
+
+    FOLHA = "fila/static/fila/fila.css"
+    SCRIPT = "fila/static/fila/fila.js"
+
+    def _folha(self):
+        from pathlib import Path
+
+        return Path(self.FOLHA).read_text(encoding="utf-8")
+
+    def test_a_paleta_aprovada_esta_declarada(self):
+        folha = self._folha().upper()
+        for cor in ("#ECEEED", "#1E2530", "#0E4F54", "#B5893A", "#6B7480",
+                    "#2F7A4B"):
+            assert cor in folha, cor
+
+    def test_a_fonte_e_auto_hospedada_e_existe(self):
+        """Todo `url(...)` da folha aponta para arquivo do repositório: um
+        relativo resolve em `fila/static/fila/`, e `/static/<app>/...` em
+        `<app>/static/<app>/...`. Nada vem de fora."""
+        import re
+        from pathlib import Path
+
+        enderecos = re.findall(r"url\(\"([^\"]+)\"\)", self._folha())
+        assert enderecos, "a folha não declara @font-face"
+        for endereco in enderecos:
+            assert not endereco.startswith(("http:", "https:", "//")), endereco
+            if endereco.startswith("/static/"):
+                app = endereco.split("/")[2]
+                arquivo = Path(app) / "static" / endereco[len("/static/"):]
+            else:
+                arquivo = Path("fila/static/fila") / endereco
+            assert arquivo.exists(), endereco
+        assert Path("fila/static/fila/fontes/bricolage.woff2").read_bytes()[:4] == b"wOF2"
+
+    def test_o_que_a_pagina_esconde_some_de_verdade(self):
+        """A recusa, a parte de venda e a de não venda da folha e os
+        lançamentos são escondidos com `hidden`. A varredura da casa
+        (`tests/test_esconder_vence_o_display.py`) só reconhece o elemento
+        criado por `createElement`, e o script da fila esconde o que o
+        servidor desenhou: a regra global é o que garante que um `display`
+        escrito amanhã numa dessas classes não os traga de volta."""
+        import re
+
+        assert re.search(r"\[hidden\]\s*\{\s*display:\s*none\s*!important",
+                         self._folha())
+
+    def test_movimento_respeita_quem_pediu_menos(self):
+        assert "prefers-reduced-motion" in self._folha()
+
+    def test_o_script_consulta_a_cada_tres_segundos(self):
+        from pathlib import Path
+
+        script = Path(self.SCRIPT).read_text(encoding="utf-8")
+        assert "3000" in script
+        assert "X-Fila" in script
+
+    @pytest.mark.django_db
+    def test_a_pagina_carrega_folha_e_script_versionados(self, loja):
+        html = _html(logado("ana"))
+        assert "/static/fila/fila.css?v=" in html
+        assert "/static/fila/fila.js?v=" in html
