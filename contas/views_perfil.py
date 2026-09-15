@@ -156,6 +156,14 @@ def _desenhar(request, erro: "str | None" = None, ok: "str | None" = None) -> Ht
             # desperdiça a metade direita e ainda quebra coluna.
             title=_("Meu Perfil"),
             width="full",
+            # O recorte da foto é feito no navegador (`mw5-recorte.js` em cima
+            # do Cropper), e o formulário só manda o resultado. Sem estes três
+            # arquivos, escolher a foto não gerava recorte nenhum, o campo ia
+            # vazio e a foto nunca salvava — desde a cópia do KRONOS.net até
+            # 15/09/2026. O Cropper vem antes: o recorte usa `window.Cropper`.
+            stylesheets=["/static/nucleo/cropper.min.css"],
+            scripts=["/static/nucleo/cropper.min.js",
+                     "/static/nucleo/mw5-recorte.js"],
             content=[aviso_de_personificacao(request), conteudo,
                      _cartao_de_idioma(request)],
             crumbs=[Crumb(_("Meu Perfil"))],

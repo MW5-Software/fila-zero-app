@@ -46,6 +46,18 @@ class TestATela:
         for nome in ("senha_atual", "senha_nova", "senha_confirma"):
             assert f'name="{nome}"' in html
 
+    def test_carrega_o_recortador_da_foto(self, logada):
+        """Sem o Cropper e o `mw5-recorte.js`, escolher o arquivo não gera o
+        recorte, o campo oculto `recorte` vai vazio, e a foto nunca salva: o
+        servidor responde "o arquivo está vazio" para quem acabou de escolher
+        uma foto. Foi assim desde a cópia do KRONOS.net até 15/09/2026. A ordem
+        importa: o `mw5-recorte.js` usa o `window.Cropper`."""
+        html = logada.get(reverse("perfil")).content.decode()
+        assert "/static/nucleo/cropper.min.css" in html
+        cropper = html.find("/static/nucleo/cropper.min.js")
+        recorte = html.find("/static/nucleo/mw5-recorte.js")
+        assert -1 < cropper < recorte
+
     def test_a_senha_nunca_volta_no_html(self, logada):
         assert SENHA not in logada.get(reverse("perfil")).content.decode()
 

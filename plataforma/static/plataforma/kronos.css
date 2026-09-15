@@ -398,3 +398,33 @@
   align-items: center;
   margin: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   Meu Perfil (`nucleo/templates/layout/perfil.html`).
+
+   Os formulários de lá são `.cb` soltos, sem a `.form` que dá o ritmo
+   vertical do design system: o "Salvar foto" nascia colado no seletor de
+   arquivo, o "Trocar senha" colado no "Mínimo de 8 caracteres", e os dois
+   botões de idioma encostados um no outro (relatado em 15/09/2026). Correção
+   aqui, e não no `nucleo`, que é porte verbatim. */
+.card > form.cb > .recorte-atual ~ .btn,
+.card > form.cb > .formgrid + .btn { margin-top: 20px; }
+.card > form.cb > .muted { margin: 12px 0 0; }
+.recorte-atual .avatar { width: 64px; height: 64px; font-size: 22px; }
+
+/* O seletor de arquivo com a cara de um botão da casa, e não o cinza do
+   navegador — que era a parte mais estranha da tela. */
+.recorte-atual input[type="file"] { font: inherit; font-size: 13px; color: var(--on-surface-2); }
+.recorte-atual input[type="file"]::file-selector-button {
+  height: 38px; padding: 0 14px; margin-right: 12px;
+  border: 1px solid var(--outline); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--on-surface);
+  font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+}
+.recorte-atual input[type="file"]::file-selector-button:hover { background: var(--surface-2); }
+
+.perfil-idioma-nota { margin: 0; color: var(--on-surface-2); }
+.perfil-idioma { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+/* O idioma em uso: a view marca com `pri`, que o design system não conhece, e
+   os dois botões saíam iguais — sem dizer qual está valendo. */
+.perfil-idioma .btn.pri { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
