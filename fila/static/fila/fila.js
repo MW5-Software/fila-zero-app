@@ -18,6 +18,11 @@
   var urlEstado = corpo.dataset.estadoUrl;
   var urlAgir = corpo.dataset.agirUrl;
   var esperando = null;
+  // Cada ação enviada soma um. Uma consulta que saiu ANTES da ação e chega
+  // depois dela traria o estado velho por cima do novo (a barra voltava a
+  // mostrar "Vou atender" por uns segundos); a resposta dela é descartada
+  // (revisão final, 15/09/2026).
+  var geracao = 0;
 
   function el(id) { return document.getElementById(id); }
 
@@ -76,7 +81,26 @@
     if (trilha) trilha.scrollLeft = trilha.scrollWidth;
   }
 
-  function mostrarRecusa(frase) {
+  function mostrarRecusa(frase, form) {
+    // Com uma folha aberta, a frase vai DENTRO dela: o aviso do topo da
+    // página fica atrás do fundo escuro do modal, e a pessoa tocava em
+    // "Lançar" e não via nada acontecer (revisão final, 15/09/2026).
+    var folha = form && form.closest("[data-modal].open");
+    if (folha) {
+      var aviso = folha.querySelector("[data-recusa-da-folha]");
+      if (!aviso) {
+        aviso = document.createElement("div");
+        aviso.className = "alert warn fila-recusa-da-folha";
+        aviso.setAttribute("role", "alert");
+        aviso.setAttribute("data-recusa-da-folha", "");
+        var corpoDaFolha = folha.querySelector(".mbody") || folha.querySelector(".modal");
+        corpoDaFolha.insertBefore(aviso, corpoDaFolha.firstChild);
+      }
+      aviso.textContent = frase || "";
+      aviso.hidden = !frase;
+      if (frase) aviso.scrollIntoView({ block: "nearest" });
+      return;
+    }
     var caixa = el("fila-recusa");
     if (!caixa) return;
     caixa.textContent = frase || "";
@@ -95,6 +119,7 @@
 
   function consultar() {
     if (document.hidden) { agendar(INTERVALO); return; }
+    var saida = geracao;
     fetch(urlEstado + "?versao=" + encodeURIComponent(versao), {
       credentials: "same-origin", headers: { "X-Fila": "1" }
     }).then(function (r) {
@@ -103,7 +128,7 @@
     }).then(function (dados) {
       corpo.classList.remove("fila-sem-sinal");
       textoAoVivo("Ao vivo");
-      if (dados.mudou) trocar(dados.html, dados.versao);
+      if (dados.mudou && saida === geracao) trocar(dados.html, dados.versao);
       agendar(INTERVALO);
     }).catch(function () {
       // Celular que perde sinal: avisa e tenta de novo mais devagar, sem
@@ -122,6 +147,7 @@
     if (!folha) return false;
     fecharFolhas();
     folha.querySelectorAll("form").forEach(function (f) { f.reset(); });
+    folha.querySelectorAll("[data-recusa-da-folha]").forEach(function (a) { a.hidden = true; });
     var dados = gatilho ? gatilho.dataset : {};
     if (dados.pessoa) {
       folha.querySelectorAll("input[name=pessoa]").forEach(function (c) { c.value = dados.pessoa; });
@@ -187,6 +213,7 @@
   function enviar(form) {
     var botao = form.querySelector("button[type=submit]");
     if (botao) botao.disabled = true;
+    geracao += 1;
     fetch(urlAgir, {
       method: "POST", credentials: "same-origin",
       headers: { "X-Fila": "1" }, body: new FormData(form)
@@ -194,11 +221,15 @@
       if (!r.ok) throw new Error("agir " + r.status);
       return r.json();
     }).then(function (dados) {
-      mostrarRecusa(dados.frase);
-      if (dados.ok) fecharFolhas();
+      if (dados.ok) {
+        fecharFolhas();
+        mostrarRecusa("");
+      } else {
+        mostrarRecusa(dados.frase, form);
+      }
       trocar(dados.html, dados.versao);
     }).catch(function () {
-      mostrarRecusa("Sem conexão. Tente de novo.");
+      mostrarRecusa("Sem conexão. Tente de novo.", form);
     }).then(function () {
       if (botao && document.contains(botao)) botao.disabled = false;
     });

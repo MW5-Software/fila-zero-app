@@ -35,6 +35,7 @@
    os blocos é daqui. */
 .fila > * + * { margin-top: 20px; }
 .fila .fila-recusa { font-weight: 600; }
+.fila-recusa-da-folha { font-weight: 600; }
 
 /* --- A faixa do meu status ------------------------------------------------ */
 .fila-hero {
