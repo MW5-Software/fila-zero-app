@@ -49,3 +49,55 @@ jobs:
             ghcr.io/mw5-software/fila-zero:${{ github.event.workflow_run.head_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ------------------------------------------------------------------
+  # Última perna: da GHCR até a HOMOLOGAÇÃO na VPS MW5.
+  #
+  # Um JOB deste workflow, e não outro workflow encadeado, para o SHA
+  # implantado ser literalmente o `head_sha` que virou a tag da imagem acima.
+  #
+  # Só homologação, de propósito. A chave de deploy está presa, no
+  # `authorized_keys` da VPS, a `deploy-remoto.sh filazero-hml`: vazada, ela
+  # só reimplanta em homologação um commit que já passou nos testes.
+  # Produção recebe por promoção, no painel, depois de homologação aprovada.
+  implantar:
+    needs: publicar
+    runs-on: ubuntu-latest
+
+    env:
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      # Sem a chave o job passa com aviso em vez de falhar: a imagem foi
+      # publicada, e o deploy pode ser feito pelo painel.
+      - name: Conferir chave de deploy
+        id: chave
+        run: |
+          if [ -z "$VPS_SSH_KEY" ]; then
+            echo "::warning::Secret VPS_SSH_KEY ausente — imagem publicada, deploy não feito."
+            echo "tem=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "tem=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Preparar chave de deploy
+        if: steps.chave.outputs.tem == '1'
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Implantar em homologação
+        if: steps.chave.outputs.tem == '1'
+        run: |
+          echo "Implantando $SHA em homologação"
+          ssh -i ~/.ssh/deploy -o BatchMode=yes -o ConnectTimeout=15 \
+              "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "deploy $SHA"
+
+      - name: Confirmar o que ficou em homologação
+        if: always() && steps.chave.outputs.tem == '1'
+        run: |
+          ssh -i ~/.ssh/deploy -o BatchMode=yes \
+              "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" versao
