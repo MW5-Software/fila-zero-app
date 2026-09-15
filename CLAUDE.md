@@ -108,7 +108,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 105 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 106 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -461,7 +461,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 105 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 106 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O
