@@ -458,7 +458,10 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
 `docs/superpowers/plans/2026-09-15-fila-indicadores.md`.
 
-- `fila.relatorios` abre `/fila/indicadores`; as lojas saem de
+- **O dashboard mora no Início (`/`)**, abaixo do "Olá", para quem tem
+  `fila.relatorios` em alguma loja (`fila.views.inicio` chama
+  `views_indicadores.inicio_com_indicadores`). `/fila/indicadores` só
+  redireciona para lá com os mesmos filtros. As lojas saem de
   `fila.indicadores.lojas_com_relatorio` (o cargo no lugar), e a `?loja=` só
   filtra dentro delas.
 - `fila/periodo.py` resolve o período e o anterior (em andamento compara até

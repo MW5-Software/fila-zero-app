@@ -1,4 +1,8 @@
-"""A tela de indicadores vista por quem a usa (spec, "Quem vê o quê")."""
+"""Os indicadores vistos por quem os usa (spec, "Quem vê o quê").
+
+Desde 15/09/2026 o dashboard mora no Início (`/`), abaixo do "Olá", e não mais
+numa tela própria: `/fila/indicadores` só redireciona para lá.
+"""
 
 from datetime import timedelta
 from decimal import Decimal
@@ -40,13 +44,34 @@ def _venda_hoje(rede, pessoa, loja, valor):
 
 
 def _html(cliente, **params):
-    resposta = cliente.get(reverse("fila_indicadores"), params)
+    resposta = cliente.get("/", params)
     assert resposta.status_code == 200
     return resposta.content.decode()
 
 
-def test_vendedor_nao_tem_a_tela(rede):
-    assert logado("ana").get(reverse("fila_indicadores")).status_code == 404
+def test_quem_nao_tem_relatorios_ve_so_a_saudacao(rede):
+    """Representante não traz fila.relatorios: o Início continua sendo só o
+    "Olá" com a data."""
+    pessoa_na_loja("rita", rede.empresa, rede.centro, cargo="representante")
+    html = _html(logado("rita"))
+    assert "Olá, Rita!" in html
+    assert "Ranking de vendedores" not in html
+
+
+def test_gestao_ve_o_dashboard_abaixo_da_saudacao(rede):
+    html = _html(logado("gil"), periodo="hoje")
+    assert html.index("Olá, Gil!") < html.index("Ranking de vendedores")
+
+
+def test_vendedor_continua_caindo_na_fila(rede):
+    resposta = logado("ana").get("/")
+    assert resposta.status_code == 302 and resposta["Location"] == reverse("fila")
+
+
+def test_a_tela_antiga_redireciona_para_o_inicio_com_os_filtros(rede):
+    resposta = logado("gil").get("/fila/indicadores?periodo=hoje&ordenar=-vendas")
+    assert resposta.status_code == 302
+    assert resposta["Location"] == "/?periodo=hoje&ordenar=-vendas"
 
 
 def test_gerente_ve_so_a_loja_dele_e_a_forjada_e_descartada(rede):
@@ -106,10 +131,8 @@ def test_periodo_invalido_nao_estoura(rede):
     assert "Este mês" in _html(logado("sylvia"), de="2026-99-99", ate="x")
 
 
-def test_menu_mostra_o_atalho_para_o_gerente_e_nao_para_o_vendedor(rede):
-    assert 'href="/fila/indicadores"' in logado("gil").get("/").content.decode()
-    ana = logado("ana").get("/fila").content.decode()
-    assert 'href="/fila/indicadores"' not in ana
+def test_o_menu_nao_tem_mais_o_atalho_dos_indicadores(rede):
+    assert 'href="/fila/indicadores"' not in _html(logado("gil"))
 
 
 # --- Correções da revisão final (15/09/2026) -------------------------------

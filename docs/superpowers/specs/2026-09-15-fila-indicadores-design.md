@@ -101,10 +101,12 @@ cujas permissões ninguém editou.
 
 ## As telas
 
-### `/fila/indicadores` — gestão
+### No Início (`/`) — gestão
 
-No shell normal, com a barra lateral; no menu, atalho "Indicadores" do módulo
-da fila, no grupo Vendas, com a permissão `fila.relatorios`.
+**Mudou depois da entrega (15/09/2026, pedido do João):** o dashboard não tem
+mais tela própria nem item de menu. Ele aparece no Início, abaixo do "Olá" e
+da data, para quem tem `fila.relatorios`; `/fila/indicadores` redireciona para
+lá com os mesmos filtros. O resto desta seção vale como está.
 
 1. **Filtros**: período (atalhos e intervalo) e loja ("Todas as lojas" para
    quem alcança mais de uma). Tudo na URL: `?periodo=`, `?de=`, `?ate=`,

@@ -38,13 +38,26 @@ CHAVE_DA_RECUSA = "fila:recusa"
 @exigir_login
 def inicio(request) -> HttpResponse:
     """A raiz. Quem só tem a fila de vendedor não tem o que fazer no
-    dashboard, e cairia numa saudação vazia a cada login (D-4)."""
+    dashboard, e cairia numa saudação vazia a cada login (D-4); a gestão vê
+    os indicadores da fila abaixo da saudação."""
     from nucleo.views import home
     from plataforma.models import Modulo
 
-    if (tela.so_a_fila(request.usuario)
-            and Modulo.objects.filter(chave="fila", ativo=True).exists()):
+    if not Modulo.objects.filter(chave="fila", ativo=True).exists():
+        return home(request)
+    if tela.so_a_fila(request.usuario):
         return HttpResponseRedirect(reverse("fila"))
+    # Quem lê indicadores em alguma loja tem o dashboard no Início, abaixo do
+    # "Olá" (15/09/2026). Quem não lê continua com a saudação sozinha.
+    from plataforma.contexto import empresa_atual
+
+    from .indicadores import lojas_com_relatorio
+    from .views_indicadores import inicio_com_indicadores
+
+    empresa = empresa_atual(request)
+    permitidas = lojas_com_relatorio(usuario_de(request.usuario), empresa)
+    if permitidas:
+        return inicio_com_indicadores(request, empresa, permitidas)
     return home(request)
 
 

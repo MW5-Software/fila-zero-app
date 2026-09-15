@@ -36,8 +36,6 @@ MODULO = ModuloSpec(
         Atalho(rotulo=_("Tipos de pausa"), rota="/fila/pausas",
                permissao="fila.cadastros", grupo="Cadastro",
                pai="Fila da vez"),
-        Atalho(rotulo=_("Indicadores da fila"), rota="/fila/indicadores",
-               permissao="fila.relatorios", grupo="Vendas"),
     ),
     ativo_por_padrao=True,
 )

@@ -16,7 +16,7 @@
 
 /* Os filtros alinham pela base: o botão fica na linha dos campos, e não
    acima deles. */
-form[action="/fila/indicadores"] .formgrid { align-items: end; }
+form[action="/"] .formgrid { align-items: end; }
 [data-esquecidos] ul { margin: 6px 0 0; padding-left: 18px; }
 [data-esquecidos] li + li { margin-top: 2px; }
 .ind-vazio { padding: 28px 12px; text-align: center; color: var(--on-surface-2); font-size: 13px; }
