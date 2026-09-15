@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 02:31-0300\n"
+"POT-Creation-Date: 2026-09-15 08:50-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -680,9 +680,6 @@ msgstr "Motivos de no venta"
 msgid "Tipos de pausa"
 msgstr "Tipos de pausa"
 
-msgid "Indicadores da fila"
-msgstr "Indicadores de la fila"
-
 msgid "Você ainda não está em nenhuma loja."
 msgstr "Usted todavía no está en ninguna tienda."
 
@@ -737,8 +734,22 @@ msgstr "Elija una empresa en el encabezado antes de registrar."
 msgid "Informe o nome."
 msgstr "Indique el nombre."
 
+msgid "Sem base para comparar"
+msgstr "Sin base para comparar"
+
+#, python-format
+msgid "até %(hora)s"
+msgstr "hasta las %(hora)s"
+
+#, python-format
+msgid "Comparado a %(trecho)s"
+msgstr "Comparado con %(trecho)s"
+
 msgid "Nada no período."
 msgstr "Nada en el período."
+
+msgid "Minutos em pausa por tipo"
+msgstr "Minutos en pausa por tipo"
 
 msgid "Período"
 msgstr "Período"
@@ -760,6 +771,12 @@ msgstr "Todas las tiendas"
 
 msgid "Aplicar"
 msgstr "Aplicar"
+
+msgid "Indicadores da fila"
+msgstr "Indicadores de la fila"
+
+msgid "todas as lojas"
+msgstr "todas las tiendas"
 
 msgid "Abrir a fila desta loja"
 msgstr "Abrir la fila de esta tienda"
@@ -788,17 +805,6 @@ msgstr "El cliente lo pidió"
 msgid "Pausa"
 msgstr "Pausa"
 
-msgid "Nenhuma loja para mostrar"
-msgstr "Ninguna tienda para mostrar"
-
-msgid "Os indicadores aparecem para as lojas em que o seu cargo traz a permissão."
-msgstr ""
-"Los indicadores aparecen para las tiendas en las que su cargo tiene el "
-"permiso."
-
-msgid "todas as lojas"
-msgstr "todas las tiendas"
-
 #, python-format
 msgid "Cliente pediu: %(quantos)s, %(conversao)s"
 msgstr "El cliente lo pidió: %(quantos)s, %(conversao)s"
@@ -817,9 +823,6 @@ msgstr "Vendido por día"
 
 msgid "Vendido por grupo de item"
 msgstr "Vendido por grupo de artículo"
-
-msgid "Minutos em pausa por tipo"
-msgstr "Minutos en pausa por tipo"
 
 msgid "Ranking de vendedores"
 msgstr "Ranking de vendedores"

@@ -46,13 +46,38 @@ def _dinheiro(valor) -> str:
 
 def _variacao_html(v):
     if v is None:
-        return ""
+        # A linha existe mesmo sem comparação: sem ela o cartão ficava mais
+        # baixo que os vizinhos (diagramação do Início, 15/09/2026).
+        return format_html('<span class="ind-variacao igual">{}</span>',
+                           _("Sem base para comparar"))
     classe = "sobe" if v.valor > 0 else "desce" if v.valor < 0 else "igual"
     seta = "↑" if v.valor > 0 else "↓" if v.valor < 0 else "="
     numero = f"{abs(v.valor):.1f}".replace(".", ",")
     unidade = v.unidade if v.unidade == "%" else f" {v.unidade}"
     return format_html('<span class="ind-variacao {}">{} {}{}</span>',
                        classe, seta, numero, unidade)
+
+
+def _comparado_a(periodo) -> str:
+    """ "Comparado a 08/09 a 14/09", ou "a 14/09 até 11:34" quando o anterior
+    é um pedaço de dia: diz de onde vem a seta, na linha de apoio."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    de, ate = timezone.localtime(periodo.de), timezone.localtime(periodo.ate)
+    hora = ""
+    if ate.hour == 0 and ate.minute == 0:
+        ultimo = (ate - timedelta(days=1)).date()
+    else:
+        ultimo, hora = ate.date(), ate.strftime("%H:%M")
+    trecho = (f"{de:%d/%m}" if de.date() == ultimo
+              else f"{de:%d/%m} a {ultimo:%d/%m}")
+    # A hora só num dia só ("14/09 até 11:34"): em vários dias ela quebrava a
+    # linha do cartão e não mudava a leitura.
+    if hora and de.date() == ultimo:
+        trecho += " " + str(_("até %(hora)s") % {"hora": hora})
+    return str(_("Comparado a %(trecho)s") % {"trecho": trecho})
 
 
 def _numero(rotulo, valor, variacao, apoio=""):
@@ -84,13 +109,41 @@ def _serie_do_tempo(linhas, periodo):
     return linhas
 
 
+def _grafico_ou_vazio(pontos, tipo, altura=180):
+    if not any(p.value for p in pontos):
+        return Raw(html=format_html('<p class="ind-vazio">{}</p>',
+                                    _("Nada no período.")))
+    return Chart(kind=tipo, points=pontos, height=altura,
+                 legend="none" if tipo != "donut" else "right")
+
+
 def _grafico(titulo, pontos, tipo, span=6, altura=180):
-    corpo = (Chart(kind=tipo, points=pontos, height=altura,
-                   legend="none" if tipo != "donut" else "right")
-             if any(p.value for p in pontos)
-             else Raw(html=format_html('<p class="ind-vazio">{}</p>',
-                                       _("Nada no período."))))
-    return Cell(span=span, children=Card(title=titulo, body=corpo))
+    return Cell(span=span, children=Card(title=titulo,
+                                         body=_grafico_ou_vazio(pontos, tipo, altura)))
+
+
+def _minutos_por_extenso(minutos: int) -> str:
+    return f"{minutos} min" if minutos < 60 else f"{minutos // 60} h {minutos % 60:02d} min"
+
+
+def _pausas(linhas):
+    """A pausa na linha toda, sem buraco ao lado: o gráfico numa metade (a
+    mesma escala dos outros, porque o desenho escala o texto pela largura) e,
+    na outra, os mesmos números escritos, com a fatia de cada tipo."""
+    total = sum(m for _t, m in linhas) or 1
+    lista = format_html_join("", (
+        '<li><span class="ind-lista-nome">{}</span>'
+        '<span class="ind-lista-barra"><span style="width: {}%"></span></span>'
+        '<span class="ind-lista-valor">{}</span>'
+        '<span class="ind-lista-parte">{}%</span></li>'), (
+        (tipo, round(100 * m / total), _minutos_por_extenso(m), round(100 * m / total))
+        for tipo, m in linhas))
+    corpo = (FormGrid(attrs={"data-ind": "pausa"}, children=[
+        Cell(span=6, children=_grafico_ou_vazio(
+            [DataPoint(t, m) for t, m in linhas], "bar_h")),
+        Cell(span=6, children=Raw(html=format_html('<ul class="ind-lista">{}</ul>', lista))),
+    ]) if linhas else _grafico_ou_vazio([], "bar_h"))
+    return Cell(span=12, children=Card(title=_("Minutos em pausa por tipo"), body=corpo))
 
 
 def _lojas_do_pedido(request, permitidas):
@@ -188,28 +241,38 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     recorte = ind.Recorte(empresa, tuple(lojas), periodo)
     anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo))
     n, a = ind.numeros(recorte), ind.numeros(anterior)
+    texto_comparado = _comparado_a(anterior.periodo)
+    v_atendimentos = ind.variacao(n.atendimentos, a.atendimentos)
+    v_vendido = ind.variacao(n.vendido, a.vendido)
+    v_ticket = ind.variacao(n.ticket, a.ticket)
+
+    def comparado(variacao) -> str:
+        # "Comparado a …" embaixo de "Sem base para comparar" se contradiz:
+        # sem comparação, a linha sai. A altura igual vem do cartão esticado.
+        return texto_comparado if variacao is not None else ""
+
     blocos = [
         _filtros(request, periodo, permitidas, loja),
         _esquecidos(ind.esquecidos(empresa, lojas)),
-        FormGrid(children=[
+        FormGrid(attrs={"data-ind": "numeros"}, children=[
             Cell(span=3, children=_numero(_("Atendimentos"), n.atendimentos,
-                                          ind.variacao(n.atendimentos, a.atendimentos))),
+                                          v_atendimentos, comparado(v_atendimentos))),
             Cell(span=3, children=_numero(
                 _("Conversão"), _pct(n.conversao),
                 ind.variacao(n.conversao, a.conversao, pontos=True),
                 _("Cliente pediu: %(quantos)s, %(conversao)s")
                 % {"quantos": n.pediu, "conversao": _pct(n.conversao_pediu)})),
             Cell(span=3, children=_numero(_("Vendido"), em_reais(n.vendido),
-                                          ind.variacao(n.vendido, a.vendido))),
+                                          v_vendido, comparado(v_vendido))),
             Cell(span=3, children=_numero(_("Ticket médio"), _dinheiro(n.ticket),
-                                          ind.variacao(n.ticket, a.ticket))),
+                                          v_ticket, comparado(v_ticket))),
         ]),
     ]
     dias = _serie_do_tempo(ind.por_dia(recorte), periodo)
     # Série do tempo numa cor só: cor por barra, num gráfico de dias,
     # sugere categorias diferentes onde só há o mesmo número no tempo.
     cor = "var(--chart-1)"
-    blocos.append(FormGrid(children=[
+    blocos.append(FormGrid(attrs={"data-ind": "graficos"}, children=[
         _grafico(_("Atendimentos por hora") if periodo.dias == 1 else _("Atendimentos por dia"),
                  [DataPoint(r, n_, cor) for r, n_, _v in dias], "bar"),
         _grafico(_("Vendido por hora") if periodo.dias == 1 else _("Vendido por dia"),
@@ -219,12 +282,7 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                  "bar_h"),
         _grafico(_("Motivos de não venda"),
                  [DataPoint(m, q) for m, q in ind.motivos(recorte)], "donut"),
-        # Todos em metades, mesmo sobrando o quinto sozinho: o desenho
-        # escala pela largura da caixa, e o texto junto. Em terços ficava
-        # ilegível; na largura toda, enorme (conferido em 15/09/2026).
-        _grafico(_("Minutos em pausa por tipo"),
-                 [DataPoint(t, m) for t, m in ind.pausa_por_tipo(recorte)],
-                 "bar_h"),
+        _pausas(ind.pausa_por_tipo(recorte)),
     ]))
     listagem = montar_pagina(request, ind.ranking(recorte),
                              ordenaveis=ind.ORDENAVEIS_DO_RANKING,

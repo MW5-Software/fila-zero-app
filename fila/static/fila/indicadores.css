@@ -20,3 +20,35 @@ form[action="/"] .formgrid { align-items: end; }
 [data-esquecidos] ul { margin: 6px 0 0; padding-left: 18px; }
 [data-esquecidos] li + li { margin-top: 2px; }
 .ind-vazio { padding: 28px 12px; text-align: center; color: var(--on-surface-2); font-size: 13px; }
+
+/* --- A diagramação do Início (15/09/2026) ---------------------------------
+   Cartões da mesma linha com a mesma altura, e nenhum buraco: os cartões
+   esticam até a altura da linha, e o conteúdo dos gráficos fica no meio do
+   espaço que sobra. */
+[data-ind] > .cell { display: flex; min-width: 0; }
+[data-ind] > .cell > .card { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+[data-ind] > .cell > .card > .cb { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+[data-ind="numeros"] > .cell > .card > .cb { justify-content: flex-start; }
+.ind-numero { gap: 6px; }
+
+[data-ind="pausa"] { align-items: center; }
+[data-ind="pausa"] > .cell { display: block; }
+.ind-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.ind-lista li { display: grid; grid-template-columns: minmax(80px, 1fr) 2fr auto 44px; align-items: center; gap: 12px; font-size: 13.5px; }
+.ind-lista-nome { font-weight: 600; }
+.ind-lista-barra { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.ind-lista-barra > span { display: block; height: 100%; border-radius: 4px; background: var(--chart-1); }
+/* A mesma cor de cada barra do gráfico ao lado, na mesma ordem. */
+.ind-lista li:nth-child(2) .ind-lista-barra > span { background: var(--chart-2); }
+.ind-lista li:nth-child(3) .ind-lista-barra > span { background: var(--chart-3); }
+.ind-lista li:nth-child(4) .ind-lista-barra > span { background: var(--chart-4); }
+.ind-lista li:nth-child(5) .ind-lista-barra > span { background: var(--chart-5); }
+.ind-lista li:nth-child(6) .ind-lista-barra > span { background: var(--chart-6); }
+.ind-lista li:nth-child(7) .ind-lista-barra > span { background: var(--chart-7); }
+.ind-lista li:nth-child(8) .ind-lista-barra > span { background: var(--chart-8); }
+.ind-lista-valor { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ind-lista-parte { color: var(--on-surface-2); font-variant-numeric: tabular-nums; text-align: right; }
+
+@media (max-width: 820px) {
+  [data-ind] > .cell { grid-column: 1 / -1; }
+}

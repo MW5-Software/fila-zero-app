@@ -171,3 +171,21 @@ def test_esquecido_leva_a_fila_da_loja_do_item(rede):
                                 entrada=timezone.now() - timedelta(days=2))
     html = _html(logado("sara"), periodo="hoje")
     assert f"/filial/trocar?filial_id={rede.centro.pk}&amp;voltar=%2Ffila" in html
+
+
+def test_a_linha_de_comparacao_so_aparece_quando_ha_base(rede):
+    """Diagramação do Início (15/09/2026): todo número tem a linha de apoio,
+    mas "Comparado a …" embaixo de "Sem base para comparar" se contradiz."""
+    from fila.models import Atendimento
+
+    sem_base = _html(logado("sylvia"), periodo="hoje")
+    assert "Sem base para comparar" in sem_base
+    assert "Comparado a" not in sem_base
+
+    ontem = _venda_hoje(rede, rede.caio, rede.centro, "100")
+    Atendimento.irrestritos.filter(pk=ontem.pk).update(
+        inicio=ontem.inicio - timedelta(days=1), fim=ontem.fim - timedelta(days=1))
+    _venda_hoje(rede, rede.caio, rede.centro, "300")
+    # A venda de ontem caiu antes da mesma hora de hoje: é base para "Hoje".
+    com_base = _html(logado("sylvia"), periodo="hoje")
+    assert "Comparado a" in com_base
