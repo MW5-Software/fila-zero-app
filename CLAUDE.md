@@ -375,7 +375,8 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    mantém essa assinatura é decisão de produto.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
-5. **As metas da fila** são a entrega 3 e ainda não têm spec.
+5. **As metas da fila** são a entrega 3: spec em
+   `docs/superpowers/specs/2026-09-15-fila-metas-design.md`, sem plano ainda.
 
 ---
 
