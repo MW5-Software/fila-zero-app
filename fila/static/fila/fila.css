@@ -15,10 +15,17 @@
 [hidden] { display: none !important; }
 
 /* --- O shell sem menu --------------------------------------------------- */
-.fila-pagina { --header-h: 68px; }
 .fila-pagina .iconbtn.menu-btn { display: none; }
-.fila-marca { display: flex; align-items: center; height: 44px; }
-.fila-marca img { max-height: 40px; max-width: 150px; width: auto; object-fit: contain; }
+/* O logo nítido, e não espremido: o arquivo é o mesmo da faixa do dashboard
+   (929×648), numa altura em que a marca empilhada ainda mostra o "ERP |
+   CRM". A primeira versão o espremia a 40px e parecia imagem ruim; a segunda
+   copiou os 108px da faixa do dashboard e ficou enorme num cabeçalho sem menu
+   (relatado em 15/09/2026). 60px é o meio. A altura manda e a largura
+   acompanha a proporção, a mesma inversão que `kronos.css` faz no
+   `.side-logo`. */
+.fila-pagina { --header-h: 84px; }
+.fila-marca { display: flex; align-items: center; height: 60px; }
+.fila-marca img { height: 60px; width: auto; max-width: 200px; object-fit: contain; display: block; }
 .fila-pagina main { padding-top: 24px; max-width: 1240px; }
 /* O cabeçalho na mesma largura do conteúdo: sem menu à esquerda, o logo solto
    no canto da tela ficava longe da página que ele assina. */
@@ -289,7 +296,9 @@
    ao alcance do polegar, e as folhas sobem de baixo. */
 @media (max-width: 720px) {
   .fila-pagina main { padding: 14px 12px 196px; }
+  .fila-pagina { --header-h: 64px; }
   .fila-pagina header .wrap { padding: 0 12px; gap: 10px; }
+  .fila-marca, .fila-marca img { height: 44px; }
   .fila > * + * { margin-top: 14px; }
 
   .fila-hero { padding: 14px 16px 18px; border-radius: 16px; }
