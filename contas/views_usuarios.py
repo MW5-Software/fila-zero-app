@@ -19,7 +19,7 @@ tocar em qualquer linha.
 from __future__ import annotations
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
@@ -1445,14 +1445,23 @@ def _acao_remover(request, alvo) -> HttpResponse:
             f"{alvo.email} é a conta de uma empresa. Passe a empresa para "
             f"outra conta antes de remover."))
 
-    with transaction.atomic():
-        # Registrado ANTES do `delete()`: depois dele não sobra ninguém
-        # para ler login e nome — e, dentro do mesmo `atomic()`, uma
-        # falha aqui desfaz o registro junto com a remoção, então não há
-        # risco de um registro de remoção sobreviver a uma remoção que
-        # não aconteceu.
-        registrar(ACOES.USUARIO_REMOVIDO, request.usuario, alvo=alvo.email, request=request)
-        alvo.delete()
+    try:
+        with transaction.atomic():
+            # Registrado ANTES do `delete()`: depois dele não sobra ninguém
+            # para ler login e nome — e, dentro do mesmo `atomic()`, uma
+            # falha aqui desfaz o registro junto com a remoção, então não há
+            # risco de um registro de remoção sobreviver a uma remoção que
+            # não aconteceu.
+            registrar(ACOES.USUARIO_REMOVIDO, request.usuario, alvo=alvo.email, request=request)
+            alvo.delete()
+    except ProtectedError:
+        # Um módulo de negócio guarda o histórico desta pessoa com `PROTECT`
+        # (no Fila Zero, ponto, atendimentos e pausas). Apagar levaria o
+        # histórico junto, e o banco recusa; sem esta frase a recusa chegaria
+        # como "Algo inesperado aconteceu". O `atomic` já desfez o registro.
+        return _desenhar(request, erro=(
+            f"{alvo.email} tem histórico gravado. Desative em vez de "
+            f"remover."))
     return HttpResponseRedirect(reverse("usuarios"))
 
 
