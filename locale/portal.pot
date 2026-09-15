@@ -640,7 +640,7 @@ msgstr ""
 msgid "Aplicar"
 msgstr ""
 
-msgid "Abrir a fila"
+msgid "Abrir a fila desta loja"
 msgstr ""
 
 msgid "Ficou aberto de um dia para o outro"
@@ -872,6 +872,9 @@ msgid "Ao terminar, lance se vendeu."
 msgstr ""
 
 msgid "Desde"
+msgstr ""
+
+msgid "Trocar de loja"
 msgstr ""
 
 msgid "Ao vivo"

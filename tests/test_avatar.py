@@ -133,7 +133,13 @@ class TestServir:
         assert logada.get(reverse("avatar", args=[ana.pk])).status_code == 404
 
     def test_a_foto_de_uma_pessoa_nao_sai_no_lugar_da_de_outra(self, logada, ana, db):
+        from tests.conftest import empresa_do_teste, por_na_conta
+
         bruno = Usuario.objects.create_user(email="bruno@teste.com", password=SENHA)
+        # Da mesma conta: foto de outra conta não se serve (ver o teste abaixo).
+        empresa = empresa_do_teste()
+        por_na_conta(ana, empresa)
+        por_na_conta(bruno, empresa)
         logada.post(reverse("perfil_foto"), {"recorte": url_de_dados("image/png", PNG)})
         outro = Client()
         outro.post(reverse("entrar"), {"usuario": "bruno@teste.com", "senha": SENHA})
@@ -141,6 +147,23 @@ class TestServir:
 
         assert logada.get(reverse("avatar", args=[bruno.pk])).content == WEBP
         assert logada.get(reverse("avatar", args=[ana.pk])).content == PNG
+
+    def test_foto_de_outra_conta_nao_se_serve(self, logada, ana, db):
+        """A rota só exigia login: quem entrasse em qualquer conta baixava as
+        fotos de todas as outras percorrendo os ids, e a fila do Fila Zero
+        publica esses ids no HTML (revisão final, 15/09/2026). Mesmo 404 de
+        quem não tem foto, para não dizer que a pessoa existe."""
+        from plataforma.models import Empresa
+        from tests.conftest import abrir_conta, empresa_do_teste, por_na_conta
+
+        por_na_conta(ana, empresa_do_teste())
+        outra = Empresa.objects.create(razao_social="Concorrente", nome_fantasia="C")
+        carla = abrir_conta(outra, "carla", SENHA)
+        dela = Client()
+        dela.post(reverse("entrar"), {"usuario": carla.email, "senha": SENHA})
+        dela.post(reverse("perfil_foto"), {"recorte": url_de_dados("image/png", PNG)})
+        assert dela.get(reverse("avatar", args=[carla.pk])).status_code == 200
+        assert logada.get(reverse("avatar", args=[carla.pk])).status_code == 404
 
     def test_quem_nao_entrou_nao_ve(self, ana, db):
         assert Client().get(reverse("avatar", args=[ana.pk])).status_code == 302

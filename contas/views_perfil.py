@@ -13,6 +13,7 @@ import binascii
 from dataclasses import dataclass
 
 from django.db import transaction
+from django.db.models import Q
 from django.http import (
     HttpResponse,
     HttpResponseNotAllowed,
@@ -313,8 +314,21 @@ def avatar(request, usuario_id: int) -> HttpResponse:
     # `avatar__isnull=False` no filtro, e não um `if not gravado.avatar` de
     # depois: filtra no banco quem TEM foto numa consulta só, em vez de trazer
     # a linha de quem não tem para descartar aqui.
+    # **Só a foto de alguém da mesma conta** (ou a própria, ou qualquer uma
+    # para a MW5). A rota só exigia login, e quem entrasse em qualquer conta
+    # baixava as fotos das outras percorrendo os ids — que a fila do Fila Zero
+    # publica no HTML (revisão final, 15/09/2026). Fora da conta é o mesmo
+    # 404 de quem não tem foto: a resposta não diz se a pessoa existe.
+    eu = Usuario.objects.filter(pk=int(request.usuario.id)).values(
+        "pk", "conta_id", "is_superuser").first()
+    alcance = Q(pk=usuario_id, avatar__isnull=False)
+    if eu is None:
+        return HttpResponseNotFound()
+    if not eu["is_superuser"]:
+        mesma_conta = Q(conta_id=eu["conta_id"]) if eu["conta_id"] else Q(pk__in=[])
+        alcance &= Q(pk=eu["pk"]) | mesma_conta
     try:
-        gravado = Usuario.objects.get(pk=usuario_id, avatar__isnull=False)
+        gravado = Usuario.objects.get(alcance)
     except Usuario.DoesNotExist:
         return HttpResponseNotFound()
 
