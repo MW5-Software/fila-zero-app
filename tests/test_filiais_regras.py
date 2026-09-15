@@ -82,3 +82,22 @@ class TestPodeRemover:
         from plataforma.filiais import pode_remover
 
         assert pode_remover(loja) is None
+
+
+class TestModuloRecusaDesativar:
+    """A base pergunta aos módulos pelo sinal `antes_de_desativar`, porque não
+    pode importá-los (no Fila Zero, a loja com gente presente)."""
+
+    def test_a_frase_do_modulo_recusa(self, matriz, loja):
+        from plataforma.filiais import antes_de_desativar, pode_desativar
+
+        def recusa(sender, filial, **kwargs):
+            return "Tem gente aqui." if filial.pk == loja.pk else None
+
+        antes_de_desativar.connect(recusa, dispatch_uid="teste_recusa")
+        try:
+            assert pode_desativar(loja) == "Tem gente aqui."
+            assert pode_desativar(matriz) is None
+        finally:
+            antes_de_desativar.disconnect(dispatch_uid="teste_recusa")
+        assert pode_desativar(loja) is None

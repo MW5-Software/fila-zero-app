@@ -46,17 +46,16 @@ def test_o_titular_novo_nasce_com_os_cinco(titular):
 
 def test_as_permissoes_iniciais(titular):
     cargos = {c.nome: c for c in Cargo.objects.filter(conta=titular)}
-    # Na base, só as permissões que a base tem: cada SaaS acrescenta as dos
-    # módulos de negócio dele (ver `contas/cargos_de_fabrica.py`).
-    assert _permissoes(cargos["supervisor"]) == {"usuarios_editar"}
-    # Gerente é o supervisor com alcance de filial, não de empresa (a mesma
-    # lista de permissões — só o alcance muda).
-    assert _permissoes(cargos["gerente"]) == _permissoes(cargos["supervisor"])
-    assert _permissoes(cargos["vendedor"]) == set()
-    # Representante é o vendedor com o mesmo alcance e as mesmas permissões —
-    # dois nomes para o mesmo papel comercial (ver DE_FABRICA).
-    assert _permissoes(cargos["representante"]) == _permissoes(
-        cargos["vendedor"])
+    # A base traz `usuarios.editar` para Supervisor e Gerente; o Fila Zero
+    # acrescenta a fila (spec 2026-09-15): o supervisor corrige, o gerente
+    # atende e corrige, o vendedor atende. O representante não está na loja.
+    assert _permissoes(cargos["supervisor"]) == {
+        "usuarios_editar", "fila_ver", "fila_gerenciar", "fila_relatorios"}
+    assert _permissoes(cargos["gerente"]) == {
+        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
+        "fila_relatorios"}
+    assert _permissoes(cargos["vendedor"]) == {"fila_ver", "fila_participar"}
+    assert _permissoes(cargos["representante"]) == set()
     assert _permissoes(cargos["cliente"]) == set()
     assert cargos["cliente"].e_cliente is True
     assert cargos["supervisor"].alcance == Alcance.EMPRESA
@@ -149,4 +148,6 @@ def test_o_migrate_de_verdade_semeia_o_titular_que_ja_existia():
     cargos = {c.nome: c for c in Cargo.objects.filter(conta=titular)}
     assert set(cargos) == {"supervisor", "gerente", "vendedor",
                            "representante", "cliente"}
-    assert _permissoes(cargos["gerente"]) == {"usuarios_editar"}
+    assert _permissoes(cargos["gerente"]) == {
+        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
+        "fila_relatorios"}

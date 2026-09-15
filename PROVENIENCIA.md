@@ -9,5 +9,16 @@ negócio deste produto — a fila da vez das lojas — é construído por cima.
 Não vieram o `.git` da base (repositório próprio, sem caminho acidental de push
 para o lugar errado), a `.venv`, `midia/`, `backups/` e os caches.
 
-O que veio da base continua descrito no `CLAUDE.md`, que ainda fala da base; a
-identidade do produto (nome, portas, imagem) é trocada na primeira entrega.
+O que veio da base continua descrito nas seções 1 a 9 do `CLAUDE.md`.
+
+## O que o Fila Zero pôs por cima (entrega 1, 15/09/2026)
+
+- A identidade: marca "Fila Zero", `pyproject` `fila-zero`, imagem
+  `ghcr.io/mw5-software/fila-zero`, portas 5436/8005.
+- O app `fila/`, com as permissões `fila.ver`, `fila.participar`,
+  `fila.gerenciar` e `fila.cadastros` nos cargos de fábrica e no titular.
+- A raiz `/` passa por `fila.views.inicio`, que manda para `/fila` quem só tem a
+  fila de vendedor.
+- **Mudança de base que vale levar de volta à KRONOS base:** a tela de Usuários
+  responde com frase ("tem histórico gravado; desative em vez de remover")
+  quando um módulo de negócio protege a pessoa com `PROTECT`, em vez de 500.

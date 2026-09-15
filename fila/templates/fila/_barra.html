@@ -1,0 +1,25 @@
+{% macro botao(acao, rotulo, classe="btn", icone="") %}
+<form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="{{ acao }}"><button type="submit" class="{{ classe }}">{% if icone %}{{ icon(icone, "sm") }}{% endif %}<span>{{ rotulo }}</span></button></form>
+{% endmacro %}
+{% set meu = r.meu %}
+{% if pode_participar %}
+{% if meu is none %}
+  {{ botao("ponto", traduzir("Bater o ponto e entrar na fila"), "btn primary lg fila-principal", "log-in") }}
+{% elif meu.estado == Estado.NA_FILA %}
+  <div class="fila-secundarias">
+    <button type="button" class="btn" data-folha="pausa">{{ icon("coffee", "sm") }}<span>{{ traduzir("Pausa") }}</span></button>
+    {% if meu.posicao == 1 %}{{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "btn") }}{% endif %}
+    {{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}
+  </div>
+  {% if meu.posicao == 1 %}
+  {{ botao("atender", traduzir("Vou atender"), "btn primary lg fila-principal fila-principal-vez", "handshake") }}
+  {% else %}
+  {{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "btn primary lg fila-principal", "handshake") }}
+  {% endif %}
+{% elif meu.estado == Estado.ATENDENDO %}
+  <a class="btn primary lg fila-principal" href="{{ url_fila }}?folha=finalizar" data-folha="finalizar">{{ icon("check", "sm") }}<span>{{ traduzir("Finalizar atendimento") }}</span></a>
+{% else %}
+  <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>
+  {{ botao("voltar", traduzir("Voltar para a fila"), "btn primary lg fila-principal", "arrow-left") }}
+{% endif %}
+{% endif %}

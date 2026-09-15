@@ -184,3 +184,26 @@ class TestOCabecalhoMandaOsDoisNiveisParaAEmpresa:
             CHAVE_EMPRESA: str(matriz.empresa_id), CHAVE: str(matriz.pk)},
             follow=True)
         assert resposta.status_code == 404
+
+
+class TestVoltarParaAPagina:
+    """`?voltar=` leva de volta à página de onde a troca saiu (a fila, no Fila
+    Zero), e só para um caminho desta instalação: um endereço de fora faria a
+    troca de loja virar redirecionamento aberto para phishing."""
+
+    def test_a_confirmacao_carrega_o_voltar(self, cliente_de_ana, loja):
+        resposta = cliente_de_ana.get(
+            reverse("filial_trocar"), {"filial_id": loja.pk, "voltar": "/fila"})
+        assert '<input type="hidden" name="voltar" value="/fila"' in resposta.content.decode()
+
+    def test_depois_da_troca_volta_para_a_pagina(self, cliente_de_ana, loja):
+        resposta = cliente_de_ana.post(
+            reverse("filial_trocar"), {"filial_id": loja.pk, "voltar": "/fila"})
+        assert resposta["Location"] == "/fila"
+
+    @pytest.mark.parametrize("voltar", ["https://golpe.example/", "//golpe.example",
+                                        "javascript:alert(1)", "fila"])
+    def test_endereco_de_fora_cai_na_raiz(self, cliente_de_ana, loja, voltar):
+        resposta = cliente_de_ana.post(
+            reverse("filial_trocar"), {"filial_id": loja.pk, "voltar": voltar})
+        assert resposta["Location"] == "/"

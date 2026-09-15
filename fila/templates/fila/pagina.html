@@ -1,0 +1,34 @@
+{# O miolo da página da fila, posto dentro do shell do sistema (`fila.tela`).
+   Os ids `fila-*` são os pedaços que o script troca a cada consulta. #}
+<div class="fila" id="fila" data-estado-url="{{ url_estado }}" data-agir-url="{{ url_agir }}" data-versao="{{ r.versao }}">
+  <h1 class="visually-hidden">{{ traduzir("Fila da vez") }}, {{ filial }}</h1>
+
+  <div id="fila-recusa" class="alert warn fila-recusa" role="alert"{% if not recusa %} hidden{% endif %}>{{ icon("alert") }}<div>{{ recusa }}</div></div>
+
+  <section class="fila-hero" aria-live="polite">
+    <div class="fila-hero-topo">
+      {% if outras_lojas %}
+      <details class="fila-hero-loja fila-trocar-loja">
+        <summary>{{ icon("store", "sm") }}<span>{{ filial }}</span>{{ icon("chevron-down", "sm") }}</summary>
+        <div class="fila-trocar-loja-menu">
+          <p>{{ traduzir("Trocar de loja") }}</p>
+          {% for loja, endereco in outras_lojas %}<a href="{{ endereco }}">{{ loja }}</a>{% endfor %}
+        </div>
+      </details>
+      {% else %}
+      <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
+      {% endif %}
+      <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>
+    </div>
+    <div class="fila-hero-corpo">
+      <div id="fila-painel" class="fila-hero-painel">{% include "fila/_painel.html" %}</div>
+      <div id="fila-barra" class="fila-hero-acoes">{% include "fila/_barra.html" %}</div>
+    </div>
+  </section>
+
+  <div id="fila-meus">{% include "fila/_meus.html" %}</div>
+
+  <div id="fila-lista">{% include "fila/_lista.html" %}</div>
+
+  <div id="fila-lancamentos"{% if not pode_gerenciar %} hidden{% endif %}>{% include "fila/_lancamentos.html" %}</div>
+</div>

@@ -1,0 +1,24 @@
+{# "Seus números": o dia e o mês de quem está na fila, na loja em que está. #}
+{% macro coluna(titulo, n) %}
+<div class="fila-meus-coluna">
+  <p class="fila-meus-titulo">{{ titulo }}</p>
+  <dl class="fila-meus-dl">
+    <div><dt>{{ traduzir("Atendimentos") }}</dt><dd>{{ n.atendimentos }}</dd></div>
+    <div><dt>{{ traduzir("Vendas") }}</dt><dd>{{ n.vendas }}</dd></div>
+    <div><dt>{{ traduzir("Conversão") }}</dt><dd>{% if n.conversao is none %}—{% else %}{{ "%.0f"|format(n.conversao) }}%{% endif %}</dd></div>
+    <div class="fila-meus-vendido"><dt>{{ traduzir("Vendido") }}</dt><dd>{{ n.vendido|reais }}</dd></div>
+  </dl>
+</div>
+{% endmacro %}
+{% if meus %}
+<section class="card fila-meus">
+  <header class="fila-secao-cab">
+    <h2>{{ traduzir("Seus números") }}</h2>
+    <span class="fila-meus-posicao">{% if meus.posicao %}{{ meus.posicao.posicao }}º {{ traduzir("de") }} {{ meus.posicao.total }} {{ traduzir("em vendas no mês") }}{% else %}{{ traduzir("Sem vendas no mês") }}{% endif %}</span>
+  </header>
+  <div class="fila-meus-corpo">
+    {{ coluna(traduzir("Hoje"), meus.hoje) }}
+    {{ coluna(traduzir("Este mês"), meus.mes) }}
+  </div>
+</section>
+{% endif %}

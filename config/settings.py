@@ -80,6 +80,8 @@ INSTALLED_APPS = [
     # `modulos/exemplo/` para a forma, e `CLAUDE.md` §2 para a regra de
     # camada: a base nunca importa um deles.
     "modulos.exemplo",
+    # O negócio do Fila Zero: a fila da vez das lojas.
+    "fila",
 ]
 
 MIDDLEWARE = [

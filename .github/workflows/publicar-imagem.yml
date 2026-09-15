@@ -45,7 +45,7 @@ jobs:
           build-args: | 
             GIT_SHA=${{ github.event.workflow_run.head_sha }}
           tags: |
-            ghcr.io/mw5-software/kronos-base:latest
-            ghcr.io/mw5-software/kronos-base:${{ github.event.workflow_run.head_sha }}
+            ghcr.io/mw5-software/fila-zero:latest
+            ghcr.io/mw5-software/fila-zero:${{ github.event.workflow_run.head_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

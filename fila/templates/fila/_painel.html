@@ -1,0 +1,76 @@
+{% from "fila/_macros.html" import avatar %}
+{% set meu = r.meu %}
+
+{% macro trilha_da_fila() %}
+{% if trilha %}
+<ol class="fila-trilha" aria-label="{{ traduzir('Ordem da fila') }}">
+  {% for l in trilha %}
+  {% if l is none %}
+  <li class="fila-trilha-no fila-trilha-mais" aria-hidden="true">…</li>
+  {% else %}
+  <li class="fila-trilha-no{% if l.e_voce %} fila-trilha-voce{% endif %}" title="{{ l.posicao }}º {{ l.nome }}">
+    {{ avatar(l.pessoa_id, l.nome, l.tem_foto, "sm") }}
+    <span class="fila-trilha-nome">{% if l.e_voce %}{{ traduzir("Você") }}{% else %}{{ l.nome.split()[0] }}{% endif %}</span>
+  </li>
+  {% endif %}
+  {% endfor %}
+</ol>
+{% endif %}
+{% endmacro %}
+
+{% if not pode_participar %}
+<div class="fila-estado">
+  <p class="fila-numeral"><span class="fila-numeral-n">{{ r.fila|length }}</span></p>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("na fila agora") }}</p>
+    <p class="fila-estado-apoio">{{ r.atendendo|length }} {{ traduzir("atendendo") }}, {{ r.em_pausa|length }} {{ traduzir("em pausa") }}</p>
+    {{ trilha_da_fila() }}
+  </div>
+</div>
+
+{% elif meu is none %}
+<div class="fila-estado fila-estado-fora">
+  <span class="fila-estado-icone">{{ icon("log-in") }}</span>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("Você não está na fila") }}</p>
+    <p class="fila-estado-apoio">{{ traduzir("Bata o ponto quando chegar na loja para entrar no fim da fila.") }}{% if r.fila %} {{ r.fila|length }} {{ traduzir("na fila agora.") }}{% endif %}</p>
+  </div>
+</div>
+
+{% elif meu.estado == Estado.NA_FILA and meu.posicao == 1 %}
+<div class="fila-estado painel-sua-vez">
+  <span class="fila-estado-icone fila-sino">{{ icon("bell-ring") }}</span>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("É a sua vez") }}</p>
+    <p class="fila-estado-apoio">{{ traduzir("O próximo cliente que entrar é seu.") }}</p>
+  </div>
+</div>
+
+{% elif meu.estado == Estado.NA_FILA %}
+<div class="fila-estado painel-na-fila">
+  <p class="fila-numeral" aria-hidden="true"><span class="fila-numeral-n">{{ meu.posicao }}</span></p>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("Você é o") }} {{ meu.posicao }}º {{ traduzir("da fila") }}</p>
+    <p class="fila-estado-apoio">{{ meu.posicao|na_frente|capitalize }}, {{ traduzir("esperando") }} <time data-desde="{{ meu.desde.isoformat() }}">{{ meu.desde|ha_quanto(agora) }}</time></p>
+    {{ trilha_da_fila() }}
+  </div>
+</div>
+
+{% elif meu.estado == Estado.ATENDENDO %}
+<div class="fila-estado painel-atendendo">
+  <p class="fila-numeral" aria-hidden="true"><span class="fila-numeral-n" data-minutos="{{ meu.desde.isoformat() }}">{{ meu.desde|minutos(agora) }}</span><span class="fila-numeral-sufixo">min</span></p>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("Atendendo") }}</p>
+    <p class="fila-estado-apoio">{{ traduzir("Começou às") }} {{ meu.desde|hora }}. {{ traduzir("Ao terminar, lance se vendeu.") }}</p>
+  </div>
+</div>
+
+{% else %}
+<div class="fila-estado painel-pausa">
+  <p class="fila-numeral" aria-hidden="true"><span class="fila-numeral-n" data-minutos="{{ meu.desde.isoformat() }}">{{ meu.desde|minutos(agora) }}</span><span class="fila-numeral-sufixo">min</span></p>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("Em pausa") }}: {{ meu.tipo_de_pausa }}</p>
+    <p class="fila-estado-apoio">{{ traduzir("Desde") }} {{ meu.desde|hora }}. {{ traduzir("Ao voltar, você entra no fim da fila.") }}</p>
+  </div>
+</div>
+{% endif %}

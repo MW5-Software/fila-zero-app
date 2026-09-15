@@ -36,4 +36,10 @@ def id_do_post(request, campo: str) -> "int | None":
     filtro de inquilino — não este `if`.
     """
     bruto = (request.POST.get(campo) or "").strip()
-    return int(bruto) if bruto.lstrip("-").isdigit() else None
+    digitos = bruto[1:] if bruto.startswith("-") else bruto
+    # `isascii`, porque "²".isdigit() é verdade e int("²") estoura; e no
+    # máximo 18 dígitos, porque um id maior que o bigint estoura a consulta no
+    # Postgres. Os dois viravam 500 (revisão final do Fila Zero, 15/09/2026).
+    if not (digitos.isascii() and digitos.isdigit() and len(digitos) <= 18):
+        return None
+    return int(bruto)

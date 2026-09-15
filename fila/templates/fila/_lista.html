@@ -1,0 +1,91 @@
+{% from "fila/_macros.html" import avatar %}
+
+{% macro corrigir(l) %}
+{% if pode_gerenciar and not l.e_voce %}
+<a class="iconbtn fila-corrigir" href="{{ url_fila }}?folha=corrigir&pessoa={{ l.pessoa_id }}" title="{{ traduzir('Corrigir') }} {{ l.nome }}" aria-label="{{ traduzir('Corrigir') }} {{ l.nome }}"
+   data-folha="corrigir" data-pessoa="{{ l.pessoa_id }}" data-nome="{{ l.nome }}" data-estado="{{ l.estado }}">{{ icon("dots-vertical", "sm") }}</a>
+{% endif %}
+{% endmacro %}
+
+{% macro voce(l) %}{% if l.e_voce %}<span class="tag primary">{{ traduzir("você") }}</span>{% endif %}{% endmacro %}
+
+<div class="fila-grade">
+  <section class="card fila-fila">
+    <header class="fila-secao-cab">
+      <h2>{{ traduzir("Na fila") }}</h2>
+      <span class="fila-conta">{{ r.fila|length }}</span>
+    </header>
+    {% if r.fila %}
+    <ol class="fila-linhas">
+      {% for l in r.fila %}
+      <li class="fila-linha{% if loop.first %} fila-proximo{% endif %}{% if l.e_voce %} fila-linha-voce{% endif %}">
+        <span class="fila-pos">{{ l.posicao }}</span>
+        {{ avatar(l.pessoa_id, l.nome, l.tem_foto, "lg" if loop.first else "") }}
+        <span class="fila-linha-txt">
+          <span class="fila-linha-nome">{{ l.nome }} {{ voce(l) }}</span>
+          {% if loop.first %}<span class="fila-linha-meta">{{ traduzir("Próximo a atender") }}</span>{% endif %}
+        </span>
+        <span class="fila-linha-tempo"><time data-desde="{{ l.desde.isoformat() }}">{{ l.desde|ha_quanto(agora) }}</time></span>
+        {{ corrigir(l) }}
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="fila-vazio">
+      <span class="fila-vazio-icone">{{ icon("users") }}</span>
+      <p><strong>{{ traduzir("A fila está vazia.") }}</strong></p>
+      <p>{{ traduzir("Quem bater o ponto entra aqui, na ordem de chegada.") }}</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="card fila-lado">
+    <section class="fila-lado-secao fila-lado-atendendo">
+      <header class="fila-secao-cab">
+        <h2><span class="fila-marca-estado"></span>{{ traduzir("Atendendo") }}</h2>
+        <span class="fila-conta">{{ r.atendendo|length }}</span>
+      </header>
+      {% if r.atendendo %}
+      <ul class="fila-linhas">
+        {% for l in r.atendendo %}
+        <li class="fila-linha{% if l.e_voce %} fila-linha-voce{% endif %}">
+          {{ avatar(l.pessoa_id, l.nome, l.tem_foto) }}
+          <span class="fila-linha-txt">
+            <span class="fila-linha-nome">{{ l.nome }} {{ voce(l) }}</span>
+            <span class="fila-linha-meta">{{ traduzir("desde") }} {{ l.desde|hora }}</span>
+          </span>
+          <span class="fila-cronometro" data-minutos="{{ l.desde.isoformat() }}">{{ l.desde|minutos(agora) }}<small>min</small></span>
+          {{ corrigir(l) }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="fila-lado-vazio">{{ traduzir("Ninguém atendendo agora.") }}</p>
+      {% endif %}
+    </section>
+
+    <section class="fila-lado-secao fila-lado-pausa">
+      <header class="fila-secao-cab">
+        <h2><span class="fila-marca-estado"></span>{{ traduzir("Em pausa") }}</h2>
+        <span class="fila-conta">{{ r.em_pausa|length }}</span>
+      </header>
+      {% if r.em_pausa %}
+      <ul class="fila-linhas">
+        {% for l in r.em_pausa %}
+        <li class="fila-linha{% if l.e_voce %} fila-linha-voce{% endif %}">
+          {{ avatar(l.pessoa_id, l.nome, l.tem_foto) }}
+          <span class="fila-linha-txt">
+            <span class="fila-linha-nome">{{ l.nome }} {{ voce(l) }}</span>
+            <span class="fila-linha-meta">{{ l.tipo_de_pausa }}</span>
+          </span>
+          <span class="fila-cronometro" data-minutos="{{ l.desde.isoformat() }}">{{ l.desde|minutos(agora) }}<small>min</small></span>
+          {{ corrigir(l) }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="fila-lado-vazio">{{ traduzir("Ninguém em pausa.") }}</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>

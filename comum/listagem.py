@@ -332,6 +332,7 @@ def montar_pagina(
     ordenaveis: Ordenaveis,
     padrao: str,
     filtraveis: "dict[str, ColunaFiltravel] | None" = None,
+    preservar: "Sequence[str]" = (),
 ) -> Pagina:
     """Lê `?ordenar=` e `?pagina=` da requisição atual e devolve a `Pagina`
     pronta para a tela desenhar.
@@ -433,14 +434,25 @@ def montar_pagina(
                     name=nome, label=rotulo, type=tipo_do_campo,
                     value=crus.get(nome, ""), span=3))
 
+        # Os parâmetros que a TELA usa fora da tabela (`preservar`) viajam em
+        # campos ocultos e no "Limpar": o `<form method="get">` troca a
+        # querystring inteira, e buscar na tabela apagava o período e a loja
+        # escolhidos acima dela (indicadores do Fila Zero, 15/09/2026).
+        mantidos = [(chave, request.GET[chave]) for chave in preservar
+                    if request.GET.get(chave)]
         extras = []
         if crus:
             # `<a>`, e não botão: limpar é ir para a tela sem filtro nenhum, e
             # um botão dentro deste `<form>` submeteria o formulário em vez de
             # navegar.
+            limpar = request.path
+            if mantidos:
+                from urllib.parse import urlencode
+
+                limpar = f"{request.path}?{urlencode(mantidos)}"
             extras.append(Raw(html=format_html(
                 '<a class="btn ghost filtro-limpar" href="{}">Limpar</a>',
-                request.path)))
+                limpar)))
 
         return FilterBar(
             fields=[
@@ -452,6 +464,9 @@ def montar_pagina(
                 Raw(html=format_html(
                     '<input type="hidden" name="{}" value="{}">',
                     PARAM_ORDENAR, ordenar_atual)),
+                *(Raw(html=format_html('<input type="hidden" name="{}" value="{}">',
+                                       chave, valor))
+                  for chave, valor in mantidos),
             ],
             # "Buscar", não "Filtrar": é o verbo que a pessoa usa para o que
             # está fazendo. O botão é azul (`.card .filters` na folha deste

@@ -1,0 +1,7 @@
+{# O avatar de uma pessoa da fila: a foto dela quando tem, e as iniciais na cor
+   dela quando não tem. A cor vem do id, e é a mesma em toda a tela. #}
+{% macro avatar(pessoa_id, nome, tem_foto=false, tamanho="") %}
+<span class="avatar{% if tamanho %} {{ tamanho }}{% endif %} fila-cor-{{ pessoa_id % 8 + 1 }}" aria-hidden="true">
+  {%- if tem_foto %}<img src="/avatar/{{ pessoa_id }}" alt="" loading="lazy">{% else %}{{ nome|iniciais }}{% endif -%}
+</span>
+{% endmacro %}

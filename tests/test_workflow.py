@@ -20,7 +20,9 @@ WORKFLOWS = RAIZ / ".github" / "workflows"
 
 #: Imagens que NÃO são deste produto. Publicar em qualquer uma delas
 #: sobrescreve o que outro sistema entrega.
-DE_OUTROS = ("ghcr.io/mw5-software/kronosnet",)
+#: A KRONOS base entra na lista desde que o Fila Zero nasceu dela: o workflow
+#: herdado publicava na imagem da base.
+DE_OUTROS = ("ghcr.io/mw5-software/kronosnet", "ghcr.io/mw5-software/kronos-base")
 
 
 def _arquivos():
@@ -63,13 +65,13 @@ class TestONossoCiNaoPublicaImagemAlheia:
         princípio: o produto nasceu como cópia do KRONOS.net e por um tempo
         não tinha para onde publicar.
 
-        Hoje tem (`ghcr.io/mw5-software/kronos-base`, no repositório
+        Hoje tem (`ghcr.io/mw5-software/fila-zero`, no repositório
         próprio), e `publicar-imagem.yml` publica lá depois de a suíte passar.
         O que continua valendo — e é o que este teste passa a provar — é o
         princípio de baixo: quem publica só publica na imagem DESTE produto.
         A outra metade, "nunca na imagem de outro", segue no teste acima.
         """
-        nossa = "ghcr.io/mw5-software/kronos-base"
+        nossa = "ghcr.io/mw5-software/fila-zero"
         culpados = [a.name for a in _arquivos()
                     if "push: true" in _sem_comentario(a)
                     and nossa not in _sem_comentario(a)]

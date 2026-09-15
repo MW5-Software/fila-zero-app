@@ -242,8 +242,11 @@ class TestOSeletorDeFilial:
 
         _t, alfa, norte, sul = self._conta()
         ana = Usuario.objects.create_user(email="ana-cab@teste.com", password=SENHA)
-        alocar(ana, alfa, "vendedor", filial=norte)
-        alocar(ana, alfa, "vendedor", filial=sul)
+        # Representante, e não Vendedor: no Fila Zero quem só tem a fila de
+        # vendedor cai em /fila ao pedir a raiz, e esta tela é a do shell.
+        # Os dois cargos têm o mesmo alcance, que é o que o seletor lê.
+        alocar(ana, alfa, "representante", filial=norte)
+        alocar(ana, alfa, "representante", filial=sul)
 
         html = self._html("ana-cab@teste.com")
         assert 'name="filial_id"' in html

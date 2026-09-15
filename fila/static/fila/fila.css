@@ -1,0 +1,400 @@
+/* A página da fila (Fila Zero), por cima do design system.
+
+   Carrega DEPOIS do tema e da `mw5.css`, e só usa os tokens do tema: a fila
+   veste a marca do cliente como qualquer outra tela do sistema.
+
+   A hierarquia é a do salão. Primeiro a pergunta de quem abriu a tela ("é a
+   minha vez?"), numa faixa só dela, com o número grande e o caminho até a
+   vez. Depois a fila, que é o assunto, na coluna larga. Quem atende e quem
+   pausa ficam de lado, porque se consultam, mas não se disputam. Cada estado
+   tem rótulo além da cor: na fila é a cor primária com a posição, atendendo é
+   `--ok`, pausa é `--warn`. */
+
+/* O script esconde e mostra com `hidden`; uma classe com `display` escrita
+   amanhã venceria o atributo e a seção escondida voltaria para a tela. */
+[hidden] { display: none !important; }
+
+/* --- O shell sem menu --------------------------------------------------- */
+.fila-pagina .iconbtn.menu-btn { display: none; }
+/* O logo nítido, e não espremido: o arquivo é o mesmo da faixa do dashboard
+   (929×648), numa altura em que a marca empilhada ainda mostra o "ERP |
+   CRM". A primeira versão o espremia a 40px e parecia imagem ruim; a segunda
+   copiou os 108px da faixa do dashboard e ficou enorme num cabeçalho sem menu
+   (relatado em 15/09/2026). 60px é o meio. A altura manda e a largura
+   acompanha a proporção, a mesma inversão que `kronos.css` faz no
+   `.side-logo`. */
+.fila-pagina { --header-h: 84px; }
+.fila-marca { display: flex; align-items: center; height: 60px; }
+.fila-marca img { height: 60px; width: auto; max-width: 200px; object-fit: contain; display: block; }
+.fila-pagina main { padding-top: 24px; max-width: 1240px; }
+/* O cabeçalho na mesma largura do conteúdo: sem menu à esquerda, o logo solto
+   no canto da tela ficava longe da página que ele assina. */
+.fila-pagina header .wrap { max-width: 1240px; margin: 0 auto; padding: 0 28px; }
+
+/* A pilha da fila: o miolo chega ao `main` como um bloco só, e o vão entre
+   os blocos é daqui. */
+.fila > * + * { margin-top: 20px; }
+.fila .fila-recusa { font-weight: 600; }
+.fila-recusa-da-folha { font-weight: 600; }
+
+/* --- A faixa do meu status ------------------------------------------------ */
+.fila-hero {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 18px 28px 26px;
+  transition: background-color .3s ease, border-color .3s ease, color .3s ease;
+}
+.fila-hero-topo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-size: 13px; font-weight: 600; color: var(--on-surface-2);
+}
+.fila-hero-loja { display: inline-flex; align-items: center; gap: 6px; }
+.fila-hero-vivo { display: inline-flex; align-items: center; gap: 7px; }
+.fila-trocar-loja { position: relative; }
+.fila-trocar-loja summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--primary); }
+.fila-trocar-loja summary::-webkit-details-marker { display: none; }
+.fila-trocar-loja-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 200px;
+  display: grid; padding: 6px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--outline); box-shadow: var(--shadow);
+}
+.fila-trocar-loja-menu p { margin: 4px 8px 6px; font-size: 12px; color: var(--on-surface-2); }
+.fila-trocar-loja-menu a { padding: 10px 8px; border-radius: 8px; color: var(--on-surface); text-decoration: none; font-size: 14px; font-weight: 600; }
+.fila-trocar-loja-menu a:hover { background: var(--surface-2); }
+.fila-vivo-ponto {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 50%, transparent);
+  animation: fila-vivo 2.4s ease-out infinite;
+}
+@keyframes fila-vivo { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 45%, transparent); } 70%, 100% { box-shadow: 0 0 0 7px transparent; } }
+.fila-sem-sinal .fila-vivo-ponto { background: var(--warn); animation: none; }
+.fila-sem-sinal .fila-hero-vivo { color: var(--warn); }
+
+.fila-hero-corpo {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 28px; margin-top: 14px;
+}
+.fila-hero-acoes { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex: none; }
+.fila-hero-acoes form { margin: 0; }
+.fila-secundarias { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.fila-principal { min-width: 240px; height: 52px; font-size: 15px; justify-content: center; border-radius: 12px; }
+
+.fila-estado { display: flex; align-items: center; gap: 22px; min-width: 0; }
+.fila-estado-txt { min-width: 0; }
+.fila-estado-titulo {
+  margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 800;
+  letter-spacing: -.015em; line-height: 1.2;
+}
+.fila-estado-apoio { margin: 4px 0 0; color: var(--on-surface-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+
+/* O número é a resposta: a posição na fila, ou os minutos de atendimento ou
+   de pausa. Grande o bastante para ser lido com o celular na mão, de pé. */
+.fila-numeral {
+  margin: 0; display: flex; align-items: flex-start; flex: none;
+  font-family: var(--font-display); font-weight: 800; color: var(--primary);
+  font-variant-numeric: tabular-nums; line-height: .82;
+}
+.fila-numeral-n { font-size: 84px; letter-spacing: -.055em; }
+.fila-numeral-sufixo { font-size: 24px; letter-spacing: -.01em; margin: 4px 0 0 3px; color: var(--on-surface-2); }
+.painel-atendendo .fila-numeral { color: var(--ok); align-items: baseline; }
+.painel-pausa .fila-numeral { color: var(--warn); align-items: baseline; }
+.painel-atendendo .fila-numeral-sufixo, .painel-pausa .fila-numeral-sufixo { font-size: 20px; margin: 0 0 0 4px; }
+
+.fila-estado-icone {
+  width: 64px; height: 64px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-2); color: var(--on-surface-2);
+}
+.fila-estado-icone .icon { width: 28px; height: 28px; }
+
+/* O caminho até a vez: quem está na frente, na ordem, até você. */
+.fila-trilha { list-style: none; margin: 14px 0 0; padding: 0; display: flex; align-items: flex-start; flex-wrap: wrap; row-gap: 8px; }
+.fila-trilha-no { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 60px; }
+.fila-trilha-no + .fila-trilha-no::before {
+  content: ""; position: absolute; top: 16px; right: calc(50% + 20px); width: 18px; height: 2px;
+  background: var(--outline);
+}
+.fila-trilha-nome { max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--on-surface-2); }
+.fila-trilha-voce .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
+.fila-trilha-voce .fila-trilha-nome { color: var(--primary); font-weight: 700; }
+.fila-trilha-mais { height: 32px; justify-content: center; color: var(--on-surface-2); font-weight: 800; }
+
+/* A vez. O único momento em que a tela muda de cara: a faixa inteira na cor
+   primária, e um botão só que importa. */
+.fila-hero:has(.painel-sua-vez) { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.fila-hero:has(.painel-sua-vez) .fila-hero-topo { color: color-mix(in srgb, var(--on-primary) 78%, transparent); }
+.fila-hero:has(.painel-sua-vez) .fila-vivo-ponto { background: var(--on-primary); }
+.fila-hero:has(.painel-sua-vez) .fila-estado-titulo { font-size: 38px; letter-spacing: -.03em; }
+.fila-hero:has(.painel-sua-vez) .fila-estado-apoio { color: color-mix(in srgb, var(--on-primary) 85%, transparent); font-size: 15px; }
+.fila-hero:has(.painel-sua-vez) .fila-estado-icone { width: 76px; height: 76px; background: color-mix(in srgb, var(--on-primary) 16%, transparent); color: var(--on-primary); }
+.fila-hero:has(.painel-sua-vez) .fila-estado-icone .icon { width: 34px; height: 34px; }
+.fila-hero:has(.painel-sua-vez) .btn:not(.primary) { background: transparent; color: var(--on-primary); border-color: color-mix(in srgb, var(--on-primary) 38%, transparent); }
+.fila-hero:has(.painel-sua-vez) .btn:not(.primary):hover { background: color-mix(in srgb, var(--on-primary) 12%, transparent); }
+.fila-hero:has(.painel-sua-vez) .btn.primary { background: var(--on-primary); border-color: var(--on-primary); color: var(--primary); }
+
+@keyframes fila-vez { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent); } 100% { box-shadow: 0 0 0 22px transparent; } }
+@keyframes fila-sino { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+@keyframes fila-numero { from { transform: translateY(10px); opacity: .2; } to { transform: none; opacity: 1; } }
+.fila-chegou .fila-hero { animation: fila-vez 1s ease-out 2; }
+.fila-chegou .fila-sino .icon { animation: fila-sino .9s ease-in-out 2; }
+.fila-mudou .painel-na-fila .fila-numeral-n { display: inline-block; animation: fila-numero .4s ease-out; }
+
+/* --- A fila e o lado ------------------------------------------------------ */
+.fila .fila-grade { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.fila .fila-fila, .fila .fila-lado, .fila .fila-hoje { border-radius: 14px; overflow: hidden; }
+
+.fila-secao-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px 12px; }
+.fila-secao-cab h2 { margin: 0; display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 15px; font-weight: 800; }
+.fila-conta {
+  min-width: 26px; height: 24px; padding: 0 8px; border-radius: 12px;
+  display: inline-grid; place-items: center;
+  background: var(--surface-2); color: var(--on-surface-2);
+  font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.fila-marca-estado { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.fila-lado-pausa .fila-marca-estado { background: var(--warn); }
+
+.fila-linhas { list-style: none; margin: 0; padding: 0; }
+.fila-linha {
+  display: flex; align-items: center; gap: 14px; min-height: 60px;
+  padding: 10px 20px; border-top: 1px solid var(--outline-2);
+}
+.fila-linha-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fila-linha-nome { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fila-linha-meta { font-size: 12.5px; color: var(--on-surface-2); }
+.fila-linha-tempo { font-size: 13px; color: var(--on-surface-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fila-pos {
+  width: 28px; flex: none; text-align: center;
+  font-family: var(--font-display); font-size: 15px; font-weight: 800; color: var(--on-surface-2);
+  font-variant-numeric: tabular-nums;
+}
+.fila-linha-voce .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
+.fila-linha-voce .fila-pos { color: var(--primary); }
+
+/* O próximo a atender é o que o salão procura: linha maior, marcada. */
+.fila-proximo {
+  padding-block: 18px;
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.fila-proximo .fila-pos {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--primary); color: var(--on-primary); font-size: 14px;
+}
+.fila-proximo .fila-linha-nome { font-size: 16.5px; }
+.fila-proximo .fila-linha-meta { color: var(--primary); font-weight: 700; }
+
+.fila-cronometro {
+  font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.fila-cronometro small { font-size: 12px; font-weight: 700; color: var(--on-surface-2); margin-left: 2px; letter-spacing: 0; }
+.fila-corrigir { flex: none; width: 34px; height: 34px; margin-right: -8px; }
+
+.fila-lado-secao + .fila-lado-secao { border-top: 1px solid var(--outline); }
+.fila-lado-vazio { margin: 0; padding: 4px 20px 18px; color: var(--on-surface-2); font-size: 13px; }
+
+.fila-vazio { padding: 34px 20px 38px; text-align: center; border-top: 1px solid var(--outline-2); }
+.fila-vazio p { margin: 0; color: var(--on-surface-2); font-size: 13.5px; }
+.fila-vazio strong { color: var(--on-surface); font-size: 15px; }
+.fila-vazio-icone { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--on-surface-2); }
+
+/* Cada pessoa com a sua cor, a mesma em toda tela: quem procura "a Bia" na
+   lista acha pelo círculo antes de ler o nome. */
+.fila .avatar.fila-cor-1 { background: color-mix(in srgb, var(--chart-1) 16%, var(--surface)); color: var(--chart-1); }
+.fila .avatar.fila-cor-2 { background: color-mix(in srgb, var(--chart-2) 16%, var(--surface)); color: var(--chart-2); }
+.fila .avatar.fila-cor-3 { background: color-mix(in srgb, var(--chart-3) 16%, var(--surface)); color: var(--chart-3); }
+.fila .avatar.fila-cor-4 { background: color-mix(in srgb, var(--chart-4) 16%, var(--surface)); color: var(--chart-4); }
+.fila .avatar.fila-cor-5 { background: color-mix(in srgb, var(--chart-5) 16%, var(--surface)); color: var(--chart-5); }
+.fila .avatar.fila-cor-6 { background: color-mix(in srgb, var(--chart-6) 16%, var(--surface)); color: var(--chart-6); }
+.fila .avatar.fila-cor-7 { background: color-mix(in srgb, var(--chart-7) 16%, var(--surface)); color: var(--chart-7); }
+.fila .avatar.fila-cor-8 { background: color-mix(in srgb, var(--chart-8) 16%, var(--surface)); color: var(--chart-8); }
+.fila-hero:has(.painel-sua-vez) .avatar { box-shadow: 0 0 0 2px var(--primary); }
+
+/* --- O dia da loja (gerente) --------------------------------------------- */
+.fila-hoje-cab { display: flex; align-items: center; justify-content: space-between; gap: 16px 28px; flex-wrap: wrap; padding: 18px 20px; }
+.fila-hoje-cab h2 { margin: 0; font-family: var(--font-display); font-size: 15px; font-weight: 800; }
+.fila-resumo { display: flex; margin: 0; }
+.fila-resumo > div { padding: 0 20px; border-left: 1px solid var(--outline-2); }
+.fila-resumo > div:first-child { border-left: 0; padding-left: 0; }
+.fila-resumo dt { font-size: 12px; color: var(--on-surface-2); font-weight: 600; }
+.fila-resumo dd { margin: 2px 0 0; font-family: var(--font-display); font-size: 20px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.fila-resumo-total dd { color: var(--ok); }
+
+.fila-lanc-lista { list-style: none; margin: 0; padding: 0; }
+.fila-lanc {
+  display: grid; grid-template-columns: auto minmax(160px, 220px) minmax(0, 1fr) auto;
+  align-items: center; gap: 14px; padding: 11px 20px;
+  border-top: 1px solid var(--outline-2);
+}
+.fila-lanc-quem { display: flex; flex-direction: column; min-width: 0; }
+.fila-lanc-nome { font-weight: 700; font-size: 14px; }
+.fila-lanc-hora { color: var(--on-surface-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.fila-lanc-resultado { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; min-width: 0; }
+.fila-lanc-motivo { color: var(--on-surface-2); }
+.fila-lanc-valor { font-weight: 800; font-variant-numeric: tabular-nums; }
+.fila-lanc > .btn { justify-self: end; }
+
+/* --- As folhas ---------------------------------------------------------------- */
+.fila-rotulo { display: block; font-size: 12.5px; font-weight: 700; color: var(--on-surface-2); margin-bottom: 6px; }
+
+.fila-resultado { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fila-resultado-opcao {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
+  height: 64px; border: 1.5px solid var(--outline); border-radius: 12px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 800; cursor: pointer;
+  background: var(--surface);
+}
+.fila-resultado-opcao input { position: absolute; opacity: 0; pointer-events: none; }
+.fila-resultado-icone { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--on-surface-2); }
+.fila-vendeu:has(input:checked) { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); }
+.fila-vendeu:has(input:checked) .fila-resultado-icone { background: var(--ok); color: #fff; }
+.fila-nao-vendeu:has(input:checked) { border-color: var(--on-surface-2); background: var(--surface-2); }
+.fila-nao-vendeu:has(input:checked) .fila-resultado-icone { background: var(--on-surface-2); color: var(--surface); }
+.fila-resultado-opcao:has(input:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); }
+
+.so-venda, .so-nao-venda { display: flex; flex-direction: column; gap: 12px; }
+.fila-itens { display: grid; gap: 8px; }
+.item-vendido { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 8px; }
+.fila-valor { position: relative; display: block; }
+.fila-valor > span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--on-surface-2); font-size: 13px; font-weight: 600; pointer-events: none; }
+.fila-valor .ctl { padding-left: 38px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fila-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 16px; border-radius: 12px; background: var(--surface-2);
+  font-size: 13.5px; font-weight: 700; color: var(--on-surface-2);
+}
+.fila-total .total { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--on-surface); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+
+.fila-opcoes { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fila-opcoes .msec-title { grid-column: 1 / -1; padding: 0; }
+.fila-opcao {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px;
+  border: 1.5px solid var(--outline); border-radius: 10px; background: var(--surface);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.fila-opcao input { accent-color: var(--primary); width: 16px; height: 16px; margin: 0; }
+.fila-opcao:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
+.fila-folha textarea.ctl { height: auto; padding: 10px 12px; resize: vertical; }
+
+.fila-corrigir-opcoes { gap: 8px; }
+.fila-corrigir-opcoes > div { display: grid; gap: 8px; }
+.fila-corrigir-opcoes form { margin: 0; }
+.fila-corrigir-item {
+  width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--outline); border-radius: 12px;
+  background: var(--surface); color: var(--on-surface); font: inherit; cursor: pointer; text-decoration: none;
+}
+.fila-corrigir-item:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, var(--surface)); }
+.fila-corrigir-item .ci { width: 36px; height: 36px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--primary); }
+.fila-corrigir-item strong { display: block; font-size: 14px; }
+.fila-corrigir-item small { display: block; color: var(--on-surface-2); font-size: 12.5px; margin-top: 2px; }
+.fila-corrigir-perigo .ci { background: var(--danger-bg); color: var(--danger); }
+
+/* --- Seus números ----------------------------------------------------------- */
+.fila-meus-posicao { font-size: 13px; font-weight: 700; color: var(--primary); }
+.fila-meus-corpo { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--outline-2); }
+.fila-meus-coluna { padding: 12px 20px 16px; }
+.fila-meus-coluna + .fila-meus-coluna { border-left: 1px solid var(--outline-2); }
+.fila-meus-titulo { margin: 0 0 8px; font-size: 12.5px; font-weight: 700; color: var(--on-surface-2); }
+.fila-meus-dl { margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fila-meus-dl dt { font-size: 12px; color: var(--on-surface-2); }
+.fila-meus-dl dd { margin: 2px 0 0; font-family: var(--font-display); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fila-meus-vendido dd { color: var(--ok); }
+
+/* --- Tela média ------------------------------------------------------------ */
+@media (max-width: 980px) {
+  .fila .fila-grade { grid-template-columns: minmax(0, 1fr); }
+  .fila-hero-corpo { flex-direction: column; align-items: stretch; }
+  .fila-hero-acoes { align-items: stretch; flex-direction: column-reverse; }
+  .fila-secundarias { justify-content: flex-start; }
+  .fila-principal { width: 100%; }
+}
+
+/* --- Celular ------------------------------------------------------------------
+   Em pé, com uma mão: a ação principal desce para uma barra presa ao rodapé,
+   ao alcance do polegar, e as folhas sobem de baixo. */
+@media (max-width: 720px) {
+  .fila-pagina main { padding: 14px 12px 196px; }
+  .fila-pagina { --header-h: 64px; }
+  .fila-pagina header .wrap { padding: 0 12px; gap: 10px; }
+  .fila-marca, .fila-marca img { height: 44px; }
+  .fila > * + * { margin-top: 14px; }
+
+  .fila-hero { padding: 14px 16px 18px; border-radius: 16px; }
+  .fila-hero-corpo { margin-top: 10px; }
+  .fila-estado { gap: 14px; align-items: flex-start; }
+  /* A trilha não quebra linha no celular: corre de lado, e a própria pessoa
+     (o fim) fica à vista porque o script rola até ela. */
+  .fila-trilha { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; }
+  .fila-trilha::-webkit-scrollbar { display: none; }
+  .fila-trilha-no { flex: none; width: 54px; }
+  .fila-numeral-n { font-size: 64px; }
+  .fila-estado-titulo { font-size: 19px; }
+  .fila-estado-apoio { font-size: 13.5px; }
+  .fila-hero:has(.painel-sua-vez) .fila-estado-titulo { font-size: 30px; }
+  .fila-hero:has(.painel-sua-vez) .fila-estado-icone { width: 60px; height: 60px; }
+
+  .fila-hero-acoes {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    flex-direction: column-reverse; align-items: stretch; gap: 8px;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface); border-top: 1px solid var(--outline);
+    box-shadow: 0 -8px 24px rgba(16, 22, 48, .08);
+  }
+  .fila-hero-acoes:empty { display: none; }
+  .fila-hero-acoes .fila-principal { width: 100%; min-width: 0; height: 54px; }
+  .fila-secundarias { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+  .fila-secundarias form { min-width: 0; }
+  /* Três botões numa linha de 360px: o rótulo quebra em duas linhas em vez
+     de empurrar o último para fora da tela. */
+  .fila-secundarias .btn {
+    width: 100%; min-width: 0; height: auto; min-height: 44px; padding: 6px 8px;
+    justify-content: center; white-space: normal; text-align: center;
+    font-size: 12.5px; line-height: 1.15;
+  }
+  /* No celular a barra fica fora da faixa colorida: os botões voltam ao normal. */
+  .fila-hero:has(.painel-sua-vez) .fila-hero-acoes .btn:not(.primary) { background: var(--surface); color: var(--on-surface); border-color: var(--outline); }
+  .fila-hero:has(.painel-sua-vez) .fila-hero-acoes .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+  .fila-linha { padding: 11px 14px; gap: 12px; }
+  .fila-secao-cab { padding: 14px 14px 10px; }
+  .fila-lado-vazio { padding: 2px 14px 14px; }
+  .fila-cronometro { font-size: 19px; }
+
+  .fila-hoje-cab { padding: 14px; }
+  .fila-resumo { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .fila-resumo > div, .fila-resumo > div:first-child { padding: 10px 12px; border: 0; border-radius: 10px; background: var(--surface-2); }
+  .fila-resumo dd { font-size: 18px; }
+  .fila-lanc { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: 4px; padding: 11px 14px; }
+  .fila-lanc-resultado { grid-column: 2; grid-row: 2; }
+  .fila-lanc > .btn, .fila-lanc > span:last-child { grid-column: 3; grid-row: 1 / 3; }
+
+  .fila-meus-corpo { grid-template-columns: 1fr; }
+  .fila-meus-coluna + .fila-meus-coluna { border-left: 0; border-top: 1px solid var(--outline-2); }
+  /* No celular a faixa não pode empurrar a fila para baixo da dobra: três
+     números numa linha, e o vendido numa linha própria, ao lado do rótulo. */
+  .fila-meus-dl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .fila-meus-dl dd { font-size: 16px; }
+  .fila-meus-vendido { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; }
+  .fila-meus-coluna { padding: 8px 14px 10px; }
+  .fila-meus-titulo { margin-bottom: 4px; }
+
+  .fila-pagina .overlay { align-items: flex-end; padding: 0; }
+  .fila-pagina .fila-folha { max-width: none; border-radius: 18px 18px 0 0; max-height: 92dvh; border-bottom: 0; }
+  .fila-pagina .fila-folha .mfoot { position: sticky; bottom: 0; background: var(--surface); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .fila-pagina .fila-folha .mfoot .btn { flex: 1; justify-content: center; height: 48px; }
+  .item-vendido { grid-template-columns: minmax(0, 1fr) 120px; }
+}
+
+@media (max-width: 380px) {
+  .fila-opcoes { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila-vivo-ponto, .fila-chegou .fila-hero, .fila-chegou .fila-sino .icon,
+  .fila-mudou .painel-na-fila .fila-numeral-n { animation: none; }
+}

@@ -369,11 +369,16 @@ def _trocar_estado(request, filial, ativar: bool) -> HttpResponse:
     `plataforma.filiais.pode_desativar` e nunca é reescrita aqui, para esta
     ação e "remover" não divergirem com o tempo.
     """
-    if not ativar:
-        motivo = pode_desativar(filial)
-        if motivo:
-            return _desenhar(request, erro=motivo)
     with transaction.atomic():
+        if not ativar:
+            # A linha da filial trancada ANTES de perguntar: um módulo que
+            # recusa pelo que está acontecendo na filial (a fila tranca a
+            # mesma linha para bater o ponto) não pode ver "ninguém" e, no
+            # instante seguinte, alguém entrar na loja que vai ser desativada.
+            Filial.objects.select_for_update().filter(pk=filial.pk).first()
+            motivo = pode_desativar(filial)
+            if motivo:
+                return _desenhar(request, erro=motivo)
         filial.ativa = ativar
         filial.save(update_fields=["ativa"])
         registrar(

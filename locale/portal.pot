@@ -373,6 +373,57 @@ msgstr ""
 msgid "Parâmetro não encontrado."
 msgstr ""
 
+msgid "obrigatório"
+msgstr ""
+
+msgid "Fechar"
+msgstr ""
+
+msgid "Paginação"
+msgstr ""
+
+msgid "Página anterior"
+msgstr ""
+
+msgid "Próxima página"
+msgstr ""
+
+msgid "Carregando"
+msgstr ""
+
+msgid "Selecionar"
+msgstr ""
+
+msgid "Ações"
+msgstr ""
+
+msgid "Selecionar linha"
+msgstr ""
+
+msgid "Você está em"
+msgstr ""
+
+msgid "Início"
+msgstr ""
+
+msgid "Abrir menu"
+msgstr ""
+
+msgid "Notificações"
+msgstr ""
+
+msgid "abrir menu"
+msgstr ""
+
+msgid "Menu principal"
+msgstr ""
+
+msgid "Recolher menu"
+msgstr ""
+
+msgid "Recolher"
+msgstr ""
+
 msgid "Cancelar"
 msgstr ""
 
@@ -398,5 +449,585 @@ msgid "Esta tela só abre com o módulo ligado e a permissão exemplo.ver."
 msgstr ""
 
 msgid "Está de pé"
+msgstr ""
+
+msgid "Você não está nesta loja. Bata o ponto primeiro."
+msgstr ""
+
+msgid "Esta loja está desativada."
+msgstr ""
+
+msgid "Você já está nesta loja."
+msgstr ""
+
+#, python-format
+msgid "Você está atendendo em %(loja)s. Finalize lá antes de entrar aqui."
+msgstr ""
+
+msgid "Você já está atendendo."
+msgstr ""
+
+msgid "Você está em pausa. Volte para a fila primeiro."
+msgstr ""
+
+#, python-format
+msgid "A vez é de %(nome)s. Você é o %(posicao)sº da fila."
+msgstr ""
+
+msgid "Venda não tem motivo de não venda."
+msgstr ""
+
+msgid "Informe pelo menos um grupo com valor."
+msgstr ""
+
+msgid "Todo valor precisa ser maior que zero."
+msgstr ""
+
+msgid "Grupo de item não encontrado."
+msgstr ""
+
+msgid "Valor alto demais: confira o que foi digitado."
+msgstr ""
+
+msgid "Não venda não tem grupo nem valor."
+msgstr ""
+
+msgid "Escolha o motivo."
+msgstr ""
+
+msgid "Escolha se vendeu ou não."
+msgstr ""
+
+msgid "Você não está atendendo."
+msgstr ""
+
+msgid "Escolha o tipo de pausa."
+msgstr ""
+
+msgid "Você não está em pausa."
+msgstr ""
+
+msgid "Finalize o atendimento antes de sair da loja."
+msgstr ""
+
+msgid "Você não corrige a si mesmo."
+msgstr ""
+
+msgid "Essa pessoa não está nesta loja."
+msgstr ""
+
+msgid ""
+"Ela está atendendo. Escolha o motivo da não venda para fechar o "
+"atendimento."
+msgstr ""
+
+msgid "Essa pessoa não está atendendo."
+msgstr ""
+
+msgid "Essa pessoa não está em pausa."
+msgstr ""
+
+msgid "Lançamento não encontrado."
+msgstr ""
+
+msgid "O resultado não muda na correção."
+msgstr ""
+
+msgid "Na fila"
+msgstr ""
+
+msgid "Atendendo"
+msgstr ""
+
+msgid "Em pausa"
+msgstr ""
+
+msgid "Vendeu"
+msgstr ""
+
+msgid "Não vendeu"
+msgstr ""
+
+msgid "nome"
+msgstr ""
+
+msgid "ordem"
+msgstr ""
+
+msgid "ativo"
+msgstr ""
+
+msgid "grupo de item"
+msgstr ""
+
+msgid "grupos de item"
+msgstr ""
+
+msgid "motivo de não venda"
+msgstr ""
+
+msgid "motivos de não venda"
+msgstr ""
+
+msgid "tipo de pausa"
+msgstr ""
+
+msgid "tipos de pausa"
+msgstr ""
+
+msgid "loja"
+msgstr ""
+
+msgid "pessoa"
+msgstr ""
+
+msgid "entrada"
+msgstr ""
+
+msgid "saída"
+msgstr ""
+
+msgid "fechada por"
+msgstr ""
+
+msgid "presença"
+msgstr ""
+
+msgid "estado"
+msgstr ""
+
+msgid "na fila desde"
+msgstr ""
+
+msgid "desde"
+msgstr ""
+
+msgid "vendedor"
+msgstr ""
+
+msgid "início"
+msgstr ""
+
+msgid "fim"
+msgstr ""
+
+msgid "cliente pediu"
+msgstr ""
+
+msgid "resultado"
+msgstr ""
+
+msgid "motivo"
+msgstr ""
+
+msgid "observação"
+msgstr ""
+
+msgid "total"
+msgstr ""
+
+msgid "fechado por"
+msgstr ""
+
+msgid "atendimento"
+msgstr ""
+
+msgid "grupo"
+msgstr ""
+
+msgid "valor"
+msgstr ""
+
+msgid "tipo"
+msgstr ""
+
+msgid "Fila da vez"
+msgstr ""
+
+msgid "Grupos de item"
+msgstr ""
+
+msgid "Motivos de não venda"
+msgstr ""
+
+msgid "Tipos de pausa"
+msgstr ""
+
+#, python-format
+msgid ""
+"Há %(n)s pessoa presente nesta loja. Tire-a da loja na página da fila "
+"antes de desativar."
+msgid_plural ""
+"Há %(n)s pessoas presentes nesta loja. Tire todas da loja na página da "
+"fila antes de desativar."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Você ainda não está em nenhuma loja."
+msgstr ""
+
+msgid "Escolha o grupo de cada valor."
+msgstr ""
+
+#, python-format
+msgid "Valor inválido: \"%(valor)s\"."
+msgstr ""
+
+msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."
+msgstr ""
+
+msgid "Novo grupo"
+msgstr ""
+
+msgid "Por que o cliente não comprou: um motivo por atendimento."
+msgstr ""
+
+msgid "Novo motivo"
+msgstr ""
+
+msgid "Por que o vendedor saiu da fila por um tempo."
+msgstr ""
+
+msgid "Novo tipo"
+msgstr ""
+
+msgid "Cadastro não encontrado."
+msgstr ""
+
+msgid "Em uso: desative em vez de remover."
+msgstr ""
+
+msgid "Ordem"
+msgstr ""
+
+msgid "Ativo"
+msgstr ""
+
+msgid "Desativado some das opções do vendedor e continua nos lançamentos antigos."
+msgstr ""
+
+msgid "Criar"
+msgstr ""
+
+msgid "Escolha uma empresa no cabeçalho antes de cadastrar."
+msgstr ""
+
+msgid "Informe o nome."
+msgstr ""
+
+msgid "Sem base para comparar"
+msgstr ""
+
+#, python-format
+msgid "até %(hora)s"
+msgstr ""
+
+#, python-format
+msgid "Comparado a %(trecho)s"
+msgstr ""
+
+msgid "Atendimentos"
+msgstr ""
+
+msgid "Conversão"
+msgstr ""
+
+#, python-format
+msgid "Cliente pediu: %(quantos)s, %(conversao)s"
+msgstr ""
+
+msgid "Vendido"
+msgstr ""
+
+msgid "Ticket médio"
+msgstr ""
+
+msgid "Nenhum atendimento fechado no período."
+msgstr ""
+
+msgid "até agora"
+msgstr ""
+
+msgid "Atendimentos por hora"
+msgstr ""
+
+msgid "Atendimentos por dia"
+msgstr ""
+
+msgid "Conversão por hora"
+msgstr ""
+
+msgid "Conversão por dia"
+msgstr ""
+
+msgid "Vendido por hora"
+msgstr ""
+
+msgid "Vendido por dia"
+msgstr ""
+
+msgid "Ticket médio por hora"
+msgstr ""
+
+msgid "Ticket médio por dia"
+msgstr ""
+
+msgid "todas as lojas"
+msgstr ""
+
+msgid "Número mostrado no gráfico"
+msgstr ""
+
+msgid "Nada no período."
+msgstr ""
+
+msgid "Vendido por grupo de item"
+msgstr ""
+
+#, python-format
+msgid "%(n)s venda"
+msgid_plural "%(n)s vendas"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(n)s atendimento sem venda"
+msgid_plural "%(n)s atendimentos sem venda"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Tempo em pausa"
+msgstr ""
+
+#, python-format
+msgid "%(total)s no total"
+msgstr ""
+
+msgid "Período"
+msgstr ""
+
+msgid "Intervalo"
+msgstr ""
+
+msgid "De"
+msgstr ""
+
+msgid "Até"
+msgstr ""
+
+msgid "Loja"
+msgstr ""
+
+msgid "Todas as lojas"
+msgstr ""
+
+msgid "Aplicar"
+msgstr ""
+
+msgid "Abrir a fila desta loja"
+msgstr ""
+
+msgid "Ficou aberto de um dia para o outro"
+msgstr ""
+
+msgid "Vendedor"
+msgstr ""
+
+msgid "Cliente pediu"
+msgstr ""
+
+msgid "Pausa"
+msgstr ""
+
+msgid "Ranking de vendedores"
+msgstr ""
+
+msgid "Bater o ponto e entrar na fila"
+msgstr ""
+
+msgid "Cliente pediu por mim"
+msgstr ""
+
+msgid "Sair da loja"
+msgstr ""
+
+msgid "Vou atender"
+msgstr ""
+
+msgid "Finalizar atendimento"
+msgstr ""
+
+msgid "Voltar para a fila"
+msgstr ""
+
+msgid "Grupo de item"
+msgstr ""
+
+msgid "Escolha o grupo"
+msgstr ""
+
+msgid "Valor"
+msgstr ""
+
+msgid "Adicionar outro grupo"
+msgstr ""
+
+msgid "Total da venda"
+msgstr ""
+
+msgid "Por que não comprou?"
+msgstr ""
+
+msgid "Observação (opcional)"
+msgstr ""
+
+msgid "Lançar atendimento"
+msgstr ""
+
+msgid "Como terminou o atendimento?"
+msgstr ""
+
+msgid "Pausa para quê?"
+msgstr ""
+
+msgid "Ao voltar, você entra no fim da fila."
+msgstr ""
+
+msgid "Sair para a pausa"
+msgstr ""
+
+msgid "Corrigir"
+msgstr ""
+
+msgid "Fechar atendimento"
+msgstr ""
+
+msgid "Lançar o resultado no lugar do vendedor. Ele volta para o fim da fila."
+msgstr ""
+
+msgid "Tirar da loja"
+msgstr ""
+
+msgid "Fecha o atendimento como não venda e encerra o ponto."
+msgstr ""
+
+msgid "Tirar da pausa"
+msgstr ""
+
+msgid "Encerra a pausa e põe no fim da fila."
+msgstr ""
+
+msgid "Para quem esqueceu de sair. Encerra o ponto."
+msgstr ""
+
+msgid "Fechar o atendimento"
+msgstr ""
+
+msgid "Está atendendo. O atendimento fecha como não venda."
+msgstr ""
+
+msgid "Corrigir o lançamento"
+msgstr ""
+
+msgid "Salvar correção"
+msgstr ""
+
+msgid "Lançamentos de hoje"
+msgstr ""
+
+msgid "às"
+msgstr ""
+
+msgid "Nenhum atendimento fechado hoje."
+msgstr ""
+
+msgid "você"
+msgstr ""
+
+msgid "Próximo a atender"
+msgstr ""
+
+msgid "A fila está vazia."
+msgstr ""
+
+msgid "Quem bater o ponto entra aqui, na ordem de chegada."
+msgstr ""
+
+msgid "Ninguém atendendo agora."
+msgstr ""
+
+msgid "Ninguém em pausa."
+msgstr ""
+
+msgid "Seus números"
+msgstr ""
+
+msgid "de"
+msgstr ""
+
+msgid "em vendas no mês"
+msgstr ""
+
+msgid "Sem vendas no mês"
+msgstr ""
+
+msgid "Hoje"
+msgstr ""
+
+msgid "Este mês"
+msgstr ""
+
+msgid "Ordem da fila"
+msgstr ""
+
+msgid "Você"
+msgstr ""
+
+msgid "na fila agora"
+msgstr ""
+
+msgid "atendendo"
+msgstr ""
+
+msgid "em pausa"
+msgstr ""
+
+msgid "Você não está na fila"
+msgstr ""
+
+msgid "Bata o ponto quando chegar na loja para entrar no fim da fila."
+msgstr ""
+
+msgid "na fila agora."
+msgstr ""
+
+msgid "É a sua vez"
+msgstr ""
+
+msgid "O próximo cliente que entrar é seu."
+msgstr ""
+
+msgid "Você é o"
+msgstr ""
+
+msgid "da fila"
+msgstr ""
+
+msgid "esperando"
+msgstr ""
+
+msgid "Começou às"
+msgstr ""
+
+msgid "Ao terminar, lance se vendeu."
+msgstr ""
+
+msgid "Desde"
+msgstr ""
+
+msgid "Trocar de loja"
+msgstr ""
+
+msgid "Ao vivo"
 msgstr ""
 

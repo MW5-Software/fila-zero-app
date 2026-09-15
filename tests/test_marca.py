@@ -19,7 +19,7 @@ class TestAMarcaDaInstalacao:
         assert isinstance(marca, Brand)
         # O nome DESTE produto. Veio "KRONOS.net" na cópia e ficou apontando
         # para o produto de onde este saiu — ver `plataforma/marca.py`.
-        assert marca.client_name == "KRONOS"
+        assert marca.client_name == "Fila Zero"
 
     def test_a_linha_do_banco_vence_o_padrao(self):
         from plataforma.marca import marca_da_instalacao

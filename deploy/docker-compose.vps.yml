@@ -10,7 +10,7 @@
 # ao atualizar de novo.
 services:
   app:
-    image: ghcr.io/mw5-software/kronos-base:${KRONOS_TAG:-latest}
+    image: ghcr.io/mw5-software/fila-zero:${KRONOS_TAG:-latest}
     # `migrate` ANTES do gunicorn, e não como passo separado de quem atualiza.
     #
     # Isto faltava aqui, e era o defeito mais caro do projeto: o `CMD` da

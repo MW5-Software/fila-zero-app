@@ -1,0 +1,156 @@
+/* O dashboard da fila no Início. Só tokens do tema: é uma tela do sistema
+   como as outras. Os gráficos são HTML desenhado no servidor
+   (`fila/graficos.py`), e esta folha dá o desenho a eles. */
+
+.ind-variacao { display: inline-flex; align-items: center; gap: 3px; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ind-variacao.sobe { color: var(--ok); }
+.ind-variacao.desce { color: var(--danger); }
+.ind-variacao.igual { color: var(--on-surface-2); font-weight: 500; }
+
+/* Os filtros alinham pela base: o botão fica na linha dos campos, e não
+   acima deles. */
+form[action="/"] .formgrid { align-items: end; }
+[data-esquecidos] ul { margin: 6px 0 0; padding-left: 18px; }
+[data-esquecidos] li + li { margin-top: 2px; }
+.ind-vazio { margin: 0; padding: 40px 12px; text-align: center; color: var(--on-surface-2); font-size: 13.5px; }
+.ind-oculto {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+/* --- O painel: os quatro números são as abas do gráfico ------------------ */
+
+.ind-abas {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--outline-2);
+}
+.ind-aba {
+  position: relative; display: flex; flex-direction: column; gap: 4px;
+  padding: 16px var(--card-pad) 18px; cursor: pointer;
+  background: var(--surface-2); color: var(--on-surface-2);
+}
+.ind-aba + .ind-aba { border-left: 1px solid var(--outline-2); }
+.ind-aba:hover { background: var(--surface-3); }
+/* A aba marcada é da cor do cartão e ganha o traço embaixo: parece aberta
+   para o gráfico, que é dela. */
+.ind-aba:has(input:checked) { background: var(--surface); color: var(--on-surface); }
+.ind-aba:has(input:checked)::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px;
+  background: var(--primary);
+}
+.ind-aba input { position: absolute; opacity: 0; pointer-events: none; }
+.ind-aba:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
+.ind-aba-l { font-size: 13px; font-weight: 600; }
+.ind-aba-n {
+  font-family: var(--font-display); font-size: 28px; font-weight: 800;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.15;
+  color: var(--on-surface); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ind-aba:not(:has(input:checked)) .ind-aba-n { opacity: .78; }
+.ind-aba-apoio { font-size: 12.5px; color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+.ind-aba-apoio:empty { display: none; }
+
+/* A série marcada aparece. Sem `:has` (navegador antigo), fica a do vendido,
+   que é a que abre marcada. */
+.ind-series { padding: 28px var(--card-pad) 18px; }
+.ind-serie { display: none; margin: 0; }
+.ind-serie.visivel { display: block; }
+.ind-painel:has(.ind-aba input:checked) .ind-serie { display: none; }
+.ind-painel:has(input[value="atendimentos"]:checked) .ind-serie[data-serie="atendimentos"],
+.ind-painel:has(input[value="conversao"]:checked) .ind-serie[data-serie="conversao"],
+.ind-painel:has(input[value="vendido"]:checked) .ind-serie[data-serie="vendido"],
+.ind-painel:has(input[value="ticket"]:checked) .ind-serie[data-serie="ticket"] { display: block; }
+
+/* --- As colunas no tempo -------------------------------------------------- */
+
+/* A margem da esquerda é a largura do eixo ("R$ 100 mil"); a de baixo, a dos
+   rótulos dos dias. */
+.ind-plot { position: relative; height: 240px; margin: 0 0 26px 76px; }
+.ind-grade { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; }
+.ind-grade li { position: absolute; left: 0; right: 0; bottom: var(--y); border-top: 1px solid var(--outline-2); }
+.ind-grade li:first-child { border-top-color: var(--outline); }
+.ind-grade span {
+  position: absolute; right: calc(100% + 10px); top: 0; transform: translateY(-50%);
+  font-size: 12px; color: var(--on-surface-2); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.ind-colunas {
+  list-style: none; margin: 0; padding: 0; position: absolute; inset: 0;
+  display: flex; align-items: stretch;
+}
+.ind-col { position: relative; flex: 1; min-width: 0; display: flex; align-items: flex-end; justify-content: center; }
+.ind-col-barra {
+  /* O vão entre as barras é a sobra da coluna, e não um `gap` fixo: com
+     gap, trinta dias no celular viravam fios de dois pixels. */
+  width: 68%; max-width: 48px; height: var(--h);
+  background: var(--primary); border-radius: 4px 4px 0 0;
+}
+/* A fatia em andamento (hoje, ou a hora de agora) é listrada: ainda vai
+   crescer, e uma barra baixa lisa pareceria um dia ruim. */
+.ind-col.agora .ind-col-barra {
+  background: repeating-linear-gradient(135deg, var(--primary) 0 5px,
+    color-mix(in srgb, var(--primary) 45%, var(--surface)) 5px 9px);
+}
+.ind-col-rot {
+  position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+  font-size: 12px; color: var(--on-surface-2); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.ind-col.agora .ind-col-rot { color: var(--on-surface); font-weight: 700; }
+.ind-col-dica {
+  display: none; position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
+  /* Acima da barra, mas sem subir para cima das abas quando a barra é a
+     mais alta: aí ela cobre o topo da própria barra. */
+  bottom: min(calc(var(--h) + 8px), calc(100% - 40px)); padding: 6px 9px; border-radius: 6px;
+  background: var(--on-surface); color: var(--surface);
+  font-size: 12px; line-height: 1.35; white-space: nowrap; box-shadow: var(--shadow);
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.ind-col-dica b { display: block; font-size: 13.5px; }
+.ind-col-dica em { font-style: normal; opacity: .75; }
+.ind-col.borda-e .ind-col-dica { left: 0; transform: none; }
+.ind-col.borda-d .ind-col-dica { left: auto; right: 0; transform: none; }
+.ind-col:hover .ind-col-dica { display: block; }
+.ind-colunas:hover .ind-col:not(:hover) .ind-col-barra { opacity: .4; }
+
+/* --- As listas ranqueadas ------------------------------------------------- */
+
+[data-ind] > .cell { display: flex; min-width: 0; }
+[data-ind] > .cell > .card { flex: 1; min-width: 0; }
+.ind-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.ind-rank li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 3.2em;
+  align-items: baseline; column-gap: 10px; row-gap: 7px; font-size: 13.5px;
+}
+.ind-rank-nome { font-weight: 600; overflow-wrap: anywhere; }
+.ind-rank-valor { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ind-rank-parte { color: var(--on-surface-2); font-variant-numeric: tabular-nums; text-align: right; }
+.ind-rank-barra { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.ind-rank-barra > span { display: block; height: 100%; border-radius: 3px; background: var(--primary); }
+/* A cor diz de que lista é: venda na cor da marca, venda perdida no
+   vermelho, pausa em neutro. */
+.ind-rank[data-tom="perda"] .ind-rank-barra > span { background: var(--danger); }
+.ind-rank[data-tom="pausa"] .ind-rank-barra > span { background: var(--on-surface-2); }
+
+@media (max-width: 1100px) {
+  [data-ind="listas"] > .cell { grid-column: span 6; }
+  [data-ind="listas"] > .cell:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 820px) {
+  [data-ind] > .cell,
+  [data-ind="listas"] > .cell { grid-column: 1 / -1; }
+  .ind-abas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ind-aba:nth-child(3) { border-left: 0; }
+  .ind-aba:nth-child(n + 3) { border-top: 1px solid var(--outline-2); }
+  /* No celular a aba perde recheio e o número encolhe para caber inteiro em
+     meia tela: "R$ 893.190,00" cortado com reticências deixa de ser número,
+     e quebrado depois do "R$" parece dois. */
+  .ind-aba { padding: 14px 14px 16px; }
+  .ind-aba-n { font-size: 17px; text-overflow: clip; }
+  .ind-plot { height: 200px; margin-left: 64px; }
+  .ind-grade span { font-size: 11px; }
+  /* No celular, um rótulo sim, um não: dois dígitos por coluna de 9 pixels
+     se atropelam. */
+  .ind-col:nth-child(even) .ind-col-rot { visibility: hidden; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ind-col-barra { transition: opacity .12s; }
+}

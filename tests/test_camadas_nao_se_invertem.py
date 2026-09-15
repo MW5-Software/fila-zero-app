@@ -42,7 +42,9 @@ BASE = ("nucleo", "comum", "plataforma", "contas")
 #:
 #: `modulos` entra pelo pacote: `modulos.exemplo` e qualquer outro que nasça
 #: ali são negócio por construção.
-NEGOCIO = ("catalogo", "orcamento", "modulos")
+#:
+#: `fila` é o negócio do Fila Zero.
+NEGOCIO = ("catalogo", "orcamento", "modulos", "fila")
 
 #: Import de base para negócio que é permitido, e o motivo de cada um.
 #: **Vazia de propósito.** Se um dia precisar de entrada, ela vem com o porquê

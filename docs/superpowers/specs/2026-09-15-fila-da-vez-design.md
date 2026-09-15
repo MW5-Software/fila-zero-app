@@ -1,7 +1,7 @@
 # Fila Zero — a fila da vez das lojas
 
 **Data:** 15/09/2026
-**Estado:** desenho aprovado, execução não começou.
+**Estado:** desenho aprovado e implementado na branch `fila-da-vez` (plano de 15/09/2026).
 **Entrega:** 1 de 2 — a fila. O dashboard (atendimentos, vendas, ranking,
 metas) é a entrega 2, com spec próprio.
 
@@ -91,6 +91,20 @@ Toda ação que mexe na fila tranca a fila da loja no banco durante a gravação
 confere o estado de novo antes de gravar. Dois "Vou atender" ao mesmo tempo
 resultam em um atendimento e uma recusa ("a vez já foi"), nunca em dois.
 
+### Ajustes do plano de implementação (15/09/2026)
+
+O plano `docs/superpowers/plans/2026-09-15-fila-da-vez.md` decidiu cinco
+pontos que este desenho não respondia. Em resumo:
+
+- **`fila.ver`** nasce como quarta permissão e vem primeiro: o menu da base
+  entra pela primeira permissão do módulo, e sem ela o supervisor não acharia
+  a fila. `/fila` pede `fila.ver`; bater o ponto, `fila.participar`.
+- **A trava é a linha da filial**, e não as linhas da fila (loja vazia não tem
+  o que trancar).
+- **Ninguém corrige a si mesmo**, gerente incluído.
+- **Cai direto em `/fila`** quem só tem `fila.ver` e `fila.participar`.
+- **Usuário com histórico não se remove**: a tela diz para desativar.
+
 ## Permissões e cargos
 
 O módulo é o app `fila/`, declarado como `ModuloSpec` com `ativo_por_padrao=True`
@@ -98,6 +112,7 @@ O módulo é o app `fila/`, declarado como `ModuloSpec` com `ativo_por_padrao=Tr
 
 | permissão | o que abre |
 |---|---|
+| `fila.ver` | a página da fila da loja e o item no menu |
 | `fila.participar` | bater o ponto, entrar e sair da fila, atender, lançar o resultado, pausar |
 | `fila.gerenciar` | as correções de D7 na loja do alcance do cargo |
 | `fila.cadastros` | as telas de grupos de item, motivos de não venda e tipos de pausa |
@@ -106,12 +121,12 @@ Cargos de fábrica (`contas/cargos_de_fabrica.py`) e titular (`contas/fabrica.py
 
 | quem | alcance | permissões da fila (além das da base) |
 |---|---|---|
-| Vendedor | a filial | `fila.participar` |
-| Gerente | a filial | `fila.participar`, `fila.gerenciar` |
-| Supervisor | a empresa | `fila.gerenciar` |
+| Vendedor | a filial | `fila.ver`, `fila.participar` |
+| Gerente | a filial | `fila.ver`, `fila.participar`, `fila.gerenciar` |
+| Supervisor | a empresa | `fila.ver`, `fila.gerenciar` |
 | Representante | a filial | nenhuma |
 | Cliente | os próprios | nenhuma |
-| Titular | a conta | `fila.participar`, `fila.gerenciar`, `fila.cadastros` |
+| Titular | a conta | `fila.ver`, `fila.participar`, `fila.gerenciar`, `fila.cadastros` |
 
 A Sylvia ajusta qualquer cargo depois, na tela de Cargos. A MW5 (MASTER) leva o
 coringa `fila.*`.
@@ -347,7 +362,9 @@ Cada trava é testada e quebrada de propósito uma vez antes de valer:
 ## Fora desta entrega
 
 - **O dashboard** (entrega 2): atendimentos, conversão, vendas por grupo, ranking
-  de vendedores, metas, tempo em pausa, presença esquecida.
+  de vendedores, tempo em pausa, presença esquecida — spec em
+  `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`. As metas
+  ficaram para uma entrega 3.
 - Ponto de jornada, fechamento automático no fim do dia, notificação e
   aplicativo nativo.
 - Várias empresas por conta (herdado da base, ainda por fazer lá).

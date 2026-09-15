@@ -30,14 +30,16 @@ import pytest
 FOLHAS = [
     *sorted(Path("catalogo/static/catalogo").glob("*.css")),
     *sorted(Path("plataforma/static/plataforma").glob("*.css")),
+    *sorted(Path("fila/static/fila").glob("*.css")),
 ]
 
 #: Variáveis que a própria página injeta no `style=` de um elemento, e que
 #: portanto não aparecem declaradas em folha nenhuma. Cada uma com o motivo,
 #: como manda a casa — isenção sem motivo vira gaveta.
 DE_FORA: dict[str, str] = {
-    # Nenhuma hoje. O dicionário existe para a primeira ter onde entrar COM o
-    # motivo escrito ao lado, em vez de virar uma exceção solta na varredura.
+    "--h": "altura de cada coluna dos gráficos do Início, calculada no servidor "
+           "(`fila/graficos.py`) e posta no `style=` da coluna",
+    "--y": "altura de cada marca do eixo dos mesmos gráficos, também no `style=`",
 }
 
 

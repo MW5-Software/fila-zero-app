@@ -9,9 +9,21 @@ chama.
 
 from __future__ import annotations
 
+from django.dispatch import Signal
+
 from .models import Filial
 
-__all__ = ["pode_desativar", "pode_remover"]
+__all__ = ["antes_de_desativar", "pode_desativar", "pode_remover"]
+
+#: Perguntado antes de desativar uma filial, com `filial=`. Quem responder
+#: uma frase recusa a desativação, e a tela mostra a frase.
+#:
+#: Existe porque a base não conhece os módulos de negócio e não pode
+#: importá-los (`CLAUDE.md` §3), mas é o módulo que sabe se desativar prende
+#: alguém: no Fila Zero, quem estava presente numa loja desativada ficava sem
+#: conseguir bater o ponto em outra até alguém reativá-la (revisão final,
+#: 15/09/2026). O módulo liga o receptor no `ready()` do app.
+antes_de_desativar = Signal()
 
 
 def pode_desativar(filial: Filial) -> "str | None":
@@ -41,10 +53,13 @@ def pode_desativar(filial: Filial) -> "str | None":
     # contando entre as outras sem empresa, como antes.
     outras_ativas = Filial.objects.filter(
         empresa_id=filial.empresa_id, ativa=True).exclude(pk=filial.pk)
-    if outras_ativas.exists():
-        return None
-    return ("Esta é a última filial ativa desta empresa. Ative outra "
-            "antes de desativar ou remover esta.")
+    if not outras_ativas.exists():
+        return ("Esta é a última filial ativa desta empresa. Ative outra "
+                "antes de desativar ou remover esta.")
+    for _receptor, motivo in antes_de_desativar.send(sender=Filial, filial=filial):
+        if motivo:
+            return str(motivo)
+    return None
 
 
 def _protegida(filial: Filial) -> bool:

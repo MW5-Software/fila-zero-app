@@ -107,12 +107,12 @@ ACCENT_DO_PRODUTO = "#217598"
 #: a MW5 troca a marca do cliente na tela de Aparência; o rodapé continua o
 #: mesmo.
 #:
-#: **Na base, o nome é só KRONOS.** Cada SaaS que nasce dela troca por o
-#: dele (o Portal de Vendas usa "Painel de Vendas Kronos") — sem isso, toda
-#: instalação nova do produto novo nasceria com a identidade da base na tela
-#: de entrada, no menu e na aba do navegador.
-MARCA_PADRAO = Brand(client_name="KRONOS",
-                     system_name="KRONOS",
+#: **No Fila Zero, a marca de nascença é "Fila Zero".** Na base era só
+#: KRONOS, e sem a troca toda instalação nova nasceria com a identidade da
+#: base na tela de entrada, no menu e na aba do navegador. O cliente troca na
+#: tela de Aparência.
+MARCA_PADRAO = Brand(client_name="Fila Zero",
+                     system_name="Fila Zero",
                      accent=ACCENT_DO_PRODUTO,
                      radius="6px", radius_control="4px",
                      assets=ASSETS_DO_PRODUTO,

@@ -1,0 +1,33 @@
+{% from "fila/_macros.html" import avatar %}
+{% if pode_gerenciar %}
+<section class="card fila-hoje">
+  <header class="fila-hoje-cab">
+    <h2>{{ traduzir("Lançamentos de hoje") }}</h2>
+    <dl class="fila-resumo">
+      <div><dt>{{ traduzir("Atendimentos") }}</dt><dd>{{ resumo.atendimentos }}</dd></div>
+      <div><dt>{{ traduzir("Vendas") }}</dt><dd>{{ resumo.vendas }}</dd></div>
+      <div><dt>{{ traduzir("Conversão") }}</dt><dd>{{ resumo.conversao }}%</dd></div>
+      <div class="fila-resumo-total"><dt>{{ traduzir("Vendido") }}</dt><dd>{{ resumo.total|reais }}</dd></div>
+    </dl>
+  </header>
+  {% if lancamentos %}
+  <ul class="fila-lanc-lista">
+    {% for a in lancamentos %}
+    <li class="fila-lanc">
+      {{ avatar(a.vendedor_id, a.vendedor.nome or a.vendedor.email, a.tem_foto, "sm") }}
+      <span class="fila-lanc-quem"><span class="fila-lanc-nome">{{ a.vendedor.nome or a.vendedor.email }}</span><span class="fila-lanc-hora">{{ traduzir("às") }} {{ a.fim|hora }}{% if a.cliente_pediu %}, {{ traduzir("cliente pediu") }}{% endif %}</span></span>
+      <span class="fila-lanc-resultado">
+        {% if a.resultado == "vendeu" %}<span class="pill ok">{{ traduzir("Vendeu") }}</span><span class="fila-lanc-valor">{{ a.total|reais }}</span>
+        {% else %}<span class="pill neutral">{{ traduzir("Não vendeu") }}</span><span class="fila-lanc-motivo">{{ a.motivo.nome }}</span>{% endif %}
+      </span>
+      {% if a.vendedor_id != eu_id %}
+      <a class="btn sm ghost" href="{{ url_fila }}?folha=editar&atendimento={{ a.pk }}">{{ icon("edit", "sm") }}<span>{{ traduzir("Editar") }}</span></a>
+      {% else %}<span></span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="fila-lado-vazio">{{ traduzir("Nenhum atendimento fechado hoje.") }}</p>
+  {% endif %}
+</section>
+{% endif %}

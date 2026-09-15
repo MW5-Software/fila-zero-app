@@ -1,0 +1,371 @@
+"""Os indicadores da fila no Início (spec 2026-09-15, entrega 2).
+
+Desde 15/09/2026 o dashboard mora na raiz, abaixo do "Olá" (pedido do João):
+é a primeira coisa que a gestão vê ao entrar. `/fila/indicadores` ficou só
+como redirecionamento, para link antigo não quebrar.
+
+As lojas que a pessoa enxerga saem de `fila.indicadores.lojas_com_relatorio`,
+e a `?loja=` da URL só filtra DENTRO delas: uma loja forjada não amplia o
+recorte, ela é descartada e a tela mostra as permitidas.
+"""
+
+from __future__ import annotations
+
+import math
+
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import reverse
+from django.utils.html import format_html, format_html_join
+from django.utils import timezone
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
+
+from comum.ambiente import ambiente
+from comum.guardas_de_acesso import exigir_permissao
+from comum.guardas_de_modulo import exigir_modulo_ligado
+from comum.listagem import ColunaFiltravel, montar_pagina
+from comum.personificacao import aviso as aviso_de_personificacao
+from nucleo.components import (Alert, Button, Card, Cell, Column, Form,
+                               FormGrid, Option, PageHeader, Raw, Select,
+                               Table, TextInput)
+from nucleo.layout import Crumb
+from nucleo.rendering import use_environment
+from nucleo.resposta import render
+
+from . import graficos
+from . import indicadores as ind
+from .graficos import Coluna
+from .periodo import ATALHOS, periodo_anterior, periodo_do_pedido
+from .tela import trocar_e_abrir_a_fila
+from .valores import em_reais
+
+__all__ = ["blocos_dos_indicadores", "indicadores", "inicio_com_indicadores"]
+
+
+def _pct(valor) -> str:
+    return "—" if valor is None else f"{valor:.1f}%".replace(".", ",")
+
+
+def _dinheiro(valor) -> str:
+    return "—" if valor is None else em_reais(valor)
+
+
+def _variacao_html(v):
+    if v is None:
+        # A linha existe mesmo sem comparação: sem ela o cartão ficava mais
+        # baixo que os vizinhos (diagramação do Início, 15/09/2026).
+        return format_html('<span class="ind-variacao igual">{}</span>',
+                           _("Sem base para comparar"))
+    classe = "sobe" if v.valor > 0 else "desce" if v.valor < 0 else "igual"
+    seta = "↑" if v.valor > 0 else "↓" if v.valor < 0 else "="
+    numero = f"{abs(v.valor):.1f}".replace(".", ",")
+    unidade = v.unidade if v.unidade == "%" else f" {v.unidade}"
+    return format_html('<span class="ind-variacao {}">{} {}{}</span>',
+                       classe, seta, numero, unidade)
+
+
+def _comparado_a(periodo) -> str:
+    """ "Comparado a 08/09 a 14/09", ou "a 14/09 até 11:34" quando o anterior
+    é um pedaço de dia: diz de onde vem a seta, na linha de apoio."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    de, ate = timezone.localtime(periodo.de), timezone.localtime(periodo.ate)
+    hora = ""
+    if ate.hour == 0 and ate.minute == 0:
+        ultimo = (ate - timedelta(days=1)).date()
+    else:
+        ultimo, hora = ate.date(), ate.strftime("%H:%M")
+    trecho = (f"{de:%d/%m}" if de.date() == ultimo
+              else f"{de:%d/%m} a {ultimo:%d/%m}")
+    # A hora só num dia só ("14/09 até 11:34"): em vários dias ela quebrava a
+    # linha do cartão e não mudava a leitura.
+    if hora and de.date() == ultimo:
+        trecho += " " + str(_("até %(hora)s") % {"hora": hora})
+    return str(_("Comparado a %(trecho)s") % {"trecho": trecho})
+
+
+def _aba(serie, rotulo, valor, variacao, apoio="", marcada=False):
+    """Um número do período que é também o botão da série do gráfico.
+
+    É um rádio de verdade dentro do rótulo: troca pelo teclado, funciona sem
+    JavaScript, e o CSS (`:has`) mostra a série marcada."""
+    return format_html(
+        '<label class="ind-aba"><input type="radio" name="ind-serie" value="{}"{}>'
+        '<span class="ind-aba-l">{}</span><span class="ind-aba-n">{}</span>{}'
+        '<span class="ind-aba-apoio">{}</span></label>',
+        serie, mark_safe(" checked") if marcada else "", rotulo, valor,
+        _variacao_html(variacao), apoio)
+
+
+def _fatias_do_grafico(fatias, periodo, agora):
+    """As colunas do gráfico: por hora, só o horário da loja (8h às 21h) e o
+    que tiver movimento fora dele, porque 24 colunas de madrugada vazia
+    espremem as do expediente; por dia, o número do dia no eixo.
+
+    O rótulo do eixo pula de tanto em tanto quando as colunas passam de 31:
+    um intervalo de meses teria centenas de "05" encavalados. A dica de cada
+    coluna continua com a data inteira.
+    """
+    if periodo.dias == 1:
+        com_movimento = [i for i, f in enumerate(fatias) if f.atendimentos]
+        ini = min([8, *com_movimento])
+        fim = max([21, *com_movimento])
+        fatias = fatias[ini:fim + 1]
+        atual = f"{agora.hour}h" if agora.date() == timezone.localtime(periodo.de).date() else None
+        return [(f, f.rotulo, f.rotulo == atual) for f in fatias]
+    # Período terminado não tem a coluna de hoje, e nenhuma fica listrada.
+    hoje = f"{agora:%d/%m}"
+    pulo = math.ceil(len(fatias) / 31)
+    return [(f, f.rotulo[:2] if i % pulo == 0 else "", f.rotulo == hoje)
+            for i, f in enumerate(fatias)]
+
+
+def _por_cento(x) -> str:
+    return f"{x:g}%".replace(".", ",")
+
+
+def _painel(periodo, loja, n, a, anterior, fatias):
+    """Os quatro números do período em cima e, embaixo, a série de um deles no
+    tempo. Um cartão só: o número e o dia a dia dele são a mesma pergunta, e
+    antes eram seis cartões soltos que repetiam o período em cada um."""
+    agora = timezone.localtime()
+    v_atendimentos = ind.variacao(n.atendimentos, a.atendimentos)
+    v_conversao = ind.variacao(n.conversao, a.conversao, pontos=True)
+    v_vendido = ind.variacao(n.vendido, a.vendido)
+    v_ticket = ind.variacao(n.ticket, a.ticket)
+    abas = format_html_join("", "{}", ((aba,) for aba in (
+        _aba("atendimentos", _("Atendimentos"), n.atendimentos, v_atendimentos),
+        _aba("conversao", _("Conversão"), _pct(n.conversao), v_conversao,
+             _("Cliente pediu: %(quantos)s, %(conversao)s")
+             % {"quantos": n.pediu, "conversao": _pct(n.conversao_pediu)}),
+        # O vendido abre marcado: é o número que a dona olha primeiro.
+        _aba("vendido", _("Vendido"), em_reais(n.vendido), v_vendido, marcada=True),
+        _aba("ticket", _("Ticket médio"), _dinheiro(n.ticket), v_ticket),
+    )))
+
+    if not n.atendimentos:
+        series = format_html('<p class="ind-vazio">{}</p>',
+                             _("Nenhum atendimento fechado no período."))
+    else:
+        linhas = _fatias_do_grafico(fatias, periodo, agora)
+        agora_texto = _("até agora")
+
+        def serie(chave, rotulo, valor, texto, marca, inteiro=False):
+            lista = []
+            for f, eixo, e_agora in linhas:
+                v = valor(f)
+                lista.append(Coluna(eixo, f.rotulo, v, "—" if v is None else texto(v), e_agora))
+            return graficos.colunas(chave, rotulo, lista, marca=marca, inteiro=inteiro,
+                                    visivel=chave == "vendido", agora_texto=agora_texto)
+
+        por_hora = periodo.dias == 1
+        series = format_html_join("", "{}", ((s_,) for s_ in (
+            serie("atendimentos",
+                  _("Atendimentos por hora") if por_hora else _("Atendimentos por dia"),
+                  lambda f: f.atendimentos, str, lambda x: str(int(x)), inteiro=True),
+            serie("conversao",
+                  _("Conversão por hora") if por_hora else _("Conversão por dia"),
+                  lambda f: round(100 * f.vendas / f.atendimentos, 1) if f.atendimentos else None,
+                  _pct, _por_cento),
+            serie("vendido", _("Vendido por hora") if por_hora else _("Vendido por dia"),
+                  lambda f: f.vendido, em_reais, graficos.dinheiro_curto),
+            serie("ticket",
+                  _("Ticket médio por hora") if por_hora else _("Ticket médio por dia"),
+                  lambda f: f.vendido / f.vendas if f.vendas else None,
+                  em_reais, graficos.dinheiro_curto),
+        )))
+
+    # "Comparado a …" uma vez, no cabeçalho, e só quando alguma seta existe:
+    # embaixo de quatro "Sem base para comparar" ele se contradiria.
+    tem_base = any(v is not None for v in (v_atendimentos, v_conversao, v_vendido, v_ticket))
+    return Card(
+        title=f"{periodo.rotulo}, {loja or _('todas as lojas')}",
+        subtitle=_comparado_a(anterior.periodo) if tem_base else None,
+        padded=False, attrs={"data-ind": "painel"},
+        body=Raw(html=format_html(
+            '<div class="ind-painel"><div class="ind-abas" role="radiogroup" aria-label="{}">{}</div>'
+            '<div class="ind-series">{}</div></div>',
+            _("Número mostrado no gráfico"), abas, series)))
+
+
+def _minutos_por_extenso(minutos: int) -> str:
+    return f"{minutos} min" if minutos < 60 else f"{minutos // 60} h {minutos % 60:02d} min"
+
+
+def _lista(titulo, subtitulo, linhas, tom):
+    corpo = (Raw(html=graficos.lista_ranqueada(linhas, tom)) if linhas
+             else Raw(html=format_html('<p class="ind-vazio">{}</p>', _("Nada no período."))))
+    return Cell(span=4, children=Card(title=titulo, subtitle=subtitulo, body=corpo))
+
+
+def _listas(recorte, n):
+    grupos = ind.por_grupo(recorte)
+    motivos = ind.motivos(recorte)
+    pausas = ind.pausa_por_tipo(recorte)
+    sem_venda = sum(q for _m, q in motivos)
+    return FormGrid(attrs={"data-ind": "listas"}, children=[
+        _lista(_("Vendido por grupo de item"),
+               ngettext("%(n)s venda", "%(n)s vendas", n.vendas) % {"n": n.vendas},
+               [(g, v, em_reais(v)) for g, v in grupos], "venda"),
+        _lista(_("Motivos de não venda"),
+               ngettext("%(n)s atendimento sem venda", "%(n)s atendimentos sem venda",
+                        sem_venda) % {"n": sem_venda},
+               [(m, q, str(q)) for m, q in motivos], "perda"),
+        _lista(_("Tempo em pausa"),
+               _("%(total)s no total") % {"total": _minutos_por_extenso(
+                   sum(m for _t, m in pausas))},
+               [(t, m, _minutos_por_extenso(m)) for t, m in pausas], "pausa"),
+    ])
+
+
+def _lojas_do_pedido(request, permitidas):
+    try:
+        escolhida = int(request.GET.get("loja", ""))
+    except ValueError:
+        return permitidas, None
+    uma = [loja for loja in permitidas if loja.pk == escolhida]
+    return (uma, uma[0]) if uma else (permitidas, None)
+
+
+def _filtros(request, periodo, permitidas, loja):
+    campos = [
+        # As opções neutras ("Intervalo", "Todas as lojas") são opções comuns,
+        # e não `empty_label`: o do design system nasce `disabled`, e quem
+        # escolhia uma loja não voltava a "Todas" (revisão final, 15/09/2026;
+        # o mesmo motivo escrito em `comum/listagem.py`).
+        Select(name="periodo", label=_("Período"), span=3,
+               value=periodo.chave if periodo.chave != "intervalo" else "",
+               options=[Option("", _("Intervalo")),
+                        *(Option(chave, rotulo) for chave, rotulo in ATALHOS)]),
+        TextInput(name="de", label=_("De"), type="date", span=2,
+                  value=request.GET.get("de", "")),
+        TextInput(name="ate", label=_("Até"), type="date", span=2,
+                  value=request.GET.get("ate", "")),
+    ]
+    if len(permitidas) > 1:
+        campos.append(Select(
+            name="loja", label=_("Loja"), span=3, value=str(loja.pk) if loja else "",
+            options=[Option("", _("Todas as lojas")),
+                     *(Option(str(l.pk), str(l)) for l in permitidas)]))
+    campos.append(Cell(span=2, children=Button(label=_("Aplicar"), variant="primary",
+                                                type="submit")))
+    # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
+    # troca a querystring inteira, e aplicar o período apagava os dois.
+    for chave, valor in request.GET.items():
+        if chave not in ("periodo", "de", "ate", "loja", "pagina") and valor:
+            campos.append(Raw(html=format_html(
+                '<input type="hidden" name="{}" value="{}">', chave, valor)))
+    # Sem título: o período e a loja escolhidos já estão nos campos, e o
+    # cabeçalho do painel logo abaixo diz os dois por extenso.
+    return Card(attrs={"data-ind": "filtros"},
+                body=Form(method="get", action=reverse("inicio"),
+                          children=FormGrid(children=campos)))
+
+
+def _desde(instante) -> str:
+    """A hora no fuso da loja: o banco devolve em UTC, e 21:30 de São Paulo
+    aparecia como 00:30 do dia seguinte (revisão final, 15/09/2026)."""
+    from django.utils import timezone
+
+    return timezone.localtime(instante).strftime("%d/%m %H:%M")
+
+
+def _esquecidos(lista):
+    if not lista:
+        return ""
+    # O link troca para a loja DO ITEM e volta para a fila: apontar para
+    # `/fila` abria a loja da sessão, onde a pessoa esquecida não está
+    # (revisão final, 15/09/2026).
+    itens = format_html_join("", '<li>{}: {} em {}, desde {}. <a href="{}">{}</a></li>', (
+        (e.o_que, e.nome, e.loja, _desde(e.desde),
+         trocar_e_abrir_a_fila(e.loja), _("Abrir a fila desta loja")) for e in lista))
+    return Alert(tone="warn", title=_("Ficou aberto de um dia para o outro"),
+                 attrs={"data-esquecidos": ""},
+                 message=Raw(html=format_html("<ul>{}</ul>", itens)))
+
+
+_FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
+
+
+def _colunas(pagina):
+    return [
+        Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
+               render=lambda p: p.nome or p.email),
+        Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
+               render=lambda p: em_reais(p.vendido)),
+        Column("atendimentos", pagina.cabecalho("atendimentos", str(_("Atendimentos"))), align="num"),
+        Column("vendas", pagina.cabecalho("vendas", str(_("Vendas"))), align="num"),
+        Column("conversao", pagina.cabecalho("conversao", str(_("Conversão"))), align="num",
+               render=lambda p: _pct(p.conversao)),
+        Column("ticket", pagina.cabecalho("ticket", str(_("Ticket médio"))), align="num",
+               render=lambda p: _dinheiro(p.ticket)),
+        Column("pediu", pagina.cabecalho("pediu", str(_("Cliente pediu"))), align="num"),
+        Column("pausa", pagina.cabecalho("pausa", str(_("Pausa"))), align="num",
+               render=lambda p: f"{int(p.pausa.total_seconds() // 60)} min"),
+    ]
+
+
+def blocos_dos_indicadores(request, empresa, permitidas) -> list:
+    """Os blocos do dashboard (filtros, esquecidos, números, gráficos e
+    ranking) para as lojas `permitidas`, que quem chama já tirou do alcance do
+    cargo (`indicadores.lojas_com_relatorio`)."""
+    periodo = periodo_do_pedido(request.GET)
+    lojas, loja = _lojas_do_pedido(request, permitidas)
+    recorte = ind.Recorte(empresa, tuple(lojas), periodo)
+    anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo))
+    n, a = ind.numeros(recorte), ind.numeros(anterior)
+    blocos = [
+        _filtros(request, periodo, permitidas, loja),
+        _esquecidos(ind.esquecidos(empresa, lojas)),
+        _painel(periodo, loja, n, a, anterior, ind.por_dia(recorte)),
+        _listas(recorte, n),
+    ]
+    listagem = montar_pagina(request, ind.ranking(recorte),
+                             ordenaveis=ind.ORDENAVEIS_DO_RANKING,
+                             padrao=ind.PADRAO_DO_RANKING,
+                             filtraveis=_FILTRAVEIS,
+                             preservar=("periodo", "de", "ate", "loja"))
+    blocos.append(Card(title=_("Ranking de vendedores"), padded=False, body=[
+        listagem.barra,
+        Table(columns=_colunas(listagem), rows=listagem.linhas),
+        listagem.paginacao,
+    ]))
+    return blocos
+
+
+def inicio_com_indicadores(request, empresa, permitidas) -> HttpResponse:
+    """O Início da gestão: o "Olá" com a data, como para todo mundo, e o
+    dashboard logo abaixo."""
+    from nucleo.views import _data_de_hoje
+    from plataforma.site import montar_site
+
+    env = ambiente()
+    with use_environment(env):
+        site = montar_site(request)
+        pagina = site.page(
+            title="Início", width="full",
+            stylesheets=["/static/plataforma/listagem.css",
+                         "/static/fila/indicadores.css"],
+            content=[
+                aviso_de_personificacao(request),
+                PageHeader(title=site.resolve_nome("Olá, {nome}!", request.usuario),
+                           subtitle=_data_de_hoje()),
+                *blocos_dos_indicadores(request, empresa, permitidas),
+            ],
+            crumbs=[Crumb("Início")],
+            user=request.usuario)
+        return render(pagina)
+
+
+# A tela própria saiu (15/09/2026): o endereço antigo leva ao Início com os
+# mesmos filtros, para link salvo ou compartilhado não quebrar. As guardas
+# ficam, para quem não pode continuar tomando 404 e as varreduras enxergarem
+# a rota guardada.
+@exigir_permissao("fila.relatorios")
+@exigir_modulo_ligado("fila")
+def indicadores(request) -> HttpResponse:
+    consulta = request.GET.urlencode()
+    return HttpResponseRedirect(reverse("inicio") + (f"?{consulta}" if consulta else ""))

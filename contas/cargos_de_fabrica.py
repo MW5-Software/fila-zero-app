@@ -36,10 +36,21 @@ __all__ = ["DE_FABRICA", "garantir_cargos_de_fabrica", "semear_cargos"]
 #: Permissão que o código não declara seria pulada em silêncio pela semeadura
 #: — e uma lista com nome de módulo que não existe é o jeito de ninguém notar
 #: um erro de digitação.
+#:
+#: **No Fila Zero, as permissões da fila** (spec 2026-09-15, "Permissões e
+#: cargos", e o desvio D-1 do plano: `fila.ver` acompanha toda permissão da
+#: fila, porque é ela que põe a fila no menu). Representante e Cliente não
+#: estão na loja atendendo, e por isso não trazem nada da fila.
+#: `fila.relatorios` (entrega 2): gerente e supervisor leem os indicadores do
+#: alcance deles.
 DE_FABRICA: "tuple[tuple[str, str, str, bool, tuple[str, ...]], ...]" = (
-    ("supervisor", "Supervisor", "empresa", False, ("usuarios.editar",)),
-    ("gerente", "Gerente", "filial", False, ("usuarios.editar",)),
-    ("vendedor", "Vendedor", "filial", False, ()),
+    ("supervisor", "Supervisor", "empresa", False,
+     ("usuarios.editar", "fila.ver", "fila.gerenciar", "fila.relatorios")),
+    ("gerente", "Gerente", "filial", False,
+     ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar",
+      "fila.relatorios")),
+    ("vendedor", "Vendedor", "filial", False,
+     ("fila.ver", "fila.participar")),
     ("representante", "Representante", "filial", False, ()),
     ("cliente", "Cliente", "proprios", True, ()),
 )

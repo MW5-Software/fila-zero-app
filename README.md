@@ -1,10 +1,21 @@
-# KRONOS base
+# Fila Zero
 
-A base de todo SaaS da MW5: conta, empresa, filial, usuário, cargos e
-alocações, permissão, auditoria, aparência, módulos, parâmetros, backup e o
-design system (`nucleo`). Não tem módulo de negócio — cada SaaS nasce copiando
-esta pasta e acrescentando os dele. Ver `CLAUDE.md` antes de mexer e
-`PROVENIENCIA.md` para de onde ela veio.
+A fila da vez das lojas: o vendedor bate o ponto, entra na fila, atende na sua
+vez e lança se vendeu (por grupo de item e valor) ou por que não vendeu. O
+gerente corrige a fila da loja dele, e os cadastros ficam no dashboard.
+
+Nasceu da KRONOS base (conta, empresa, filial, usuário, cargos, permissão,
+auditoria, aparência, módulos, parâmetros, backup e o design system). Ver
+`CLAUDE.md` antes de mexer e `PROVENIENCIA.md` para de onde ele veio.
+
+## A fila
+
+| rota | o que é |
+|---|---|
+| `/fila` | a página da loja, fora do dashboard, pensada para o celular |
+| `/fila/estado` | o que a página consulta a cada 3 segundos (JSON) |
+| `/fila/agir` | as ações do vendedor e as correções do gerente (POST) |
+| `/fila/grupos`, `/fila/motivos`, `/fila/pausas` | os cadastros, no dashboard |
 
 ## Variáveis de ambiente
 
@@ -103,10 +114,10 @@ sem avisar — cadastrava-se num e olhava-se no outro.
 
 ```bash
 export DJANGO_SECRET_KEY=qualquer-coisa-local
-docker compose up -d banco          # o Postgres, publicado em 127.0.0.1:5435
+docker compose up -d banco          # o Postgres, publicado em 127.0.0.1:5436
 
 export DJANGO_DEBUG=1
-export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5435/kronos
+export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 
 uv sync --extra dev
 uv run python manage.py migrate
@@ -114,8 +125,8 @@ uv run python manage.py runserver
 uv run pytest -q
 ```
 
-A porta é **5435**: a 5432 é de outro projeto desta máquina, a 5433 é do
-KRONOS.net e a 5434 é do Portal de Vendas. Apontar para a porta errada abre o
+A porta é **5436**: a 5432 é de outro projeto desta máquina, a 5433 é do
+KRONOS.net, a 5434 é do Portal de Vendas e a 5435 é da KRONOS base. Apontar para a porta errada abre o
 banco de outro produto sem nenhum aviso — e todos têm as MESMAS tabelas da
 base, o que torna o engano invisível até alguém gravar no lugar errado. Ela
 atende só `127.0.0.1`: o banco responde a quem está na máquina, não à rede.

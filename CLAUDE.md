@@ -1,14 +1,16 @@
-# KRONOS base — o que você precisa saber antes de mexer
+# Fila Zero — o que você precisa saber antes de mexer
 
-Esta pasta é a **base de todo SaaS da MW5**: conta, empresa, filial, usuário,
-cargos e alocações, permissão, auditoria, aparência, módulos, parâmetros,
-backup e o design system. **Ela não tem módulo de negócio nenhum.** Cada SaaS
-nasce copiando esta pasta e pondo os módulos dele por cima (§1).
+O **Fila Zero** é o SaaS da **fila da vez** das lojas: cada vendedor bate o
+ponto, entra na fila, atende na sua vez e lança se vendeu (e o quê) ou por que
+não vendeu. O primeiro cliente é a Sylvia Design (a conta é a Sylvia, a empresa
+é a Sylvia Design, as lojas são as filiais). O negócio mora no app `fila/` e é
+descrito no §10.
 
-Ela saiu do **Portal de Vendas** em 15/09/2026 (commit `d88fb33` de lá), que por
-sua vez saiu do KRONOS.net. Veio tudo, menos o catálogo e o orçamento, que são
-o negócio do Portal. `PROVENIENCIA.md` diz o que veio, o que ficou de fora e o
-que foi decidido na cópia.
+Ele nasceu da **KRONOS base** (commit `be166c4`, ver `PROVENIENCIA.md`): conta,
+empresa, filial, usuário, cargos e alocações, permissão, auditoria, aparência,
+módulos, parâmetros, backup e o design system vieram de lá, e as seções 1 a 9
+continuam descrevendo essa base. A base, por sua vez, saiu do **Portal de
+Vendas** (commit `d88fb33`), que saiu do KRONOS.net.
 
 Quase tudo que parece estranho no código tem um motivo escrito ao lado, e o
 motivo costuma ser um defeito que já aconteceu. **Leia o comentário antes de
@@ -16,7 +18,12 @@ reescrever qualquer peça.**
 
 ---
 
-## 1. Como um SaaS nasce daqui
+## 1. Como um SaaS nasce da base
+
+O Fila Zero já seguiu este roteiro (identidade, app `fila/`, varreduras,
+permissões de nascença). Ele fica aqui porque é o mapa do que a base espera de
+um produto, e porque um módulo de negócio novo neste produto passa pelos
+passos 3 a 5.
 
 1. **Copiar a pasta** sem `.git`, `.venv`, `midia/` e `backups/`, e escrever um
    `PROVENIENCIA.md` dizendo de qual commit da base ele saiu.
@@ -90,6 +97,9 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   mídia, `Site`.
 - **`modulos/`** — onde mora módulo de negócio. Na base só existe
   `modulos/exemplo/`, que mostra a forma.
+- **`fila/`** — o negócio do Fila Zero (§10). É app de primeiro nível, e não
+  pasta dentro de `modulos/`, por ser o produto inteiro; para as varreduras
+  ele é negócio como qualquer outro.
 - **`config/`**, **`deploy/`**, **`locale/`**, **`docs/`** — configuração,
   publicação, as traduções (§8) e as decisões escritas. Em `docs/`, os
   `plans/` e `specs/` são registros datados: descrevem o dia em que foram
@@ -98,7 +108,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 97 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 108 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -365,6 +375,110 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    mantém essa assinatura é decisão de produto.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
+5. **As metas da fila** são a entrega 3 e ainda não têm spec.
+
+---
+
+## 10. A fila da vez
+
+Spec: `docs/superpowers/specs/2026-09-15-fila-da-vez-design.md`. Plano, com os
+cinco ajustes que o spec não respondia (D-1 a D-5):
+`docs/superpowers/plans/2026-09-15-fila-da-vez.md`.
+
+### Quem pode o quê
+
+| permissão | o que abre |
+|---|---|
+| `fila.ver` | a página `/fila` da loja e o item no menu |
+| `fila.participar` | bater o ponto, atender, lançar, pausar, sair da loja |
+| `fila.gerenciar` | corrigir a fila e os lançamentos da loja em que está |
+| `fila.cadastros` | grupos de item, motivos de não venda e tipos de pausa |
+
+Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
+`gerenciar`; Supervisor, `ver` e `gerenciar`; o titular, as quatro
+(`contas/cargos_de_fabrica.py`, `contas/fabrica.py`). **`fila.ver` vem primeiro
+no `ModuloSpec`** porque o menu entra pela primeira permissão do módulo e some
+com os atalhos de quem não a tem.
+
+**A loja é a filial em que a sessão está** (`filial_atual`), e a permissão é a
+do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
+
+### Onde mora cada regra
+
+- `fila/models.py` — os três cadastros, `Presenca`, `LugarNaFila` (o estado de
+  agora, uma linha por pessoa presente), `Atendimento` com `ItemVendido`, e
+  `Pausa`. **A ordem da fila é `na_fila_desde`**, e voltar para o fim é gravar
+  a hora de agora. Os "um aberto por pessoa" são restrições parciais do banco.
+- `fila/acoes.py` — o que o vendedor faz. Cada ação **tranca a linha da
+  filial**, relê o lugar da pessoa depois da trava e grava tudo ou nada; o que
+  não cabe levanta `Recusa` com a frase da tela.
+- `fila/correcoes.py` — o que o gerente corrige, com auditoria. Confere que a
+  pessoa e o atendimento são desta loja e que ninguém corrige a si mesmo.
+- `fila/estado.py` — o retrato da loja e a versão que a tela consulta.
+- `fila/views.py`, `fila/tela.py`, `fila/templates/fila/` — a página fora do
+  shell, com ambiente Jinja próprio (`fila/ambiente.py`), a consulta
+  `GET /fila/estado` e as ações em `POST /fila/agir`.
+- `fila/views_cadastros.py` — as três telas de cadastro, uma view para as três.
+
+### O que custa esquecer
+
+- **Ler o estado antes de trancar.** Dois toques em "Vou atender" leriam os
+  dois "na fila", e o segundo estouraria na restrição do banco com 500.
+  `tests/test_fila_concorrencia.py` força a demora entre ler e gravar para a
+  trava ser provada, e não a sorte.
+- **Um relógio só.** A hora das correções é lida pelo módulo das ações
+  (`acoes._agora()`), e não importada por nome: com dois relógios, quem voltou
+  pela mão do gerente passava na frente de quem já esperava.
+- **`bulk_create` de `ItemVendido` pula a conta**: é o `save` do
+  `ModeloDaEmpresa` que a preenche.
+- **Cadastro usado é `PROTECT`.** Desativa; a tela diz isso em vez de 500.
+- **A página funciona sem JavaScript.** O script só consulta, troca HTML que o
+  servidor desenhou e abre as folhas como diálogo; nenhum HTML é montado nele.
+- **A página veste o design system.** Ela é montada no shell da casa (o
+  cabeçalho com filial, idioma, sair e avatar), sem a barra lateral e sem o
+  rodapé (`fila.tela._no_shell`), e `fila/static/fila/fila.css` só usa os
+  tokens do tema. A primeira versão, com paleta e fonte próprias, foi recusada
+  por parecer outro produto. Todo estado tem rótulo e ícone, e a página não tem
+  `<table>`.
+- **Macro de template não pode ter o nome de variável do contexto.** O macro
+  das folhas se chamava `folha`, como o `?folha=` da URL, e a folha nunca
+  abria sem JavaScript.
+- **Loja com presença aberta não se desativa.** A base pergunta pelo sinal
+  `plataforma.filiais.antes_de_desativar` (ela não pode importar a fila), e
+  `fila/sinais.py` responde com a frase, ligado no `ready()`. A tela de
+  Filiais tranca a linha da loja antes de perguntar, e o ponto relê a loja
+  depois da mesma trava: sem as duas pontas, alguém entrava na loja que
+  acabava de ser desativada e ficava preso nela.
+- **Quem só tem `fila.ver` e `fila.participar` cai em `/fila`** ao pedir a
+  raiz (`fila.views.inicio`, antes do `nucleo` em `config/urls.py`). Teste da
+  base que pede a raiz com um vendedor precisa de outro cargo.
+
+
+### Os indicadores (entrega 2)
+
+Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
+`docs/superpowers/plans/2026-09-15-fila-indicadores.md`.
+
+- **O dashboard mora no Início (`/`)**, abaixo do "Olá", para quem tem
+  `fila.relatorios` em alguma loja (`fila.views.inicio` chama
+  `views_indicadores.inicio_com_indicadores`). `/fila/indicadores` só
+  redireciona para lá com os mesmos filtros. As lojas saem de
+  `fila.indicadores.lojas_com_relatorio` (o cargo no lugar), e a `?loja=` só
+  filtra dentro delas.
+- `fila/periodo.py` resolve o período e o anterior (em andamento compara até
+  o mesmo ponto); `fila/indicadores.py` faz as contas, na hora, sempre por
+  `objects.da_empresa`.
+- **Atendimento entra pela hora do fim**, e aberto não entra. Conversão sem
+  atendimento é "—".
+- **O ranking é por subconsulta**: `Atendimento.vendedor` e `Pausa.pessoa`
+  não têm relação reversa, e é de propósito.
+- **Os gráficos do Início não usam o `Chart` do design system**: ele escala
+  o texto junto com a caixa (ilegível num terço, enorme na largura toda).
+  `fila/graficos.py` desenha colunas e listas em HTML, com escala redonda
+  (inteira em contagem), e a troca de série entre as abas é CSS (`:has`).
+- "Seus números" na página da fila são os da loja em que a pessoa está.
+- Permissão nova não chega sozinha às contas que já existem: a semeadura só
+  cria cargo que falta.
 
 ---
 
@@ -372,17 +486,17 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
 
 ```bash
 uv sync --extra dev
-docker compose up -d banco          # Postgres em 127.0.0.1:5435
-export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5435/kronos
+docker compose up -d banco          # Postgres em 127.0.0.1:5436
+export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 97 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 108 arquivos
 ```
 
-As portas são próprias de propósito: banco na **5435** e app na **8004**. O
-KRONOS.net usa 5433/8000/8001 e o Portal de Vendas usa 5434/8003. Apontar para a
-porta errada abre o banco de outro produto com as MESMAS tabelas da base, sem
-aviso nenhum.
+As portas são próprias de propósito: banco na **5436** e app na **8005**. O
+KRONOS.net usa 5433/8000/8001, o Portal de Vendas usa 5434/8003 e a KRONOS base
+usa 5435/8004. Apontar para a porta errada abre o banco de outro produto com
+as MESMAS tabelas da base, sem aviso nenhum.
 
 Os 9 testes do ciclo real de backup pulam sem `pg_dump`, `pg_restore`, `psql`,
 `createdb` e `dropdb` no `PATH`. Scripts que chamam o `postgres:16-alpine` por
