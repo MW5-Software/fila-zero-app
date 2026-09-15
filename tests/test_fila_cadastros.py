@@ -140,3 +140,14 @@ def test_filtrar_por_situacao_mostra_so_os_inativos():
     html = resposta.content.decode()
     assert "Tapetes" in html
     assert "Sofás" not in html
+
+
+def test_ordem_grande_demais_nao_estoura():
+    """B4: 99999999999 no campo Ordem estourava o inteiro do Postgres."""
+    from fila.models import TipoDePausa
+
+    empresa, _, _ = sylvia()
+    resposta = logado("sylvia").post(reverse("fila_pausas"), {
+        "acao": "criar", "nome": "Café", "ordem": "99999999999"})
+    assert resposta.status_code == 302
+    assert TipoDePausa.irrestritos.get(empresa=empresa).ordem == 2_147_483_647

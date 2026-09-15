@@ -352,3 +352,65 @@ def test_a_consulta_traz_o_pedaco_dos_numeros(loja):
     ana = logado("ana")
     resposta = _agir_js(ana, acao="ponto")
     assert "meus" in resposta["html"]
+
+
+# --- Correções da revisão final (15/09/2026) -------------------------------
+
+def test_trocar_de_vendeu_para_nao_vendeu_ignora_os_campos_escondidos(loja):
+    """M1: a folha só esconde o bloco da venda; os campos continuam indo no
+    POST. O que vale é o resultado escolhido."""
+    from fila.models import Atendimento
+
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="atender")
+    _agir(ana, acao="finalizar", resultado="nao_vendeu",
+          motivo=str(loja.cad.motivo.pk),
+          grupo=[str(loja.cad.grupo.pk)], valor=["1500"])
+    assert Atendimento.irrestritos.get().resultado == "nao_vendeu"
+
+
+def test_trocar_de_nao_vendeu_para_vendeu_ignora_o_motivo(loja):
+    from fila.models import Atendimento
+
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="atender")
+    _agir(ana, acao="finalizar", resultado="vendeu", motivo=str(loja.cad.motivo.pk),
+          observacao="nada", grupo=[str(loja.cad.grupo.pk)], valor=["100"])
+    atendimento = Atendimento.irrestritos.get()
+    assert (atendimento.resultado, atendimento.motivo_id) == ("vendeu", None)
+
+
+def test_valor_alto_demais_e_recusado_com_frase(loja):
+    """M3: um código de barras colado no valor estourava a coluna com 500."""
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="atender")
+    resposta = _agir(ana, acao="finalizar", resultado="vendeu",
+                     grupo=[str(loja.cad.grupo.pk)], valor=["7891234567890"])
+    assert resposta.status_code == 302
+    assert "Valor alto demais" in _html(ana)
+
+
+def test_editar_lancamento_com_grupo_desativado_oferece_o_grupo(loja):
+    """M4: a folha de correção precisa oferecer o grupo e o motivo do próprio
+    atendimento, mesmo desativados depois."""
+    from fila.models import Atendimento, GrupoDeItem, MotivoDeNaoVenda
+
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="atender")
+    _agir(ana, acao="finalizar", resultado="vendeu",
+          grupo=[str(loja.cad.grupo2.pk)], valor=["300"])
+    atendimento = Atendimento.irrestritos.get()
+    GrupoDeItem.irrestritos.filter(pk=loja.cad.grupo2.pk).update(ativo=False)
+    html = _html(logado("gil"), f"/fila?folha=editar&atendimento={atendimento.pk}")
+    assert f'<option value="{loja.cad.grupo2.pk}" selected>Tapetes</option>' in html
+
+
+def test_id_com_digito_unicode_nao_estoura(loja):
+    """B5: "²".isdigit() é verdade, e int("²") estourava."""
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    assert _agir(ana, acao="pausar", tipo="²").status_code == 302

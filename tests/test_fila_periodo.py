@@ -81,3 +81,21 @@ def test_periodo_fechado_compara_com_o_mesmo_tamanho_logo_antes():
 def test_sete_dias_em_andamento():
     anterior = periodo_anterior(periodo_do_pedido({"periodo": "7dias"}, AGORA), AGORA)
     assert (anterior.de, anterior.ate) == (local(2026, 9, 2), local(2026, 9, 8, 14, 30))
+
+
+@pytest.mark.parametrize("de, ate", [("9999-12-31", "9999-12-31"),
+                                     ("0001-01-01", "0001-01-01")])
+def test_data_extrema_cai_no_padrao(de, ate):
+    """B3: o ano 9999 estourava na soma de um dia, e o ano 1 na conta do
+    período anterior."""
+    p = periodo_do_pedido({"de": de, "ate": ate}, AGORA)
+    assert p.chave == "mes"
+    periodo_anterior(p, AGORA)
+
+
+def test_atalho_escolhido_ganha_do_intervalo_que_ficou_na_url():
+    """M5: com De/Até preenchidos, trocar o Período para "Hoje" não fazia
+    nada, porque o intervalo vencia sempre."""
+    p = periodo_do_pedido({"periodo": "hoje", "de": "2026-09-01",
+                           "ate": "2026-09-10"}, AGORA)
+    assert p.chave == "hoje"

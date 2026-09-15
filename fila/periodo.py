@@ -47,11 +47,18 @@ def inicio_do_dia(dia: date) -> datetime:
     return timezone.make_aware(datetime.combine(dia, time.min))
 
 
+#: Os anos que um período pode tocar. `date.fromisoformat` aceita do ano 1 ao
+#: 9999, e as contas de um dia a mais ou do período anterior estouravam nas
+#: pontas com 500 (revisão final, 15/09/2026).
+ANOS_ACEITOS = range(2000, 2101)
+
+
 def _data(texto: "str | None") -> "date | None":
     try:
-        return date.fromisoformat((texto or "").strip())
+        dia = date.fromisoformat((texto or "").strip())
     except ValueError:
         return None
+    return dia if dia.year in ANOS_ACEITOS else None
 
 
 def _mesmo_dia_no_mes_anterior(momento: datetime) -> datetime:
@@ -71,14 +78,17 @@ def periodo_do_pedido(get: Mapping, agora: "datetime | None" = None) -> Periodo:
     agora = agora or timezone.now()
     hoje = timezone.localdate(agora)
 
-    if get.get("de") or get.get("ate"):
+    chave = get.get("periodo", "")
+    rotulos = dict(ATALHOS)
+    # O atalho escolhido ganha do intervalo: os campos De/Até continuam
+    # preenchidos na tela depois de um intervalo, e trocar o Período para
+    # "Hoje" não fazia nada (revisão final, 15/09/2026).
+    if chave not in rotulos and (get.get("de") or get.get("ate")):
         de, ate = _data(get.get("de")), _data(get.get("ate"))
         if de and ate and de <= ate and (ate - de).days <= MAIOR_INTERVALO_EM_DIAS:
             return Periodo(inicio_do_dia(de), inicio_do_dia(ate + timedelta(days=1)),
                            "intervalo", f"{de:%d/%m/%Y} a {ate:%d/%m/%Y}")
 
-    chave = get.get("periodo", "")
-    rotulos = dict(ATALHOS)
     if chave not in rotulos:
         chave = PADRAO
     amanha = inicio_do_dia(hoje + timedelta(days=1))

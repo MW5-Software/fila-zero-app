@@ -23,6 +23,7 @@ from plataforma.contexto import filial_atual
 
 from . import acoes, correcoes, tela
 from .acoes import ItemLancado, Lancamento, Recusa
+from .models import Resultado
 from .estado import versao_da_fila
 from .valores import ler_valor
 
@@ -69,6 +70,20 @@ def estado(request) -> JsonResponse:
 
 
 def _lancamento(request) -> Lancamento:
+    """O lançamento do POST, lido pelo resultado escolhido.
+
+    A folha só ESCONDE o bloco da venda ou o da não venda; os campos do bloco
+    escondido continuam indo no POST. Quem marcou "Vendeu", digitou um valor e
+    mudou para "Não vendeu" mandava os dois, e a recusa falava de campos que
+    ele não enxergava mais (revisão final, 15/09/2026). Por isso só se lê o
+    que pertence ao resultado escolhido.
+    """
+    resultado = request.POST.get("resultado", "")
+    if resultado != Resultado.VENDEU:
+        return Lancamento(
+            resultado=resultado,
+            motivo_id=id_do_post(request, "motivo"),
+            observacao=request.POST.get("observacao", ""))
     itens = []
     for grupo, valor in zip(request.POST.getlist("grupo"),
                             request.POST.getlist("valor")):
@@ -82,10 +97,7 @@ def _lancamento(request) -> Lancamento:
         if quantia is None:
             raise Recusa(f'Valor inválido: "{valor}".')
         itens.append(ItemLancado(grupo_id, quantia))
-    return Lancamento(
-        resultado=request.POST.get("resultado", ""), itens=tuple(itens),
-        motivo_id=id_do_post(request, "motivo"),
-        observacao=request.POST.get("observacao", ""))
+    return Lancamento(resultado=resultado, itens=tuple(itens))
 
 
 def _pessoa_do_post(request) -> int:

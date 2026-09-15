@@ -38,6 +38,11 @@ __all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto",
 
 NAO_ESTA_NA_LOJA = "Você não está nesta loja. Bata o ponto primeiro."
 
+#: O maior valor que cabe nas colunas de dinheiro (12 dígitos, 2 decimais).
+#: Acima disso o Postgres recusa com erro de estouro, que chegava à tela como
+#: 500: um código de barras colado no campo do valor bastava (revisão final).
+MAIOR_VALOR = Decimal("9999999999.99")
+
 
 class Recusa(Exception):
     """A ação não cabe no estado de agora. `frase` vai para a tela como está."""
@@ -107,6 +112,15 @@ def _sair(lugar, agora, fechada_por=None) -> None:
 
 def bater_ponto(pessoa, filial) -> None:
     with transaction.atomic():
+        # A linha da PESSOA trancada antes de tudo: quem não está em loja
+        # nenhuma e bate o ponto em duas lojas ao mesmo tempo (celular numa,
+        # computador noutra) trancaria duas filiais diferentes, e os dois
+        # pedidos criariam a presença; o segundo estourava a restrição com 500
+        # (revisão final, 15/09/2026).
+        from contas.models import Usuario
+
+        list(Usuario.objects.select_for_update().filter(pk=pessoa.pk)
+             .values_list("pk", flat=True))
         antes = _lugar(pessoa.pk)
         _travar(filial, *([antes.filial] if antes else []))
         lugar = _lugar(pessoa.pk)
@@ -190,6 +204,8 @@ def _validar(empresa, lancamento, *, ja_usados=frozenset(),
         if set(grupos) != ids:
             raise Recusa("Grupo de item não encontrado.")
         total = sum((item.valor for item in lancamento.itens), Decimal("0"))
+        if total > MAIOR_VALOR:
+            raise Recusa("Valor alto demais: confira o que foi digitado.")
         return grupos, None, total
     if lancamento.resultado == Resultado.NAO_VENDEU:
         if lancamento.itens:

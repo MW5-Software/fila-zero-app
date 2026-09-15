@@ -288,3 +288,28 @@ def test_posicao_sem_venda_no_mes(loja):
     d = local(2026, 9, 10, 10)
     atendimento(loja, loja.ana, d, d)
     assert posicao_no_mes(loja.ana, loja.matriz, local(2026, 9, 20)) is None
+
+
+def test_esquecido_mostra_a_hora_local(loja):
+    """B1: a hora do aviso saía em UTC (21:30 em São Paulo virava 00:30)."""
+    from fila.models import Presenca
+    from fila.views_indicadores import _desde
+
+    presenca = Presenca.irrestritos.create(
+        empresa=loja.empresa, filial=loja.matriz, pessoa=loja.ana,
+        entrada=local(2026, 9, 14, 21, 30))
+    presenca.refresh_from_db()
+    assert _desde(presenca.entrada) == "14/09 21:30"
+
+
+def test_versao_muda_quando_um_lancamento_de_hoje_e_corrigido(loja):
+    """B6: a correção do gerente não mexia na fila, e as outras telas não
+    viam o lançamento novo."""
+    from fila.estado import versao_da_fila
+    from fila.models import Atendimento
+
+    agora = timezone.now()
+    a = atendimento(loja, loja.ana, agora - timedelta(minutes=5), agora, vendeu="1500")
+    antes = versao_da_fila(loja.matriz)
+    Atendimento.irrestritos.filter(pk=a.pk).update(total=Decimal("150"))
+    assert versao_da_fila(loja.matriz) != antes

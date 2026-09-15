@@ -121,11 +121,19 @@ def _filtros(request, periodo, permitidas, loja):
                           children=FormGrid(children=campos)))
 
 
+def _desde(instante) -> str:
+    """A hora no fuso da loja: o banco devolve em UTC, e 21:30 de São Paulo
+    aparecia como 00:30 do dia seguinte (revisão final, 15/09/2026)."""
+    from django.utils import timezone
+
+    return timezone.localtime(instante).strftime("%d/%m %H:%M")
+
+
 def _esquecidos(lista):
     if not lista:
         return ""
     itens = format_html_join("", '<li>{}: {} em {}, desde {}. <a href="{}">{}</a></li>', (
-        (e.o_que, e.nome, e.loja, e.desde.strftime("%d/%m %H:%M"),
+        (e.o_que, e.nome, e.loja, _desde(e.desde),
          reverse("fila"), _("Abrir a fila")) for e in lista))
     return Alert(tone="warn", title=_("Ficou aberto de um dia para o outro"),
                  attrs={"data-esquecidos": ""},

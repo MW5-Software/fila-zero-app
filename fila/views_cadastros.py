@@ -180,7 +180,8 @@ def _desenhar(request, cadastro, erro=None) -> HttpResponse:
 def _ler(request):
     nome = (request.POST.get("nome") or "").strip()[:80]
     try:
-        ordem = max(0, int(request.POST.get("ordem") or 0))
+        # Teto do inteiro do Postgres: acima dele a gravação estourava com 500.
+        ordem = min(max(0, int(request.POST.get("ordem") or 0)), 2_147_483_647)
     except ValueError:
         ordem = 0
     return nome, ordem, request.POST.get("ativo") == "1"

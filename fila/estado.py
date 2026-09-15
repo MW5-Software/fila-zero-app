@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from django.db.models import BooleanField, Count, ExpressionWrapper, Max, Q
+from django.db.models import BooleanField, Count, ExpressionWrapper, Max, Q, Sum
 
 from .models import Estado, LugarNaFila, Pausa
 
@@ -53,11 +53,29 @@ def versao_da_fila(filial) -> str:
     """
     dados = _da_loja(filial).aggregate(
         linhas=Count("pk"), desde=Max("desde"), fila=Max("na_fila_desde"))
+    hoje = _lancamentos_de_hoje(filial).aggregate(
+        n=Count("pk"), total=Sum("total"), motivos=Sum("motivo_id"))
 
     def marca(instante: "datetime | None") -> str:
         return str(int(instante.timestamp() * 1_000_000)) if instante else "0"
 
-    return f"{dados['linhas']}.{marca(dados['desde'])}.{marca(dados['fila'])}"
+    return (f"{dados['linhas']}.{marca(dados['desde'])}.{marca(dados['fila'])}"
+            f".{hoje['n']}.{hoje['total'] or 0}.{hoje['motivos'] or 0}")
+
+
+def _lancamentos_de_hoje(filial):
+    """Os atendimentos fechados hoje na loja, para a versão: a correção do
+    gerente não mexe na fila, e sem isto os lançamentos e o "Seus números" das
+    outras telas ficavam velhos até alguém mexer na fila (revisão final,
+    15/09/2026). Total e motivo pegam a correção de valor, de grupo e de
+    motivo; só a da observação sozinha passa sem mudar a versão."""
+    from django.utils import timezone
+
+    from .models import Atendimento
+    from .periodo import inicio_do_dia
+
+    return (Atendimento.objects.da_empresa(filial.empresa)
+            .filter(filial=filial, fim__gte=inicio_do_dia(timezone.localdate())))
 
 
 @dataclass(frozen=True)

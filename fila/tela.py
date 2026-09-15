@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 from markupsafe import Markup
@@ -180,6 +181,16 @@ def _contexto(request, filial, recusa=""):
     empresa = filial.empresa
     pode_gerenciar = pode(request.usuario, "fila.gerenciar")
     r = retrato(filial, pessoa)
+    editando = _lancamento_em_edicao(request, filial) if pode_gerenciar else None
+    # Os cadastros oferecidos são os ativos, e na correção também o grupo e o
+    # motivo do PRÓPRIO lançamento, mesmo desativados depois: sem eles a folha
+    # abria sem o grupo marcado e a correção de um valor exigia trocar o grupo
+    # (revisão final, 15/09/2026). `_validar` já aceita os que o atendimento usa.
+    ativos = Q(ativo=True)
+    grupos_do_lancamento = motivo_do_lancamento = Q(pk__in=[])
+    if editando is not None:
+        grupos_do_lancamento = Q(pk__in=editando.itens.values("grupo_id"))
+        motivo_do_lancamento = Q(pk=editando.motivo_id)
     lancamentos = list(lancamentos_de_hoje(filial)) if pode_gerenciar else []
     return {
         "r": r,
@@ -200,13 +211,15 @@ def _contexto(request, filial, recusa=""):
         "url_agir": reverse("fila_agir"),
         "url_estado": reverse("fila_estado"),
         "url_sair": reverse("sair"),
-        "grupos": list(GrupoDeItem.objects.da_empresa(empresa).filter(ativo=True)),
-        "motivos": list(MotivoDeNaoVenda.objects.da_empresa(empresa).filter(ativo=True)),
+        "grupos": list(GrupoDeItem.objects.da_empresa(empresa)
+                       .filter(ativos | grupos_do_lancamento)),
+        "motivos": list(MotivoDeNaoVenda.objects.da_empresa(empresa)
+                        .filter(ativos | motivo_do_lancamento)),
         "tipos": list(TipoDePausa.objects.da_empresa(empresa).filter(ativo=True)),
         "lancamentos": lancamentos,
         "folha": request.GET.get("folha", ""),
         "alvo": _alvo_da_folha(request, filial) if pode_gerenciar else None,
-        "editando": _lancamento_em_edicao(request, filial) if pode_gerenciar else None,
+        "editando": editando,
         "recusa": recusa,
     }
 
