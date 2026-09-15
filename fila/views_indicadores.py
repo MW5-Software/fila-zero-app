@@ -101,10 +101,14 @@ def _lojas_do_pedido(request, permitidas):
 
 def _filtros(request, periodo, permitidas, loja):
     campos = [
+        # As opções neutras ("Intervalo", "Todas as lojas") são opções comuns,
+        # e não `empty_label`: o do design system nasce `disabled`, e quem
+        # escolhia uma loja não voltava a "Todas" (revisão final, 15/09/2026;
+        # o mesmo motivo escrito em `comum/listagem.py`).
         Select(name="periodo", label=_("Período"), span=3,
                value=periodo.chave if periodo.chave != "intervalo" else "",
-               empty_label=_("Intervalo"),
-               options=[Option(chave, rotulo) for chave, rotulo in ATALHOS]),
+               options=[Option("", _("Intervalo")),
+                        *(Option(chave, rotulo) for chave, rotulo in ATALHOS)]),
         TextInput(name="de", label=_("De"), type="date", span=2,
                   value=request.GET.get("de", "")),
         TextInput(name="ate", label=_("Até"), type="date", span=2,
@@ -113,10 +117,16 @@ def _filtros(request, periodo, permitidas, loja):
     if len(permitidas) > 1:
         campos.append(Select(
             name="loja", label=_("Loja"), span=3, value=str(loja.pk) if loja else "",
-            empty_label=_("Todas as lojas"),
-            options=[Option(str(l.pk), str(l)) for l in permitidas]))
+            options=[Option("", _("Todas as lojas")),
+                     *(Option(str(l.pk), str(l)) for l in permitidas)]))
     campos.append(Cell(span=2, children=Button(label=_("Aplicar"), variant="primary",
                                                 type="submit")))
+    # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
+    # troca a querystring inteira, e aplicar o período apagava os dois.
+    for chave, valor in request.GET.items():
+        if chave not in ("periodo", "de", "ate", "loja", "pagina") and valor:
+            campos.append(Raw(html=format_html(
+                '<input type="hidden" name="{}" value="{}">', chave, valor)))
     return Card(body=Form(method="get", action=reverse("fila_indicadores"),
                           children=FormGrid(children=campos)))
 
@@ -226,7 +236,8 @@ def indicadores(request) -> HttpResponse:
             listagem = montar_pagina(request, ind.ranking(recorte),
                                      ordenaveis=ind.ORDENAVEIS_DO_RANKING,
                                      padrao=ind.PADRAO_DO_RANKING,
-                                     filtraveis=_FILTRAVEIS)
+                                     filtraveis=_FILTRAVEIS,
+                                     preservar=("periodo", "de", "ate", "loja"))
             conteudo.append(Card(title=_("Ranking de vendedores"), padded=False, body=[
                 listagem.barra,
                 Table(columns=_colunas(listagem), rows=listagem.linhas),

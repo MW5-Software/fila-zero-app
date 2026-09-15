@@ -110,3 +110,30 @@ def test_menu_mostra_o_atalho_para_o_gerente_e_nao_para_o_vendedor(rede):
     assert 'href="/fila/indicadores"' in logado("gil").get("/").content.decode()
     ana = logado("ana").get("/fila").content.decode()
     assert 'href="/fila/indicadores"' not in ana
+
+
+# --- Correções da revisão final (15/09/2026) -------------------------------
+
+def test_todas_as_lojas_e_intervalo_podem_ser_escolhidos_de_volta(rede):
+    """M5: as opções neutras vinham com `disabled` (o `empty_label` do design
+    system), e quem filtrava uma loja não voltava a "Todas as lojas"."""
+    import re
+
+    html = _html(logado("sara"), periodo="hoje", loja=str(rede.centro.pk))
+    todas = re.search(r'<option[^>]*value=""[^>]*>Todas as lojas</option>', html)
+    assert todas and "disabled" not in todas.group(0)
+
+
+def test_buscar_no_ranking_mantem_periodo_e_loja(rede):
+    """M6: a barra de filtro do ranking é um formulário GET que só levava o
+    filtro e a ordenação; período e loja sumiam."""
+    html = _html(logado("sara"), periodo="mes_passado", loja=str(rede.centro.pk))
+    assert '<input type="hidden" name="periodo" value="mes_passado">' in html
+    assert f'<input type="hidden" name="loja" value="{rede.centro.pk}">' in html
+
+
+def test_aplicar_os_filtros_mantem_a_ordenacao_do_ranking(rede):
+    html = _html(logado("sara"), periodo="hoje", ordenar="-atendimentos")
+    # Duas vezes: a barra do ranking já levava a ordenação; o que faltava era
+    # o formulário do período e da loja levar também.
+    assert html.count('<input type="hidden" name="ordenar" value="-atendimentos">') == 2
