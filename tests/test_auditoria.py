@@ -715,6 +715,34 @@ def _cenario_fila_lancamento_corrigido():
     return email_de("dona-fila"), f"Atendimento de Zeca em {matriz}"
 
 
+def _cenario_fila_cadastro_criado():
+    cliente = _cliente_logado("dona-cad", permissoes=("fila_ver", "fila_cadastros"))
+    cliente.post(reverse("fila_grupos"), {"acao": "criar", "nome": "Sofás",
+                                          "ordem": "0"})
+    return email_de("dona-cad"), "Grupo de item: Sofás"
+
+
+def _cenario_fila_cadastro_editado():
+    from fila.models import MotivoDeNaoVenda
+
+    cliente = _cliente_logado("dona-cad", permissoes=("fila_ver", "fila_cadastros"))
+    motivo = MotivoDeNaoVenda.irrestritos.create(empresa=empresa_do_teste(),
+                                                 nome="Caro")
+    cliente.post(reverse("fila_motivos"), {"acao": "salvar", "id": str(motivo.pk),
+                                           "nome": "Achou caro", "ordem": "0",
+                                           "ativo": "1"})
+    return email_de("dona-cad"), "Motivo de não venda: Achou caro"
+
+
+def _cenario_fila_cadastro_removido():
+    from fila.models import TipoDePausa
+
+    cliente = _cliente_logado("dona-cad", permissoes=("fila_ver", "fila_cadastros"))
+    tipo = TipoDePausa.irrestritos.create(empresa=empresa_do_teste(), nome="Café")
+    cliente.post(reverse("fila_pausas"), {"acao": "remover", "id": str(tipo.pk)})
+    return email_de("dona-cad"), "Tipo de pausa: Café"
+
+
 _CENARIOS = {
     "ENTROU": _cenario_entrou,
     "ENTRADA_RECUSADA": _cenario_entrada_recusada,
@@ -753,6 +781,9 @@ _CENARIOS = {
     "FILA_ATENDIMENTO_FECHADO": _cenario_fila_atendimento_fechado,
     "FILA_PAUSA_ENCERRADA": _cenario_fila_pausa_encerrada,
     "FILA_LANCAMENTO_CORRIGIDO": _cenario_fila_lancamento_corrigido,
+    "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
+    "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
+    "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,
 }
 
 

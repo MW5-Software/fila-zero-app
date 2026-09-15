@@ -79,6 +79,11 @@ class ACOES:
     FILA_ATENDIMENTO_FECHADO = "fila_atendimento_fechado"
     FILA_PAUSA_ENCERRADA = "fila_pausa_encerrada"
     FILA_LANCAMENTO_CORRIGIDO = "fila_lancamento_corrigido"
+    # Os três cadastros da fila; o alvo leva o nome do cadastro na frente
+    # ("Grupo de item: Sofás"), porque os três dividem as mesmas três ações.
+    FILA_CADASTRO_CRIADO = "fila_cadastro_criado"
+    FILA_CADASTRO_EDITADO = "fila_cadastro_editado"
+    FILA_CADASTRO_REMOVIDO = "fila_cadastro_removido"
 
 
 #: O que a pessoa lê, por valor gravado no banco — a mesma tradução que a
@@ -126,6 +131,9 @@ ROTULOS = {
     ACOES.FILA_ATENDIMENTO_FECHADO: "Atendimento fechado pelo gerente",
     ACOES.FILA_PAUSA_ENCERRADA: "Pausa encerrada pelo gerente",
     ACOES.FILA_LANCAMENTO_CORRIGIDO: "Lançamento corrigido",
+    ACOES.FILA_CADASTRO_CRIADO: "Cadastro da fila criado",
+    ACOES.FILA_CADASTRO_EDITADO: "Cadastro da fila editado",
+    ACOES.FILA_CADASTRO_REMOVIDO: "Cadastro da fila removido",
 }
 
 
