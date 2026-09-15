@@ -1,18 +1,25 @@
 {% if pode_gerenciar %}
-<h2 class="secao">{{ traduzir("Lançamentos de hoje") }}</h2>
-{% if lancamentos %}
-<ul class="lista lancamentos">
-  {% for a in lancamentos %}
-  <li class="linha">
-    <span class="linha-nome">{{ a.vendedor.nome or a.vendedor.email }}
-      <small>{% if a.resultado == "vendeu" %}{{ a.total|reais }}{% else %}{{ traduzir("Não vendeu") }}: {{ a.motivo.nome }}{% endif %}{% if a.cliente_pediu %}, {{ traduzir("cliente pediu") }}{% endif %}</small>
-    </span>
-    <span class="linha-tempo">{{ a.fim|hora }}</span>
-    {% if a.vendedor_id != eu_id %}
-    <a class="linha-editar" href="{{ url_fila }}?folha=editar&atendimento={{ a.pk }}">{{ traduzir("Editar") }}</a>
-    {% endif %}
-  </li>
-  {% endfor %}
-</ul>
-{% else %}<p class="vazio">{{ traduzir("Nenhum atendimento fechado hoje.") }}</p>{% endif %}
+<section class="card fila-lancamentos">
+  <div class="ch"><span class="ci">{{ icon("receipt") }}</span><div class="ch-txt"><h2>{{ traduzir("Lançamentos de hoje") }}</h2><p class="ch-sub">{{ traduzir("Atendimentos fechados nesta loja hoje.") }}</p></div></div>
+  {% if lancamentos %}
+  <ul class="fila-lanc-lista">
+    {% for a in lancamentos %}
+    <li class="fila-lanc">
+      <span class="avatar sm fila-cor-{{ a.vendedor_id % 8 + 1 }}">{{ (a.vendedor.nome or a.vendedor.email)|iniciais }}</span>
+      <span class="fila-lanc-quem"><span class="fila-lanc-nome">{{ a.vendedor.nome or a.vendedor.email }}</span><span class="fila-lanc-hora">{{ traduzir("às") }} {{ a.fim|hora }}</span></span>
+      <span class="fila-lanc-resultado">
+        {% if a.resultado == "vendeu" %}<span class="pill ok">{{ traduzir("Vendeu") }}</span> <strong class="fila-lanc-total">{{ a.total|reais }}</strong>
+        {% else %}<span class="pill neutral">{{ traduzir("Não vendeu") }}</span> <span class="fila-lanc-motivo">{{ a.motivo.nome }}</span>{% endif %}
+        {% if a.cliente_pediu %}<span class="tag info">{{ traduzir("cliente pediu") }}</span>{% endif %}
+      </span>
+      {% if a.vendedor_id != eu_id %}
+      <a class="btn sm" href="{{ url_fila }}?folha=editar&atendimento={{ a.pk }}">{{ icon("edit", "sm") }}<span>{{ traduzir("Editar") }}</span></a>
+      {% else %}<span></span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="cb"><p class="fila-vazio">{{ traduzir("Nenhum atendimento fechado hoje.") }}</p></div>
+  {% endif %}
+</section>
 {% endif %}

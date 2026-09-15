@@ -25,8 +25,8 @@ from .estado import nome_de, retrato
 from .models import (Atendimento, Estado, GrupoDeItem, LugarNaFila,
                      MotivoDeNaoVenda, TipoDePausa)
 
-__all__ = ["PEDACOS", "ha_quanto", "hora_local", "pagina", "pedacos",
-           "pessoas_na_frente", "sem_loja", "so_a_fila"]
+__all__ = ["PEDACOS", "ha_quanto", "hora_local", "iniciais", "pagina",
+           "pedacos", "pessoas_na_frente", "sem_loja", "so_a_fila"]
 
 #: Os pedaços que a consulta troca, com o template de cada um.
 PEDACOS = {"painel": "fila/_painel.html", "lista": "fila/_lista.html",
@@ -41,6 +41,7 @@ class Alvo:
 
     pessoa_id: int
     nome: str
+    estado: str
 
 
 _POR_EXTENSO = ("", "uma", "duas", "três", "quatro", "cinco", "seis", "sete",
@@ -66,6 +67,17 @@ def ha_quanto(instante, agora=None) -> str:
 
 def hora_local(instante) -> str:
     return timezone.localtime(instante).strftime("%H:%M")
+
+
+def iniciais(nome: str) -> str:
+    """"Ana Paula Souza" -> "AS"; "Ana" -> "A". Uma letra por nome, como o
+    avatar do cabeçalho, para a pessoa se reconhecer na fila."""
+    partes = [p for p in (nome or "").split("@")[0].replace(".", " ").split() if p]
+    if not partes:
+        return "?"
+    if len(partes) == 1:
+        return partes[0][0].upper()
+    return (partes[0][0] + partes[-1][0]).upper()
 
 
 def pessoas_na_frente(posicao: int) -> str:
@@ -97,7 +109,8 @@ def _alvo_da_folha(request, filial):
     lugar = (LugarNaFila.objects.da_empresa(filial.empresa)
              .filter(filial=filial, pessoa_id=pessoa_id)
              .select_related("pessoa").first())
-    return Alvo(lugar.pessoa_id, nome_de(lugar.pessoa)) if lugar else None
+    return (Alvo(lugar.pessoa_id, nome_de(lugar.pessoa), lugar.estado)
+            if lugar else None)
 
 
 def _contexto(request, filial, recusa=""):
@@ -130,19 +143,51 @@ def _contexto(request, filial, recusa=""):
     }
 
 
-def _aviso(request, env) -> Markup:
-    componente = aviso_de_personificacao(request)
-    if not componente:
-        return Markup("")
+def _no_shell(request, titulo: str, conteudo, overlays=""):
+    """A página dentro do shell do sistema: o mesmo cabeçalho (seletor de
+    filial, idioma, sair, avatar), as mesmas folhas e o mesmo `mw5.js`, sem a
+    barra lateral e sem o rodapé.
+
+    Sem menu porque a fila é a tela de quem está em pé no salão, no celular, e
+    uma gaveta de módulos ali só disputa espaço com a ação. No lugar do
+    caminho de migalhas entra o logo da marca, que no shell mora na barra
+    lateral que esta página não tem.
+    """
+    from django.utils.html import format_html
+
+    from comum.ambiente import ambiente
+    from nucleo.components import Raw
+    from nucleo.resposta import render
+    from plataforma.site import montar_site
+
+    env = ambiente()
     with use_environment(env):
-        return Markup(componente.render(env))
+        site = montar_site(request)
+        pagina = site.page(
+            title=titulo, width="wide",
+            content=[aviso_de_personificacao(request), conteudo],
+            overlays=overlays, user=request.usuario,
+            stylesheets=["/static/fila/fila.css"],
+            scripts=["/static/fila/fila.js"])
+        pagina.sidebar = None
+        pagina.footer = None
+        pagina.body_class = "fila-pagina"
+        logo = site.brand.assets.logo_for("sidebar")
+        pagina.header.breadcrumb = Raw(html=format_html(
+            '<a class="fila-marca" href="/"><img src="{}" alt="{}"></a>',
+            logo, site.brand.client_name)) if logo else None
+        return render(pagina)
 
 
-def pagina(request, filial, recusa="") -> str:
+def pagina(request, filial, recusa=""):
+    from nucleo.components import Raw
+
     env = ambiente_da_fila()
     contexto = _contexto(request, filial, recusa)
-    contexto["aviso"] = _aviso(request, env)
-    return env.get_template("fila/pagina.html").render(**contexto)
+    return _no_shell(
+        request, f"Fila da vez — {filial}",
+        Raw(html=env.get_template("fila/pagina.html").render(**contexto)),
+        Raw(html=env.get_template("fila/_folhas.html").render(**contexto)))
 
 
 def pedacos(request, filial) -> "tuple[str, dict[str, str]]":
@@ -155,8 +200,10 @@ def pedacos(request, filial) -> "tuple[str, dict[str, str]]":
     return contexto["r"].versao, html
 
 
-def sem_loja(request) -> str:
-    env = ambiente_da_fila()
-    return env.get_template("fila/sem_loja.html").render(
-        aviso=_aviso(request, env), url_sair=reverse("sair"),
-        mostra_painel=not so_a_fila(request.usuario))
+def sem_loja(request):
+    from nucleo.components import EmptyState
+
+    return _no_shell(request, "Fila da vez", EmptyState(
+        icon="store", title="Você ainda não está em nenhuma loja",
+        message=("Peça a quem cuida da equipe para alocar você na loja em "
+                 "que trabalha, na tela de Usuários.")))

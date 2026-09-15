@@ -50,9 +50,9 @@ def inicio(request) -> HttpResponse:
 def fila(request) -> HttpResponse:
     filial = filial_atual(request)
     if filial is None:
-        return HttpResponse(tela.sem_loja(request))
+        return tela.sem_loja(request)
     recusa = request.session.pop(CHAVE_DA_RECUSA, "")
-    return HttpResponse(tela.pagina(request, filial, recusa))
+    return tela.pagina(request, filial, recusa)
 
 
 @exigir_permissao("fila.ver")

@@ -616,16 +616,16 @@ msgstr ""
 msgid "Bater o ponto e entrar na fila"
 msgstr ""
 
-msgid "Vou atender"
+msgid "Pausa"
 msgstr ""
 
 msgid "Cliente pediu por mim"
 msgstr ""
 
-msgid "Pausa"
+msgid "Sair da loja"
 msgstr ""
 
-msgid "Sair da loja"
+msgid "Vou atender"
 msgstr ""
 
 msgid "Finalizar atendimento"
@@ -637,25 +637,25 @@ msgstr ""
 msgid "Grupo de item"
 msgstr ""
 
-msgid "Grupo"
+msgid "Escolha o grupo"
 msgstr ""
 
 msgid "Valor"
 msgstr ""
 
-msgid "+ outro grupo"
+msgid "Adicionar outro grupo"
 msgstr ""
 
-msgid "Total"
+msgid "Total da venda"
 msgstr ""
 
 msgid "Por que não comprou?"
 msgstr ""
 
-msgid "Observação"
+msgid "Observação (opcional)"
 msgstr ""
 
-msgid "Lançar"
+msgid "Lançar atendimento"
 msgstr ""
 
 msgid "Como terminou o atendimento?"
@@ -670,16 +670,37 @@ msgstr ""
 msgid "Sair para a pausa"
 msgstr ""
 
-msgid "Fechar o atendimento"
+msgid "Corrigir"
+msgstr ""
+
+msgid "Fechar atendimento"
+msgstr ""
+
+msgid "Lançar o resultado no lugar do vendedor. Ele volta para o fim da fila."
 msgstr ""
 
 msgid "Tirar da loja"
 msgstr ""
 
-msgid "Ela está atendendo. O atendimento fecha como não venda."
+msgid "Fecha o atendimento como não venda e encerra o ponto."
 msgstr ""
 
-msgid "Corrigir o lançamento de"
+msgid "Tirar da pausa"
+msgstr ""
+
+msgid "Encerra a pausa e põe no fim da fila."
+msgstr ""
+
+msgid "Para quem esqueceu de sair. Encerra o ponto."
+msgstr ""
+
+msgid "Fechar o atendimento"
+msgstr ""
+
+msgid "Está atendendo. O atendimento fecha como não venda."
+msgstr ""
+
+msgid "Corrigir o lançamento"
 msgstr ""
 
 msgid "Salvar correção"
@@ -688,28 +709,34 @@ msgstr ""
 msgid "Lançamentos de hoje"
 msgstr ""
 
+msgid "Atendimentos fechados nesta loja hoje."
+msgstr ""
+
+msgid "às"
+msgstr ""
+
 msgid "Nenhum atendimento fechado hoje."
 msgstr ""
 
-msgid "Corrigir"
+msgid "você"
 msgstr ""
 
-msgid "Fechar atendimento"
-msgstr ""
-
-msgid "Tirar da pausa"
-msgstr ""
-
-msgid "(você)"
-msgstr ""
-
-msgid "Ninguém atendendo agora."
+msgid "Esperando"
 msgstr ""
 
 msgid "A fila está vazia."
 msgstr ""
 
-msgid "Fila de agora"
+msgid "Ninguém atendendo agora."
+msgstr ""
+
+msgid "Ninguém em pausa."
+msgstr ""
+
+msgid "Acompanhando a loja"
+msgstr ""
+
+msgid "na fila"
 msgstr ""
 
 msgid "atendendo"
@@ -730,20 +757,21 @@ msgstr ""
 msgid "O próximo cliente que entrar é seu."
 msgstr ""
 
-msgid "Sua vez em"
+msgid "Você é o"
+msgstr ""
+
+msgid "da fila"
+msgstr ""
+
+msgid "esperando"
 msgstr ""
 
 msgid "Começou às"
 msgstr ""
 
-msgid "Painel"
+msgid "Desde"
 msgstr ""
 
-msgid "Você ainda não está em nenhuma loja"
-msgstr ""
-
-msgid ""
-"Peça a quem cuida da equipe para alocar você na loja em que trabalha, na "
-"tela de Usuários."
+msgid "Ao vivo"
 msgstr ""
 

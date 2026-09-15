@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-14 23:52-0300\n"
+"POT-Creation-Date: 2026-09-15 00:28-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -648,17 +648,17 @@ msgstr "Indique el nombre."
 msgid "Bater o ponto e entrar na fila"
 msgstr "Marcar llegada y entrar a la fila"
 
-msgid "Vou atender"
-msgstr "Voy a atender"
+msgid "Pausa"
+msgstr "Pausa"
 
 msgid "Cliente pediu por mim"
 msgstr "El cliente me pidió a mí"
 
-msgid "Pausa"
-msgstr "Pausa"
-
 msgid "Sair da loja"
 msgstr "Salir de la tienda"
+
+msgid "Vou atender"
+msgstr "Voy a atender"
 
 msgid "Finalizar atendimento"
 msgstr "Finalizar atención"
@@ -669,26 +669,26 @@ msgstr "Volver a la fila"
 msgid "Grupo de item"
 msgstr "Grupo de artículo"
 
-msgid "Grupo"
-msgstr "Grupo"
+msgid "Escolha o grupo"
+msgstr "Elija el grupo"
 
 msgid "Valor"
 msgstr "Valor"
 
-msgid "+ outro grupo"
-msgstr "+ otro grupo"
+msgid "Adicionar outro grupo"
+msgstr "Agregar otro grupo"
 
-msgid "Total"
-msgstr "Total"
+msgid "Total da venda"
+msgstr "Total de la venta"
 
 msgid "Por que não comprou?"
 msgstr "¿Por qué no compró?"
 
-msgid "Observação"
-msgstr "Observación"
+msgid "Observação (opcional)"
+msgstr "Observación (opcional)"
 
-msgid "Lançar"
-msgstr "Registrar"
+msgid "Lançar atendimento"
+msgstr "Registrar atención"
 
 msgid "Como terminou o atendimento?"
 msgstr "¿Cómo terminó la atención?"
@@ -702,17 +702,38 @@ msgstr "Al volver, usted entra al final de la fila."
 msgid "Sair para a pausa"
 msgstr "Salir a la pausa"
 
-msgid "Fechar o atendimento"
-msgstr "Cerrar la atención"
+msgid "Corrigir"
+msgstr "Corregir"
+
+msgid "Fechar atendimento"
+msgstr "Cerrar atención"
+
+msgid "Lançar o resultado no lugar do vendedor. Ele volta para o fim da fila."
+msgstr "Registrar el resultado en lugar del vendedor. Vuelve al final de la fila."
 
 msgid "Tirar da loja"
 msgstr "Sacar de la tienda"
 
-msgid "Ela está atendendo. O atendimento fecha como não venda."
+msgid "Fecha o atendimento como não venda e encerra o ponto."
+msgstr "Cierra la atención como no venta y termina la presencia."
+
+msgid "Tirar da pausa"
+msgstr "Sacar de la pausa"
+
+msgid "Encerra a pausa e põe no fim da fila."
+msgstr "Termina la pausa y lo pone al final de la fila."
+
+msgid "Para quem esqueceu de sair. Encerra o ponto."
+msgstr "Para quien olvidó salir. Termina la presencia."
+
+msgid "Fechar o atendimento"
+msgstr "Cerrar la atención"
+
+msgid "Está atendendo. O atendimento fecha como não venda."
 msgstr "Está atendiendo. La atención se cierra como no venta."
 
-msgid "Corrigir o lançamento de"
-msgstr "Corregir el registro de"
+msgid "Corrigir o lançamento"
+msgstr "Corregir el registro"
 
 msgid "Salvar correção"
 msgstr "Guardar corrección"
@@ -720,29 +741,35 @@ msgstr "Guardar corrección"
 msgid "Lançamentos de hoje"
 msgstr "Registros de hoy"
 
+msgid "Atendimentos fechados nesta loja hoje."
+msgstr "Atenciones cerradas hoy en esta tienda."
+
+msgid "às"
+msgstr "a las"
+
 msgid "Nenhum atendimento fechado hoje."
 msgstr "Ninguna atención cerrada hoy."
 
-msgid "Corrigir"
-msgstr "Corregir"
+msgid "você"
+msgstr "usted"
 
-msgid "Fechar atendimento"
-msgstr "Cerrar atención"
-
-msgid "Tirar da pausa"
-msgstr "Sacar de la pausa"
-
-msgid "(você)"
-msgstr "(usted)"
-
-msgid "Ninguém atendendo agora."
-msgstr "Nadie atendiendo ahora."
+msgid "Esperando"
+msgstr "Esperando"
 
 msgid "A fila está vazia."
 msgstr "La fila está vacía."
 
-msgid "Fila de agora"
-msgstr "Fila de ahora"
+msgid "Ninguém atendendo agora."
+msgstr "Nadie atendiendo ahora."
+
+msgid "Ninguém em pausa."
+msgstr "Nadie en pausa."
+
+msgid "Acompanhando a loja"
+msgstr "Siguiendo la tienda"
+
+msgid "na fila"
+msgstr "en la fila"
 
 msgid "atendendo"
 msgstr "atendiendo"
@@ -762,22 +789,21 @@ msgstr "Es su turno"
 msgid "O próximo cliente que entrar é seu."
 msgstr "El próximo cliente que entre es suyo."
 
-msgid "Sua vez em"
-msgstr "Su turno en"
+msgid "Você é o"
+msgstr "Usted es el"
+
+msgid "da fila"
+msgstr "de la fila"
+
+msgid "esperando"
+msgstr "esperando"
 
 msgid "Começou às"
 msgstr "Empezó a las"
 
-msgid "Painel"
-msgstr "Panel"
+msgid "Desde"
+msgstr "Desde"
 
-msgid "Você ainda não está em nenhuma loja"
-msgstr "Usted todavía no está en ninguna tienda"
-
-msgid ""
-"Peça a quem cuida da equipe para alocar você na loja em que trabalha, na "
-"tela de Usuários."
-msgstr ""
-"Pida a quien administra el equipo que lo asigne a la tienda donde "
-"trabaja, en la pantalla de Usuarios."
+msgid "Ao vivo"
+msgstr "En vivo"
 

@@ -27,7 +27,7 @@ def ambiente_da_fila():
     from comum.estaticos import versionado
     from nucleo.rendering import create_environment
 
-    from .tela import ha_quanto, hora_local, pessoas_na_frente
+    from .tela import ha_quanto, hora_local, iniciais, pessoas_na_frente
     from .valores import em_reais
 
     env = create_environment(
@@ -35,6 +35,7 @@ def ambiente_da_fila():
         FileSystemLoader(str(settings.BASE_DIR / "plataforma" / "templates")))
     _ensinar_a_traduzir(env)
     env.filters["ha_quanto"] = ha_quanto
+    env.filters["iniciais"] = iniciais
     env.filters["hora"] = hora_local
     env.filters["reais"] = em_reais
     env.filters["na_frente"] = pessoas_na_frente

@@ -10,7 +10,10 @@
 
   var INTERVALO = 3000;          // D8: a cada 3 segundos
   var INTERVALO_SEM_SINAL = 10000;
-  var corpo = document.body;
+  // A página mora dentro do shell do sistema: os endereços e a versão vêm do
+  // miolo da fila, e não do <body>, que é do shell.
+  var corpo = document.getElementById("fila");
+  if (!corpo) return;
   var versao = corpo.dataset.versao || "";
   var urlEstado = corpo.dataset.estadoUrl;
   var urlAgir = corpo.dataset.agirUrl;
@@ -49,14 +52,13 @@
     });
     if (novaVersao) { versao = novaVersao; corpo.dataset.versao = novaVersao; }
     var eVez = !!document.querySelector("#fila-painel .painel-sua-vez");
-    var painel = el("fila-painel");
-    painel.classList.remove("chegou", "mudou");
-    void painel.offsetWidth;   // recomeça a animação
+    corpo.classList.remove("fila-chegou", "fila-mudou");
+    void corpo.offsetWidth;   // recomeça a animação
     if (eVez && !eraVez) {
-      painel.classList.add("chegou");
+      corpo.classList.add("fila-chegou");
       if (navigator.vibrate) navigator.vibrate([180, 80, 180]);
     } else if (posicaoAntes && numeroDaPosicao() !== posicaoAntes) {
-      painel.classList.add("mudou");
+      corpo.classList.add("fila-mudou");
     }
     atualizarTempos();
   }
@@ -81,38 +83,56 @@
       if (r.redirected || !r.ok) throw new Error("estado " + r.status);
       return r.json();
     }).then(function (dados) {
-      corpo.classList.remove("sem-sinal");
+      corpo.classList.remove("fila-sem-sinal");
       if (dados.mudou) trocar(dados.html, dados.versao);
       agendar(INTERVALO);
     }).catch(function () {
       // Celular que perde sinal: avisa e tenta de novo mais devagar, sem
       // derrubar a página nem empilhar pedidos.
-      corpo.classList.add("sem-sinal");
+      corpo.classList.add("fila-sem-sinal");
       agendar(INTERVALO_SEM_SINAL);
     });
   }
 
   // --- As folhas ---------------------------------------------------------
+  // São os modais do design system: abrir é pôr `.open` no `.overlay`, e
+  // fechar (o X, o fundo, o Esc) já é trabalho do `mw5.js`.
   function abrirFolha(nome, gatilho) {
     var folha = el("folha-" + nome);
     if (!folha) return false;
-    var form = folha.querySelector("form");
-    if (form) form.reset();
-    if (gatilho && gatilho.dataset.pessoa) {
-      var campo = folha.querySelector("input[name=pessoa]");
-      if (campo) campo.value = gatilho.dataset.pessoa;
-      var nome_ = folha.querySelector("[data-nome]");
-      if (nome_) nome_.textContent = gatilho.dataset.nome || "";
+    fecharFolhas();
+    folha.querySelectorAll("form").forEach(function (f) { f.reset(); });
+    var dados = gatilho ? gatilho.dataset : {};
+    if (dados.pessoa) {
+      folha.querySelectorAll("input[name=pessoa]").forEach(function (c) { c.value = dados.pessoa; });
+      // Dentro de "Corrigir", os atalhos para as outras folhas levam a pessoa.
+      folha.querySelectorAll("[data-folha]").forEach(function (a) {
+        a.dataset.pessoa = dados.pessoa;
+        a.dataset.nome = dados.nome || "";
+      });
+    }
+    folha.querySelectorAll("[data-nome]").forEach(function (n) {
+      if (n.tagName !== "A") n.textContent = dados.nome || "";
+    });
+    if (dados.estado) {
+      folha.querySelectorAll("[data-para]").forEach(function (bloco) {
+        bloco.hidden = bloco.dataset.para.split(" ").indexOf(dados.estado) < 0;
+      });
     }
     ajustarResultado(folha);
     somar(folha);
-    if (folha.open) folha.close();
-    folha.showModal();
+    folha.classList.add("open");
+    folha.setAttribute("data-open", "true");
+    var primeiro = folha.querySelector("input[type=radio], select, textarea, button[type=submit]");
+    if (primeiro) primeiro.focus();
     return true;
   }
 
   function fecharFolhas() {
-    document.querySelectorAll("dialog.folha[open]").forEach(function (d) { d.close(); });
+    document.querySelectorAll("[data-modal].open").forEach(function (d) {
+      d.classList.remove("open");
+      d.removeAttribute("data-open");
+    });
   }
 
   function ajustarResultado(folha) {
@@ -132,7 +152,7 @@
   }
 
   function somar(escopo) {
-    escopo.querySelectorAll(".itens").forEach(function (itens) {
+    escopo.querySelectorAll(".fila-itens").forEach(function (itens) {
       var total = 0;
       itens.querySelectorAll("input[name=valor]").forEach(function (i) { total += lerValor(i.value); });
       var saida = itens.parentNode.querySelector("output.total");
@@ -177,14 +197,9 @@
       e.preventDefault();
       return;
     }
-    if (e.target.closest("[data-fechar-folha]")) {
-      e.preventDefault();
-      fecharFolhas();
-      return;
-    }
     var outro = e.target.closest("[data-outro-grupo]");
     if (outro) {
-      var itens = outro.parentNode.querySelector(".itens");
+      var itens = outro.parentNode.querySelector(".fila-itens");
       var modelo = itens.querySelector(".item-vendido:last-child");
       var copia = modelo.cloneNode(true);
       copia.querySelector("select").selectedIndex = 0;
@@ -195,18 +210,17 @@
   });
 
   document.addEventListener("change", function (e) {
-    if (e.target.name === "resultado") ajustarResultado(e.target.closest("dialog"));
+    if (e.target.name === "resultado") ajustarResultado(e.target.closest("[data-modal]"));
   });
   document.addEventListener("input", function (e) {
     if (e.target.name === "valor") somar(e.target.closest("form"));
   });
 
-  // Folha aberta pela URL (sem JavaScript ela abriu com `open`): vira modal.
-  document.querySelectorAll("dialog.folha[open]").forEach(function (folha) {
+  // Folha aberta pela URL (o caminho sem JavaScript): acerta a parte que
+  // depende do resultado escolhido e o total.
+  document.querySelectorAll("[data-modal].open").forEach(function (folha) {
     ajustarResultado(folha);
     somar(folha);
-    folha.close();
-    folha.showModal();
   });
 
   document.addEventListener("visibilitychange", function () {

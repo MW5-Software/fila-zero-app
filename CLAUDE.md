@@ -438,8 +438,15 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 - **Cadastro usado é `PROTECT`.** Desativa; a tela diz isso em vez de 500.
 - **A página funciona sem JavaScript.** O script só consulta, troca HTML que o
   servidor desenhou e abre as folhas como diálogo; nenhum HTML é montado nele.
-- **As cores de estado da página são fixas**, e não vêm da marca do cliente, e
-  todo estado tem rótulo e ícone. A página não tem `<table>`.
+- **A página veste o design system.** Ela é montada no shell da casa (o
+  cabeçalho com filial, idioma, sair e avatar), sem a barra lateral e sem o
+  rodapé (`fila.tela._no_shell`), e `fila/static/fila/fila.css` só usa os
+  tokens do tema. A primeira versão, com paleta e fonte próprias, foi recusada
+  por parecer outro produto. Todo estado tem rótulo e ícone, e a página não tem
+  `<table>`.
+- **Macro de template não pode ter o nome de variável do contexto.** O macro
+  das folhas se chamava `folha`, como o `?folha=` da URL, e a folha nunca
+  abria sem JavaScript.
 - **Quem só tem `fila.ver` e `fila.participar` cai em `/fila`** ao pedir a
   raiz (`fila.views.inicio`, antes do `nucleo` em `config/urls.py`). Teste da
   base que pede a raiz com um vendedor precisa de outro cargo.

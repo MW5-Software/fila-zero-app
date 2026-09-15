@@ -1,249 +1,282 @@
-/* A página da fila (Fila Zero). Fora do shell do dashboard, por isso tem
-   tokens próprios: a cor de cada ESTADO é fixa e não vem da marca do
-   cliente. Um vendedor que troca de loja, ou de empresa, lê "é a sua vez"
-   na mesma cor; se a marca de um cliente fosse latão, a vez sumiria na tela.
-   Todo estado tem rótulo e ícone além da cor. */
+/* A página da fila (Fila Zero), por cima do design system.
 
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("fontes/bricolage.woff2") format("woff2");
-  font-weight: 200 800;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Plus Jakarta Sans";
-  src: url("/static/plataforma/fontes/jakarta-400.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Plus Jakarta Sans";
-  src: url("/static/plataforma/fontes/jakarta-600.woff2") format("woff2");
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Plus Jakarta Sans";
-  src: url("/static/plataforma/fontes/jakarta-700.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
+   Carrega DEPOIS do tema e da `mw5.css`: tudo aqui usa os tokens do tema
+   (`--primary`, `--ok`, `--warn`, `--surface`...), então a fila veste a marca
+   do cliente como qualquer outra tela do sistema. O que esta folha acrescenta
+   é só o que o design system não tem: o cartão do "meu status", o quadro de
+   três colunas com as pessoas, e as folhas no formato de celular.
 
-:root {
-  --concreto: #ECEEED;
-  --grafite: #1E2530;
-  --veludo: #0E4F54;
-  --latao: #B5893A;
-  --ardosia: #6B7480;
-  --venda: #2F7A4B;
-  --papel: #F7F8F7;
-  --linha: #D5D9D8;
-  --perigo: #9B2C2C;
-  --exibicao: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
-  --texto: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  /* A barra do rodapé com a ação principal e a linha de secundárias. */
-  --barra-altura: 8rem;
-}
+   Os estados têm cor de tom fixo do tema, e nunca só cor: na fila é a cor
+   primária com o número da posição, atendendo é `--ok`, pausa é `--warn`,
+   cada um com rótulo e ícone. */
 
-/* O script esconde e mostra com `hidden`; sem esta regra, um `display` de
-   classe venceria o atributo e a seção escondida continuaria na tela
-   (`tests/test_esconder_vence_o_display.py`). */
+/* O script esconde e mostra com `hidden`; uma classe com `display` escrita
+   amanhã venceria o atributo e a seção escondida voltaria para a tela. */
 [hidden] { display: none !important; }
 
-*, *::before, *::after { box-sizing: border-box; }
+/* --- O shell sem menu --------------------------------------------------- */
+.fila-pagina { --header-h: 68px; }
+.fila-pagina .iconbtn.menu-btn { display: none; }
+.fila-marca { display: flex; align-items: center; height: 44px; }
+.fila-marca img { max-height: 40px; max-width: 150px; width: auto; object-fit: contain; }
+.fila-pagina main { padding-top: 22px; }
 
-body.fila {
-  margin: 0;
-  min-height: 100dvh;
-  background: var(--concreto);
-  color: var(--grafite);
-  font: 400 1rem/1.5 var(--texto);
-  padding-bottom: calc(var(--barra-altura) + env(safe-area-inset-bottom));
-  -webkit-text-size-adjust: 100%;
-}
+/* --- Título da página ----------------------------------------------------- */
+/* A pilha da fila: o mesmo vão que o `main` dá entre blocos, porque o miolo
+   inteiro chega ao `main` como um bloco só. */
+.fila > * + * { margin-top: 18px; }
+.fila > .fila-topo + * { margin-top: 16px; }
 
-a { color: var(--veludo); }
-:focus-visible { outline: 3px solid var(--latao); outline-offset: 2px; }
+.fila-topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.fila-titulo { font-family: var(--font-display); font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin: 0; }
+.fila-loja { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; color: var(--on-surface-2); font-size: 13.5px; font-weight: 600; }
+.fila-ao-vivo { flex: none; }
+.fila-ao-vivo::before { animation: fila-pulso 2s ease-in-out infinite; }
+.fila-sem-sinal .fila-ao-vivo { color: var(--warn); background: var(--warn-bg); }
+.fila-sem-sinal .fila-ao-vivo::before { animation: none; }
+@keyframes fila-pulso { 50% { opacity: .35; } }
 
-/* --- Topo ---------------------------------------------------------------- */
-.topo {
+.fila .fila-recusa { font-weight: 600; }
+
+/* --- O meu status ----------------------------------------------------------
+   O primeiro cartão é o da própria pessoa: é a única pergunta que o vendedor
+   faz a esta tela ("é a minha vez?"), e ela precisa de resposta antes da
+   lista. Quando é a vez, o cartão inteiro vira a cor primária — é o único
+   momento em que a tela muda de cara. */
+.fila .fila-eu {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; padding: .75rem 1rem;
-  background: var(--grafite); color: var(--concreto);
+  gap: 20px; padding: 18px 20px;
+  transition: background-color .25s ease, border-color .25s ease;
 }
-.topo-onde { display: flex; flex-direction: column; line-height: 1.2; }
-.topo-loja { font-weight: 700; }
-.topo-nome { font-size: .875rem; color: #B9C0C9; }
-.topo-links { display: flex; gap: 1rem; font-size: .875rem; }
-.topo-links a { color: var(--concreto); }
+.fila-eu-info { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.fila-eu-txt { min-width: 0; }
+.fila-eu-titulo { margin: 0; font-family: var(--font-display); font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
+.fila-eu-apoio { margin: 3px 0 0; color: var(--on-surface-2); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 
-.miolo { padding: 1rem; max-width: 72rem; margin: 0 auto; }
-
-.recusa {
-  margin: 0 0 1rem; padding: .75rem 1rem; border-radius: .5rem;
-  background: #F6E7C8; color: var(--grafite); border-left: 4px solid var(--latao);
-  font-weight: 600;
+.fila-eu-selo {
+  width: 52px; height: 52px; flex: none; border-radius: 14px;
+  display: grid; place-items: center;
+  background: var(--surface-2); color: var(--primary);
 }
+.fila-eu-selo .icon { width: 24px; height: 24px; }
+.painel-atendendo .fila-eu-selo { background: var(--ok-bg); color: var(--ok); }
+.painel-pausa .fila-eu-selo { background: var(--warn-bg); color: var(--warn); }
 
-/* --- O painel de estado -------------------------------------------------- */
-.painel {
-  padding: 1.25rem 1rem 1.5rem; border-radius: .75rem;
-  background: var(--papel); border: 1px solid var(--linha);
+.fila-eu-posicao {
+  width: 52px; height: 52px; flex: none; border-radius: 14px;
+  display: flex; align-items: baseline; justify-content: center; padding-top: 6px;
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--primary);
+  font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums;
 }
-.painel p { margin: 0; }
-.painel-rotulo { font-weight: 600; color: var(--ardosia); }
-.painel-numero {
-  font: 800 clamp(5rem, 28vw, 9rem)/.9 var(--exibicao);
-  font-variant-numeric: tabular-nums; letter-spacing: -.04em;
-  color: var(--veludo); margin: .25rem 0 .5rem !important;
+.fila-eu-num { font-size: 30px; line-height: 1; letter-spacing: -.03em; }
+.fila-eu-ord { font-size: 14px; }
+
+.fila-eu-acoes { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.fila-eu-acoes form { margin: 0; }
+.fila-secundarias { display: flex; gap: 8px; flex-wrap: wrap; }
+.fila-principal { min-width: 220px; justify-content: center; }
+
+.fila-eu:has(.painel-sua-vez) {
+  background: var(--primary); border-color: var(--primary); color: var(--on-primary);
 }
-.painel-titulo { font: 700 1.5rem/1.2 var(--exibicao); }
-.painel-grande { font-size: clamp(2.5rem, 12vw, 4rem); letter-spacing: -.02em; }
-.painel-apoio { color: var(--ardosia); margin-top: .25rem !important; }
-
-.painel-na-fila { border-left: 6px solid var(--veludo); }
-.painel-sua-vez { background: var(--latao); border-color: var(--latao); color: var(--grafite); }
-.painel-sua-vez .painel-apoio { color: var(--grafite); }
-.painel-atendendo { border-left: 6px solid var(--latao); }
-.painel-pausa { border-left: 6px solid var(--ardosia); }
-
-/* --- A lista ------------------------------------------------------------- */
-.secao { font: 700 1.125rem/1.3 var(--exibicao); margin: 1.5rem 0 .5rem; }
-.lista { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linha); }
-.linha {
-  display: grid; grid-template-columns: 2.25rem 1fr auto; align-items: center;
-  column-gap: .75rem; padding: .75rem 0; border-bottom: 1px solid var(--linha);
+.fila-eu:has(.painel-sua-vez) .fila-eu-apoio { color: color-mix(in srgb, var(--on-primary) 82%, transparent); }
+.fila-eu:has(.painel-sua-vez) .fila-eu-selo { background: color-mix(in srgb, var(--on-primary) 16%, transparent); color: var(--on-primary); }
+.fila-eu:has(.painel-sua-vez) .btn:not(.primary) {
+  background: transparent; color: var(--on-primary);
+  border-color: color-mix(in srgb, var(--on-primary) 40%, transparent);
 }
-.linha-marca { display: inline-flex; justify-content: center; color: var(--ardosia); }
-.linha-posicao { font: 700 1.25rem/1 var(--exibicao); font-variant-numeric: tabular-nums; color: var(--veludo); }
-.linha-nome { font-weight: 600; }
-.linha-nome small { display: block; font-weight: 400; color: var(--ardosia); }
-.linha-nome em { font-style: normal; font-weight: 400; color: var(--ardosia); }
-.linha-tempo { font-size: .875rem; color: var(--ardosia); font-variant-numeric: tabular-nums; text-align: right; }
-.linha-atendendo .linha-marca { color: var(--latao); }
-.linha-voce { background: linear-gradient(90deg, rgba(14, 79, 84, .08), transparent 70%); }
-.linha-editar { justify-self: end; font-size: .875rem; }
-/* O lançamento não tem marca à esquerda: sem esta grade, o nome cairia na
-   coluna estreita da posição. */
-.lancamentos .linha { grid-template-columns: 1fr auto auto; }
-.vazio { color: var(--ardosia); margin: .5rem 0; }
+.fila-eu:has(.painel-sua-vez) .btn:not(.primary):hover { background: color-mix(in srgb, var(--on-primary) 12%, transparent); }
+.fila-eu:has(.painel-sua-vez) .btn.primary { background: var(--on-primary); border-color: var(--on-primary); color: var(--primary); }
 
-.corrigir { grid-column: 2 / 4; }
-.corrigir summary { cursor: pointer; font-size: .875rem; color: var(--veludo); }
-.corrigir-opcoes { display: flex; flex-wrap: wrap; gap: .5rem; padding-top: .5rem; }
-.corrigir-opcoes form { margin: 0; }
-.corrigir-opcoes button, .corrigir-opcoes a {
-  font: 600 .875rem/1 var(--texto); padding: .5rem .75rem; border-radius: .375rem;
-  border: 1px solid var(--linha); background: var(--papel); color: var(--grafite);
-  text-decoration: none; cursor: pointer;
+/* A vez que chega: o único movimento que não responde a um clique. */
+@keyframes fila-vez { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent); } 100% { box-shadow: 0 0 0 18px transparent; } }
+@keyframes fila-numero { from { transform: translateY(6px); opacity: .3; } to { transform: none; opacity: 1; } }
+.fila-chegou .fila-eu { animation: fila-vez .9s ease-out 2; }
+.fila-mudou .fila-eu-num { display: inline-block; animation: fila-numero .35s ease-out; }
+
+/* --- O quadro --------------------------------------------------------------- */
+.fila .fila-quadro { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.fila-coluna { border-top: 3px solid var(--primary); }
+.fila-coluna-atendendo { border-top-color: var(--ok); }
+.fila-coluna-atendendo .ch .ci { background: var(--ok-bg); color: var(--ok); }
+.fila-coluna-pausa { border-top-color: var(--warn); }
+.fila-coluna-pausa .ch .ci { background: var(--warn-bg); color: var(--warn); }
+.fila-coluna > .cb { padding: 12px; }
+.fila-conta {
+  min-width: 26px; height: 24px; padding: 0 8px; border-radius: 12px;
+  display: inline-grid; place-items: center;
+  background: var(--surface-3); color: var(--on-surface-2);
+  font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 
-/* --- A barra de ações ---------------------------------------------------- */
-.barra {
-  position: fixed; inset: auto 0 0 0; z-index: 10;
-  padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom));
-  background: var(--papel); border-top: 1px solid var(--linha);
+.fila-pessoas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fila-pessoa {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--outline-2); border-radius: 12px;
+  background: var(--surface);
 }
-.barra-miolo { max-width: 40rem; margin: 0 auto; display: grid; gap: .5rem; }
-.barra form { margin: 0; }
-.principal {
-  display: block; width: 100%; min-height: 3.25rem; padding: .75rem 1rem;
-  border: 0; border-radius: .625rem; cursor: pointer; text-align: center;
-  font: 700 1.125rem/1.2 var(--texto); text-decoration: none;
-  background: var(--veludo); color: #fff;
+.fila-pessoa-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fila-pessoa-nome { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fila-pessoa-meta { font-size: 12.5px; color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+.fila-pessoa-voce {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
 }
-.principal-vez { background: var(--latao); color: var(--grafite); }
-.principal[disabled] { opacity: .6; cursor: progress; }
-.barra-secundaria { display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap; }
-.barra-secundaria a, .secundario {
-  background: none; border: 0; padding: .25rem; cursor: pointer;
-  font: 600 .9375rem/1.2 var(--texto); color: var(--veludo); text-decoration: underline;
+.fila-pos {
+  width: 26px; height: 26px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-3); color: var(--on-surface);
+  font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+/* O primeiro da fila é o próximo a atender: é ele que o salão procura. */
+.fila-coluna-fila .fila-pessoa:first-child .fila-pos { background: var(--primary); color: var(--on-primary); }
+.fila-coluna-fila .fila-pessoa:first-child { background: color-mix(in srgb, var(--primary) 5%, var(--surface)); }
+.fila-corrigir { flex: none; width: 34px; height: 34px; }
+.fila-vazio { margin: 0; padding: 18px 8px; text-align: center; color: var(--on-surface-2); font-size: 13px; }
+
+/* Cada pessoa com a sua cor, a mesma em toda tela: a cor vem do id, e quem
+   procura "a Bia" na lista acha pelo círculo antes de ler o nome. */
+.fila .avatar.fila-cor-1 { background: color-mix(in srgb, var(--chart-1) 16%, var(--surface)); color: var(--chart-1); }
+.fila .avatar.fila-cor-2 { background: color-mix(in srgb, var(--chart-2) 16%, var(--surface)); color: var(--chart-2); }
+.fila .avatar.fila-cor-3 { background: color-mix(in srgb, var(--chart-3) 16%, var(--surface)); color: var(--chart-3); }
+.fila .avatar.fila-cor-4 { background: color-mix(in srgb, var(--chart-4) 16%, var(--surface)); color: var(--chart-4); }
+.fila .avatar.fila-cor-5 { background: color-mix(in srgb, var(--chart-5) 16%, var(--surface)); color: var(--chart-5); }
+.fila .avatar.fila-cor-6 { background: color-mix(in srgb, var(--chart-6) 16%, var(--surface)); color: var(--chart-6); }
+.fila .avatar.fila-cor-7 { background: color-mix(in srgb, var(--chart-7) 16%, var(--surface)); color: var(--chart-7); }
+.fila .avatar.fila-cor-8 { background: color-mix(in srgb, var(--chart-8) 16%, var(--surface)); color: var(--chart-8); }
+
+/* --- Lançamentos de hoje ---------------------------------------------------- */
+.fila-lanc-lista { list-style: none; margin: 0; padding: 0; }
+.fila-lanc {
+  display: grid; grid-template-columns: auto minmax(140px, 1fr) minmax(0, 2fr) auto;
+  align-items: center; gap: 14px; padding: 12px 20px;
+  border-top: 1px solid var(--outline-2);
+}
+.fila-lanc:first-child { border-top: 0; }
+.fila-lanc-quem { display: flex; flex-direction: column; min-width: 0; }
+.fila-lanc-nome { font-weight: 700; font-size: 14px; }
+.fila-lanc-hora { color: var(--on-surface-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.fila-lanc-resultado { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; }
+.fila-lanc-total { font-variant-numeric: tabular-nums; }
+.fila-lanc-motivo { color: var(--on-surface-2); }
+
+/* --- As folhas ---------------------------------------------------------------- */
+.fila-rotulo { display: block; font-size: 12.5px; font-weight: 700; color: var(--on-surface-2); margin-bottom: 6px; }
+
+.fila-resultado { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fila-resultado-opcao {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
+  height: 64px; border: 1.5px solid var(--outline); border-radius: 12px;
+  font-family: var(--font-display); font-size: 16px; font-weight: 800; cursor: pointer;
+  background: var(--surface);
+}
+.fila-resultado-opcao input { position: absolute; opacity: 0; pointer-events: none; }
+.fila-resultado-icone { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--on-surface-2); }
+.fila-vendeu:has(input:checked) { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); }
+.fila-vendeu:has(input:checked) .fila-resultado-icone { background: var(--ok); color: #fff; }
+.fila-nao-vendeu:has(input:checked) { border-color: var(--on-surface-2); background: var(--surface-2); }
+.fila-nao-vendeu:has(input:checked) .fila-resultado-icone { background: var(--on-surface-2); color: var(--surface); }
+.fila-resultado-opcao:has(input:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); }
+
+.so-venda, .so-nao-venda { display: flex; flex-direction: column; gap: 12px; }
+.fila-itens { display: grid; gap: 8px; }
+.item-vendido { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 8px; }
+.fila-valor { position: relative; display: block; }
+.fila-valor > span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--on-surface-2); font-size: 13px; font-weight: 600; pointer-events: none; }
+.fila-valor .ctl { padding-left: 38px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fila-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 14px 16px; border-radius: 12px; background: var(--surface-2);
+  font-size: 13.5px; font-weight: 700; color: var(--on-surface-2);
+}
+.fila-total .total { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--on-surface); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+
+.fila-opcoes { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fila-opcoes .msec-title { grid-column: 1 / -1; padding: 0; }
+.fila-opcao {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px;
+  border: 1.5px solid var(--outline); border-radius: 10px; background: var(--surface);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.fila-opcao input { accent-color: var(--primary); width: 16px; height: 16px; margin: 0; }
+.fila-opcao:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
+.fila-folha textarea.ctl { height: auto; padding: 10px 12px; resize: vertical; }
+
+.fila-corrigir-opcoes { gap: 8px; }
+.fila-corrigir-opcoes > div { display: grid; gap: 8px; }
+.fila-corrigir-opcoes form { margin: 0; }
+.fila-corrigir-item {
+  width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--outline); border-radius: 12px;
+  background: var(--surface); color: var(--on-surface); font: inherit; cursor: pointer; text-decoration: none;
+}
+.fila-corrigir-item:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, var(--surface)); }
+.fila-corrigir-item .ci { width: 36px; height: 36px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--primary); }
+.fila-corrigir-item strong { display: block; font-size: 14px; }
+.fila-corrigir-item small { display: block; color: var(--on-surface-2); font-size: 12.5px; margin-top: 2px; }
+.fila-corrigir-perigo .ci { background: var(--danger-bg); color: var(--danger); }
+
+/* --- Computador médio: duas colunas, a pausa desce --------------------------- */
+@media (max-width: 1100px) {
+  .fila .fila-quadro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fila-coluna-pausa { grid-column: 1 / -1; }
 }
 
-/* --- As folhas ----------------------------------------------------------- */
-.folha {
-  width: 100%; max-width: 36rem; max-height: 92dvh; margin: auto auto 0;
-  padding: 1.25rem 1rem calc(1rem + env(safe-area-inset-bottom));
-  border: 0; border-radius: 1rem 1rem 0 0; background: var(--papel); color: var(--grafite);
-}
-.folha::backdrop { background: rgba(30, 37, 48, .55); }
-.folha[open]:not(:modal) { position: fixed; inset: auto 0 0 0; z-index: 20; box-shadow: 0 -8px 24px rgba(30, 37, 48, .25); }
-.folha-titulo { font: 700 1.375rem/1.2 var(--exibicao); margin: 0 0 1rem; }
-.folha-apoio { color: var(--ardosia); }
-.folha-acoes { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; margin-top: 1rem; }
+/* --- Celular ------------------------------------------------------------------
+   Em pé, com uma mão: a ação principal desce para uma barra presa ao rodapé,
+   ao alcance do polegar, e as folhas sobem de baixo. */
+@media (max-width: 720px) {
+  .fila-pagina main { padding: 16px 14px 190px; }
+  .fila-pagina header .wrap { padding: 0 12px; gap: 10px; }
+  .fila-titulo { font-size: 22px; }
+  .fila .fila-quadro { grid-template-columns: minmax(0, 1fr); }
+  .fila-coluna-pausa { grid-column: auto; }
 
-.resultado { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 1rem; }
-.resultado-opcao {
-  display: flex; align-items: center; justify-content: center; gap: .5rem;
-  min-height: 3rem; border-radius: .625rem; border: 2px solid var(--linha);
-  font-weight: 700; cursor: pointer;
-}
-.resultado-vendeu:has(input:checked) { border-color: var(--venda); background: rgba(47, 122, 75, .12); }
-.resultado-nao:has(input:checked) { border-color: var(--ardosia); background: rgba(107, 116, 128, .12); }
-
-.itens { display: grid; gap: .5rem; }
-.item-vendido { display: grid; grid-template-columns: 1fr 8rem; gap: .5rem; }
-.item-vendido select, .item-vendido input, .campo textarea {
-  width: 100%; min-height: 3rem; padding: .5rem .75rem; border-radius: .5rem;
-  border: 1px solid var(--linha); background: #fff; color: var(--grafite);
-  font: 400 1rem/1.3 var(--texto);
-}
-.item-vendido input { text-align: right; font-variant-numeric: tabular-nums; }
-.outro-grupo { margin-top: .5rem; background: none; border: 0; padding: .25rem 0; color: var(--veludo); font: 600 1rem/1 var(--texto); cursor: pointer; }
-.total-linha { display: flex; justify-content: space-between; align-items: baseline; margin: 1rem 0 0; font-weight: 600; }
-.total { font: 800 2rem/1 var(--exibicao); font-variant-numeric: tabular-nums; color: var(--venda); }
-
-.motivos { border: 0; margin: 0; padding: 0; display: grid; gap: .25rem; }
-.motivos legend { font-weight: 700; margin-bottom: .5rem; }
-.opcao {
-  display: flex; align-items: center; gap: .75rem; min-height: 3rem; padding: 0 .75rem;
-  border-radius: .5rem; border: 1px solid var(--linha); background: #fff; cursor: pointer;
-}
-.opcao:has(input:checked) { border-color: var(--veludo); box-shadow: inset 0 0 0 1px var(--veludo); }
-.campo { display: grid; gap: .25rem; margin-top: 1rem; font-weight: 600; }
-
-.sem-loja { padding-top: 3rem; max-width: 32rem; }
-
-/* O aviso de personificação é o componente do design system, que esta página
-   não carrega inteiro: só o suficiente para ele ser lido. */
-body.fila > .alert { display: flex; gap: .75rem; padding: .75rem 1rem; background: #F6E7C8; }
-body.fila > .alert svg { width: 1.25rem; height: 1.25rem; flex: none; }
-body.fila > .alert .at { font-weight: 700; }
-body.fila > .alert form { margin-top: .5rem; }
-
-.sem-sinal .topo::after { content: "Sem conexão"; font-size: .75rem; padding: .125rem .5rem; border-radius: 1rem; background: var(--latao); color: var(--grafite); }
-
-/* --- Movimento: só dois momentos ----------------------------------------- */
-@keyframes vez-chegou { from { transform: scale(.96); } 60% { transform: scale(1.02); } to { transform: none; } }
-@keyframes posicao-mudou { from { transform: translateY(.35em); opacity: .3; } to { transform: none; opacity: 1; } }
-.chegou .painel-sua-vez { animation: vez-chegou .45s ease-out; }
-.mudou .painel-numero { animation: posicao-mudou .35s ease-out; }
-@media (prefers-reduced-motion: reduce) {
-  .chegou .painel-sua-vez, .mudou .painel-numero { animation: none; }
-}
-
-/* --- Computador: duas colunas -------------------------------------------- */
-@media (min-width: 900px) {
-  body.fila {
-    display: grid; padding-bottom: 0;
-    grid-template-columns: minmax(20rem, 26rem) 1fr;
-    /* A primeira linha é a do aviso de personificação: sem área própria ele
-       seria posto na primeira célula livre, no fim da página, e o aviso que
-       existe para não ser esquecido ficaria abaixo da fila. Sem aviso, a
-       linha tem altura zero. */
-    grid-template-rows: auto auto auto auto auto 1fr;
-    grid-template-areas: "aviso aviso" "topo topo" "recusa lista" "painel lista" "barra lista";
-    column-gap: 2rem;
+  .fila .fila-eu { padding: 16px; }
+  .fila-eu-acoes {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    flex-direction: column-reverse; align-items: stretch; gap: 8px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface); border-top: 1px solid var(--outline);
+    box-shadow: 0 -6px 18px rgba(16, 22, 48, .08);
   }
-  body.fila > .alert { grid-area: aviso; }
-  .topo { grid-area: topo; }
-  .miolo { display: contents; }
-  .recusa { grid-area: recusa; margin: 1rem 0 0 1.5rem; }
-  .painel-lugar { grid-area: painel; padding: 1rem 0 0 1.5rem; }
-  .lista-lugar { grid-area: lista; padding: 0 1.5rem 2rem 0; max-width: 48rem; }
-  .lancamentos-lugar { grid-column: 2; padding: 0 1.5rem 2rem 0; max-width: 48rem; }
-  .barra { grid-area: barra; position: sticky; top: 1rem; align-self: start; margin: 1rem 0 0 1.5rem; border: 1px solid var(--linha); border-radius: .75rem; }
-  .painel-lugar { position: sticky; top: 1rem; align-self: start; }
-  .folha { margin: auto; border-radius: 1rem; }
-  .sem-loja { grid-column: 1 / -1; margin: 0 auto; }
+  .fila-eu-acoes:empty { display: none; }
+  .fila-eu-acoes .fila-principal { width: 100%; min-width: 0; height: 52px; font-size: 15px; }
+  .fila-secundarias { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+  .fila-secundarias form { min-width: 0; }
+  /* Três botões numa linha de 360px: o rótulo quebra em duas linhas em vez
+     de empurrar o último para fora da tela. */
+  .fila-secundarias .btn {
+    width: 100%; min-width: 0; height: auto; min-height: 44px; padding: 6px 8px;
+    justify-content: center; white-space: normal; text-align: center;
+    font-size: 12.5px; line-height: 1.15;
+  }
+  /* No celular a barra fica fora do cartão azul: os botões voltam ao normal. */
+  .fila-eu:has(.painel-sua-vez) .fila-eu-acoes .btn:not(.primary) { background: var(--surface); color: var(--on-surface); border-color: var(--outline); }
+  .fila-eu:has(.painel-sua-vez) .fila-eu-acoes .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+  .fila-lanc { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: 6px; padding: 12px 16px; }
+  .fila-lanc-resultado { grid-column: 2 / 3; grid-row: 2; }
+  .fila-lanc > .btn { grid-column: 3; grid-row: 1 / 3; }
+  /* Coluna vazia no celular vira uma linha: três cartões de "ninguém" empurram
+     a fila de verdade para fora da tela. */
+  .fila-coluna .ch { padding: 12px 16px; }
+  .fila-coluna > .cb:has(.fila-vazio) { padding: 0; }
+  .fila-coluna > .cb .fila-vazio { padding: 12px 16px; text-align: left; }
+
+  .fila-pagina .overlay { align-items: flex-end; padding: 0; }
+  .fila-pagina .fila-folha { max-width: none; border-radius: 18px 18px 0 0; max-height: 92dvh; border-bottom: 0; }
+  .fila-pagina .fila-folha .mfoot { position: sticky; bottom: 0; background: var(--surface); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .fila-pagina .fila-folha .mfoot .btn { flex: 1; justify-content: center; height: 48px; }
+  .item-vendido { grid-template-columns: minmax(0, 1fr) 120px; }
+}
+
+@media (max-width: 380px) {
+  .fila-opcoes { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fila-ao-vivo::before, .fila-chegou .fila-eu, .fila-mudou .fila-eu-num { animation: none; }
 }

@@ -58,8 +58,8 @@ def test_o_segundo_ve_a_posicao(loja):
     bia = logado("bia")
     _agir(bia, acao="ponto")
     html = _html(bia)
-    assert "Sua vez em" in html
-    assert "uma pessoa na sua frente" in html
+    assert "Você é o 2º da fila" in html
+    assert "Uma pessoa na sua frente" in html
     assert "Cliente pediu por mim" in html
 
 
@@ -253,17 +253,21 @@ def test_as_folhas_abrem_pela_url(loja):
     gil = logado("gil")
     fechar = _html(gil, f"/fila?folha=fechar&pessoa={loja.ana.pk}")
     assert f'name="pessoa" value="{loja.ana.pk}"' in fechar
-    assert '<dialog id="folha-fechar" class="folha" open>' in fechar
+    assert '<div class="overlay open" id="folha-fechar"' in fechar
     tirar = _html(gil, f"/fila?folha=tirar&pessoa={loja.ana.pk}")
-    assert '<dialog id="folha-tirar" class="folha" open>' in tirar
+    assert '<div class="overlay open" id="folha-tirar"' in tirar
+    corrigir = _html(gil, f"/fila?folha=corrigir&pessoa={loja.ana.pk}")
+    assert '<div class="overlay open" id="folha-corrigir"' in corrigir
     forjada = _html(gil, "/fila?folha=tirar&pessoa=999999")
-    assert '<dialog id="folha-tirar" class="folha" open>' not in forjada
+    assert '<div class="overlay open" id="folha-tirar"' not in forjada
 
 
-class TestOVisualTemOQueFoiAprovado:
-    """Sem navegador (regra da casa): o que se prova aqui é que a folha e o
-    script estão servidos e carregam o combinado — a cor de cada estado, a
-    fonte auto-hospedada e o respeito a quem pediu menos movimento."""
+class TestAFilaEUmaTelaDoSistema:
+    """A fila veste o design system (pedido de 15/09/2026, depois de a
+    primeira versão, com folha e paleta próprias, sair com cara de outro
+    produto): o shell com o cabeçalho da casa, sem a barra lateral, e uma
+    folha que só usa os tokens do tema. Sem navegador (regra da casa): o que
+    se prova aqui é o que a página carrega e declara."""
 
     FOLHA = "fila/static/fila/fila.css"
     SCRIPT = "fila/static/fila/fila.js"
@@ -273,38 +277,29 @@ class TestOVisualTemOQueFoiAprovado:
 
         return Path(self.FOLHA).read_text(encoding="utf-8")
 
-    def test_a_paleta_aprovada_esta_declarada(self):
-        folha = self._folha().upper()
-        for cor in ("#ECEEED", "#1E2530", "#0E4F54", "#B5893A", "#6B7480",
-                    "#2F7A4B"):
-            assert cor in folha, cor
+    @pytest.mark.django_db
+    def test_a_pagina_esta_no_shell_sem_a_barra_lateral(self, loja):
+        html = _html(logado("ana"))
+        assert "/tema.css" in html and "mw5.css" in html
+        assert "<header>" in html
+        assert 'class="side"' not in html
+        assert 'class="fila-pagina"' in html
 
-    def test_a_fonte_e_auto_hospedada_e_existe(self):
-        """Todo `url(...)` da folha aponta para arquivo do repositório: um
-        relativo resolve em `fila/static/fila/`, e `/static/<app>/...` em
-        `<app>/static/<app>/...`. Nada vem de fora."""
+    def test_a_folha_nao_inventa_cor(self):
+        """Toda cor vem do tema: uma cor escrita à mão aqui não acompanharia a
+        marca do cliente, e a fila voltaria a parecer outro sistema. O único
+        literal aceito é o branco do ícone sobre o verde da venda."""
         import re
-        from pathlib import Path
 
-        enderecos = re.findall(r"url\(\"([^\"]+)\"\)", self._folha())
-        assert enderecos, "a folha não declara @font-face"
-        for endereco in enderecos:
-            assert not endereco.startswith(("http:", "https:", "//")), endereco
-            if endereco.startswith("/static/"):
-                app = endereco.split("/")[2]
-                arquivo = Path(app) / "static" / endereco[len("/static/"):]
-            else:
-                arquivo = Path("fila/static/fila") / endereco
-            assert arquivo.exists(), endereco
-        assert Path("fila/static/fila/fontes/bricolage.woff2").read_bytes()[:4] == b"wOF2"
+        literais = set(re.findall(r"#[0-9a-fA-F]{3,8}\b", self._folha()))
+        assert literais <= {"#fff"}, literais
 
     def test_o_que_a_pagina_esconde_some_de_verdade(self):
-        """A recusa, a parte de venda e a de não venda da folha e os
-        lançamentos são escondidos com `hidden`. A varredura da casa
+        """A recusa, a parte de venda e a de não venda das folhas e os blocos
+        do "Corrigir" são escondidos com `hidden`. A varredura da casa
         (`tests/test_esconder_vence_o_display.py`) só reconhece o elemento
         criado por `createElement`, e o script da fila esconde o que o
-        servidor desenhou: a regra global é o que garante que um `display`
-        escrito amanhã numa dessas classes não os traga de volta."""
+        servidor desenhou."""
         import re
 
         assert re.search(r"\[hidden\]\s*\{\s*display:\s*none\s*!important",

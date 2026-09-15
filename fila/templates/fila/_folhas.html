@@ -1,112 +1,145 @@
+{# As folhas são os modais do design system (`.overlay` + `.modal`), abertos
+   pelo `mw5.js`/`fila.js` ou já abertos pelo servidor quando a URL pede
+   (`?folha=`), que é o caminho sem JavaScript. #}
+{% macro modal(id, titulo, aberta, sub="") %}
+<div class="overlay{% if aberta %} open{% endif %}" id="folha-{{ id }}" role="dialog" aria-modal="true" aria-labelledby="folha-{{ id }}-titulo" data-modal>
+  <div class="modal fila-folha">
+    <div class="mhead">
+      <div><h3 id="folha-{{ id }}-titulo">{{ titulo }}</h3>{% if sub %}<div class="sub" data-nome>{{ sub }}</div>{% else %}<div class="sub" data-nome></div>{% endif %}</div>
+      <button class="close" type="button" aria-label="{{ traduzir('Fechar') }}" data-modal-close>{{ icon("x") }}</button>
+    </div>
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
 {% macro itens(linhas) %}
-<div class="itens">
+<div class="fila-itens">
   {% for item in linhas %}
   <div class="item-vendido">
-    <select name="grupo" aria-label="{{ traduzir('Grupo de item') }}">
-      <option value="">{{ traduzir("Grupo") }}</option>
+    <select class="ctl" name="grupo" aria-label="{{ traduzir('Grupo de item') }}">
+      <option value="">{{ traduzir("Escolha o grupo") }}</option>
       {% for g in grupos %}<option value="{{ g.pk }}"{% if item and item.grupo_id == g.pk %} selected{% endif %}>{{ g.nome }}</option>{% endfor %}
     </select>
-    <input name="valor" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="{{ traduzir('Valor') }}" value="{{ (item.valor|reais)[3:] if item else '' }}">
+    <label class="fila-valor"><span>R$</span><input class="ctl" name="valor" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="{{ traduzir('Valor') }}" value="{{ (item.valor|reais)[3:] if item else '' }}"></label>
   </div>
   {% endfor %}
 </div>
-<button type="button" class="outro-grupo" data-outro-grupo>{{ traduzir("+ outro grupo") }}</button>
-<p class="total-linha">{{ traduzir("Total") }} <output class="total">R$ 0,00</output></p>
+<button type="button" class="dashed-btn" data-outro-grupo>{{ icon("plus", "sm") }} {{ traduzir("Adicionar outro grupo") }}</button>
+<div class="fila-total"><span>{{ traduzir("Total da venda") }}</span><output class="total">R$ 0,00</output></div>
 {% endmacro %}
 
 {% macro motivos_de(escolhido=None) %}
-<fieldset class="motivos">
-  <legend>{{ traduzir("Por que não comprou?") }}</legend>
+<fieldset class="fila-opcoes">
+  <legend class="msec-title">{{ traduzir("Por que não comprou?") }}</legend>
   {% for m in motivos %}
-  <label class="opcao"><input type="radio" name="motivo" value="{{ m.pk }}"{% if escolhido == m.pk %} checked{% endif %}> {{ m.nome }}</label>
+  <label class="fila-opcao"><input type="radio" name="motivo" value="{{ m.pk }}"{% if escolhido == m.pk %} checked{% endif %}><span>{{ m.nome }}</span></label>
   {% endfor %}
 </fieldset>
 {% endmacro %}
 
-{% macro fechamento(acao, titulo, pessoa_id) %}
+{% macro fechamento(acao, pessoa_id) %}
 <form method="post" action="{{ url_agir }}" data-acao>
-  {{ csrf }}
-  <input type="hidden" name="acao" value="{{ acao }}">
-  {# A folha do gerente sempre tem o campo: o JavaScript preenche a pessoa ao abrir. #}
-  {% if acao != "finalizar" %}<input type="hidden" name="pessoa" value="{{ pessoa_id or '' }}">{% endif %}
-  <h2 class="folha-titulo">{{ titulo }}</h2>
-  <div class="resultado">
-    <label class="resultado-opcao resultado-vendeu"><input type="radio" name="resultado" value="vendeu" required> {{ traduzir("Vendeu") }}</label>
-    <label class="resultado-opcao resultado-nao"><input type="radio" name="resultado" value="nao_vendeu" required> {{ traduzir("Não vendeu") }}</label>
+  <div class="mbody">
+    {{ csrf }}
+    <input type="hidden" name="acao" value="{{ acao }}">
+    {% if acao != "finalizar" %}<input type="hidden" name="pessoa" value="{{ pessoa_id or '' }}">{% endif %}
+    <div class="fila-resultado">
+      <label class="fila-resultado-opcao fila-vendeu"><input type="radio" name="resultado" value="vendeu" required><span class="fila-resultado-icone">{{ icon("check") }}</span><span>{{ traduzir("Vendeu") }}</span></label>
+      <label class="fila-resultado-opcao fila-nao-vendeu"><input type="radio" name="resultado" value="nao_vendeu" required><span class="fila-resultado-icone">{{ icon("x") }}</span><span>{{ traduzir("Não vendeu") }}</span></label>
+    </div>
+    <div class="so-venda">{{ itens([none, none]) }}</div>
+    <div class="so-nao-venda">
+      {{ motivos_de() }}
+      <label class="f"><span class="fila-rotulo">{{ traduzir("Observação (opcional)") }}</span><textarea class="ctl" name="observacao" maxlength="280" rows="2"></textarea></label>
+    </div>
   </div>
-  <div class="so-venda">{{ itens([none, none, none]) }}</div>
-  <div class="so-nao-venda">
-    {{ motivos_de() }}
-    <label class="campo">{{ traduzir("Observação") }} <textarea name="observacao" maxlength="280" rows="2"></textarea></label>
-  </div>
-  <div class="folha-acoes">
-    <a href="{{ url_fila }}" data-fechar-folha>{{ traduzir("Cancelar") }}</a>
-    <button type="submit" class="principal">{{ traduzir("Lançar") }}</button>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Lançar atendimento") }}</button>
   </div>
 </form>
 {% endmacro %}
 
 {% if pode_participar %}
-<dialog id="folha-finalizar" class="folha"{% if folha == "finalizar" %} open{% endif %}>
-  {{ fechamento("finalizar", traduzir("Como terminou o atendimento?"), none) }}
-</dialog>
+{% call modal("finalizar", traduzir("Como terminou o atendimento?"), folha == "finalizar") %}{{ fechamento("finalizar", none) }}{% endcall %}
 
-<dialog id="folha-pausa" class="folha"{% if folha == "pausa" %} open{% endif %}>
-  <form method="post" action="{{ url_agir }}" data-acao>
+{% call modal("pausa", traduzir("Pausa para quê?"), folha == "pausa") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="pausar">
-    <h2 class="folha-titulo">{{ traduzir("Pausa para quê?") }}</h2>
-    <fieldset class="motivos">
+    <fieldset class="fila-opcoes">
       {% for t in tipos %}
-      <label class="opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required> {{ t.nome }}</label>
+      <label class="fila-opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required><span>{{ t.nome }}</span></label>
       {% endfor %}
     </fieldset>
-    <p class="folha-apoio">{{ traduzir("Ao voltar, você entra no fim da fila.") }}</p>
-    <div class="folha-acoes">
-      <a href="{{ url_fila }}" data-fechar-folha>{{ traduzir("Cancelar") }}</a>
-      <button type="submit" class="principal">{{ traduzir("Sair para a pausa") }}</button>
-    </div>
-  </form>
-</dialog>
+    <p class="muted">{{ traduzir("Ao voltar, você entra no fim da fila.") }}</p>
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Sair para a pausa") }}</button>
+  </div>
+</form>
+{% endcall %}
 {% endif %}
 
 {% if pode_gerenciar %}
-<dialog id="folha-fechar" class="folha"{% if folha == "fechar" and alvo %} open{% endif %}>
-  {{ fechamento("fechar", traduzir("Fechar o atendimento"), alvo.pessoa_id if alvo else "") }}
-</dialog>
+{% call modal("corrigir", traduzir("Corrigir"), folha == "corrigir" and alvo, alvo.nome if alvo else "") %}
+<div class="mbody fila-corrigir-opcoes">
+  <div data-para="atendendo"{% if alvo and alvo.estado != "atendendo" %} hidden{% endif %}>
+    <a class="fila-corrigir-item" href="{{ url_fila }}?folha=fechar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="fechar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
+      <span class="ci">{{ icon("check") }}</span><span><strong>{{ traduzir("Fechar atendimento") }}</strong><small>{{ traduzir("Lançar o resultado no lugar do vendedor. Ele volta para o fim da fila.") }}</small></span></a>
+    <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
+      <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Fecha o atendimento como não venda e encerra o ponto.") }}</small></span></a>
+  </div>
+  <div data-para="em_pausa"{% if alvo and alvo.estado != "em_pausa" %} hidden{% endif %}>
+    <form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="tirar_pausa"><input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+      <button type="submit" class="fila-corrigir-item"><span class="ci">{{ icon("arrow-left") }}</span><span><strong>{{ traduzir("Tirar da pausa") }}</strong><small>{{ traduzir("Encerra a pausa e põe no fim da fila.") }}</small></span></button></form>
+  </div>
+  <div data-para="na_fila em_pausa"{% if alvo and alvo.estado == "atendendo" %} hidden{% endif %}>
+    <form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="tirar"><input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+      <button type="submit" class="fila-corrigir-item fila-corrigir-perigo"><span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Para quem esqueceu de sair. Encerra o ponto.") }}</small></span></button></form>
+  </div>
+</div>
+{% endcall %}
 
-<dialog id="folha-tirar" class="folha"{% if folha == "tirar" and alvo %} open{% endif %}>
-  <form method="post" action="{{ url_agir }}" data-acao>
+{% call modal("fechar", traduzir("Fechar o atendimento"), folha == "fechar" and alvo, alvo.nome if alvo else "") %}{{ fechamento("fechar", alvo.pessoa_id if alvo else "") }}{% endcall %}
+
+{% call modal("tirar", traduzir("Tirar da loja"), folha == "tirar" and alvo, alvo.nome if alvo else "") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="tirar">
     <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
     <input type="hidden" name="resultado" value="nao_vendeu">
-    <h2 class="folha-titulo">{{ traduzir("Tirar da loja") }} <span data-nome>{{ alvo.nome if alvo else "" }}</span></h2>
-    <p class="folha-apoio">{{ traduzir("Ela está atendendo. O atendimento fecha como não venda.") }}</p>
+    <div class="alert warn">{{ icon("alert") }}<div>{{ traduzir("Está atendendo. O atendimento fecha como não venda.") }}</div></div>
     {{ motivos_de() }}
-    <div class="folha-acoes">
-      <a href="{{ url_fila }}" data-fechar-folha>{{ traduzir("Cancelar") }}</a>
-      <button type="submit" class="principal">{{ traduzir("Tirar da loja") }}</button>
-    </div>
-  </form>
-</dialog>
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Tirar da loja") }}</button>
+  </div>
+</form>
+{% endcall %}
 
 {% if editando %}
-<dialog id="folha-editar" class="folha" open>
-  <form method="post" action="{{ url_agir }}">
+{% call modal("editar", traduzir("Corrigir o lançamento"), true, editando.vendedor.nome or editando.vendedor.email) %}
+<form method="post" action="{{ url_agir }}">
+  <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="editar">
     <input type="hidden" name="atendimento" value="{{ editando.pk }}">
     <input type="hidden" name="resultado" value="{{ editando.resultado }}">
-    <h2 class="folha-titulo">{{ traduzir("Corrigir o lançamento de") }} {{ editando.vendedor.nome or editando.vendedor.email }}</h2>
     {% if editando.resultado == "vendeu" %}
       {{ itens(editando.itens.all()|list + [none]) }}
     {% else %}
       {{ motivos_de(editando.motivo_id) }}
-      <label class="campo">{{ traduzir("Observação") }} <textarea name="observacao" maxlength="280" rows="2">{{ editando.observacao }}</textarea></label>
+      <label class="f"><span class="fila-rotulo">{{ traduzir("Observação (opcional)") }}</span><textarea class="ctl" name="observacao" maxlength="280" rows="2">{{ editando.observacao }}</textarea></label>
     {% endif %}
-    <div class="folha-acoes">
-      <a href="{{ url_fila }}">{{ traduzir("Cancelar") }}</a>
-      <button type="submit" class="principal">{{ traduzir("Salvar correção") }}</button>
-    </div>
-  </form>
-</dialog>
+  </div>
+  <div class="mfoot">
+    <a class="btn" href="{{ url_fila }}">{{ traduzir("Cancelar") }}</a>
+    <button type="submit" class="btn primary">{{ traduzir("Salvar correção") }}</button>
+  </div>
+</form>
+{% endcall %}
 {% endif %}
 {% endif %}

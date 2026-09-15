@@ -1,27 +1,25 @@
-{% macro botao(acao, rotulo, classe="") %}
-<form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="{{ acao }}"><button type="submit" class="{{ classe }}">{{ rotulo }}</button></form>
+{% macro botao(acao, rotulo, classe="btn", icone="") %}
+<form method="post" action="{{ url_agir }}" data-acao>{{ csrf }}<input type="hidden" name="acao" value="{{ acao }}"><button type="submit" class="{{ classe }}">{% if icone %}{{ icon(icone, "sm") }}{% endif %}<span>{{ rotulo }}</span></button></form>
 {% endmacro %}
 {% set meu = r.meu %}
 {% if pode_participar %}
-<div class="barra-miolo">
 {% if meu is none %}
-  {{ botao("ponto", traduzir("Bater o ponto e entrar na fila"), "principal") }}
+  {{ botao("ponto", traduzir("Bater o ponto e entrar na fila"), "btn primary lg fila-principal", "log-in") }}
 {% elif meu.estado == Estado.NA_FILA %}
-  {% if meu.posicao == 1 %}
-  {{ botao("atender", traduzir("Vou atender"), "principal principal-vez") }}
-  {% else %}
-  {{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "principal") }}
-  {% endif %}
-  <div class="barra-secundaria">
-    <a href="{{ url_fila }}?folha=pausa" data-folha="pausa">{{ traduzir("Pausa") }}</a>
-    {% if meu.posicao == 1 %}{{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "secundario") }}{% endif %}
-    {{ botao("sair", traduzir("Sair da loja"), "secundario") }}
+  <div class="fila-secundarias">
+    <button type="button" class="btn" data-folha="pausa">{{ icon("coffee", "sm") }}<span>{{ traduzir("Pausa") }}</span></button>
+    {% if meu.posicao == 1 %}{{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "btn") }}{% endif %}
+    {{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}
   </div>
+  {% if meu.posicao == 1 %}
+  {{ botao("atender", traduzir("Vou atender"), "btn primary lg fila-principal fila-principal-vez", "handshake") }}
+  {% else %}
+  {{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "btn primary lg fila-principal", "handshake") }}
+  {% endif %}
 {% elif meu.estado == Estado.ATENDENDO %}
-  <a class="principal principal-vez" href="{{ url_fila }}?folha=finalizar" data-folha="finalizar">{{ traduzir("Finalizar atendimento") }}</a>
+  <a class="btn primary lg fila-principal" href="{{ url_fila }}?folha=finalizar" data-folha="finalizar">{{ icon("check", "sm") }}<span>{{ traduzir("Finalizar atendimento") }}</span></a>
 {% else %}
-  {{ botao("voltar", traduzir("Voltar para a fila"), "principal") }}
-  <div class="barra-secundaria">{{ botao("sair", traduzir("Sair da loja"), "secundario") }}</div>
+  <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>
+  {{ botao("voltar", traduzir("Voltar para a fila"), "btn primary lg fila-principal", "arrow-left") }}
 {% endif %}
-</div>
 {% endif %}

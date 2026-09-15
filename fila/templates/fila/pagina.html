@@ -1,32 +1,22 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1E2530">
-<title>{{ traduzir("Fila da vez") }} — {{ filial }}</title>
-<link rel="stylesheet" href="{{ estatico('/static/fila/fila.css') }}">
-<script src="{{ estatico('/static/fila/fila.js') }}" defer></script>
-</head>
-<body class="fila" data-estado-url="{{ url_estado }}" data-agir-url="{{ url_agir }}" data-versao="{{ r.versao }}">
-{{ aviso }}
-<header class="topo">
-  <div class="topo-onde">
-    <span class="topo-loja">{{ filial }}</span>
-    <span class="topo-nome">{{ nome }}</span>
+{# O miolo da página da fila, posto dentro do shell do sistema (`fila.tela`).
+   Os ids `fila-*` são os pedaços que o script troca a cada consulta. #}
+<div class="fila" id="fila" data-estado-url="{{ url_estado }}" data-agir-url="{{ url_agir }}" data-versao="{{ r.versao }}">
+  <div class="fila-topo">
+    <div class="fila-topo-txt">
+      <h1 class="fila-titulo">{{ traduzir("Fila da vez") }}</h1>
+      <p class="fila-loja">{{ icon("store", "sm") }} {{ filial }}</p>
+    </div>
+    <span class="pill ok fila-ao-vivo" data-ao-vivo>{{ traduzir("Ao vivo") }}</span>
   </div>
-  <nav class="topo-links">
-    {% if mostra_painel %}<a href="/">{{ traduzir("Painel") }}</a>{% endif %}
-    <a href="{{ url_sair }}">{{ traduzir("Sair") }}</a>
-  </nav>
-</header>
-<main class="miolo">
-  <p id="fila-recusa" class="recusa" role="alert"{% if not recusa %} hidden{% endif %}>{{ recusa }}</p>
-  <section id="fila-painel" class="painel-lugar" aria-live="polite">{% include "fila/_painel.html" %}</section>
-  <section id="fila-lista" class="lista-lugar">{% include "fila/_lista.html" %}</section>
-  <section id="fila-lancamentos" class="lancamentos-lugar"{% if not pode_gerenciar %} hidden{% endif %}>{% include "fila/_lancamentos.html" %}</section>
-</main>
-<nav id="fila-barra" class="barra">{% include "fila/_barra.html" %}</nav>
-{% include "fila/_folhas.html" %}
-</body>
-</html>
+
+  <div id="fila-recusa" class="alert warn fila-recusa" role="alert"{% if not recusa %} hidden{% endif %}>{{ icon("alert") }}<div>{{ recusa }}</div></div>
+
+  <section class="card fila-eu" aria-live="polite">
+    <div id="fila-painel" class="fila-eu-painel">{% include "fila/_painel.html" %}</div>
+    <div id="fila-barra" class="fila-eu-acoes">{% include "fila/_barra.html" %}</div>
+  </section>
+
+  <div id="fila-lista" class="fila-quadro">{% include "fila/_lista.html" %}</div>
+
+  <div id="fila-lancamentos"{% if not pode_gerenciar %} hidden{% endif %}>{% include "fila/_lancamentos.html" %}</div>
+</div>
