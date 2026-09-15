@@ -309,3 +309,17 @@ def test_fechado_nao_reabre(loja):
     finalizar(loja.ana, loja.matriz, _venda(loja.cad, "10"))
     with pytest.raises(Recusa):
         finalizar(loja.ana, loja.matriz, _venda(loja.cad, "99"))
+
+
+def test_a_recusa_sai_no_idioma_de_quem_agiu(loja):
+    """As frases de recusa passam pelo gettext no momento da recusa, com o
+    nome e a posição por `%(...)s`, para o castelhano mudar a ordem."""
+    from django.utils import translation
+
+    from fila.acoes import Recusa, bater_ponto, vou_atender
+
+    for p in (loja.ana, loja.bia):
+        bater_ponto(p, loja.matriz)
+    with translation.override("es"), pytest.raises(Recusa) as recusa:
+        vou_atender(loja.bia, loja.matriz)
+    assert recusa.value.frase == "El turno es de Ana. Usted es el 2º de la fila."

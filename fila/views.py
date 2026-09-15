@@ -13,6 +13,8 @@ from django.http import (HttpResponse, HttpResponseNotAllowed,
                          HttpResponseNotFound, HttpResponseRedirect,
                          JsonResponse)
 from django.urls import reverse
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from comum.guardas_de_acesso import exigir_login, exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
@@ -29,7 +31,7 @@ from .valores import ler_valor
 
 __all__ = ["agir", "estado", "fila", "inicio"]
 
-SEM_LOJA = "Você ainda não está em nenhuma loja."
+SEM_LOJA = gettext_lazy("Você ainda não está em nenhuma loja.")
 CHAVE_DA_RECUSA = "fila:recusa"
 
 
@@ -92,10 +94,10 @@ def _lancamento(request) -> Lancamento:
         try:
             grupo_id = int(grupo)
         except ValueError:
-            raise Recusa("Escolha o grupo de cada valor.") from None
+            raise Recusa(_("Escolha o grupo de cada valor.")) from None
         quantia = ler_valor(valor)
         if quantia is None:
-            raise Recusa(f'Valor inválido: "{valor}".')
+            raise Recusa(_('Valor inválido: "%(valor)s".') % {"valor": valor})
         itens.append(ItemLancado(grupo_id, quantia))
     return Lancamento(resultado=resultado, itens=tuple(itens))
 
@@ -103,7 +105,7 @@ def _lancamento(request) -> Lancamento:
 def _pessoa_do_post(request) -> int:
     pessoa_id = id_do_post(request, "pessoa")
     if pessoa_id is None:
-        raise Recusa("Essa pessoa não está nesta loja.")
+        raise Recusa(_("Essa pessoa não está nesta loja."))
     return pessoa_id
 
 
@@ -149,7 +151,7 @@ def agir(request) -> HttpResponse:
     pessoa = usuario_de(request.usuario)
     frase = ""
     if filial is None or pessoa is None:
-        frase = SEM_LOJA
+        frase = str(SEM_LOJA)
     else:
         try:
             executar(request, filial, pessoa)

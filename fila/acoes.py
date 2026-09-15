@@ -24,6 +24,8 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from plataforma.models import Filial
 
@@ -36,7 +38,7 @@ __all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto",
            "cliente_pediu", "finalizar", "pausar", "sair_da_loja",
            "voltar_para_a_fila", "vou_atender"]
 
-NAO_ESTA_NA_LOJA = "Você não está nesta loja. Bata o ponto primeiro."
+NAO_ESTA_NA_LOJA = gettext_lazy("Você não está nesta loja. Bata o ponto primeiro.")
 
 #: O maior valor que cabe nas colunas de dinheiro (12 dígitos, 2 decimais).
 #: Acima disso o Postgres recusa com erro de estouro, que chegava à tela como
@@ -45,11 +47,16 @@ MAIOR_VALOR = Decimal("9999999999.99")
 
 
 class Recusa(Exception):
-    """A ação não cabe no estado de agora. `frase` vai para a tela como está."""
+    """A ação não cabe no estado de agora. `frase` vai para a tela como está.
 
-    def __init__(self, frase: str) -> None:
-        super().__init__(frase)
-        self.frase = frase
+    As frases passam por `gettext` no momento da recusa, dentro da requisição
+    e portanto no idioma de quem agiu; as que levam nome ou número usam
+    `%(nome)s`, para o castelhano poder mudar a ordem das palavras.
+    """
+
+    def __init__(self, frase) -> None:
+        super().__init__(str(frase))
+        self.frase = str(frase)
 
 
 @dataclass(frozen=True)
@@ -125,10 +132,10 @@ def bater_ponto(pessoa, filial) -> None:
         _travar(filial, *([antes.filial] if antes else []))
         lugar = _lugar(pessoa.pk)
         if lugar is not None and lugar.filial_id == filial.pk:
-            raise Recusa("Você já está nesta loja.")
+            raise Recusa(_("Você já está nesta loja."))
         if lugar is not None and lugar.estado == Estado.ATENDENDO:
-            raise Recusa(f"Você está atendendo em {lugar.filial}. "
-                         f"Finalize lá antes de entrar aqui.")
+            raise Recusa(_("Você está atendendo em %(loja)s. Finalize lá antes "
+                           "de entrar aqui.") % {"loja": lugar.filial})
         agora = _agora()
         if lugar is not None:
             # Uma presença aberta por pessoa: chegar numa loja fecha a outra.
@@ -154,9 +161,9 @@ def _abrir_atendimento(lugar, filial, *, pediu: bool) -> None:
 
 def _exigir_na_fila(lugar) -> None:
     if lugar.estado == Estado.ATENDENDO:
-        raise Recusa("Você já está atendendo.")
+        raise Recusa(_("Você já está atendendo."))
     if lugar.estado == Estado.EM_PAUSA:
-        raise Recusa("Você está em pausa. Volte para a fila primeiro.")
+        raise Recusa(_("Você está em pausa. Volte para a fila primeiro."))
 
 
 def vou_atender(pessoa, filial) -> None:
@@ -166,8 +173,9 @@ def vou_atender(pessoa, filial) -> None:
         _exigir_na_fila(lugar)
         primeiro = na_fila(filial).first()
         if primeiro.pk != lugar.pk:
-            raise Recusa(f"A vez é de {nome_de(primeiro.pessoa)}. "
-                         f"Você é o {posicao_de(lugar)}º da fila.")
+            raise Recusa(_("A vez é de %(nome)s. Você é o %(posicao)sº da fila.")
+                         % {"nome": nome_de(primeiro.pessoa),
+                            "posicao": posicao_de(lugar)})
         _abrir_atendimento(lugar, filial, pediu=False)
 
 
@@ -191,32 +199,32 @@ def _validar(empresa, lancamento, *, ja_usados=frozenset(),
     """
     if lancamento.resultado == Resultado.VENDEU:
         if lancamento.motivo_id is not None:
-            raise Recusa("Venda não tem motivo de não venda.")
+            raise Recusa(_("Venda não tem motivo de não venda."))
         if not lancamento.itens:
-            raise Recusa("Informe pelo menos um grupo com valor.")
+            raise Recusa(_("Informe pelo menos um grupo com valor."))
         if any(item.valor is None or item.valor <= 0
                for item in lancamento.itens):
-            raise Recusa("Todo valor precisa ser maior que zero.")
+            raise Recusa(_("Todo valor precisa ser maior que zero."))
         ids = {item.grupo_id for item in lancamento.itens}
         grupos = {g.pk: g for g in GrupoDeItem.objects.da_empresa(empresa)
                   .filter(pk__in=ids)
                   if g.ativo or g.pk in ja_usados}
         if set(grupos) != ids:
-            raise Recusa("Grupo de item não encontrado.")
+            raise Recusa(_("Grupo de item não encontrado."))
         total = sum((item.valor for item in lancamento.itens), Decimal("0"))
         if total > MAIOR_VALOR:
-            raise Recusa("Valor alto demais: confira o que foi digitado.")
+            raise Recusa(_("Valor alto demais: confira o que foi digitado."))
         return grupos, None, total
     if lancamento.resultado == Resultado.NAO_VENDEU:
         if lancamento.itens:
-            raise Recusa("Não venda não tem grupo nem valor.")
+            raise Recusa(_("Não venda não tem grupo nem valor."))
         motivo = (MotivoDeNaoVenda.objects.da_empresa(empresa)
                   .filter(pk=lancamento.motivo_id).first()
                   if lancamento.motivo_id is not None else None)
         if motivo is None or not (motivo.ativo or motivo.pk == ja_usado_motivo):
-            raise Recusa("Escolha o motivo.")
+            raise Recusa(_("Escolha o motivo."))
         return {}, motivo, Decimal("0")
-    raise Recusa("Escolha se vendeu ou não.")
+    raise Recusa(_("Escolha se vendeu ou não."))
 
 
 def _gravar_lancamento(atendimento, lancamento, grupos, motivo, total) -> None:
@@ -248,7 +256,7 @@ def finalizar(pessoa, filial, lancamento) -> None:
         _travar(filial)
         lugar = _lugar_na_loja(pessoa.pk, filial)
         if lugar.estado != Estado.ATENDENDO:
-            raise Recusa("Você não está atendendo.")
+            raise Recusa(_("Você não está atendendo."))
         atendimento = Atendimento.irrestritos.get(vendedor=pessoa,
                                                   fim__isnull=True)
         agora = _agora()
@@ -265,7 +273,7 @@ def pausar(pessoa, filial, tipo_id) -> None:
                 .filter(pk=tipo_id, ativo=True).first()
                 if tipo_id is not None else None)
         if tipo is None:
-            raise Recusa("Escolha o tipo de pausa.")
+            raise Recusa(_("Escolha o tipo de pausa."))
         agora = _agora()
         Pausa.irrestritos.create(empresa=filial.empresa, pessoa=pessoa,
                                  filial=filial, presenca=lugar.presenca,
@@ -280,7 +288,7 @@ def voltar_para_a_fila(pessoa, filial) -> None:
         _travar(filial)
         lugar = _lugar_na_loja(pessoa.pk, filial)
         if lugar.estado != Estado.EM_PAUSA:
-            raise Recusa("Você não está em pausa.")
+            raise Recusa(_("Você não está em pausa."))
         agora = _agora()
         Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).update(
             fim=agora)
@@ -292,5 +300,5 @@ def sair_da_loja(pessoa, filial) -> None:
         _travar(filial)
         lugar = _lugar_na_loja(pessoa.pk, filial)
         if lugar.estado == Estado.ATENDENDO:
-            raise Recusa("Finalize o atendimento antes de sair da loja.")
+            raise Recusa(_("Finalize o atendimento antes de sair da loja."))
         _sair(lugar, _agora())

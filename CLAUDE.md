@@ -375,12 +375,15 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    mantém essa assinatura é decisão de produto.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
-5. **As frases de recusa da fila não têm castelhano.** São montadas com nome e
-   número (`"A vez é de Ana. Você é o 2º da fila."`) em `fila/acoes.py` e
-   `fila/correcoes.py`, e traduzir pede `%(nome)s` em cada uma. O mesmo vale
-   para as linhas de apoio montadas com número nos indicadores
-   (`Cliente pediu: …`) e para os rótulos das colunas do ranking.
+5. **Ainda em português nos indicadores:** as linhas de apoio montadas com
+   número (`Cliente pediu: …`) e os rótulos das colunas do ranking. As frases
+   de recusa da fila já passam pelo `gettext`, com `%(nome)s`.
 6. **As metas da fila** são a entrega 3 e ainda não têm spec.
+7. **Loja desativada com gente dentro.** Desativar uma loja não confere a fila
+   (`plataforma/filiais.py` não conhece módulo de negócio), e quem estava
+   atendendo nela fica sem conseguir bater o ponto em outra até alguém
+   reativá-la e fechar o atendimento. Pede uma regra de produto: recusar a
+   desativação, ou fechar as presenças junto (revisão final, 15/09/2026).
 
 ---
 

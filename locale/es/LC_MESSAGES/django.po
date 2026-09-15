@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 02:19-0300\n"
+"POT-Creation-Date: 2026-09-15 02:28-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -481,6 +481,85 @@ msgstr "Esta pantalla solo abre con el módulo activado y el permiso exemplo.ver
 msgid "Está de pé"
 msgstr "Está funcionando"
 
+msgid "Você não está nesta loja. Bata o ponto primeiro."
+msgstr "Usted no está en esta tienda. Marque su llegada primero."
+
+msgid "Você já está nesta loja."
+msgstr "Usted ya está en esta tienda."
+
+#, python-format
+msgid "Você está atendendo em %(loja)s. Finalize lá antes de entrar aqui."
+msgstr "Usted está atendiendo en %(loja)s. Finalice allá antes de entrar aquí."
+
+msgid "Você já está atendendo."
+msgstr "Usted ya está atendiendo."
+
+msgid "Você está em pausa. Volte para a fila primeiro."
+msgstr "Usted está en pausa. Vuelva a la fila primero."
+
+#, python-format
+msgid "A vez é de %(nome)s. Você é o %(posicao)sº da fila."
+msgstr "El turno es de %(nome)s. Usted es el %(posicao)sº de la fila."
+
+msgid "Venda não tem motivo de não venda."
+msgstr "Una venta no tiene motivo de no venta."
+
+msgid "Informe pelo menos um grupo com valor."
+msgstr "Indique al menos un grupo con valor."
+
+msgid "Todo valor precisa ser maior que zero."
+msgstr "Todo valor debe ser mayor que cero."
+
+msgid "Grupo de item não encontrado."
+msgstr "Grupo de artículo no encontrado."
+
+msgid "Valor alto demais: confira o que foi digitado."
+msgstr "Valor demasiado alto: revise lo que escribió."
+
+msgid "Não venda não tem grupo nem valor."
+msgstr "Una no venta no tiene grupo ni valor."
+
+msgid "Escolha o motivo."
+msgstr "Elija el motivo."
+
+msgid "Escolha se vendeu ou não."
+msgstr "Elija si vendió o no."
+
+msgid "Você não está atendendo."
+msgstr "Usted no está atendiendo."
+
+msgid "Escolha o tipo de pausa."
+msgstr "Elija el tipo de pausa."
+
+msgid "Você não está em pausa."
+msgstr "Usted no está en pausa."
+
+msgid "Finalize o atendimento antes de sair da loja."
+msgstr "Finalice la atención antes de salir de la tienda."
+
+msgid "Você não corrige a si mesmo."
+msgstr "Usted no se corrige a sí mismo."
+
+msgid "Essa pessoa não está nesta loja."
+msgstr "Esa persona no está en esta tienda."
+
+msgid ""
+"Ela está atendendo. Escolha o motivo da não venda para fechar o "
+"atendimento."
+msgstr "Está atendiendo. Elija el motivo de no venta para cerrar la atención."
+
+msgid "Essa pessoa não está atendendo."
+msgstr "Esa persona no está atendiendo."
+
+msgid "Essa pessoa não está em pausa."
+msgstr "Esa persona no está en pausa."
+
+msgid "Lançamento não encontrado."
+msgstr "Registro no encontrado."
+
+msgid "O resultado não muda na correção."
+msgstr "El resultado no cambia en la corrección."
+
 msgid "Na fila"
 msgstr "En la fila"
 
@@ -603,6 +682,16 @@ msgstr "Tipos de pausa"
 
 msgid "Indicadores da fila"
 msgstr "Indicadores de la fila"
+
+msgid "Você ainda não está em nenhuma loja."
+msgstr "Usted todavía no está en ninguna tienda."
+
+msgid "Escolha o grupo de cada valor."
+msgstr "Elija el grupo de cada valor."
+
+#, python-format
+msgid "Valor inválido: \"%(valor)s\"."
+msgstr "Valor inválido: \"%(valor)s\"."
 
 msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."
 msgstr "Lo que se vende: el vendedor elige el grupo al registrar la venta."

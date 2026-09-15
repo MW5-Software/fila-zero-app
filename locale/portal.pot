@@ -451,6 +451,85 @@ msgstr ""
 msgid "Está de pé"
 msgstr ""
 
+msgid "Você não está nesta loja. Bata o ponto primeiro."
+msgstr ""
+
+msgid "Você já está nesta loja."
+msgstr ""
+
+#, python-format
+msgid "Você está atendendo em %(loja)s. Finalize lá antes de entrar aqui."
+msgstr ""
+
+msgid "Você já está atendendo."
+msgstr ""
+
+msgid "Você está em pausa. Volte para a fila primeiro."
+msgstr ""
+
+#, python-format
+msgid "A vez é de %(nome)s. Você é o %(posicao)sº da fila."
+msgstr ""
+
+msgid "Venda não tem motivo de não venda."
+msgstr ""
+
+msgid "Informe pelo menos um grupo com valor."
+msgstr ""
+
+msgid "Todo valor precisa ser maior que zero."
+msgstr ""
+
+msgid "Grupo de item não encontrado."
+msgstr ""
+
+msgid "Valor alto demais: confira o que foi digitado."
+msgstr ""
+
+msgid "Não venda não tem grupo nem valor."
+msgstr ""
+
+msgid "Escolha o motivo."
+msgstr ""
+
+msgid "Escolha se vendeu ou não."
+msgstr ""
+
+msgid "Você não está atendendo."
+msgstr ""
+
+msgid "Escolha o tipo de pausa."
+msgstr ""
+
+msgid "Você não está em pausa."
+msgstr ""
+
+msgid "Finalize o atendimento antes de sair da loja."
+msgstr ""
+
+msgid "Você não corrige a si mesmo."
+msgstr ""
+
+msgid "Essa pessoa não está nesta loja."
+msgstr ""
+
+msgid ""
+"Ela está atendendo. Escolha o motivo da não venda para fechar o "
+"atendimento."
+msgstr ""
+
+msgid "Essa pessoa não está atendendo."
+msgstr ""
+
+msgid "Essa pessoa não está em pausa."
+msgstr ""
+
+msgid "Lançamento não encontrado."
+msgstr ""
+
+msgid "O resultado não muda na correção."
+msgstr ""
+
 msgid "Na fila"
 msgstr ""
 
@@ -572,6 +651,16 @@ msgid "Tipos de pausa"
 msgstr ""
 
 msgid "Indicadores da fila"
+msgstr ""
+
+msgid "Você ainda não está em nenhuma loja."
+msgstr ""
+
+msgid "Escolha o grupo de cada valor."
+msgstr ""
+
+#, python-format
+msgid "Valor inválido: \"%(valor)s\"."
 msgstr ""
 
 msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."

@@ -17,6 +17,8 @@ from datetime import datetime, time, timedelta
 from django.db import transaction
 from django.db.models import BooleanField, ExpressionWrapper, Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from comum.auditoria import ACOES, registrar
 
@@ -30,7 +32,7 @@ from .valores import em_reais
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
            "lancamentos_de_hoje", "tirar_da_loja", "tirar_da_pausa"]
 
-NAO_CORRIGE_A_SI = "Você não corrige a si mesmo."
+NAO_CORRIGE_A_SI = gettext_lazy("Você não corrige a si mesmo.")
 
 
 def _agora():
@@ -39,7 +41,7 @@ def _agora():
     as ações, e dois relógios (o do teste num, o de verdade no outro) punham
     quem voltou depois na frente de quem já esperava."""
     return acoes._agora()
-NAO_ENCONTRADO = "Essa pessoa não está nesta loja."
+NAO_ENCONTRADO = gettext_lazy("Essa pessoa não está nesta loja.")
 
 
 def descrever(atendimento) -> str:
@@ -78,8 +80,8 @@ def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, request=None):
             # como não venda, com o motivo que escolher. Venda ele lança
             # antes, por "fechar atendimento", sabendo o que foi vendido.
             if lancamento is None or lancamento.resultado != Resultado.NAO_VENDEU:
-                raise Recusa("Ela está atendendo. Escolha o motivo da não "
-                             "venda para fechar o atendimento.")
+                raise Recusa(_("Ela está atendendo. Escolha o motivo da não "
+                               "venda para fechar o atendimento."))
             atendimento = Atendimento.irrestritos.get(
                 vendedor_id=pessoa_id, fim__isnull=True)
             _fechar_atendimento(atendimento, lancamento, agora,
@@ -96,7 +98,7 @@ def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, request=None):
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
         if lugar.estado != Estado.ATENDENDO:
-            raise Recusa("Essa pessoa não está atendendo.")
+            raise Recusa(_("Essa pessoa não está atendendo."))
         atendimento = Atendimento.irrestritos.get(vendedor_id=pessoa_id,
                                                   fim__isnull=True)
         agora = _agora()
@@ -112,7 +114,7 @@ def tirar_da_pausa(autor, filial, pessoa_id, *, request=None):
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
         if lugar.estado != Estado.EM_PAUSA:
-            raise Recusa("Essa pessoa não está em pausa.")
+            raise Recusa(_("Essa pessoa não está em pausa."))
         pausa = Pausa.irrestritos.select_related("tipo").get(
             pessoa_id=pessoa_id, fim__isnull=True)
         agora = _agora()
@@ -137,11 +139,11 @@ def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
                                fim__isnull=False).first()
                        if atendimento_id is not None else None)
         if atendimento is None:
-            raise Recusa("Lançamento não encontrado.")
+            raise Recusa(_("Lançamento não encontrado."))
         if atendimento.vendedor_id == autor.pk:
             raise Recusa(NAO_CORRIGE_A_SI)
         if lancamento.resultado != atendimento.resultado:
-            raise Recusa("O resultado não muda na correção.")
+            raise Recusa(_("O resultado não muda na correção."))
         antes = descrever(atendimento)
         grupos, motivo, total = _validar(
             filial.empresa, lancamento,
