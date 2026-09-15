@@ -373,6 +373,57 @@ msgstr ""
 msgid "Parâmetro não encontrado."
 msgstr ""
 
+msgid "obrigatório"
+msgstr ""
+
+msgid "Fechar"
+msgstr ""
+
+msgid "Paginação"
+msgstr ""
+
+msgid "Página anterior"
+msgstr ""
+
+msgid "Próxima página"
+msgstr ""
+
+msgid "Carregando"
+msgstr ""
+
+msgid "Selecionar"
+msgstr ""
+
+msgid "Ações"
+msgstr ""
+
+msgid "Selecionar linha"
+msgstr ""
+
+msgid "Você está em"
+msgstr ""
+
+msgid "Início"
+msgstr ""
+
+msgid "Abrir menu"
+msgstr ""
+
+msgid "Notificações"
+msgstr ""
+
+msgid "abrir menu"
+msgstr ""
+
+msgid "Menu principal"
+msgstr ""
+
+msgid "Recolher menu"
+msgstr ""
+
+msgid "Recolher"
+msgstr ""
+
 msgid "Cancelar"
 msgstr ""
 
@@ -398,5 +449,301 @@ msgid "Esta tela só abre com o módulo ligado e a permissão exemplo.ver."
 msgstr ""
 
 msgid "Está de pé"
+msgstr ""
+
+msgid "Na fila"
+msgstr ""
+
+msgid "Atendendo"
+msgstr ""
+
+msgid "Em pausa"
+msgstr ""
+
+msgid "Vendeu"
+msgstr ""
+
+msgid "Não vendeu"
+msgstr ""
+
+msgid "nome"
+msgstr ""
+
+msgid "ordem"
+msgstr ""
+
+msgid "ativo"
+msgstr ""
+
+msgid "grupo de item"
+msgstr ""
+
+msgid "grupos de item"
+msgstr ""
+
+msgid "motivo de não venda"
+msgstr ""
+
+msgid "motivos de não venda"
+msgstr ""
+
+msgid "tipo de pausa"
+msgstr ""
+
+msgid "tipos de pausa"
+msgstr ""
+
+msgid "loja"
+msgstr ""
+
+msgid "pessoa"
+msgstr ""
+
+msgid "entrada"
+msgstr ""
+
+msgid "saída"
+msgstr ""
+
+msgid "fechada por"
+msgstr ""
+
+msgid "presença"
+msgstr ""
+
+msgid "estado"
+msgstr ""
+
+msgid "na fila desde"
+msgstr ""
+
+msgid "desde"
+msgstr ""
+
+msgid "vendedor"
+msgstr ""
+
+msgid "início"
+msgstr ""
+
+msgid "fim"
+msgstr ""
+
+msgid "cliente pediu"
+msgstr ""
+
+msgid "resultado"
+msgstr ""
+
+msgid "motivo"
+msgstr ""
+
+msgid "observação"
+msgstr ""
+
+msgid "total"
+msgstr ""
+
+msgid "fechado por"
+msgstr ""
+
+msgid "atendimento"
+msgstr ""
+
+msgid "grupo"
+msgstr ""
+
+msgid "valor"
+msgstr ""
+
+msgid "tipo"
+msgstr ""
+
+msgid "Fila da vez"
+msgstr ""
+
+msgid "Grupos de item"
+msgstr ""
+
+msgid "Motivos de não venda"
+msgstr ""
+
+msgid "Tipos de pausa"
+msgstr ""
+
+msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."
+msgstr ""
+
+msgid "Novo grupo"
+msgstr ""
+
+msgid "Por que o cliente não comprou: um motivo por atendimento."
+msgstr ""
+
+msgid "Novo motivo"
+msgstr ""
+
+msgid "Por que o vendedor saiu da fila por um tempo."
+msgstr ""
+
+msgid "Novo tipo"
+msgstr ""
+
+msgid "Cadastro não encontrado."
+msgstr ""
+
+msgid "Em uso: desative em vez de remover."
+msgstr ""
+
+msgid "Ordem"
+msgstr ""
+
+msgid "Ativo"
+msgstr ""
+
+msgid "Desativado some das opções do vendedor e continua nos lançamentos antigos."
+msgstr ""
+
+msgid "Criar"
+msgstr ""
+
+msgid "Escolha uma empresa no cabeçalho antes de cadastrar."
+msgstr ""
+
+msgid "Informe o nome."
+msgstr ""
+
+msgid "Bater o ponto e entrar na fila"
+msgstr ""
+
+msgid "Vou atender"
+msgstr ""
+
+msgid "Cliente pediu por mim"
+msgstr ""
+
+msgid "Pausa"
+msgstr ""
+
+msgid "Sair da loja"
+msgstr ""
+
+msgid "Finalizar atendimento"
+msgstr ""
+
+msgid "Voltar para a fila"
+msgstr ""
+
+msgid "Grupo de item"
+msgstr ""
+
+msgid "Grupo"
+msgstr ""
+
+msgid "Valor"
+msgstr ""
+
+msgid "+ outro grupo"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "Por que não comprou?"
+msgstr ""
+
+msgid "Observação"
+msgstr ""
+
+msgid "Lançar"
+msgstr ""
+
+msgid "Como terminou o atendimento?"
+msgstr ""
+
+msgid "Pausa para quê?"
+msgstr ""
+
+msgid "Ao voltar, você entra no fim da fila."
+msgstr ""
+
+msgid "Sair para a pausa"
+msgstr ""
+
+msgid "Fechar o atendimento"
+msgstr ""
+
+msgid "Tirar da loja"
+msgstr ""
+
+msgid "Ela está atendendo. O atendimento fecha como não venda."
+msgstr ""
+
+msgid "Corrigir o lançamento de"
+msgstr ""
+
+msgid "Salvar correção"
+msgstr ""
+
+msgid "Lançamentos de hoje"
+msgstr ""
+
+msgid "Nenhum atendimento fechado hoje."
+msgstr ""
+
+msgid "Corrigir"
+msgstr ""
+
+msgid "Fechar atendimento"
+msgstr ""
+
+msgid "Tirar da pausa"
+msgstr ""
+
+msgid "(você)"
+msgstr ""
+
+msgid "Ninguém atendendo agora."
+msgstr ""
+
+msgid "A fila está vazia."
+msgstr ""
+
+msgid "Fila de agora"
+msgstr ""
+
+msgid "atendendo"
+msgstr ""
+
+msgid "em pausa"
+msgstr ""
+
+msgid "Você não está na fila"
+msgstr ""
+
+msgid "Bata o ponto quando chegar na loja para entrar no fim da fila."
+msgstr ""
+
+msgid "É a sua vez"
+msgstr ""
+
+msgid "O próximo cliente que entrar é seu."
+msgstr ""
+
+msgid "Sua vez em"
+msgstr ""
+
+msgid "Começou às"
+msgstr ""
+
+msgid "Painel"
+msgstr ""
+
+msgid "Você ainda não está em nenhuma loja"
+msgstr ""
+
+msgid ""
+"Peça a quem cuida da equipe para alocar você na loja em que trabalha, na "
+"tela de Usuários."
 msgstr ""
 

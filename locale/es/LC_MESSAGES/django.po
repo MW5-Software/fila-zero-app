@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-14 21:42-0300\n"
+"POT-Creation-Date: 2026-09-14 23:52-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -70,7 +70,9 @@ msgid "É cliente"
 msgstr "Es cliente"
 
 msgid "O cargo é de quem compra da empresa, e não de quem trabalha nela."
-msgstr "El cargo es de quien le compra a la empresa, y no de quien trabaja en ella."
+msgstr ""
+"El cargo es de quien le compra a la empresa, y no de quien trabaja en "
+"ella."
 
 msgid "Novo cargo"
 msgstr "Nuevo cargo"
@@ -401,6 +403,57 @@ msgstr "Lo que esta instalación cambió respecto del valor por defecto del cód
 msgid "Parâmetro não encontrado."
 msgstr "Parámetro no encontrado."
 
+msgid "obrigatório"
+msgstr "obligatorio"
+
+msgid "Fechar"
+msgstr "Cerrar"
+
+msgid "Paginação"
+msgstr "Paginación"
+
+msgid "Página anterior"
+msgstr "Página anterior"
+
+msgid "Próxima página"
+msgstr "Página siguiente"
+
+msgid "Carregando"
+msgstr "Cargando"
+
+msgid "Selecionar"
+msgstr "Seleccionar"
+
+msgid "Ações"
+msgstr "Acciones"
+
+msgid "Selecionar linha"
+msgstr "Seleccionar registro"
+
+msgid "Você está em"
+msgstr "Usted está en"
+
+msgid "Início"
+msgstr "Inicio"
+
+msgid "Abrir menu"
+msgstr "Abrir menú"
+
+msgid "Notificações"
+msgstr "Notificaciones"
+
+msgid "abrir menu"
+msgstr "abrir menú"
+
+msgid "Menu principal"
+msgstr "Menú principal"
+
+msgid "Recolher menu"
+msgstr "Contraer menú"
+
+msgid "Recolher"
+msgstr "Contraer"
+
 msgid "Cancelar"
 msgstr "Cancelar"
 
@@ -427,4 +480,304 @@ msgstr "Esta pantalla solo abre con el módulo activado y el permiso exemplo.ver
 
 msgid "Está de pé"
 msgstr "Está funcionando"
+
+msgid "Na fila"
+msgstr "En la fila"
+
+msgid "Atendendo"
+msgstr "Atendiendo"
+
+msgid "Em pausa"
+msgstr "En pausa"
+
+msgid "Vendeu"
+msgstr "Vendió"
+
+msgid "Não vendeu"
+msgstr "No vendió"
+
+msgid "nome"
+msgstr "nombre"
+
+msgid "ordem"
+msgstr "orden"
+
+msgid "ativo"
+msgstr "activo"
+
+msgid "grupo de item"
+msgstr "grupo de artículo"
+
+msgid "grupos de item"
+msgstr "grupos de artículo"
+
+msgid "motivo de não venda"
+msgstr "motivo de no venta"
+
+msgid "motivos de não venda"
+msgstr "motivos de no venta"
+
+msgid "tipo de pausa"
+msgstr "tipo de pausa"
+
+msgid "tipos de pausa"
+msgstr "tipos de pausa"
+
+msgid "loja"
+msgstr "tienda"
+
+msgid "pessoa"
+msgstr "persona"
+
+msgid "entrada"
+msgstr "entrada"
+
+msgid "saída"
+msgstr "salida"
+
+msgid "fechada por"
+msgstr "cerrada por"
+
+msgid "presença"
+msgstr "presencia"
+
+msgid "estado"
+msgstr "estado"
+
+msgid "na fila desde"
+msgstr "en la fila desde"
+
+msgid "desde"
+msgstr "desde"
+
+msgid "vendedor"
+msgstr "vendedor"
+
+msgid "início"
+msgstr "inicio"
+
+msgid "fim"
+msgstr "fin"
+
+msgid "cliente pediu"
+msgstr "el cliente lo pidió"
+
+msgid "resultado"
+msgstr "resultado"
+
+msgid "motivo"
+msgstr "motivo"
+
+msgid "observação"
+msgstr "observación"
+
+msgid "total"
+msgstr "total"
+
+msgid "fechado por"
+msgstr "cerrado por"
+
+msgid "atendimento"
+msgstr "atención"
+
+msgid "grupo"
+msgstr "grupo"
+
+msgid "valor"
+msgstr "valor"
+
+msgid "tipo"
+msgstr "tipo"
+
+msgid "Fila da vez"
+msgstr "Turno de atención"
+
+msgid "Grupos de item"
+msgstr "Grupos de artículo"
+
+msgid "Motivos de não venda"
+msgstr "Motivos de no venta"
+
+msgid "Tipos de pausa"
+msgstr "Tipos de pausa"
+
+msgid "O que se vende: o vendedor escolhe o grupo ao lançar a venda."
+msgstr "Lo que se vende: el vendedor elige el grupo al registrar la venta."
+
+msgid "Novo grupo"
+msgstr "Nuevo grupo"
+
+msgid "Por que o cliente não comprou: um motivo por atendimento."
+msgstr "Por qué el cliente no compró: un motivo por atención."
+
+msgid "Novo motivo"
+msgstr "Nuevo motivo"
+
+msgid "Por que o vendedor saiu da fila por um tempo."
+msgstr "Por qué el vendedor salió de la fila por un tiempo."
+
+msgid "Novo tipo"
+msgstr "Nuevo tipo"
+
+msgid "Cadastro não encontrado."
+msgstr "Registro no encontrado."
+
+msgid "Em uso: desative em vez de remover."
+msgstr "En uso: desactívelo en lugar de eliminarlo."
+
+msgid "Ordem"
+msgstr "Orden"
+
+msgid "Ativo"
+msgstr "Activo"
+
+msgid "Desativado some das opções do vendedor e continua nos lançamentos antigos."
+msgstr ""
+"Desactivado desaparece de las opciones del vendedor y sigue en los "
+"registros antiguos."
+
+msgid "Criar"
+msgstr "Crear"
+
+msgid "Escolha uma empresa no cabeçalho antes de cadastrar."
+msgstr "Elija una empresa en el encabezado antes de registrar."
+
+msgid "Informe o nome."
+msgstr "Indique el nombre."
+
+msgid "Bater o ponto e entrar na fila"
+msgstr "Marcar llegada y entrar a la fila"
+
+msgid "Vou atender"
+msgstr "Voy a atender"
+
+msgid "Cliente pediu por mim"
+msgstr "El cliente me pidió a mí"
+
+msgid "Pausa"
+msgstr "Pausa"
+
+msgid "Sair da loja"
+msgstr "Salir de la tienda"
+
+msgid "Finalizar atendimento"
+msgstr "Finalizar atención"
+
+msgid "Voltar para a fila"
+msgstr "Volver a la fila"
+
+msgid "Grupo de item"
+msgstr "Grupo de artículo"
+
+msgid "Grupo"
+msgstr "Grupo"
+
+msgid "Valor"
+msgstr "Valor"
+
+msgid "+ outro grupo"
+msgstr "+ otro grupo"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Por que não comprou?"
+msgstr "¿Por qué no compró?"
+
+msgid "Observação"
+msgstr "Observación"
+
+msgid "Lançar"
+msgstr "Registrar"
+
+msgid "Como terminou o atendimento?"
+msgstr "¿Cómo terminó la atención?"
+
+msgid "Pausa para quê?"
+msgstr "¿Pausa para qué?"
+
+msgid "Ao voltar, você entra no fim da fila."
+msgstr "Al volver, usted entra al final de la fila."
+
+msgid "Sair para a pausa"
+msgstr "Salir a la pausa"
+
+msgid "Fechar o atendimento"
+msgstr "Cerrar la atención"
+
+msgid "Tirar da loja"
+msgstr "Sacar de la tienda"
+
+msgid "Ela está atendendo. O atendimento fecha como não venda."
+msgstr "Está atendiendo. La atención se cierra como no venta."
+
+msgid "Corrigir o lançamento de"
+msgstr "Corregir el registro de"
+
+msgid "Salvar correção"
+msgstr "Guardar corrección"
+
+msgid "Lançamentos de hoje"
+msgstr "Registros de hoy"
+
+msgid "Nenhum atendimento fechado hoje."
+msgstr "Ninguna atención cerrada hoy."
+
+msgid "Corrigir"
+msgstr "Corregir"
+
+msgid "Fechar atendimento"
+msgstr "Cerrar atención"
+
+msgid "Tirar da pausa"
+msgstr "Sacar de la pausa"
+
+msgid "(você)"
+msgstr "(usted)"
+
+msgid "Ninguém atendendo agora."
+msgstr "Nadie atendiendo ahora."
+
+msgid "A fila está vazia."
+msgstr "La fila está vacía."
+
+msgid "Fila de agora"
+msgstr "Fila de ahora"
+
+msgid "atendendo"
+msgstr "atendiendo"
+
+msgid "em pausa"
+msgstr "en pausa"
+
+msgid "Você não está na fila"
+msgstr "Usted no está en la fila"
+
+msgid "Bata o ponto quando chegar na loja para entrar no fim da fila."
+msgstr "Marque su llegada al entrar a la tienda para ponerse al final de la fila."
+
+msgid "É a sua vez"
+msgstr "Es su turno"
+
+msgid "O próximo cliente que entrar é seu."
+msgstr "El próximo cliente que entre es suyo."
+
+msgid "Sua vez em"
+msgstr "Su turno en"
+
+msgid "Começou às"
+msgstr "Empezó a las"
+
+msgid "Painel"
+msgstr "Panel"
+
+msgid "Você ainda não está em nenhuma loja"
+msgstr "Usted todavía no está en ninguna tienda"
+
+msgid ""
+"Peça a quem cuida da equipe para alocar você na loja em que trabalha, na "
+"tela de Usuários."
+msgstr ""
+"Pida a quien administra el equipo que lo asigne a la tienda donde "
+"trabaja, en la pantalla de Usuarios."
 

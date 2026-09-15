@@ -1,14 +1,16 @@
-# KRONOS base — o que você precisa saber antes de mexer
+# Fila Zero — o que você precisa saber antes de mexer
 
-Esta pasta é a **base de todo SaaS da MW5**: conta, empresa, filial, usuário,
-cargos e alocações, permissão, auditoria, aparência, módulos, parâmetros,
-backup e o design system. **Ela não tem módulo de negócio nenhum.** Cada SaaS
-nasce copiando esta pasta e pondo os módulos dele por cima (§1).
+O **Fila Zero** é o SaaS da **fila da vez** das lojas: cada vendedor bate o
+ponto, entra na fila, atende na sua vez e lança se vendeu (e o quê) ou por que
+não vendeu. O primeiro cliente é a Sylvia Design (a conta é a Sylvia, a empresa
+é a Sylvia Design, as lojas são as filiais). O negócio mora no app `fila/` e é
+descrito no §10.
 
-Ela saiu do **Portal de Vendas** em 15/09/2026 (commit `d88fb33` de lá), que por
-sua vez saiu do KRONOS.net. Veio tudo, menos o catálogo e o orçamento, que são
-o negócio do Portal. `PROVENIENCIA.md` diz o que veio, o que ficou de fora e o
-que foi decidido na cópia.
+Ele nasceu da **KRONOS base** (commit `be166c4`, ver `PROVENIENCIA.md`): conta,
+empresa, filial, usuário, cargos e alocações, permissão, auditoria, aparência,
+módulos, parâmetros, backup e o design system vieram de lá, e as seções 1 a 9
+continuam descrevendo essa base. A base, por sua vez, saiu do **Portal de
+Vendas** (commit `d88fb33`), que saiu do KRONOS.net.
 
 Quase tudo que parece estranho no código tem um motivo escrito ao lado, e o
 motivo costuma ser um defeito que já aconteceu. **Leia o comentário antes de
@@ -16,7 +18,12 @@ reescrever qualquer peça.**
 
 ---
 
-## 1. Como um SaaS nasce daqui
+## 1. Como um SaaS nasce da base
+
+O Fila Zero já seguiu este roteiro (identidade, app `fila/`, varreduras,
+permissões de nascença). Ele fica aqui porque é o mapa do que a base espera de
+um produto, e porque um módulo de negócio novo neste produto passa pelos
+passos 3 a 5.
 
 1. **Copiar a pasta** sem `.git`, `.venv`, `midia/` e `backups/`, e escrever um
    `PROVENIENCIA.md` dizendo de qual commit da base ele saiu.
@@ -90,6 +97,9 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   mídia, `Site`.
 - **`modulos/`** — onde mora módulo de negócio. Na base só existe
   `modulos/exemplo/`, que mostra a forma.
+- **`fila/`** — o negócio do Fila Zero (§10). É app de primeiro nível, e não
+  pasta dentro de `modulos/`, por ser o produto inteiro; para as varreduras
+  ele é negócio como qualquer outro.
 - **`config/`**, **`deploy/`**, **`locale/`**, **`docs/`** — configuração,
   publicação, as traduções (§8) e as decisões escritas. Em `docs/`, os
   `plans/` e `specs/` são registros datados: descrevem o dia em que foram
@@ -365,6 +375,74 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    mantém essa assinatura é decisão de produto.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
+5. **As frases de recusa da fila não têm castelhano.** São montadas com nome e
+   número (`"A vez é de Ana. Você é o 2º da fila."`) em `fila/acoes.py` e
+   `fila/correcoes.py`, e traduzir pede `%(nome)s` em cada uma.
+6. **O dashboard da fila** (atendimentos, conversão, vendas por grupo, ranking,
+   metas) é a entrega 2 e ainda não tem spec.
+
+---
+
+## 10. A fila da vez
+
+Spec: `docs/superpowers/specs/2026-09-15-fila-da-vez-design.md`. Plano, com os
+cinco ajustes que o spec não respondia (D-1 a D-5):
+`docs/superpowers/plans/2026-09-15-fila-da-vez.md`.
+
+### Quem pode o quê
+
+| permissão | o que abre |
+|---|---|
+| `fila.ver` | a página `/fila` da loja e o item no menu |
+| `fila.participar` | bater o ponto, atender, lançar, pausar, sair da loja |
+| `fila.gerenciar` | corrigir a fila e os lançamentos da loja em que está |
+| `fila.cadastros` | grupos de item, motivos de não venda e tipos de pausa |
+
+Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
+`gerenciar`; Supervisor, `ver` e `gerenciar`; o titular, as quatro
+(`contas/cargos_de_fabrica.py`, `contas/fabrica.py`). **`fila.ver` vem primeiro
+no `ModuloSpec`** porque o menu entra pela primeira permissão do módulo e some
+com os atalhos de quem não a tem.
+
+**A loja é a filial em que a sessão está** (`filial_atual`), e a permissão é a
+do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
+
+### Onde mora cada regra
+
+- `fila/models.py` — os três cadastros, `Presenca`, `LugarNaFila` (o estado de
+  agora, uma linha por pessoa presente), `Atendimento` com `ItemVendido`, e
+  `Pausa`. **A ordem da fila é `na_fila_desde`**, e voltar para o fim é gravar
+  a hora de agora. Os "um aberto por pessoa" são restrições parciais do banco.
+- `fila/acoes.py` — o que o vendedor faz. Cada ação **tranca a linha da
+  filial**, relê o lugar da pessoa depois da trava e grava tudo ou nada; o que
+  não cabe levanta `Recusa` com a frase da tela.
+- `fila/correcoes.py` — o que o gerente corrige, com auditoria. Confere que a
+  pessoa e o atendimento são desta loja e que ninguém corrige a si mesmo.
+- `fila/estado.py` — o retrato da loja e a versão que a tela consulta.
+- `fila/views.py`, `fila/tela.py`, `fila/templates/fila/` — a página fora do
+  shell, com ambiente Jinja próprio (`fila/ambiente.py`), a consulta
+  `GET /fila/estado` e as ações em `POST /fila/agir`.
+- `fila/views_cadastros.py` — as três telas de cadastro, uma view para as três.
+
+### O que custa esquecer
+
+- **Ler o estado antes de trancar.** Dois toques em "Vou atender" leriam os
+  dois "na fila", e o segundo estouraria na restrição do banco com 500.
+  `tests/test_fila_concorrencia.py` força a demora entre ler e gravar para a
+  trava ser provada, e não a sorte.
+- **Um relógio só.** A hora das correções é lida pelo módulo das ações
+  (`acoes._agora()`), e não importada por nome: com dois relógios, quem voltou
+  pela mão do gerente passava na frente de quem já esperava.
+- **`bulk_create` de `ItemVendido` pula a conta**: é o `save` do
+  `ModeloDaEmpresa` que a preenche.
+- **Cadastro usado é `PROTECT`.** Desativa; a tela diz isso em vez de 500.
+- **A página funciona sem JavaScript.** O script só consulta, troca HTML que o
+  servidor desenhou e abre as folhas como diálogo; nenhum HTML é montado nele.
+- **As cores de estado da página são fixas**, e não vêm da marca do cliente, e
+  todo estado tem rótulo e ícone. A página não tem `<table>`.
+- **Quem só tem `fila.ver` e `fila.participar` cai em `/fila`** ao pedir a
+  raiz (`fila.views.inicio`, antes do `nucleo` em `config/urls.py`). Teste da
+  base que pede a raiz com um vendedor precisa de outro cargo.
 
 ---
 

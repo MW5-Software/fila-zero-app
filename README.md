@@ -1,10 +1,21 @@
-# KRONOS base
+# Fila Zero
 
-A base de todo SaaS da MW5: conta, empresa, filial, usuário, cargos e
-alocações, permissão, auditoria, aparência, módulos, parâmetros, backup e o
-design system (`nucleo`). Não tem módulo de negócio — cada SaaS nasce copiando
-esta pasta e acrescentando os dele. Ver `CLAUDE.md` antes de mexer e
-`PROVENIENCIA.md` para de onde ela veio.
+A fila da vez das lojas: o vendedor bate o ponto, entra na fila, atende na sua
+vez e lança se vendeu (por grupo de item e valor) ou por que não vendeu. O
+gerente corrige a fila da loja dele, e os cadastros ficam no dashboard.
+
+Nasceu da KRONOS base (conta, empresa, filial, usuário, cargos, permissão,
+auditoria, aparência, módulos, parâmetros, backup e o design system). Ver
+`CLAUDE.md` antes de mexer e `PROVENIENCIA.md` para de onde ele veio.
+
+## A fila
+
+| rota | o que é |
+|---|---|
+| `/fila` | a página da loja, fora do dashboard, pensada para o celular |
+| `/fila/estado` | o que a página consulta a cada 3 segundos (JSON) |
+| `/fila/agir` | as ações do vendedor e as correções do gerente (POST) |
+| `/fila/grupos`, `/fila/motivos`, `/fila/pausas` | os cadastros, no dashboard |
 
 ## Variáveis de ambiente
 
