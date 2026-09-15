@@ -117,7 +117,7 @@ class TestAsPermissoes:
         # O gerente de fábrica do Fila Zero traz também a fila.
         assert permissoes_do_cargo(cargos["gerente"]) == frozenset(
             {"usuarios.editar", "fila.ver", "fila.participar",
-             "fila.gerenciar", "fila.relatorios"})
+             "fila.gerenciar", "fila.relatorios", "fila.metas"})
 
     def test_membro_sem_alocacao_nao_pode_nada(self, conta):
         titular, empresa, norte, *_ = conta
