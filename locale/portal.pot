@@ -454,6 +454,9 @@ msgstr ""
 msgid "Você não está nesta loja. Bata o ponto primeiro."
 msgstr ""
 
+msgid "Esta loja está desativada."
+msgstr ""
+
 msgid "Você já está nesta loja."
 msgstr ""
 
@@ -649,6 +652,16 @@ msgstr ""
 
 msgid "Tipos de pausa"
 msgstr ""
+
+#, python-format
+msgid ""
+"Há %(n)s pessoa presente nesta loja. Tire-a da loja na página da fila "
+"antes de desativar."
+msgid_plural ""
+"Há %(n)s pessoas presentes nesta loja. Tire todas da loja na página da "
+"fila antes de desativar."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "Você ainda não está em nenhuma loja."
 msgstr ""

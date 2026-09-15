@@ -376,11 +376,6 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
 4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
    continuam por fazer.
 5. **As metas da fila** são a entrega 3 e ainda não têm spec.
-6. **Loja desativada com gente dentro.** Desativar uma loja não confere a fila
-   (`plataforma/filiais.py` não conhece módulo de negócio), e quem estava
-   atendendo nela fica sem conseguir bater o ponto em outra até alguém
-   reativá-la e fechar o atendimento. Pede uma regra de produto: recusar a
-   desativação, ou fechar as presenças junto (revisão final, 15/09/2026).
 
 ---
 
@@ -448,6 +443,12 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 - **Macro de template não pode ter o nome de variável do contexto.** O macro
   das folhas se chamava `folha`, como o `?folha=` da URL, e a folha nunca
   abria sem JavaScript.
+- **Loja com presença aberta não se desativa.** A base pergunta pelo sinal
+  `plataforma.filiais.antes_de_desativar` (ela não pode importar a fila), e
+  `fila/sinais.py` responde com a frase, ligado no `ready()`. A tela de
+  Filiais tranca a linha da loja antes de perguntar, e o ponto relê a loja
+  depois da mesma trava: sem as duas pontas, alguém entrava na loja que
+  acabava de ser desativada e ficava preso nela.
 - **Quem só tem `fila.ver` e `fila.participar` cai em `/fila`** ao pedir a
   raiz (`fila.views.inicio`, antes do `nucleo` em `config/urls.py`). Teste da
   base que pede a raiz com um vendedor precisa de outro cargo.

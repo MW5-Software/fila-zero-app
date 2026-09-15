@@ -130,6 +130,11 @@ def bater_ponto(pessoa, filial) -> None:
              .values_list("pk", flat=True))
         antes = _lugar(pessoa.pk)
         _travar(filial, *([antes.filial] if antes else []))
+        # Relida DEPOIS da trava: a desativação tranca a mesma linha antes de
+        # conferir quem está presente, e sem reler aqui alguém entrava na loja
+        # que acabou de ser desativada e ficava preso nela.
+        if not Filial.objects.filter(pk=filial.pk, ativa=True).exists():
+            raise Recusa(_("Esta loja está desativada."))
         lugar = _lugar(pessoa.pk)
         if lugar is not None and lugar.filial_id == filial.pk:
             raise Recusa(_("Você já está nesta loja."))

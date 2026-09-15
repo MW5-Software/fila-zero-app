@@ -323,3 +323,73 @@ def test_a_recusa_sai_no_idioma_de_quem_agiu(loja):
     with translation.override("es"), pytest.raises(Recusa) as recusa:
         vou_atender(loja.bia, loja.matriz)
     assert recusa.value.frase == "El turno es de Ana. Usted es el 2º de la fila."
+
+
+# --- Loja desativada com gente dentro (revisão final, B9) -------------------
+# Regra escolhida pelo João em 15/09/2026: recusar a desativação enquanto
+# houver presença aberta, em vez de fechar as presenças junto.
+
+def test_loja_com_gente_presente_nao_se_desativa(loja):
+    from fila.acoes import bater_ponto, sair_da_loja
+    from plataforma.filiais import pode_desativar
+
+    # Outra loja ativa: sem ela a recusa viria por ser a última ativa.
+    nova_loja(loja.empresa, "Centro")
+    assert pode_desativar(loja.matriz) is None
+
+    bater_ponto(loja.ana, loja.matriz)
+    bater_ponto(loja.bia, loja.matriz)
+    assert pode_desativar(loja.matriz) == (
+        "Há 2 pessoas presentes nesta loja. Tire todas da loja na página da "
+        "fila antes de desativar.")
+
+    sair_da_loja(loja.ana, loja.matriz)
+    assert "Há 1 pessoa presente" in pode_desativar(loja.matriz)
+    sair_da_loja(loja.bia, loja.matriz)
+    assert pode_desativar(loja.matriz) is None
+
+
+def test_presenca_esquecida_de_outro_dia_tambem_prende(loja):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from fila.models import Presenca
+    from plataforma.filiais import pode_desativar
+
+    nova_loja(loja.empresa, "Centro")
+    Presenca.irrestritos.create(empresa=loja.empresa, filial=loja.matriz,
+                                pessoa=loja.caio,
+                                entrada=timezone.now() - timedelta(days=3))
+    assert "Há 1 pessoa presente" in pode_desativar(loja.matriz)
+
+
+def test_ponto_em_loja_desativada_e_recusado(loja):
+    """A outra metade da trava: a desativação confere quem está presente com a
+    linha da loja trancada, e o ponto relê a loja depois da mesma trava."""
+    from fila.acoes import Recusa, bater_ponto
+    from fila.models import Presenca
+
+    loja.matriz.ativa = False
+    loja.matriz.save(update_fields=["ativa"])
+    with pytest.raises(Recusa) as recusa:
+        bater_ponto(loja.ana, loja.matriz)
+    assert str(recusa.value) == "Esta loja está desativada."
+    assert not Presenca.irrestritos.filter(pessoa=loja.ana).exists()
+
+
+def test_tela_de_filiais_recusa_desativar_loja_com_gente(loja):
+    from django.urls import reverse
+
+    from fila.acoes import bater_ponto
+    from plataforma.models import Modulo
+    from tests.fila_cenario import logado
+
+    nova_loja(loja.empresa, "Centro")
+    Modulo.objects.update_or_create(chave="filiais", defaults={"ativo": True})
+    bater_ponto(loja.ana, loja.matriz)
+    resposta = logado("sylvia").post(
+        reverse("filiais"), {"acao": "desativar", "filial": str(loja.matriz.pk)})
+    loja.matriz.refresh_from_db()
+    assert loja.matriz.ativa is True
+    assert "Há 1 pessoa presente nesta loja" in resposta.content.decode()
