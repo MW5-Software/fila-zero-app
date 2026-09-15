@@ -52,7 +52,7 @@
     if (!html) return;
     var eraVez = !!document.querySelector("#fila-painel .painel-sua-vez");
     var posicaoAntes = numeroDaPosicao();
-    ["painel", "lista", "barra", "lancamentos"].forEach(function (nome) {
+    ["painel", "lista", "barra", "lancamentos", "meus"].forEach(function (nome) {
       var lugar = el("fila-" + nome);
       if (lugar && typeof html[nome] === "string") lugar.innerHTML = html[nome];
     });

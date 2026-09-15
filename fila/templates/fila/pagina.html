@@ -16,6 +16,8 @@
     </div>
   </section>
 
+  <div id="fila-meus">{% include "fila/_meus.html" %}</div>
+
   <div id="fila-lista">{% include "fila/_lista.html" %}</div>
 
   <div id="fila-lancamentos"{% if not pode_gerenciar %} hidden{% endif %}>{% include "fila/_lancamentos.html" %}</div>

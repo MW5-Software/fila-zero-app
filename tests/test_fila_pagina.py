@@ -90,7 +90,8 @@ def test_acao_com_javascript_devolve_o_estado_novo(loja):
     resposta = _agir_js(logado("ana"), acao="ponto")
     assert resposta["ok"] is True
     assert "É a sua vez" in resposta["html"]["painel"]
-    assert set(resposta["html"]) == {"painel", "lista", "barra", "lancamentos"}
+    assert set(resposta["html"]) == {"painel", "lista", "barra", "lancamentos",
+                                    "meus"}
     recusa = _agir_js(logado("ana"), acao="ponto")
     assert recusa == {**recusa, "ok": False, "frase": "Você já está nesta loja."}
 
@@ -320,3 +321,34 @@ class TestAFilaEUmaTelaDoSistema:
         html = _html(logado("ana"))
         assert "/static/fila/fila.css?v=" in html
         assert "/static/fila/fila.js?v=" in html
+
+
+def test_seus_numeros_mostram_so_a_propria_pessoa(loja):
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="atender")
+    _agir(ana, acao="finalizar", resultado="vendeu",
+          grupo=[str(loja.cad.grupo.pk)], valor=["1.200"])
+    bia = logado("bia")
+    _agir(bia, acao="ponto")
+    _agir(bia, acao="atender")
+    _agir(bia, acao="finalizar", resultado="nao_vendeu",
+          motivo=str(loja.cad.motivo.pk))
+    html = _html(ana)
+    assert "Seus números" in html
+    assert "R$ 1.200,00" in html
+    assert "1º de 1" in html
+    bia_html = _html(bia)
+    assert "R$ 1.200,00" not in bia_html
+    assert "Sem vendas no mês" in bia_html
+
+
+def test_quem_so_ve_nao_tem_seus_numeros(loja):
+    pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")
+    assert "Seus números" not in _html(logado("sara"))
+
+
+def test_a_consulta_traz_o_pedaco_dos_numeros(loja):
+    ana = logado("ana")
+    resposta = _agir_js(ana, acao="ponto")
+    assert "meus" in resposta["html"]

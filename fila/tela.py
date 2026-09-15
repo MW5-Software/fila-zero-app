@@ -30,7 +30,8 @@ __all__ = ["PEDACOS", "ha_quanto", "hora_local", "iniciais", "minutos", "pagina"
 
 #: Os pedaços que a consulta troca, com o template de cada um.
 PEDACOS = {"painel": "fila/_painel.html", "lista": "fila/_lista.html",
-           "barra": "fila/_barra.html", "lancamentos": "fila/_lancamentos.html"}
+           "barra": "fila/_barra.html", "lancamentos": "fila/_lancamentos.html",
+           "meus": "fila/_meus.html"}
 
 #: O que o vendedor tem. Quem tem SÓ isto não tem o que fazer no dashboard.
 _SO_DO_VENDEDOR = frozenset({"fila.ver", "fila.participar"})
@@ -149,6 +150,31 @@ def _trilha(r) -> list:
     return [*caminho[:2], None, *caminho[-3:]]
 
 
+@dataclass(frozen=True)
+class MeusNumeros:
+    """A faixa do vendedor (spec 2026-09-15 dos indicadores, decisão P-2 do
+    plano): os números da loja em que ele está, hoje e no mês, e a posição."""
+
+    hoje: object
+    mes: object
+    posicao: object
+
+
+def _meus_numeros(pessoa, filial) -> "MeusNumeros | None":
+    from .indicadores import Recorte, numeros, posicao_no_mes
+    from .periodo import periodo_do_pedido
+
+    if pessoa is None:
+        return None
+    lojas = (filial,)
+    return MeusNumeros(
+        hoje=numeros(Recorte(filial.empresa, lojas, periodo_do_pedido({"periodo": "hoje"})),
+                     vendedor=pessoa),
+        mes=numeros(Recorte(filial.empresa, lojas, periodo_do_pedido({"periodo": "mes"})),
+                    vendedor=pessoa),
+        posicao=posicao_no_mes(pessoa, filial))
+
+
 def _contexto(request, filial, recusa=""):
     pessoa = usuario_de(request.usuario)
     empresa = filial.empresa
@@ -158,6 +184,8 @@ def _contexto(request, filial, recusa=""):
     return {
         "r": r,
         "trilha": _trilha(r),
+        "meus": (_meus_numeros(pessoa, filial)
+                 if pode(request.usuario, "fila.participar") else None),
         "resumo": _resumo(lancamentos),
         "Estado": Estado,
         "filial": filial,
