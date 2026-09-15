@@ -362,7 +362,9 @@ Cada trava é testada e quebrada de propósito uma vez antes de valer:
 ## Fora desta entrega
 
 - **O dashboard** (entrega 2): atendimentos, conversão, vendas por grupo, ranking
-  de vendedores, metas, tempo em pausa, presença esquecida.
+  de vendedores, tempo em pausa, presença esquecida — spec em
+  `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`. As metas
+  ficaram para uma entrega 3.
 - Ponto de jornada, fechamento automático no fim do dia, notificação e
   aplicativo nativo.
 - Várias empresas por conta (herdado da base, ainda por fazer lá).
