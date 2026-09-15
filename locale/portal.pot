@@ -1,0 +1,402 @@
+msgid "O Admin dono da conta desta pessoa."
+msgstr ""
+
+msgid "O GUID do titular da conta desta pessoa."
+msgstr ""
+
+msgid "A conta dona deste cargo, pelo GUID do titular."
+msgstr ""
+
+msgid "A conta dona desta alocação, pelo GUID do titular."
+msgstr ""
+
+msgid "Cargos"
+msgstr ""
+
+msgid "Usuários"
+msgstr ""
+
+msgid "Auditoria"
+msgstr ""
+
+msgid "Minutos de sessão sem atividade"
+msgstr ""
+
+msgid "Dias para a senha expirar"
+msgstr ""
+
+msgid "Sair"
+msgstr ""
+
+msgid "Registros"
+msgstr ""
+
+msgid "Cargo não encontrado."
+msgstr ""
+
+msgid "Editar"
+msgstr ""
+
+msgid "Remover"
+msgstr ""
+
+msgid "Nome do cargo"
+msgstr ""
+
+msgid "Enxerga"
+msgstr ""
+
+msgid "É cliente"
+msgstr ""
+
+msgid "O cargo é de quem compra da empresa, e não de quem trabalha nela."
+msgstr ""
+
+msgid "Novo cargo"
+msgstr ""
+
+msgid "Criar cargo"
+msgstr ""
+
+msgid "Salvar"
+msgstr ""
+
+msgid "Remover cargo"
+msgstr ""
+
+msgid "Os cargos desta conta: o que cada um pode fazer e quais registros enxerga."
+msgstr ""
+
+msgid "Cargos da conta"
+msgstr ""
+
+msgid "Informe o nome do cargo."
+msgstr ""
+
+msgid "Escolha o que o cargo enxerga."
+msgstr ""
+
+msgid "Escolha uma empresa no cabeçalho antes de criar um cargo."
+msgstr ""
+
+msgid "Informe um nome com letras ou números."
+msgstr ""
+
+msgid "Idioma"
+msgstr ""
+
+msgid ""
+"Vale para as telas do sistema. O que foi cadastrado aparece no idioma em "
+"que foi cadastrado."
+msgstr ""
+
+msgid "Meu Perfil"
+msgstr ""
+
+msgid "Foto"
+msgstr ""
+
+msgid "Senha"
+msgstr ""
+
+msgid "A senha atual não confere."
+msgstr ""
+
+msgid "A confirmação não bate com a senha nova."
+msgstr ""
+
+msgid "Nível de acesso"
+msgstr ""
+
+msgid "Conta"
+msgstr ""
+
+msgid "Nova senha"
+msgstr ""
+
+msgid "Ver como esta pessoa"
+msgstr ""
+
+msgid "Acesso"
+msgstr ""
+
+msgid "Empresa da conta"
+msgstr ""
+
+msgid "Alocações"
+msgstr ""
+
+msgid "Lugar ou cargo inválido."
+msgstr ""
+
+msgid "Novo usuário"
+msgstr ""
+
+msgid "Quem é"
+msgstr ""
+
+msgid "Nome"
+msgstr ""
+
+msgid "E-mail"
+msgstr ""
+
+msgid "Em branco, gera uma."
+msgstr ""
+
+msgid "Gerar nova senha temporária"
+msgstr ""
+
+msgid "Gerar nova senha"
+msgstr ""
+
+msgid "Remover usuário"
+msgstr ""
+
+msgid "Senha temporária gerada"
+msgstr ""
+
+msgid "Usuários existentes"
+msgstr ""
+
+msgid "Informe um nome."
+msgstr ""
+
+msgid "Informe um e-mail válido."
+msgstr ""
+
+#, python-format
+msgid "A senha precisa de pelo menos %(minimo)s caracteres."
+msgstr ""
+
+msgid "Aloque a pessoa em pelo menos um lugar."
+msgstr ""
+
+msgid "Você não pode desativar a própria conta."
+msgstr ""
+
+msgid "Você não pode remover a própria conta."
+msgstr ""
+
+msgid "Usuário não encontrado."
+msgstr ""
+
+msgid "Filial"
+msgstr ""
+
+msgid "Acessar Painel"
+msgstr ""
+
+msgid "Usuário"
+msgstr ""
+
+msgid "Seu usuário"
+msgstr ""
+
+msgid "Seu e-mail"
+msgstr ""
+
+msgid "Sua senha"
+msgstr ""
+
+msgid "Manter conectado"
+msgstr ""
+
+msgid "Esqueceu a senha?"
+msgstr ""
+
+msgid "Entrar"
+msgstr ""
+
+msgid "Problemas para entrar?"
+msgstr ""
+
+msgid "Fale com o suporte"
+msgstr ""
+
+msgid "Problema inesperado"
+msgstr ""
+
+msgid "Algo inesperado aconteceu"
+msgstr ""
+
+msgid "Página não encontrada"
+msgstr ""
+
+msgid "Nada neste endereço"
+msgstr ""
+
+msgid "Confira o endereço ou volte ao início pelo menu."
+msgstr ""
+
+#, python-format
+msgid "Idioma: %(atual)s"
+msgstr ""
+
+msgid "Administração"
+msgstr ""
+
+msgid "Cadastro"
+msgstr ""
+
+msgid "Vendas"
+msgstr ""
+
+msgid "Geral"
+msgstr ""
+
+msgid "O Admin dono desta empresa."
+msgstr ""
+
+msgid "O GUID da conta titular desta empresa."
+msgstr ""
+
+msgid "Empresa"
+msgstr ""
+
+msgid "Filiais"
+msgstr ""
+
+msgid "Parâmetros"
+msgstr ""
+
+msgid "Aparência"
+msgstr ""
+
+msgid "Módulos"
+msgstr ""
+
+msgid "Falhas"
+msgstr ""
+
+msgid "Itens por página"
+msgstr ""
+
+msgid "Nova filial nasce ativa"
+msgstr ""
+
+msgid "Densidade"
+msgstr ""
+
+msgid "Sombras"
+msgstr ""
+
+msgid "Tabela listrada"
+msgstr ""
+
+msgid "A cara desta instalação — muda a tela inteira, sem publicar versão nova."
+msgstr ""
+
+msgid "O que esta instalação tem ligado — o resto some do menu."
+msgstr ""
+
+msgid "Nenhum módulo declarado no código desta instalação."
+msgstr ""
+
+msgid "Módulos declarados"
+msgstr ""
+
+msgid "Conexão com o Kronos"
+msgstr ""
+
+msgid "Remover empresa"
+msgstr ""
+
+msgid "Empresas"
+msgstr ""
+
+msgid "Os clientes deste portal, e de onde o cron lê os dados de cada um."
+msgstr ""
+
+msgid "Os dados da sua empresa, e de onde o cron lê o catálogo dela no Kronos."
+msgstr ""
+
+msgid ""
+"Esta conta ainda não tem empresa. Fale com a MW5 — a empresa é cadastrada"
+" junto com a conta, e esta ficou sem."
+msgstr ""
+
+msgid "Empresas existentes"
+msgstr ""
+
+msgid "Sua empresa"
+msgstr ""
+
+msgid "Ação desconhecida."
+msgstr ""
+
+msgid "Empresa não encontrada."
+msgstr ""
+
+msgid "Trocar empresa"
+msgstr ""
+
+msgid "Erro"
+msgstr ""
+
+msgid "Nova filial"
+msgstr ""
+
+msgid "Criar filial"
+msgstr ""
+
+msgid "Remover filial"
+msgstr ""
+
+msgid "Filiais existentes"
+msgstr ""
+
+msgid "Escolha uma empresa no cabeçalho antes de criar uma filial."
+msgstr ""
+
+msgid "Filial não encontrada."
+msgstr ""
+
+msgid "Trocar filial"
+msgstr ""
+
+msgid "Enviar"
+msgstr ""
+
+msgid "Logos e favicon"
+msgstr ""
+
+msgid "Escolha um arquivo antes de enviar."
+msgstr ""
+
+msgid "Restaurar padrão"
+msgstr ""
+
+msgid "O que esta instalação mudou do padrão do código."
+msgstr ""
+
+msgid "Parâmetro não encontrado."
+msgstr ""
+
+msgid "Cancelar"
+msgstr ""
+
+msgid "Sem filial"
+msgstr ""
+
+msgid "Nenhuma filial liberada para você"
+msgstr ""
+
+msgid "Identificador estável desta linha para fora do sistema."
+msgstr ""
+
+msgid "Você está vendo como outra pessoa"
+msgstr ""
+
+msgid "Voltar a ser eu"
+msgstr ""
+
+msgid "Exemplo"
+msgstr ""
+
+msgid "Esta tela só abre com o módulo ligado e a permissão exemplo.ver."
+msgstr ""
+
+msgid "Está de pé"
+msgstr ""
+

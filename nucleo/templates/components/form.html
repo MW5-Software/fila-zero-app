@@ -1,0 +1,3 @@
+<form class="form"{% if c.action %} action="{{ c.action }}"{% endif %} method="{{ c.method }}"{% if c.enctype %} enctype="{{ c.enctype }}"{% endif %}{{ c.attrs|attrs }}>
+{{ c.children|render }}
+</form>

@@ -1,0 +1,3 @@
+<div class="accordion"{% if c.path %} data-mw5-caminho="{{ c.path }}"{% endif %}{% if c.group %} data-accordion-group="{{ c.group }}"{% endif %}{{ c.attrs|attrs }}>
+  {% for item in c.items %}{{ item|render }}{% endfor %}
+</div>

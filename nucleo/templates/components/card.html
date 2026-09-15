@@ -1,0 +1,17 @@
+<div class="card{% if c.css_class %} {{ c.css_class }}{% endif %}"{{ c.attrs|attrs }}>
+  {% if c.title %}
+  <div class="ch">
+    {% if c.icon %}<span class="ci">{{ icon(c.icon) }}</span>{% endif %}
+    {# Título e subtítulo empilhados numa peça só: sem o empilhamento, o
+       subtítulo entra como irmão do `h2` e o flex do cabeçalho o joga para o
+       lado do título. #}
+    <div class="ch-txt">
+      <h2>{{ c.title }}</h2>
+      {% if c.subtitle %}<p class="ch-sub">{{ c.subtitle }}</p>{% endif %}
+    </div>
+    {% if c.header_actions %}<div class="ch-actions">{{ c.header_actions|render }}</div>{% endif %}
+  </div>
+  {% endif %}
+  {% if c.padded %}<div class="cb">{{ c.body|render }}</div>{% else %}{{ c.body|render }}{% endif %}
+  {% if c.footer %}<div class="cf">{{ c.footer|render }}</div>{% endif %}
+</div>

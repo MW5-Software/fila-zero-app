@@ -1,0 +1,84 @@
+# A suíte roda a cada push e a cada pull request.
+#
+# NÃO PUBLICA IMAGEM, e a ausência é deliberada. Este arquivo veio da cópia
+# do KRONOS.net, onde havia um segundo job empurrando para
+# `ghcr.io/mw5-software/kronosnet` — a imagem que as sessenta instalações do
+# KRONOS baixam. Herdado aqui sem pensar, o primeiro `push` na `main` deste
+# produto teria SOBRESCRITO a imagem do outro. O job saiu inteiro; volta
+# quando este produto tiver repositório e nome de imagem próprios.
+#
+# Em POSTGRES, e não em SQLite: é o banco que roda em toda instalação.
+# Provar num banco e entregar noutro é provar a coisa errada — transação,
+# `CheckConstraint`, ordenação com acento e `distinct` não se comportam
+# igual nos dois.
+name: testes
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+
+    services:
+      banco:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: kronos
+          POSTGRES_USER: kronos
+          POSTGRES_PASSWORD: kronos
+        ports:
+          - 5432:5432
+        # Sem isto o job começa a suíte antes de o Postgres aceitar
+        # conexão, e a falha aparece como erro de banco em vez de "ainda
+        # subindo".
+        options: >-
+          --health-cmd "pg_isready -U kronos -d kronos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_DEBUG: "1"
+      # NÃO declare `DJANGO_SETTINGS_MODULE` aqui. A variável de ambiente
+      # VENCE o `pytest.ini`, e o `pytest.ini` aponta para
+      # `config.settings_test` de propósito: é ele que troca o hasher de
+      # senha por um rápido e que carrega `tests.app_do_inquilino`, o model
+      # de mentira que prova a trava do inquilino.
+      #
+      # Ela estava aqui, herdada da cópia, e o CI rodava a suíte contra a
+      # configuração ERRADA: sem o hasher rápido (a suíte inteira gastando o
+      # tempo em hash de senha) e, desde que o app de teste passou a existir,
+      # sem conseguir nem coletar. Localmente nada disso aparecia, porque
+      # ninguém exporta essa variável para rodar `pytest`.
+      #
+      # `tests/test_workflow.py` recusa que ela volte.
+      KRONOS_BANCO: postgresql://kronos:kronos@127.0.0.1:5432/kronos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --extra dev
+
+      # O cliente do Postgres precisa EXISTIR aqui, e a suíte não pode
+      # descobrir isso pulando: o ciclo real de backup/restauração
+      # (`tests/test_backup.py::TestOCicloEmPostgres`) só roda onde `pg_dump`
+      # e `pg_restore` existem, e um teste de backup que passa por ter sido
+      # pulado é pior que teste nenhum — ele dá o verde sem a garantia.
+      #
+      # Este passo falha o job ANTES da suíte se o binário sumir da imagem do
+      # runner, com a causa na cara em vez de um "skipped" que ninguém lê.
+      - name: cliente do Postgres presente
+        run: |
+          pg_dump --version
+          pg_restore --version
+
+      - run: uv run pytest -q

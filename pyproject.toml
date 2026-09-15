@@ -1,0 +1,54 @@
+[project]
+name = "kronos-base"
+version = "0.1.0"
+description = "KRONOS base — conta, empresa, filial, usuário, cargos e alocações para todo SaaS da MW5"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "django>=5.2,<6",
+    "jinja2>=3.1",
+    "pyyaml>=6.0",
+    "dj-database-url>=2.2",
+    "gunicorn>=23.0",
+    "psycopg[binary]>=3.2",
+    "openpyxl>=3.1",
+    "whitenoise>=6.7",
+    # Cifragem em repouso da senha do Oracle no cadastro de conexão
+    # (`plataforma/cifra.py`). Fernet, o mesmo mecanismo que o painel de
+    # versões usa para a chave SSH privada de cada instalação.
+    "cryptography>=43.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.9",
+    # O `Migrator`, para testar migração de DADOS contra um banco antigo de
+    # verdade. A base recomeçou as migrações do zero e não tem nenhuma hoje;
+    # a primeira migração de dados de um SaaS vai precisar dele.
+    "django-test-migrations>=1.6",
+    # As duas abaixo são as ferramentas com que a auditoria de 09/09/2026 foi
+    # medida (cobertura de linha+ramo e complexidade ciclomática). Ficam
+    # declaradas para que a próxima medição use as MESMAS ferramentas e os
+    # números sejam comparáveis — medir com outra coisa é começar do zero.
+    "coverage>=7.16",
+    "radon>=6.0",
+    # Extrai e compila as traduções (`locale/`). NÃO é o `makemessages` do
+    # Django de propósito: o de lá precisa do `xgettext` instalado no sistema
+    # e não lê template Jinja2, que é o desta casa. O Babel é Python puro e
+    # entra no `uv sync` como qualquer dependência.
+    "babel>=2.18",
+    # Lê as dimensões do logo do produto nos testes (`tests/test_logo_do_produto.py`)
+    # e gera os PNGs em `ferramentas/gerar_logos.py`. Só em desenvolvimento: a
+    # base não processa imagem em produção — no Portal de Vendas ele é
+    # dependência de verdade, da galeria do catálogo.
+    "pillow>=11.0",
+]
+
+[tool.pytest.ini_options]
+# `config.settings_test`, não `config.settings`: só troca o hasher de senha
+# por um rápido (ver o docstring do módulo para a medição e a garantia de
+# que produção nunca lê este arquivo) — o resto da configuração é herdado
+# de `config.settings` sem mudança nenhuma.
+DJANGO_SETTINGS_MODULE = "config.settings_test"
+testpaths = ["tests"]
+python_files = ["test_*.py"]

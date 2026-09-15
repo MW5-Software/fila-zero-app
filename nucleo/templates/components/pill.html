@@ -1,0 +1,5 @@
+{% if c.interactive %}
+<button type="button" class="{{ c.classes }}"{% if c.title %} title="{{ c.title }}"{% endif %}{{ c.attrs|attrs }}>{{ c.label }}</button>
+{% else %}
+<span class="{{ c.classes }}"{% if c.title %} title="{{ c.title }}"{% endif %}{{ c.attrs|attrs }}>{{ c.label }}</span>
+{% endif %}

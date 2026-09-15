@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR"{% if c.brand.default_theme != "system" %} data-theme="{{ c.brand.default_theme }}"{% endif %}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ c.document_title }}</title>
+{% if c.brand.assets.favicon %}<link rel="icon" href="{{ c.brand.assets.favicon }}">{% endif %}
+<link rel="stylesheet" href="{{ c.theme_href }}">
+<link rel="stylesheet" href="{{ estatico("mw5.css") }}">
+{% for folha in c.stylesheets %}
+<link rel="stylesheet" href="{{ folha }}">
+{% endfor %}
+<script>
+/* Aplica o que foi escolhido antes da primeira pintura. Sem isso, quem prefere
+   o modo escuro vê um lampejo branco e quem recolheu o menu vê a barra abrir
+   larga e saltar para estreita em toda navegação. */
+(function(){try{
+var t=localStorage.getItem("mw5-theme");if(t)document.documentElement.setAttribute("data-theme",t);
+if(localStorage.getItem("mw5-menu-recolhido")==="1")document.documentElement.classList.add("side-collapsed");
+}catch(e){}})();
+</script>
+</head>
+<body{% if c.body_class %} class="{{ c.body_class }}"{% endif %}>
+<div class="app">
+  {% if c.sidebar %}
+  <div class="menu-fundo" data-menu-fechar aria-hidden="true"></div>
+  {{ c.sidebar|render }}
+  {% endif %}
+  <div class="content">
+    {% if c.header %}{{ c.header|render }}{% endif %}
+    <main{% if c.main_classes %} class="{{ c.main_classes }}"{% endif %}>{{ c.content|render }}</main>
+    {% if c.footer %}{{ c.footer|render }}{% endif %}
+  </div>
+</div>
+{% if c.action_bar %}{{ c.action_bar|render }}{% endif %}
+{% if c.overlays %}{{ c.overlays|render }}{% endif %}
+<div class="toasts" id="toasts">{{ c.toasts|render }}</div>
+<script src="{{ estatico("htmx.min.js") }}" defer></script>
+<script src="{{ estatico("mw5.js") }}" defer></script>
+{% for arquivo in c.scripts %}
+<script src="{{ arquivo }}" defer></script>
+{% endfor %}
+</body>
+</html>

@@ -1,0 +1,9 @@
+<div class="stepper"{{ c.attrs|attrs }}>
+  {% for step in c.steps %}
+  <div class="step {{ step.state }}">
+    <span class="num">{% if step.state == "done" %}{{ icon("check", "sm") }}{% else %}{{ loop.index }}{% endif %}</span>
+    <span class="lbl">{{ step.label }}</span>
+    {% if not loop.last %}<span class="bar"></span>{% endif %}
+  </div>
+  {% endfor %}
+</div>

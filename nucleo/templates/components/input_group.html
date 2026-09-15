@@ -1,0 +1,7 @@
+{% import "components/_field.html" as fld %}
+{{ fld.open(c) }}
+<div class="ctl-group">
+  <input class="ctl" type="text" value="{{ c.value }}"{{ fld.common(c) }}{{ c.attrs|attrs }}>
+  <button type="button" title="{{ c.button_title }}" aria-label="{{ c.button_title }}"{{ c.button_attrs|attrs }}>{{ icon(c.button_icon, "sm") }}</button>
+</div>
+{{ fld.close(c) }}

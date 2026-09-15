@@ -1,0 +1,20 @@
+{# A barra, e os painéis quando há conteúdo.
+
+   Sem `body` em nenhuma aba isto continua sendo o que sempre foi: uma `<nav>`
+   com links. O ramo dos painéis não desenha nada a mais nesse caso, e nenhuma
+   tela que já usava a barra de navegação muda.
+
+   Quem troca de painel é o `mw5.js`, por `data-abas`. Qual abre por padrão é
+   decisão da `Tabs`, no `__post_init__`, e não daqui: uma regra de reserva no
+   template dava DUAS fontes para a mesma verdade, e o painel abria mesmo
+   quando ninguém marcou aba nenhuma — com o botão sem destaque. #}
+<nav class="tabs"{% if c.path %} data-mw5-caminho="{{ c.path }}"{% endif %}{% if c.com_paineis %} data-abas="{{ c.id }}"{% endif %}>
+  {% for tab in c.tabs %}{{ tab|render }}{% endfor %}
+</nav>
+{% if c.com_paineis %}
+{% for tab in c.tabs %}
+<div class="tab-painel{% if tab.active %} open{% endif %}"
+     id="{{ c.id }}-{{ loop.index0 }}" role="tabpanel"
+     {%- if tab.path %} data-mw5-caminho="{{ tab.path }}"{% endif %}>{{ tab.body|render }}</div>
+{% endfor %}
+{% endif %}

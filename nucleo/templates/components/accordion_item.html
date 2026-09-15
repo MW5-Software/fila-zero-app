@@ -1,0 +1,15 @@
+<div class="item">
+  <button class="head" type="button" aria-expanded="{{ 'true' if c.open else 'false' }}" data-accordion-toggle>
+    {% if c.icon %}{{ icon(c.icon) }}{% endif %}
+    <span>{{ c.title }}</span>
+    {{ icon("chevron-down", "sm", css_class="chev") }}
+  </button>
+  {# Três camadas, e cada uma tem um motivo: `panel` é a grade que anima a
+     altura; `panel-conteudo` é o que colapsa, e por isso não pode ter
+     espaçamento nenhum; `panel-interno` carrega o espaçamento. #}
+  <div class="panel{% if c.open %} open{% endif %}">
+    <div class="panel-conteudo">
+      <div class="panel-interno"{% if c.path %} data-mw5-caminho="{{ c.path }}"{% endif %}>{{ c.body|render }}</div>
+    </div>
+  </div>
+</div>

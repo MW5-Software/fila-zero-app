@@ -1,0 +1,137 @@
+"""R46 (`docs/superpowers/decisoes-2026-08-20-fatia-fina.md`): toda tela que
+lista registros numa tabela tem filtro, ordenação por coluna e paginação —
+sem exceção, porque uma tabela sem as três funciona na instalação de
+demonstração e para de funcionar no primeiro cliente de verdade.
+
+A varredura irmã de `tests/test_guarda.py` (nenhuma tela nasce sem guarda) e
+da varredura de personificação em `tests/test_personificacao.py` (nenhuma
+tela 200 esconde o aviso): percorre toda rota do projeto, e para toda
+resposta que contiver uma `<table>`, exige na mesma página o campo de
+filtro, os controles de paginação e pelo menos um cabeçalho ordenável. Tela
+nova que esqueça um dos três vira teste vermelho aqui, antes de virar
+reclamação de cliente.
+"""
+
+import re
+
+import pytest
+from contas.models import Usuario
+from django.test import Client
+from django.urls import get_resolver, reverse
+from django.urls.resolvers import URLPattern, URLResolver
+
+SENHA = "segredo-de-teste"
+
+#: Marcadores estáveis de cada um dos três controles — a estrutura HTML dos
+#: componentes do design system (`nucleo/templates/components/*.html`), não
+#: o texto visível, para a varredura continuar valendo se a cópia mudar.
+# O filtro de R46 é a barra acima da tabela, com um campo por coluna
+# filtrável — o mesmo desenho do `sementes-premix` (`app/tela_grid.py`), e não
+# uma busca livre única. O marcador é o `name` dos campos, que sempre começa
+# com o prefixo do vocabulário de filtro: uma `FilterBar` vazia, ou com um
+# `q` genérico, não passa por aqui.
+_MARCADOR_FILTRO = 'name="f:'
+_MARCADOR_PAGINACAO = 'class="pager"'  # `Pagination` — sempre desenha o
+# `<div class="pager">`, mesmo com uma página só (só o `<nav>` de números é
+# que só aparece com mais de uma).
+_PADRAO_CABECALHO_ORDENAVEL = re.compile(r"<th[^>]*>\s*<a\b")  # um `<a>`
+# dentro de um `<th>` só existe porque `Column.label` recebeu um `Markup`
+# de link — ver `comum.listagem.montar_pagina` e o comentário de R46
+# em `docs/superpowers/decisoes-2026-08-20-fatia-fina.md`.
+
+
+def _caminho_concreto(padrao: URLPattern) -> "str | None":
+    """Ver o par exato em `tests/test_personificacao.py::_caminho_concreto`
+    — mesma regra, mesmo motivo: troca qualquer conversor de rota por um
+    valor de mentira, para a varredura andar por cima de rota com argumento
+    sem precisar de `reverse()`."""
+    rota = str(padrao.pattern)
+
+    def _valor_de_mentira(m: "re.Match") -> str:
+        return {"int": "1", "slug": "x", "uuid":
+                 "00000000-0000-0000-0000-000000000000"}.get(m.group(1), "x")
+
+    return re.sub(r"<(\w+):\w+>", _valor_de_mentira, rota)
+
+
+def _rotas_com_caminho():
+    """Toda rota do projeto, como `(nome, caminho)` — mesma implementação e
+    mesmo motivo de `tests/test_personificacao.py::_rotas_com_caminho`:
+    caminha `get_resolver().url_patterns` recursivamente, nunca `reverse()`,
+    para uma rota com argumento não ser pulada em silêncio."""
+
+    def caminhar(padroes):
+        for padrao in padroes:
+            if isinstance(padrao, URLResolver):
+                yield from caminhar(padrao.url_patterns)
+            elif isinstance(padrao, URLPattern):
+                yield padrao.name, _caminho_concreto(padrao)
+
+    return list(caminhar(get_resolver().url_patterns))
+
+
+@pytest.fixture
+def raiz(db) -> Usuario:
+    """Superusuário: alcança `/cargos` e `/usuarios` (módulos que nascem
+    ligados, `ativo_por_padrao=True` — ver `contas.modulo`) e também as
+    telas da MW5 (`aparencia`, `modulos`), que só respondem para
+    `is_superuser`. Não precisa de nenhuma permissão concedida à mão."""
+    return Usuario.objects.create_superuser(email="raiz@teste.com", password=SENHA)
+
+
+@pytest.fixture
+def raiz_logado(raiz) -> Client:
+    c = Client()
+    c.post(reverse("entrar"), {"usuario": "raiz@teste.com", "senha": SENHA})
+    return c
+
+
+@pytest.mark.django_db
+class TestTodaTabelaTemFiltroOrdenacaoEPaginacao:
+    #: Rotas onde uma `<table>` na página não precisa das três exigências,
+    #: e o motivo de cada uma — mesmo espírito de `comum.guardas_de_acesso.
+    #: TELAS_ABERTAS` e do `ISENTAS` de `tests/test_personificacao.py`: uma
+    #: lista curta, com o motivo ao lado, para "esqueci" nunca ser a razão
+    #: de um nome entrar aqui.
+    ISENTAS = frozenset({
+        # A vitrine de componentes (`nucleo/views.py::demonstracao`) desenha
+        # uma `Table` de mentira ("Cidade"/"UF", duas linhas fixas) só para
+        # mostrar como o componente parece — não lista registro nenhum, e
+        # os cartões de `FilterBar` e `Pagination` da MESMA página são,
+        # pelo mesmo motivo, outra vitrine avulsa, não o trio aplicado a
+        # ESTA tabela. R46 é sobre telas que listam dados de verdade; isto
+        # é a exceção explícita, e não um alargamento silencioso do padrão
+        # de busca para não bater aqui.
+        "demonstracao",
+    })
+
+    def test_toda_tabela_tem_filtro_ordenacao_e_paginacao(self, raiz_logado):
+        problemas = []
+        for nome, caminho in _rotas_com_caminho():
+            if nome in self.ISENTAS:
+                continue
+            resposta = raiz_logado.get("/" + caminho)
+            if resposta.status_code != 200:
+                continue
+            if not resposta.get("Content-Type", "").startswith("text/html"):
+                continue
+            html = resposta.content.decode()
+            if "<table" not in html:
+                continue
+
+            faltando = []
+            if _MARCADOR_FILTRO not in html:
+                faltando.append("filtro")
+            if _MARCADOR_PAGINACAO not in html:
+                faltando.append("paginação")
+            if not _PADRAO_CABECALHO_ORDENAVEL.search(html):
+                faltando.append("cabeçalho ordenável")
+            if faltando:
+                problemas.append(f"{nome or caminho}: falta {', '.join(faltando)}")
+
+        assert not problemas, (
+            f"telas com <table> sem alguma das três exigências de R46 "
+            f"(filtro, ordenação por coluna, paginação): {problemas}. Ou "
+            f"monte a listagem com `comum.listagem.montar_pagina`, ou "
+            f"justifique a isenção em `ISENTAS`."
+        )

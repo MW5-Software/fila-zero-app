@@ -1,0 +1,5 @@
+{% if c.href %}
+<a class="dashed-btn" href="{{ c.href }}"{{ c.attrs|attrs }}>{{ icon(c.icon, "sm") }}{{ c.label }}</a>
+{% else %}
+<button class="dashed-btn" type="button"{{ c.attrs|attrs }}>{{ icon(c.icon, "sm") }}{{ c.label }}</button>
+{% endif %}

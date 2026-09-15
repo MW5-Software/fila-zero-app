@@ -1,0 +1,15 @@
+{# Com ícone ou sufixo o controle vira um GRUPO: os adornos são caixas
+   irmãs, não texto dentro do campo. Assim o cursor nunca começa em cima de um
+   desenho, e a unidade não vira parte do que se digita. #}
+{% import "components/_field.html" as fld %}
+{{ fld.open(c) }}
+{% if c.com_adorno %}<div class="ctl-adorno">
+  {% if c.icon %}<span class="adorno">{{ icon(c.icon, "sm") }}</span>{% endif %}
+{% endif %}
+<input class="ctl" type="{{ c.type }}" value="{{ c.value }}"{{ fld.common(c) }}
+  {%- if c.maxlength %} maxlength="{{ c.maxlength }}"{% endif %}
+  {%- if c.autocomplete %} autocomplete="{{ c.autocomplete }}"{% endif %}{{ c.attrs|attrs }}>
+{% if c.com_adorno %}
+  {% if c.suffix %}<span class="adorno">{{ c.suffix }}</span>{% endif %}
+</div>{% endif %}
+{{ fld.close(c) }}

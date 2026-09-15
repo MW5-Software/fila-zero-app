@@ -1,0 +1,121 @@
+/* O formulário de empresa — o que a folha do design system não cobre.
+
+   Carrega depois da `mw5.css` e da folha desta casa, e só na tela de
+   Empresas: regra de uma tela não tem por que pesar em todas. */
+
+/* As ações no fim, separadas por um fio e encostadas à direita.
+
+   "Criar empresa" nascia colado no último campo, na largura de um controle
+   qualquer e à esquerda — num formulário de dezessete campos, quem rolava até
+   o fim não via onde ele terminava, e não havia como sair sem salvar a não
+   ser pelo ✕ do canto. */
+.ep-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 -22px -20px;
+  padding: 14px 22px;
+  /* Sem fio, e a faixa cinza no lugar dele: o fio E a faixa marcavam a mesma
+     divisão duas vezes, e a segunda marca não acrescenta nada — só some com
+     um respiro. A faixa também amarra o rodapé às colunas de cima, que já
+     têm fundo próprio do lado direito. */
+  background: var(--surface-2);
+}
+@media (max-width: 620px) {
+  /* Empilhados e de largura inteira: no celular, dois botões lado a lado
+     ficam estreitos para o polegar, e o de confirmar vem por último porque é
+     o último passo. */
+  .ep-rodape { flex-direction: column-reverse; }
+  .ep-rodape .btn { width: 100%; }
+}
+
+/* A largura do modal.
+
+   O design system trava `.modal.lg` em 820px, e os três grupos de campos
+   pedem mais: com 820, "Logradouro · Número · Complemento" saía com o
+   logradouro em 380px, estreito para um endereço inteiro.
+
+   `#empresa-criar .modal`, e NÃO `#empresa-criar`: o id fica no `.overlay`,
+   que é o fundo escurecido de tela inteira. Aplicar a largura nele encolhe o
+   FUNDO e deixa a caixa no tamanho antigo, encostada à esquerda. O id de
+   editar é `empresa-<pk>-editar`, daí o seletor com começo E fim. */
+#empresa-criar .modal,
+[id^="empresa-"][id$="-editar"] .modal { max-width: 940px; }
+
+
+/* --- as duas colunas ---------------------------------------------------
+
+   Cadastro à esquerda, conexão à direita.
+
+   A conexão é assunto de outra equipe e de outro dia — a empresa entra no
+   cadastro semanas antes de a conexão existir. Na fileira, ela era só "mais
+   campos", e "Host" nascia na mesma linha do "CEP". */
+.ep-duas {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 0;
+  align-items: stretch;
+  /* Anula o respiro do `Box` de fora: as colunas encostam nas bordas do
+     modal, e é o fundo da direita que faz a divisão aparecer. */
+  margin: -20px -22px 0;
+}
+.ep-form { padding: 20px 22px; min-width: 0; }
+.ep-lado {
+  /* O mesmo respiro do topo que `.ep-form`: sem isso os dois rótulos de
+     seção — "Identidade" e "Conexão com o Kronos" — nascem em alturas
+     diferentes, e o olho lê a coluna da direita como se ela começasse
+     depois. */
+  padding: 20px 20px 20px;
+  background: var(--surface-2);
+  border-left: 1px solid var(--outline);
+}
+@media (max-width: 820px) {
+  /* Uma coluna, e a conexão por ÚLTIMO: é a parte que se preenche depois. */
+  .ep-duas { grid-template-columns: 1fr; }
+  .ep-lado { border-left: 0; border-top: 1px solid var(--outline); }
+}
+
+/* --- o campo da senha, com o olho -------------------------------------
+
+   O `<input>` nasce sempre vazio, inclusive ao editar: a senha não viaja no
+   HTML da lista, que desenha um modal por linha — embutir poria a credencial
+   do Oracle de TODOS os clientes no código-fonte de cada carregamento. O olho
+   busca a de UMA empresa, sob demanda, por uma rota que registra quem viu.
+   Ver `plataforma.views_empresa.senha_do_banco`. */
+.ep-senha { position: relative; }
+.ep-olho {
+  position: absolute;
+  right: 6px;
+  /* Alinhado ao CAMPO, não à caixa: o rótulo em cima e a frase de apoio
+     embaixo entram na altura total, e centrar no conjunto poria o botão no
+     meio do texto. */
+  top: 27px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--on-surface-2);
+  cursor: pointer;
+}
+.ep-olho:hover { background: var(--surface-3, var(--surface-2)); color: var(--on-surface); }
+.ep-olho svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+/* Enquanto a senha está à mostra: o olho fica aceso, para não haver dúvida
+   sobre o campo estar em texto claro na tela de alguém. */
+/* `--primary-soft` nunca existiu no design system, então o fallback azul fixo
+   era o que valia sempre — inclusive num cliente cuja marca não é azul, e no
+   tema escuro. O `color-mix` faz o mesmo tom claro A PARTIR da cor da marca.
+   Ver `tests/test_variavel_de_cor_existe.py`. */
+.ep-olho[aria-pressed="true"] {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.ep-senha .ctl { padding-right: 42px; }

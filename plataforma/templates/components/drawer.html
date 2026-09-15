@@ -1,0 +1,10 @@
+<div class="drawer{% if c.open %} open{% endif %}" id="{{ c.id }}" role="dialog" aria-modal="true" aria-labelledby="{{ c.id }}-title" data-drawer>
+  <div class="mhead">
+    <div>
+      <h3 id="{{ c.id }}-title">{{ c.title }}</h3>
+      {% if c.subtitle %}<div class="sub">{{ c.subtitle|render }}</div>{% endif %}
+    </div>
+    <button class="close" type="button" aria-label="{{ traduzir("Fechar") }}" data-drawer-close>{{ icon("x") }}</button>
+  </div>
+  <div class="mbody">{{ c.body|render }}</div>
+</div>

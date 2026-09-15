@@ -1,0 +1,9 @@
+{% if c.href %}
+<a class="iconbtn{% if c.css_class %} {{ c.css_class }}{% endif %}" href="{{ c.href }}" title="{{ c.title }}" aria-label="{{ c.title }}"{{ c.attrs|attrs }}>
+  {{ icon(c.icon) }}{% if c.badge %}<span class="dot" aria-hidden="true"></span>{% endif %}
+</a>
+{% else %}
+<button class="iconbtn{% if c.css_class %} {{ c.css_class }}{% endif %}" type="button" title="{{ c.title }}" aria-label="{{ c.title }}"{{ c.attrs|attrs }}>
+  {{ icon(c.icon) }}{% if c.badge %}<span class="dot" aria-hidden="true"></span>{% endif %}
+</button>
+{% endif %}

@@ -1,0 +1,4 @@
+<div class="dropdown" id="{{ c.id }}" role="menu" data-dropdown>
+  {% if c.title %}<div class="dt" data-dropdown-title>{{ c.title }}</div>{% endif %}
+  {% for item in c.items %}{{ item|render }}{% endfor %}
+</div>

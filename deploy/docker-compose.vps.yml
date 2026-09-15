@@ -1,0 +1,44 @@
+# O compose das instalações: SÓ baixa do GHCR — o VPS não tem código-fonte
+# e não compila (decisão B da spec do painel: uma imagem construída,
+# sessenta instalações rodando os mesmos bytes). Por isso não existe chave
+# de construção local aqui, e um teste estrutural garante que ninguém
+# acrescente uma.
+#
+# A tag vem do ambiente (padrão `latest`) para o "voltar" ser o mesmo fluxo
+# de sempre, só fixando a tag na anterior — `deploy/atualizar.sh` (Task 3)
+# é quem grava `KRONOS_TAG` no `.env` ao voltar, e quem apaga essa fixação
+# ao atualizar de novo.
+services:
+  app:
+    image: ghcr.io/mw5-software/kronos-base:${KRONOS_TAG:-latest}
+    # `migrate` ANTES do gunicorn, e não como passo separado de quem atualiza.
+    #
+    # Isto faltava aqui, e era o defeito mais caro do projeto: o `CMD` da
+    # imagem é só o gunicorn, e `deploy/atualizar.sh` faz `pull` + `up -d`.
+    # Uma versão nova com migração subia contra o banco velho — a instalação
+    # quebrava na primeira tela que tocasse a coluna nova. O compose de
+    # DESENVOLVIMENTO já tinha esta linha; era só ele que migrava, e o README
+    # descrevia o comportamento dele como se fosse o do cliente.
+    #
+    # `migrate` também é o que aciona a semeadura dos módulos
+    # (`post_migrate`, ver `plataforma/apps.py`): sem ele, módulo novo nunca
+    # aparece na tela de Módulos de quem já está instalado.
+    #
+    # `--noinput` porque não há ninguém para responder pergunta nenhuma; se a
+    # migração falhar, o comando sai diferente de zero e o container não
+    # sobe — o que é o certo. Subir com o esquema errado é pior do que não
+    # subir: o primeiro é um erro visível, o segundo é dado corrompido.
+    command: sh -c "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?defina DJANGO_SECRET_KEY}
+      KRONOS_BANCO: ${KRONOS_BANCO:?defina KRONOS_BANCO}
+      # A senha do banco do CLIENTE, guardada cifrada. Sem esta chave
+      # o cadastro de empresa recusa gravar senha — e é melhor assim:
+      # a alternativa seria a credencial do Oracle dele em texto claro
+      # no nosso banco. Uma por instalação, nunca a mesma nas sessenta:
+      # `python -c "from plataforma.cifra import gerar_chave; print(gerar_chave())"`
+      PORTAL_CHAVE_DE_CIFRAGEM: ${PORTAL_CHAVE_DE_CIFRAGEM:?defina PORTAL_CHAVE_DE_CIFRAGEM}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}

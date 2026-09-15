@@ -1,0 +1,8 @@
+<div class="pagehead">
+  <div>
+    <h1>{{ c.title }}</h1>
+    {% if c.subtitle %}<p>{{ c.subtitle }}</p>{% endif %}
+  </div>
+  {% if c.tags %}<div class="tags">{{ c.tags|render }}</div>{% endif %}
+  {% if c.actions %}<div class="tags">{{ c.actions|render }}</div>{% endif %}
+</div>

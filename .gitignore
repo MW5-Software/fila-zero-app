@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.sqlite3
+.env
+*.log
+.superpowers/
+staticfiles/
+docker-compose.override.yml
+
+# Os dumps que `backupar` gera. Ficam na maquina que opera, nunca no repositorio:
+# um backup versionado seria o banco do cliente dentro do git.
+backups/
+
+# Relatorio do coverage, gerado em auditoria.
+.coverage
+
+# As fotos de produto (`catalogo/armazenamento.py`). Dado da instalação, como
+# o banco — não é código, e cada VPS tem as suas. Entra no backup pelo
+# `manage.py backupar`, nunca pelo git.
+/midia/

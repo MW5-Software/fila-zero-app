@@ -1,0 +1,5 @@
+<form class="card filters" method="get"{% if c.action %} action="{{ c.action }}"{% endif %}{{ c.attrs|attrs }}>
+  {{ c.fields|render }}
+  <button class="btn" type="submit">{{ icon("filter", "sm") }}<span>{{ c.submit_label }}</span></button>
+  {{ c.extra_actions|render }}
+</form>

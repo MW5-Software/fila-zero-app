@@ -1,0 +1,72 @@
+services:
+  banco:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: kronos
+      POSTGRES_USER: kronos
+      POSTGRES_PASSWORD: kronos
+    volumes:
+      - banco_dados:/var/lib/postgresql/data
+    # Publicado para que desenvolvimento e a suíte tenham UM caminho oficial
+    # até o banco — antes não havia nenhum, e quem precisava olhar os dados
+    # (ou apontar um cliente de banco) tinha que inventar o seu.
+    #
+    # 5435: a 5432 é de outro projeto desta máquina, a 5433 é do KRONOS.net e
+    # a 5434 é do Portal de Vendas. Apontar para a porta errada abre o banco
+    # de outro produto sem nenhum aviso — e todos têm as MESMAS tabelas da
+    # base, o que torna o engano invisível até alguém gravar no lugar errado.
+    #
+    # Preso a `127.0.0.1`: o banco atende quem está na máquina, e não a rede.
+    ports:
+      - "127.0.0.1:5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kronos -d kronos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    # `/tema.css` consulta o banco a cada requisição, e a tela de login
+    # carrega essa folha — subir a aplicação antes do banco responder faz a
+    # primeira pessoa a abrir o sistema ver erro de conexão, não a tela de
+    # entrada. `service_healthy` (e não só `service_started`) é o que
+    # garante a ordem certa.
+    depends_on:
+      banco:
+        condition: service_healthy
+    environment:
+      # Sem valor padrão de propósito: uma chave gerada a cada boot
+      # deslogaria todo mundo a cada restart, e duas réplicas atrás de um
+      # balanceador não reconheceriam a sessão uma da outra. O `:?` faz o
+      # compose recusar subir sem a variável definida no ambiente de quem
+      # sobe (ver README).
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?defina DJANGO_SECRET_KEY antes de subir}
+      KRONOS_BANCO: postgresql://kronos:kronos@banco:5432/kronos
+      # A senha do banco do CLIENTE, guardada cifrada. Sem esta chave
+      # o cadastro de empresa recusa gravar senha — e é melhor assim:
+      # a alternativa seria a credencial do Oracle dele em texto claro
+      # no nosso banco. Uma por instalação, nunca a mesma nas sessenta:
+      # `python -c "from plataforma.cifra import gerar_chave; print(gerar_chave())"`
+      PORTAL_CHAVE_DE_CIFRAGEM: ${PORTAL_CHAVE_DE_CIFRAGEM:-}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      # Onde os arquivos da instalação moram (`plataforma/midia.py`). A
+      # partir do primeiro módulo que grava arquivo, a imagem do contêiner
+      # deixa de ser descartável sozinha: a pasta é estado, como o banco.
+      KRONOS_MIDIA: /midia
+    volumes:
+      # **O volume é o que impede um `up --build` de apagar os arquivos.**
+      # Sem ele eles moram na camada de escrita do contêiner, que morre com
+      # ele — e a perda não daria erro nenhum: as linhas continuariam no
+      # banco, apontando para arquivos que não existem mais.
+      - midia:/midia
+    ports:
+      # 8004: a 8000 e a 8001 são do KRONOS.net e a 8003 do Portal de Vendas.
+      - "8004:8000"
+    # `migrate` na subida é o que aciona a semeadura dos módulos (Task 7):
+    # todo `migrate` semeia o que o código declara e o banco ainda não tem.
+    command: sh -c "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+
+volumes:
+  banco_dados:
+  midia:

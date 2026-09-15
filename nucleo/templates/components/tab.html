@@ -1,0 +1,11 @@
+{# Com `href` é link; sem, é botão.
+
+   O botão só vira controle de painel quando a barra tem painéis — e quem sabe
+   disso é a `Tabs`, que escreve `data-abas` nela. O botão em si não carrega
+   índice nenhum: o `mw5.js` acha a posição dele entre os irmãos da barra, e
+   assim a `Tab` continua servindo aos dois usos sem saber de painel. #}
+{% if c.href %}
+<a href="{{ c.href }}"{% if c.active %} class="active" aria-current="page"{% endif %}{{ c.attrs|attrs }}>{{ c.label }}</a>
+{% else %}
+<button type="button"{% if c.active %} class="active" aria-current="true"{% endif %}{{ c.attrs|attrs }}>{{ c.label }}</button>
+{% endif %}

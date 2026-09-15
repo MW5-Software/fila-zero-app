@@ -1,0 +1,47 @@
+/* A página de papel (`plataforma.exportacao.em_impressao`).
+ *
+ * Só o que a IMPRESSÃO precisa e a tela não dá: margem de papel, largura
+ * inteira para a tabela e o carimbo discreto. Cores, fonte e bordas vêm do
+ * tema (`/tema.css`) e da folha do design system — nada de cor nova aqui,
+ * pela mesma regra de todo o projeto.
+ */
+
+@page {
+  margin: 18mm 14mm;
+}
+
+body.papel {
+  background: #fff;
+  margin: 0;
+}
+
+.papel-cabecalho {
+  margin-bottom: 12px;
+}
+
+.papel-cabecalho h1 {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+.papel-carimbo,
+.papel-filtro {
+  color: var(--on-surface-2, #666);
+  font-size: 11px;
+  margin: 0;
+}
+
+/* Na impressão de verdade a tabela usa a largura do papel e repete o
+   cabeçalho nas páginas seguintes — é o navegador quem faz, se a tabela
+   deixar. */
+body.papel table {
+  width: 100%;
+}
+
+body.papel thead {
+  display: table-header-group;
+}
+
+body.papel tr {
+  break-inside: avoid;
+}

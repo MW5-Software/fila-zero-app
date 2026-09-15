@@ -1,0 +1,22 @@
+{# Um mapa embutido. A URL já passou por `Mapa.valida` — ver o componente para
+   por que a lista de hosts é fechada.
+
+   `loading="lazy"`: um mapa no fim de uma página longa não pode custar o
+   carregamento da tela inteira.
+   `referrerpolicy`: o Google não precisa saber a rota interna do sistema do
+   cliente para desenhar o mapa. #}
+{% if c.valida %}
+<div class="mapa{% if not c.moldura %} sem-moldura{% endif %}"
+     style="--mapa-h: {{ c.altura }}px"{{ c.attrs|attrs }}>
+  <iframe src="{{ c.url }}" title="{{ c.titulo }}"
+          loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen></iframe>
+</div>
+{% else %}
+<div class="empty inline"{{ c.attrs|attrs }}>
+  <div class="ei">{{ icon("map", "lg") }}</div>
+  <h3>Mapa sem endereço</h3>
+  <p>Cole aqui o endereço de <em>incorporar</em> do Google Maps — o que começa
+     com <code>https://www.google.com/maps/embed</code>.</p>
+</div>
+{% endif %}

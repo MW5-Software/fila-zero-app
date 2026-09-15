@@ -1,0 +1,81 @@
+{# Um gráfico. A geometria já vem pronta em `g`; aqui só há marcação.
+
+   O `<title>` dentro de cada forma é o tooltip nativo do navegador — é por isso
+   que este componente não precisa de uma linha de JavaScript. #}
+<div class="chart{% if c.legend == 'bottom' %} legenda-embaixo{% endif %}">
+  {% if c.title %}<div class="ct">{{ c.title }}</div>{% endif %}
+
+  {% if g.vazio %}
+    <p class="muted">Sem dados.</p>
+  {% else %}
+  <div class="cv">
+    {# Sem `preserveAspectRatio="none"`: o desenho escala igual nos dois eixos.
+       Forçar só X esticava o texto de 9px, os cantos do `rx` e a espessura da
+       linha pela razão entre a largura da caixa e os 320 do viewBox.
+
+       As duas classes existem porque as regras de tamanho são opostas: o
+       gráfico de eixos ocupa a largura toda, o redondo tem tamanho fixo ao
+       lado da legenda. #}
+    <svg role="img" aria-label="{{ c.resumo() }}"
+         {% if c.redondo %}viewBox="0 0 120 120" class="donutwrap"
+         {% else %}viewBox="0 0 320 {{ c.height }}" class="plot"{% endif %}>
+
+      {% if c.redondo %}
+        {% for f in g.fatias %}
+        <path d="{{ f.d }}" fill="{{ f.cor }}"><title>{{ f.label }} {{ f.valor }}</title></path>
+        {% endfor %}
+
+      {% else %}
+        {% for m in g.marcas %}
+          {% if m.deitada %}
+          <line x1="{{ m.x }}" y1="0" x2="{{ m.x }}" y2="{{ g.area_a }}" class="grade"/>
+          <text x="{{ m.x }}" y="{{ c.height - 6 }}" class="tk {{ m.ancora }}">{{ m.texto }}</text>
+          {% else %}
+          <line x1="44" y1="{{ m.y }}" x2="320" y2="{{ m.y }}" class="grade"/>
+          <text x="40" y="{{ m.y + 3 }}" class="tk fim">{{ m.texto }}</text>
+          {% endif %}
+        {% endfor %}
+
+        {% if g.barras is defined %}
+          {% for b in g.barras %}
+          <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}"
+                rx="2" fill="{{ b.cor }}"><title>{{ b.label }} {{ b.valor }}</title></rect>
+          {% endfor %}
+        {% endif %}
+
+        {% if g.curva is defined %}
+        <polyline points="{{ g.curva }}" fill="none" stroke="{{ g.cor_da_linha }}"
+                  stroke-width="2" stroke-linejoin="round"/>
+          {% for v in g.vertices %}
+          <circle cx="{{ v.x }}" cy="{{ v.y }}" r="3" fill="{{ g.cor_da_linha }}">
+            <title>{{ v.label }} {{ v.valor }}</title></circle>
+          <text x="{{ v.x }}" y="{{ c.height - 6 }}" class="tk meio">{{ v.curto }}</text>
+          {% endfor %}
+        {% endif %}
+
+        {# O rótulo de cada barra. Em pé ele fica sob a coluna; deitada, no eixo
+           Y — que é o que a margem esquerda de 44 sempre reservou. Sem ele um
+           gráfico com `legend="none"` não diz que barra é qual. #}
+        {% if g.barras is defined %}
+          {% for b in g.barras %}
+            {% if g.deitada %}
+          <text x="40" y="{{ b.rotulo_y }}" class="tk fim">{{ b.curto }}</text>
+            {% else %}
+          <text x="{{ b.rotulo_x }}" y="{{ c.height - 6 }}" class="tk meio">{{ b.curto }}</text>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+    </svg>
+
+    {% if c.mostra_legenda %}
+    <div class="leg">
+      {% for i in g.legenda %}
+      <div class="li"><span class="sw" style="background: {{ i.cor }}"></span>
+        {{ i.label }} <b>{{ i.valor }}</b></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

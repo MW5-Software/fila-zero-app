@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR"{% if c.brand.default_theme != "system" %} data-theme="{{ c.brand.default_theme }}"{% endif %}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ c.document_title }}</title>
+{% if c.brand.assets.favicon %}<link rel="icon" href="{{ c.brand.assets.favicon }}">{% endif %}
+<link rel="stylesheet" href="{{ c.theme_href }}">
+<link rel="stylesheet" href="{{ estatico("mw5.css") }}">
+{% for folha in c.stylesheets %}
+<link rel="stylesheet" href="{{ folha }}">
+{% endfor %}
+<script>
+(function(){try{var t=localStorage.getItem("mw5-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
+</script>
+</head>
+<body class="login">
+
+<main class="login-card">
+{% if c.brand.assets.login_logo %}
+  <div class="login-logo-box">
+    <img class="login-logo" src="{{ c.brand.assets.login_logo }}" alt="{{ c.brand.client_name }}">
+  </div>
+{% endif %}
+
+  {% if c.brand.login.tagline %}
+  <p class="login-tagline">{{ c.brand.login.tagline }}</p>
+  {% endif %}
+
+  <h1>{{ c.brand.login.title }}</h1>
+  {% if c.brand.login.subtitle %}<p class="login-sub">{{ c.brand.login.subtitle }}</p>{% endif %}
+  {% if c.brand.login.separator %}<div class="login-sep">{{ c.brand.login.separator }}</div>{% endif %}
+
+  <form method="post" action="{{ c.action }}">
+    {% if c.error %}{{ c.error_alert|render }}{% endif %}
+
+    {{ c.fields|render }}
+
+    {% if c.brand.login.show_remember or c.brand.login.show_forgot %}
+    <div class="login-row">
+      {% if c.brand.login.show_remember %}
+      <label class="check">
+        <input type="checkbox" name="manter_conectado" value="1">
+        <span>{{ c.brand.login.remember_label }}</span>
+      </label>
+      {% else %}<span></span>{% endif %}
+      {% if c.brand.login.show_forgot %}
+      <a class="login-forgot" href="{{ c.brand.login.forgot_url }}">{{ c.brand.login.forgot_label }}</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <button class="login-submit" type="submit">{{ c.brand.login.submit_label }}</button>
+  </form>
+
+  {% if c.brand.login.support_text or c.brand.login.support_label %}
+  <p class="login-support">
+    {{ c.brand.login.support_text }}
+    {% if c.brand.login.support_label %}
+    <a href="{{ c.brand.login.support_url }}">{{ c.brand.login.support_label }}</a>
+    {% endif %}
+  </p>
+  {% endif %}
+</main>
+
+<script src="{{ estatico("mw5.js") }}" defer></script>
+</body>
+</html>

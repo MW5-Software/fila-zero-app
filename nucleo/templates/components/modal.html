@@ -1,0 +1,13 @@
+<div class="overlay{% if c.open %} open{% endif %}" id="{{ c.id }}" role="dialog" aria-modal="true" aria-labelledby="{{ c.id }}-title" data-modal>
+  <div class="modal{% if c.size %} {{ c.size }}{% endif %}">
+    <div class="mhead">
+      <div>
+        <h3 id="{{ c.id }}-title">{{ c.title }}</h3>
+        {% if c.subtitle %}<div class="sub">{{ c.subtitle|render }}</div>{% endif %}
+      </div>
+      <button class="close" type="button" aria-label="Fechar" data-modal-close>{{ icon("x") }}</button>
+    </div>
+    <div class="mbody">{{ c.body|render }}</div>
+    {% if c.footer %}<div class="mfoot">{{ c.footer|render }}</div>{% endif %}
+  </div>
+</div>

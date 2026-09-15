@@ -1,0 +1,28 @@
+{# Um <form> só quando há para onde enviar: sem seletor e sem destino, isto é
+   texto, e envolvê-lo num formulário seria prometer uma ação que não existe. #}
+{% if c.switchable and c.action %}
+<form class="ctx" action="{{ c.action }}" method="get">
+{% else %}
+<div class="ctx">
+{% endif %}
+  {% for nivel in c.levels %}
+  <div class="ctx-nivel">
+    {% if nivel.options %}
+    <label class="ctx-rotulo" for="ctx-{{ nivel.name }}">{{ nivel.label }}</label>
+    <select class="ctx-sel" id="ctx-{{ nivel.name }}" name="{{ nivel.name }}"
+            {% if c.action %}data-auto-enviar{% endif %}>
+      {% for opcao in nivel.options %}
+      <option value="{{ opcao.value }}"{% if opcao.value == nivel.value %} selected{% endif %}>{{ opcao.label }}</option>
+      {% endfor %}
+    </select>
+    {% else %}
+    <span class="ctx-rotulo">{{ nivel.label }}:</span>
+    <b class="ctx-valor">{{ nivel.value }}</b>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% if c.switchable and c.action %}
+</form>
+{% else %}
+</div>
+{% endif %}

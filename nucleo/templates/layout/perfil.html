@@ -1,0 +1,39 @@
+{# A tela Meu Perfil. Duas seções, e a de senha só quando o backend sabe trocá-la. #}
+<div class="pagehead">
+  <div>
+    <h1>{{ c.titulo }}</h1>
+    {% if c.subtitulo %}<p>{{ c.subtitulo }}</p>{% endif %}
+  </div>
+</div>
+
+{% if c.erro %}{{ erro_alert|render }}{% endif %}
+{% if c.ok %}{{ ok_alert|render }}{% endif %}
+
+<div class="card">
+  <div class="ch"><h2>{{ c.rotulo_foto }}</h2></div>
+  <form class="cb" action="{{ c.acao_foto }}" method="post">
+    {{ token_foto|default("") }}
+    <div class="recorte-atual">
+      {{ avatar|render }}
+      <input type="file" data-recorte="foto" accept="image/*">
+    </div>
+    <div class="recorte-palco" data-recorte-palco="foto" hidden>
+      <img data-recorte-alvo="foto" alt="">
+    </div>
+    <input type="hidden" name="recorte" id="foto">
+    {% if c.ajuda_foto %}<p class="muted">{{ c.ajuda_foto }}</p>{% endif %}
+    <button type="submit" class="btn primary">Salvar foto</button>
+  </form>
+</div>
+
+{% if c.troca_de_senha %}
+<div class="card">
+  <div class="ch"><h2>{{ c.rotulo_senha }}</h2></div>
+  <form class="cb" action="{{ c.acao_senha }}" method="post">
+    <div class="formgrid">
+      {{ campos_senha|render }}
+    </div>
+    <button type="submit" class="btn primary">Trocar senha</button>
+  </form>
+</div>
+{% endif %}

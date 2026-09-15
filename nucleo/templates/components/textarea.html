@@ -1,0 +1,4 @@
+{% import "components/_field.html" as fld %}
+{{ fld.open(c) }}
+<textarea class="ctl"{{ fld.common(c) }}{% if c.rows %} rows="{{ c.rows }}"{% endif %}{{ c.attrs|attrs }}>{{ c.value }}</textarea>
+{{ fld.close(c) }}

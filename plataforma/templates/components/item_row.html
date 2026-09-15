@@ -1,0 +1,12 @@
+<div class="itemrow">
+  <div class="av">{{ icon(c.icon) }}</div>
+  <div class="bi">
+    <div class="bn">{{ c.title }}</div>
+    {% if c.subtitle %}<div class="bm">{{ c.subtitle }}</div>{% endif %}
+  </div>
+  {% if c.tag %}{{ c.tag|render }}{% endif %}
+  {% if c.actions %}{{ c.actions|render }}{% endif %}
+  {% if c.remove_attrs is not none %}
+  <button class="del" type="button" title="{{ traduzir("Remover") }}" aria-label="{{ traduzir("Remover") }} {{ c.title }}"{{ c.remove_attrs|attrs }}>{{ icon("trash", "sm") }}</button>
+  {% endif %}
+</div>

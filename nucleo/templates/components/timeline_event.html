@@ -1,0 +1,5 @@
+<div class="ev {{ c.state }}">
+  <span class="dot">{% if c.icon %}{{ icon(c.icon) }}{% endif %}</span>
+  <div class="lbl">{{ c.label }}</div>
+  {% if c.when %}<div class="when">{{ c.when }}</div>{% endif %}
+</div>

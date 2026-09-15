@@ -1,0 +1,25 @@
+{# Sem `href` o cartão não é um link: vira uma `div`, sem cursor de mão e sem
+   virar alvo de tabulação. Um `href="#"` parece clicável, promete navegação e
+   não leva a lugar nenhum — e quem usa teclado para no cartão à toa.
+
+   O caso sem destino existe porque nem todo cartão é atalho: na tela de um
+   projeto gerado ele descreve um arquivo em disco, que não tem rota. #}
+{% if c.href %}
+<a class="mod" href="{{ c.href }}">
+  {% if c.badge %}<span class="badge-novo">{{ c.badge }}</span>{% endif %}
+  <span class="ci">{{ icon(c.icon) }}</span>
+  <div>
+    <h3>{{ c.title }}</h3>
+    {% if c.description %}<p>{{ c.description }}</p>{% endif %}
+  </div>
+</a>
+{% else %}
+<div class="mod sem-destino">
+  {% if c.badge %}<span class="badge-novo">{{ c.badge }}</span>{% endif %}
+  <span class="ci">{{ icon(c.icon) }}</span>
+  <div>
+    <h3>{{ c.title }}</h3>
+    {% if c.description %}<p>{{ c.description }}</p>{% endif %}
+  </div>
+</div>
+{% endif %}

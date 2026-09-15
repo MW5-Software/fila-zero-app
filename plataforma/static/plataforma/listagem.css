@@ -1,0 +1,81 @@
+/* A barra de filtros das telas de listagem (R46) — ver `plataforma/listagem.py`.
+
+   Mora aqui, e não no CSS do design system portado, porque estas regras são
+   ajuste DESTE projeto sobre um componente que veio pronto: misturar as duas
+   coisas faria a próxima reportagem do `nucleo/` ter de separar o que é
+   nosso do que é dele.
+
+   O desenho é o mesmo do `sementes-premix` (`app/static/frete.css`, bloco
+   19), e pelo motivo que aprenderam lá. */
+
+/* UMA LINHA SÓ. A `FilterBar` do design system é um flex que quebra linha, e
+   com campos de largura mínima generosa: a cada filtro a mais a barra
+   ganhava uma linha e empurrava a tabela para baixo da dobra.
+
+   `nowrap` sozinho não bastaria — sem `overflow-x`, o que não coubesse
+   sairia por baixo do cartão em vez de ficar alcançável. Com os dois, a
+   barra rola para o lado e a tabela fica onde está. */
+.filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* O foco desenha um anel em volta do campo; sem esta folga, o anel do
+     primeiro e do último saía cortado pela borda da rolagem. */
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+}
+
+/* `flex: 1 1 0` faz os campos dividirem a linha em partes iguais qualquer
+   que seja o rótulo — "Login" e "Data de entrada até" ocupam o mesmo.
+   `min-width` impede que virem caixas de dois dígitos quando são muitos. */
+/* `flex-basis` de 220px com `max-width`: os campos crescem juntos enquanto
+   couberem, mas nenhum estica sozinho. Sem o teto, uma tela com UM filtro
+   (Perfis) desenhava uma caixa de texto de 1.400px atravessando a tela
+   inteira para procurar uma palavra. */
+.filters > .f {
+  flex: 1 1 220px;
+  min-width: 140px;
+  max-width: 340px;
+}
+
+/* Botão e link não esticam como campo, e alinham pela base deles. */
+.filters button[type="submit"],
+.filters .filtro-limpar {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+
+/* A barra vive DENTRO do cartão da tabela: busca e resultado são a mesma
+   coisa, e separá-los em dois cartões dava duas molduras para uma ideia só.
+   A `FilterBar` traz `class="card filters"` — dentro de outro cartão isso
+   vira caixa dentro de caixa, então aqui ela perde a moldura e fica sendo o
+   topo do cartão que já existe. */
+.card .filters {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  /* O recuo lateral é o MESMO das células da tabela (14px), para o campo
+     começar exatamente na vertical da primeira coluna. O cartão destas telas
+     é `padded=False` — quem não puser recuo aqui cola a barra na borda. */
+  padding: 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--outline-2);
+}
+
+/* O botão de buscar é a ação principal deste bloco, e o design system pinta
+   isso de azul da marca (`.btn.primary`). A `FilterBar` emite o botão com
+   `class="btn"` fixo e não aceita variante, então a cor vem daqui — pelos
+   mesmos tokens de `.btn.primary`, nunca por um valor escrito à mão, senão
+   trocar a marca do cliente não alcançaria este botão. */
+.card .filters button[type="submit"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.card .filters button[type="submit"]:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}

@@ -1,0 +1,11 @@
+<nav class="crumb" aria-label="Você está em">
+  <a href="{{ c.home_href }}" title="Início">{{ icon("home") }}</a>
+  {% for crumb in c.crumbs %}
+  <span class="s" aria-hidden="true">/</span>
+  {% if crumb.href and not loop.last %}
+  <a class="up" href="{{ crumb.href }}">{{ crumb.label }}</a>
+  {% else %}
+  <span class="cur" aria-current="page">{{ crumb.label }}</span>
+  {% endif %}
+  {% endfor %}
+</nav>

@@ -1,0 +1,37 @@
+{% if c.is_empty %}
+{{ c.empty|render }}
+{% else %}
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        {% if c.selectable %}<th class="center" style="width:44px"><span class="visually-hidden">{{ traduzir("Selecionar") }}</span></th>{% endif %}
+        {# A coluna de AÇÕES vem primeiro nesta casa (10/09/2026). No design
+           system ela é a última, e as duas posições têm defesa: à direita o
+           olho lê o registro antes de agir sobre ele; à esquerda a mão acha o
+           botão no mesmo lugar em toda tabela, sem depender de quantas
+           colunas cada tela tem nem de onde a rolagem horizontal parou.
+           Aqui pesou a segunda — as tabelas deste portal variam muito de
+           largura, e o catálogo rola na horizontal. #}
+        {% if c.row_actions %}<th class="center" style="width:56px">{{ traduzir("Ações") }}</th>{% endif %}
+        {% for col in c.columns %}
+        <th{% if col.header_classes %} class="{{ col.header_classes }}"{% endif %}{% if col.width %} style="width:{{ col.width }}"{% endif %}>{{ col.label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in c.rows %}
+      <tr{{ c.attrs_for(row)|attrs }}>
+        {% if c.selectable %}
+        <td class="center"><input type="radio" name="{{ c.selection_name }}" value="{{ loop.index }}" aria-label="{{ traduzir("Selecionar linha") }} {{ loop.index }}"></td>
+        {% endif %}
+        {% if c.row_actions %}<td class="center">{{ c.actions_for(row)|render }}</td>{% endif %}
+        {% for col in c.columns %}
+        <td{% if col.cell_classes %} class="{{ col.cell_classes }}"{% endif %}>{{ col.value_of(row)|render }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

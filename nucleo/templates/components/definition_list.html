@@ -1,0 +1,14 @@
+<dl class="dl"{{ c.attrs|attrs }}>
+  {% for f in c.items %}
+  <div class="dl-linha">
+    <dt>{{ f.label }}</dt>
+    <dd>{{ f.value }}</dd>
+  </div>
+  {% endfor %}
+  {% if c.com_total %}
+  <div class="dl-linha dl-total">
+    <dt>{{ c.total_label }}</dt>
+    <dd>{{ c.total_value }}</dd>
+  </div>
+  {% endif %}
+</dl>

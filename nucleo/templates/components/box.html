@@ -1,0 +1,1 @@
+<div class="box box-{{ c.direction }} box-main-{{ c.align }} box-cross-{{ c.cross }} box-gap-{{ c.gap }} box-pad-{{ c.pad }}{% if not c.wrap %} box-nowrap{% endif %}{% if c.css_class %} {{ c.css_class }}{% endif %}"{% if c.path %} data-mw5-caminho="{{ c.path }}"{% endif %}{{ c.attrs|attrs }}>{{ c.body|render }}</div>

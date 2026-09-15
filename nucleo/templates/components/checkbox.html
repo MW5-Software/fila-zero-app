@@ -1,0 +1,11 @@
+<div class="{{ c.field_classes }}">
+  <label class="check" for="{{ c.name }}">
+    <input type="checkbox" id="{{ c.name }}" name="{{ c.name }}" value="{{ c.value or 'on' }}"
+      {%- if c.checked %} checked{% endif %}
+      {%- if c.disabled %} disabled{% endif %}
+      {%- if c.described_by %} aria-describedby="{{ c.described_by }}"{% endif %}{{ c.attrs|attrs }}>
+    <span>{{ c.label }}{% if c.required %} <span class="req" title="obrigatório">*</span>{% endif %}</span>
+  </label>
+  {% if c.error %}<span class="err" id="{{ c.name }}-error">{{ c.error }}</span>
+  {% elif c.help %}<span class="help" id="{{ c.name }}-help">{{ c.help }}</span>{% endif %}
+</div>

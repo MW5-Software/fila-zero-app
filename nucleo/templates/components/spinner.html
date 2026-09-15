@@ -1,0 +1,8 @@
+{% if c.label %}
+<div class="loading-block{% if c.indicator %} htmx-indicator{% endif %}" role="status">
+  <span class="spinner{% if c.large %} lg{% endif %}" aria-hidden="true"></span>
+  <span>{{ c.label }}</span>
+</div>
+{% else %}
+<span class="spinner{% if c.large %} lg{% endif %}{% if c.indicator %} htmx-indicator{% endif %}" role="status" aria-label="Carregando"></span>
+{% endif %}

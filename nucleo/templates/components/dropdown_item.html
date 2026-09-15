@@ -1,0 +1,11 @@
+{% if c.divider %}
+<div class="divider"></div>
+{% elif c.href %}
+<a role="menuitem" href="{{ c.href }}"{% if c.danger %} class="danger"{% endif %}{{ c.attrs|attrs }}>
+  {%- if c.icon %}{{ icon(c.icon) }}{% endif %}{{ c.label }}
+</a>
+{% else %}
+<button role="menuitem" type="button"{% if c.danger %} class="danger"{% endif %}{{ c.attrs|attrs }}>
+  {%- if c.icon %}{{ icon(c.icon) }}{% endif %}{{ c.label }}
+</button>
+{% endif %}

@@ -1,0 +1,12 @@
+<footer>
+  {# Logo quando enviado, texto quando não. Os dois juntos seriam a marca duas
+     vezes lado a lado. #}
+  {% if c.logo %}
+  <span class="footer-marca"><img src="{{ c.logo }}" alt="{{ c.logo_alt }}"></span>
+  {% elif c.left_text %}
+  <span class="footer-marca">{{ c.left_text }}</span>
+  {% else %}
+  <span></span>
+  {% endif %}
+  <span>{{ c.right_text }}</span>
+</footer>

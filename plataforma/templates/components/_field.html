@@ -1,0 +1,23 @@
+{# Invólucro comum a todo campo: rótulo, controle, ajuda e erro. #}
+{% macro open(c) %}
+<div class="{{ c.field_classes }}">
+  {% if c.label %}
+  <label for="{{ c.name }}">{{ c.label }}{% if c.required %} <span class="req" title="{{ traduzir("obrigatório") }}">*</span>{% endif %}</label>
+  {% endif %}
+{% endmacro %}
+
+{% macro close(c) %}
+  {% if c.error %}<span class="err" id="{{ c.name }}-error">{{ c.error }}</span>
+  {% elif c.help %}<span class="help" id="{{ c.name }}-help">{{ c.help }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro common(c) %}
+ id="{{ c.name }}" name="{{ c.name }}"
+{%- if c.required %} required{% endif %}
+{%- if c.disabled %} disabled{% endif %}
+{%- if c.readonly %} readonly{% endif %}
+{%- if c.placeholder %} placeholder="{{ c.placeholder }}"{% endif %}
+{%- if c.described_by %} aria-describedby="{{ c.described_by }}"{% endif %}
+{%- if c.error %} aria-invalid="true"{% endif %}
+{%- endmacro %}

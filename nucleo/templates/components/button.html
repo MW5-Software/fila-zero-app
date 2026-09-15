@@ -1,0 +1,13 @@
+{% if c.href %}
+<a class="{{ c.classes }}" href="{{ c.href }}"{% if c.title %} title="{{ c.title }}"{% endif %}{% if c.disabled %} aria-disabled="true"{% endif %}{{ c.attrs|attrs }}>
+  {%- if c.icon %}{{ icon(c.icon, "sm") }}{% endif -%}
+  {%- if c.label %}<span>{{ c.label }}</span>{% endif -%}
+  {%- if c.icon_right %}{{ icon(c.icon_right, "sm") }}{% endif -%}
+</a>
+{% else %}
+<button class="{{ c.classes }}" type="{{ c.type }}"{% if c.title %} title="{{ c.title }}"{% endif %}{% if c.disabled %} disabled{% endif %}{{ c.attrs|attrs }}>
+  {%- if c.icon %}{{ icon(c.icon, "sm") }}{% endif -%}
+  {%- if c.label %}<span>{{ c.label }}</span>{% endif -%}
+  {%- if c.icon_right %}{{ icon(c.icon_right, "sm") }}{% endif -%}
+</button>
+{% endif %}

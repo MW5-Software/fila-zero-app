@@ -1,0 +1,430 @@
+# Spanish translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-09-14 21:42-0300\n"
+"PO-Revision-Date: 2026-09-09 19:32-0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: es\n"
+"Language-Team: es <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "O Admin dono da conta desta pessoa."
+msgstr "El titular dueño de la cuenta de esta persona."
+
+msgid "O GUID do titular da conta desta pessoa."
+msgstr "El GUID del titular de la cuenta de esta persona."
+
+msgid "A conta dona deste cargo, pelo GUID do titular."
+msgstr "La cuenta dueña de este cargo, por el GUID del titular."
+
+msgid "A conta dona desta alocação, pelo GUID do titular."
+msgstr "La cuenta dueña de esta asignación, por el GUID del titular."
+
+msgid "Cargos"
+msgstr "Cargos"
+
+msgid "Usuários"
+msgstr "Usuarios"
+
+msgid "Auditoria"
+msgstr "Auditoría"
+
+msgid "Minutos de sessão sem atividade"
+msgstr "Minutos de sesión sin actividad"
+
+msgid "Dias para a senha expirar"
+msgstr "Días para que expire la contraseña"
+
+msgid "Sair"
+msgstr "Salir"
+
+msgid "Registros"
+msgstr "Registros"
+
+msgid "Cargo não encontrado."
+msgstr "Cargo no encontrado."
+
+msgid "Editar"
+msgstr "Editar"
+
+msgid "Remover"
+msgstr "Eliminar"
+
+msgid "Nome do cargo"
+msgstr "Nombre del cargo"
+
+msgid "Enxerga"
+msgstr "Ve"
+
+msgid "É cliente"
+msgstr "Es cliente"
+
+msgid "O cargo é de quem compra da empresa, e não de quem trabalha nela."
+msgstr "El cargo es de quien le compra a la empresa, y no de quien trabaja en ella."
+
+msgid "Novo cargo"
+msgstr "Nuevo cargo"
+
+msgid "Criar cargo"
+msgstr "Crear cargo"
+
+msgid "Salvar"
+msgstr "Guardar"
+
+msgid "Remover cargo"
+msgstr "Eliminar cargo"
+
+msgid "Os cargos desta conta: o que cada um pode fazer e quais registros enxerga."
+msgstr "Los cargos de esta cuenta: qué puede hacer cada uno y qué registros ve."
+
+msgid "Cargos da conta"
+msgstr "Cargos de la cuenta"
+
+msgid "Informe o nome do cargo."
+msgstr "Informe el nombre del cargo."
+
+msgid "Escolha o que o cargo enxerga."
+msgstr "Elija lo que el cargo ve."
+
+msgid "Escolha uma empresa no cabeçalho antes de criar um cargo."
+msgstr "Elija una empresa en el encabezado antes de crear un cargo."
+
+msgid "Informe um nome com letras ou números."
+msgstr "Informe un nombre con letras o números."
+
+msgid "Idioma"
+msgstr "Idioma"
+
+msgid ""
+"Vale para as telas do sistema. O que foi cadastrado aparece no idioma em "
+"que foi cadastrado."
+msgstr ""
+"Vale para las pantallas del sistema. Lo que fue cargado aparece en el "
+"idioma en que fue cargado."
+
+msgid "Meu Perfil"
+msgstr "Mi Perfil"
+
+msgid "Foto"
+msgstr "Foto"
+
+msgid "Senha"
+msgstr "Contraseña"
+
+msgid "A senha atual não confere."
+msgstr "La contraseña actual no coincide."
+
+msgid "A confirmação não bate com a senha nova."
+msgstr "La confirmación no coincide con la contraseña nueva."
+
+msgid "Nível de acesso"
+msgstr "Nivel de acceso"
+
+msgid "Conta"
+msgstr "Cuenta"
+
+msgid "Nova senha"
+msgstr "Nueva contraseña"
+
+msgid "Ver como esta pessoa"
+msgstr "Ver como esta persona"
+
+msgid "Acesso"
+msgstr "Acceso"
+
+msgid "Empresa da conta"
+msgstr "Empresa de la cuenta"
+
+msgid "Alocações"
+msgstr "Asignaciones"
+
+msgid "Lugar ou cargo inválido."
+msgstr "Lugar o cargo inválido."
+
+msgid "Novo usuário"
+msgstr "Nuevo usuario"
+
+msgid "Quem é"
+msgstr "Quién es"
+
+msgid "Nome"
+msgstr "Nombre"
+
+msgid "E-mail"
+msgstr "Correo electrónico"
+
+msgid "Em branco, gera uma."
+msgstr "En blanco, genera una."
+
+msgid "Gerar nova senha temporária"
+msgstr "Generar nueva contraseña temporal"
+
+msgid "Gerar nova senha"
+msgstr "Generar nueva contraseña"
+
+msgid "Remover usuário"
+msgstr "Eliminar usuario"
+
+msgid "Senha temporária gerada"
+msgstr "Contraseña temporal generada"
+
+msgid "Usuários existentes"
+msgstr "Usuarios existentes"
+
+msgid "Informe um nome."
+msgstr "Indique un nombre."
+
+msgid "Informe um e-mail válido."
+msgstr "Indique un correo electrónico válido."
+
+#, python-format
+msgid "A senha precisa de pelo menos %(minimo)s caracteres."
+msgstr "La contraseña necesita al menos %(minimo)s caracteres."
+
+msgid "Aloque a pessoa em pelo menos um lugar."
+msgstr "Asigne a la persona en al menos un lugar."
+
+msgid "Você não pode desativar a própria conta."
+msgstr "No puede desactivar su propia cuenta."
+
+msgid "Você não pode remover a própria conta."
+msgstr "No puede eliminar su propia cuenta."
+
+msgid "Usuário não encontrado."
+msgstr "Usuario no encontrado."
+
+msgid "Filial"
+msgstr "Sucursal"
+
+msgid "Acessar Painel"
+msgstr "Acceder al Panel"
+
+msgid "Usuário"
+msgstr "Usuario"
+
+msgid "Seu usuário"
+msgstr "Su usuario"
+
+msgid "Seu e-mail"
+msgstr "Su correo electrónico"
+
+msgid "Sua senha"
+msgstr "Su contraseña"
+
+msgid "Manter conectado"
+msgstr "Mantener la sesión abierta"
+
+msgid "Esqueceu a senha?"
+msgstr "¿Olvidó su contraseña?"
+
+msgid "Entrar"
+msgstr "Ingresar"
+
+msgid "Problemas para entrar?"
+msgstr "¿Problemas para ingresar?"
+
+msgid "Fale com o suporte"
+msgstr "Hable con soporte"
+
+msgid "Problema inesperado"
+msgstr "Problema inesperado"
+
+msgid "Algo inesperado aconteceu"
+msgstr "Ocurrió algo inesperado"
+
+msgid "Página não encontrada"
+msgstr "Página no encontrada"
+
+msgid "Nada neste endereço"
+msgstr "Nada en esta dirección"
+
+msgid "Confira o endereço ou volte ao início pelo menu."
+msgstr "Verifique la dirección o vuelva al inicio por el menú."
+
+#, python-format
+msgid "Idioma: %(atual)s"
+msgstr "Idioma: %(atual)s"
+
+msgid "Administração"
+msgstr "Administración"
+
+msgid "Cadastro"
+msgstr "Registro"
+
+msgid "Vendas"
+msgstr "Ventas"
+
+msgid "Geral"
+msgstr "General"
+
+msgid "O Admin dono desta empresa."
+msgstr "El titular dueño de esta empresa."
+
+msgid "O GUID da conta titular desta empresa."
+msgstr "El GUID de la cuenta titular de esta empresa."
+
+msgid "Empresa"
+msgstr "Empresa"
+
+msgid "Filiais"
+msgstr "Sucursales"
+
+msgid "Parâmetros"
+msgstr "Parámetros"
+
+msgid "Aparência"
+msgstr "Apariencia"
+
+msgid "Módulos"
+msgstr "Módulos"
+
+msgid "Falhas"
+msgstr "Fallas"
+
+msgid "Itens por página"
+msgstr "Elementos por página"
+
+msgid "Nova filial nasce ativa"
+msgstr "La sucursal nueva se crea activa"
+
+msgid "Densidade"
+msgstr "Densidad"
+
+msgid "Sombras"
+msgstr "Sombras"
+
+msgid "Tabela listrada"
+msgstr "Filas alternadas"
+
+msgid "A cara desta instalação — muda a tela inteira, sem publicar versão nova."
+msgstr ""
+"La cara de esta instalación: cambia la pantalla entera, sin publicar una "
+"versión nueva."
+
+msgid "O que esta instalação tem ligado — o resto some do menu."
+msgstr "Lo que esta instalación tiene activado: el resto desaparece del menú."
+
+msgid "Nenhum módulo declarado no código desta instalação."
+msgstr "Ningún módulo declarado en el código de esta instalación."
+
+msgid "Módulos declarados"
+msgstr "Módulos declarados"
+
+msgid "Conexão com o Kronos"
+msgstr "Conexión con Kronos"
+
+msgid "Remover empresa"
+msgstr "Eliminar empresa"
+
+msgid "Empresas"
+msgstr "Empresas"
+
+msgid "Os clientes deste portal, e de onde o cron lê os dados de cada um."
+msgstr "Los clientes de este portal, y de dónde el cron lee los datos de cada uno."
+
+msgid "Os dados da sua empresa, e de onde o cron lê o catálogo dela no Kronos."
+msgstr ""
+"Los datos de su empresa, y de dónde el cron lee el catálogo de ella en "
+"Kronos."
+
+msgid ""
+"Esta conta ainda não tem empresa. Fale com a MW5 — a empresa é cadastrada"
+" junto com a conta, e esta ficou sem."
+msgstr ""
+"Esta cuenta todavía no tiene empresa. Hable con MW5: la empresa se carga "
+"junto con la cuenta, y esta quedó sin ninguna."
+
+msgid "Empresas existentes"
+msgstr "Empresas existentes"
+
+msgid "Sua empresa"
+msgstr "Su empresa"
+
+msgid "Ação desconhecida."
+msgstr "Acción desconocida."
+
+msgid "Empresa não encontrada."
+msgstr "Empresa no encontrada."
+
+msgid "Trocar empresa"
+msgstr "Cambiar de empresa"
+
+msgid "Erro"
+msgstr "Error"
+
+msgid "Nova filial"
+msgstr "Nueva sucursal"
+
+msgid "Criar filial"
+msgstr "Crear sucursal"
+
+msgid "Remover filial"
+msgstr "Eliminar sucursal"
+
+msgid "Filiais existentes"
+msgstr "Sucursales existentes"
+
+msgid "Escolha uma empresa no cabeçalho antes de criar uma filial."
+msgstr "Elija una empresa en el encabezado antes de crear una sucursal."
+
+msgid "Filial não encontrada."
+msgstr "Sucursal no encontrada."
+
+msgid "Trocar filial"
+msgstr "Cambiar de sucursal"
+
+msgid "Enviar"
+msgstr "Enviar"
+
+msgid "Logos e favicon"
+msgstr "Logos y favicon"
+
+msgid "Escolha um arquivo antes de enviar."
+msgstr "Elija un archivo antes de enviar."
+
+msgid "Restaurar padrão"
+msgstr "Restaurar el valor por defecto"
+
+msgid "O que esta instalação mudou do padrão do código."
+msgstr "Lo que esta instalación cambió respecto del valor por defecto del código."
+
+msgid "Parâmetro não encontrado."
+msgstr "Parámetro no encontrado."
+
+msgid "Cancelar"
+msgstr "Cancelar"
+
+msgid "Sem filial"
+msgstr "Sin sucursal"
+
+msgid "Nenhuma filial liberada para você"
+msgstr "Ninguna sucursal habilitada para usted"
+
+msgid "Identificador estável desta linha para fora do sistema."
+msgstr "Identificador estable de esta fila hacia fuera del sistema."
+
+msgid "Você está vendo como outra pessoa"
+msgstr "Usted está viendo como otra persona"
+
+msgid "Voltar a ser eu"
+msgstr "Volver a ser yo"
+
+msgid "Exemplo"
+msgstr "Ejemplo"
+
+msgid "Esta tela só abre com o módulo ligado e a permissão exemplo.ver."
+msgstr "Esta pantalla solo abre con el módulo activado y el permiso exemplo.ver."
+
+msgid "Está de pé"
+msgstr "Está funcionando"
+

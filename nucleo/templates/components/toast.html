@@ -1,0 +1,8 @@
+<div class="toast {{ c.tone }}" role="status" data-duration="{{ c.duration }}">
+  {{ icon("check-circle" if c.tone == "ok" else ("alert" if c.tone in ("warn", "danger") else "info"), "sm") }}
+  <div>
+    {% if c.title %}<div class="tt">{{ c.title }}</div>{% endif %}
+    <div class="tm">{{ c.message }}</div>
+  </div>
+  <button class="close" type="button" aria-label="Fechar" data-toast-close>{{ icon("x", "sm") }}</button>
+</div>

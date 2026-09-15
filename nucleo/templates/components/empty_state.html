@@ -1,0 +1,6 @@
+<div class="empty{% if c.inline %} inline{% endif %}">
+  <div class="ei">{{ icon(c.icon, "lg") }}</div>
+  <h3>{{ c.title }}</h3>
+  {% if c.message %}<p>{{ c.message }}</p>{% endif %}
+  {% if c.actions %}<div class="actions">{{ c.actions|render }}</div>{% endif %}
+</div>

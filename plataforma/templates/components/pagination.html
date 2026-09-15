@@ -1,0 +1,16 @@
+<div class="pager">
+  <span class="info">
+    {% if c.total %}{{ c.first_item }}–{{ c.last_item }} de {{ c.total }}{% else %}Nenhum registro{% endif %}
+  </span>
+  {% if c.pages > 1 %}
+  <nav class="pages" aria-label="{{ traduzir("Paginação") }}">
+    {% if c.page > 1 %}<a href="{{ c.url_for_page(c.page - 1) }}" aria-label="{{ traduzir("Página anterior") }}">‹</a>{% endif %}
+    {% for number in c.numbers() %}
+      {% if number is none %}<span class="gap">…</span>
+      {% elif number == c.page %}<span class="cur" aria-current="page">{{ number }}</span>
+      {% else %}<a href="{{ c.url_for_page(number) }}">{{ number }}</a>{% endif %}
+    {% endfor %}
+    {% if c.page < c.pages %}<a href="{{ c.url_for_page(c.page + 1) }}" aria-label="{{ traduzir("Próxima página") }}">›</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>

@@ -1,0 +1,112 @@
+/* O formulário de usuário — o que a folha do design system não cobre.
+
+   Carrega DEPOIS da `mw5.css` e da folha desta casa, e só na tela de
+   Usuários (`stylesheets=` do `site.page`): regra de uma tela não tem por
+   que pesar em todas. */
+
+/* O nome de um grupo de caixas, e a frase que o explica.
+
+   As caixas de empresa vinham logo abaixo do seletor de nível, sem nada
+   dizendo o que eram — quatro nomes soltos para marcar. Dava para deduzir, e
+   deduzir não é ler.
+
+   Não é um `Alert`: um aviso azul de largura inteira dá a uma explicação de
+   rodapé o mesmo peso visual de um erro, e a tela que grita em tudo não
+   grita em nada. Também não é `SectionLabel`, que traz a linha atravessando
+   a largura e existe para separar SEÇÕES. */
+.ct-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 2px 0 8px;
+}
+.ct-legenda b {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--on-surface);
+}
+.ct-legenda span {
+  font-size: 0.78rem;
+  color: var(--on-surface-2);
+}
+
+/* As ações no fim, separadas por um fio e encostadas à direita.
+
+   Num formulário desta altura o botão solto no fluxo se confunde com mais um
+   campo — "Criar usuário" nascia colado no último grupo de caixas, na largura
+   de um controle qualquer, e quem rolava até o fim não via onde o formulário
+   terminava. O par exato é `.cd-rodape`, do cadastro de produto. */
+.ct-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--outline);
+}
+@media (max-width: 620px) {
+  /* Empilhados e de largura inteira: no celular, dois botões lado a lado
+     ficam estreitos demais para o polegar, e o de confirmar vem por último
+     porque é o último passo. */
+  .ct-rodape { flex-direction: column-reverse; }
+  .ct-rodape .btn { width: 100%; }
+}
+
+/* **A largura do modal desta tela.** O `lg` do design system é 820px, e ele
+   está certo para o modal comum — dois ou três campos e um botão. Aqui o
+   formulário é o maior do sistema: quem é a pessoa, o acesso, a conta, as
+   alocações (três caixas por linha) e a EMPRESA inteira (identidade,
+   endereço e conexão com o Kronos).
+
+   Regra desta casa e desta tela, e não emenda no `nucleo`: o `lg` de lá
+   continua valendo para todos os outros modais. */
+#usuario-criar > .modal.lg,
+[id^="usuario-editar"] > .modal.lg {
+  max-width: 1040px;
+}
+
+/* A largura do modal de usuário: 940px, sem o modal encostar nas bordas num
+   monitor de 1366.
+
+   `#usuario-criar .modal`, e NÃO `#usuario-criar`: o id fica no `.overlay`,
+   que é o fundo escurecido de tela inteira. Aplicar a largura nele encolhe o
+   FUNDO e deixa a caixa no tamanho antigo, encostada à esquerda — foi
+   exatamente o que aconteceu no modal de produto antes de esta linha existir
+   lá.
+
+   O id de editar é `usuario-<pk>-editar` (ver `_id_do_modal`), daí o
+   seletor com começo E fim: `[id^="usuario-editar"]` não pegaria nenhum. */
+#usuario-criar .modal,
+[id^="usuario-"][id$="-editar"] .modal { max-width: 940px; }
+
+/* O bloco de Alocações: uma linha por lugar, com empresa, filial, cargo e o
+   Remover. A LINHA É UMA UNIDADE — com fundo e borda próprios ela se lê como
+   "uma alocação", e não como três caixas soltas. O par exato é `.cd-linha`,
+   do cadastro de produto; copiado e não reaproveitado porque a base não
+   carrega a folha do catálogo. */
+.ct-aloc-lista { display: grid; gap: 8px; margin-bottom: 8px; }
+.ct-aloc-linha {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+  background: var(--surface);
+  border: 1px solid var(--outline-2);
+  border-radius: 2px;
+  padding: 8px;
+  align-items: center;
+}
+@media (min-width: 720px) {
+  /* empresa · filial · cargo · remover — o botão de texto curto pede `auto` */
+  .ct-aloc-linha { grid-template-columns: 1fr 1fr 1fr auto; }
+}
+.ct-aloc-linha select {
+  width: 100%;
+  height: var(--control-h, 40px);
+  padding: 0 10px;
+  border: 1px solid var(--outline);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--on-surface);
+  font: inherit;
+}

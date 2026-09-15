@@ -1,0 +1,7 @@
+<div class="alert {{ c.tone }}" role="{% if c.tone == 'danger' %}alert{% else %}status{% endif %}"{{ c.attrs|attrs }}>
+  {{ icon(c.icon) }}
+  <div>
+    {% if c.title %}<div class="at">{{ c.title }}</div>{% endif %}
+    <div>{{ c.message|render }}</div>
+  </div>
+</div>

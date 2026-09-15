@@ -1,0 +1,400 @@
+/* Correções desta casa por cima do design system.
+
+   O `nucleo/` é porte verbatim do `mw5_admin` e não se emenda aqui — quando
+   algo de lá precisa mudar, a mudança é nomeada e fica nesta folha, que
+   carrega DEPOIS da `mw5.css`. Cada regra abaixo diz o que corrige e por quê,
+   para que voltar atrás seja uma decisão e não um esquecimento. */
+
+/* --- a Jakarta, servida daqui -------------------------------------------
+
+   `nucleo/theme/brand.py` declara `--font-display: "Plus Jakarta Sans", …`
+   desde sempre, e a fonte nunca apareceu em máquina nenhuma: a pilha existia,
+   o arquivo não. Todo título, botão e badge caía no `system-ui` seguinte —
+   Segoe UI no Windows, e a tipografia do produto era a do sistema operacional
+   de quem estava olhando.
+
+   Servida do PRÓPRIO estático, e não do CDN do Google, para manter a promessa
+   escrita ao lado da constante lá: o sistema abre igual sem internet, e uma
+   instalação numa rede fechada não fica com a tipografia quebrada. São 60 KB
+   nos cinco pesos, entregues pelo mesmo servidor que já entrega a folha.
+
+   Os arquivos são os mesmos que o `fully-painel` e o `organizadormw5` já
+   usam — subconjunto latino, que cobre ç, ã, õ, á e o resto do português.
+
+   `font-display: swap`: o texto aparece na hora com a fonte do sistema e
+   troca quando a Jakarta chega. Sem isso o título fica invisível enquanto o
+   arquivo baixa, e numa conexão ruim isso é uma tela em branco.
+
+   A Inter (`--font-body`) continua sem arquivo, de propósito: o corpo do
+   texto na fonte do sistema é legível em qualquer máquina, e o que dá
+   personalidade à tela é o display. Se ela também tiver de aparecer, é o
+   mesmo bloco com outro nome. */
+@font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("fontes/jakarta-400.woff2") format("woff2"); }
+@font-face { font-family: "Plus Jakarta Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("fontes/jakarta-500.woff2") format("woff2"); }
+@font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("fontes/jakarta-600.woff2") format("woff2"); }
+@font-face { font-family: "Plus Jakarta Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url("fontes/jakarta-700.woff2") format("woff2"); }
+@font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; font-style: normal; font-display: swap; src: url("fontes/jakarta-800.woff2") format("woff2"); }
+
+
+/* --- a marca empilhada estourava para fora da faixa ---------------------
+
+   Na `mw5.css`, `.side-logo` pede `width: 100%; height: 100%` dentro de um
+   link que é grid com `place-items: center`. O `height: 100%` não tem contra
+   o que resolver ali, então a altura do `<img>` vira a LARGURA da barra
+   vezes a proporção do desenho — e a faixa do grid cresce junto.
+
+   Com marca DEITADA isso nunca apareceu: 223px numa proporção de 4:1 dão
+   ~56px, que é justo a altura reservada, e tudo coube por coincidência. A
+   marca do KRONOS é EMPILHADA (proporção 1,43): os mesmos 223px pedem 156px.
+   O logo descia 36px abaixo da própria faixa e a linha "ERP | CRM" caía
+   sobre o azul do menu.
+
+   A correção inverte quem manda: a ALTURA é a medida reservada (definida, e
+   por isso resolvível), e a largura acompanha a proporção. `max-width: 100%`
+   segura o caso extremo de uma marca muito deitada numa barra estreita.
+
+   A altura no link é a mesma medida, dita de novo: sem ela a caixa continua
+   valendo o que o conteúdo pedir, e o dia em que o arquivo não carregar a
+   faixa muda de tamanho.
+
+   Isto é defeito do design system, não regra do KRONOS: vale para qualquer
+   consumidor que envie marca empilhada. A correção definitiva é no
+   `mw5_admin`; esta folha é a ponte até lá. */
+.side-brand > a { height: var(--logo-side-h); }
+.side-logo {
+  height: var(--logo-side-h);
+  width: auto;
+  max-width: 100%;
+  max-height: none;
+  margin: 0;
+}
+
+/* --- o "Recolher" fecha a barra na mesma linha do rodapé ----------------
+
+   O design system já faz esse encontro em CIMA: `header-h` é definido como
+   `sidebar-brand-h`, para que a linha sob a marca e a linha sob o cabeçalho
+   sejam uma linha só atravessando a tela. Embaixo o encontro não existia — a
+   faixa do "Recolher" tinha altura de conteúdo (~53px) e o rodapé tem
+   `--footer-h`, então as duas bordas caíam em alturas diferentes e o canto
+   inferior esquerdo ficava com um degrau.
+
+   Vale enquanto a página couber na tela, que é quando o degrau aparece: a
+   barra é `sticky` de `100dvh` e o rodapé fica no fim do documento. Com a
+   página rolando, os dois deixam de ser vizinhos e o alinhamento perde o
+   sentido — não há o que consertar aí.
+
+   `align-items: center` porque a altura agora vem de fora: sem isso o botão
+   encostaria no topo da faixa em vez de ficar no meio dela. */
+.side-foot {
+  height: var(--footer-h);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+}
+.side-collapsed .side-foot { padding: 0 8px; }
+
+/* --- o desenho cresce dentro da faixa que já estava reservada -----------
+
+   O logo aparecia pequeno no meio de um espaço grande: 84px de desenho numa
+   faixa de 132px na barra, 40px numa barra de rodapé de 80px. O resto era
+   respiro — quase metade da altura reservada, dos dois lados.
+
+   Crescer pelo caminho normal não resolve, e é por isso que a correção mora
+   AQUI e não em `plataforma/marca.py`: lá, `logo_areas` alimenta as DUAS
+   coisas ao mesmo tempo. `nucleo/theme/tokens.py` monta
+   `sidebar-brand-h = logo-side-h + sidebar-brand-pad * 2` (e o `header-h`
+   copia dela, para que a linha sob a marca e a linha sob o cabeçalho sejam a
+   mesma linha). Subir `logo-side-h` no `marca.py` sobe a faixa junto, o
+   cabeçalho junto, e a tela inteira desce.
+
+   O que separa os dois é que essas alturas de faixa saem RESOLVIDAS do
+   Python — `calc(84px + 24px * 2)`, com os números dentro, não
+   `var(--logo-side-h)`. Então redefinir a variável aqui muda o desenho e
+   deixa a faixa exatamente onde estava. É a única folga que existe, e é toda
+   a correção: 84 -> 108px na barra (+29%), 40 -> 56px no rodapé (+40%), com
+   a mesma altura de faixa de antes.
+
+   O respiro precisa encolher junto, senão o desenho maior transborda a
+   faixa: `sidebar-brand-pad` é `var()` de verdade no `.side-brand`, então
+   basta redefini-lo. O rodapé não tem padding vertical (o logo é centrado
+   por `align-items`), então lá não há o que ajustar.
+
+   `logo-footer-w` sobe junto por obrigação, não por gosto: o design system
+   limita a largura com `max-width: min(var(--logo-footer-w), 100%)` sobre um
+   `width: auto`. Com 72px de teto, um desenho de 56px de altura (que pede
+   80px de largura) sairia espremido — a altura obedeceria e a largura não,
+   e a marca ficaria estreita. O teto é a proporção 1,434 com folga.
+
+   A entrada é o caso diferente, e por isso está junto: lá NÃO existe faixa
+   reservada por fora — `.login-logo-box` é a própria caixa do token, e o
+   cartão cresce com ela. Subir de 72 para 112px empurra o cartão 40px para
+   baixo, e é de propósito: ele flutua centrado numa tela vazia, então não há
+   nada embaixo para desalinhar. Foi o lugar onde a marca aparecia menor —
+   103px de desenho numa caixa de 220px de largura.
+
+   `tests/test_logo_do_produto.py::TestOTamanhoDoDesenho` prova que o desenho
+   continua cabendo na faixa, e que os arquivos têm resolução para a medida
+   nova: é o que impede alguém de subir mais um pouco e descobrir o estouro
+   (ou o borrão) na tela. */
+:root {
+  --logo-side-h: 108px;
+  --sidebar-brand-pad: 12px;
+  --logo-footer-h: 56px;
+  --logo-footer-w: 96px;
+  --logo-login-h: 112px;
+}
+
+/* Na barra recolhida o design system limita a LARGURA a 52px sem mexer na
+   altura. Com `width: auto` isso não encolhe o desenho: espreme-o — a altura
+   continua valendo `--logo-side-h` e a proporção morre. Já era assim com
+   84px (o desenho pede 120px de largura); com 108px pioraria. Aqui a altura
+   passa a ser o teto e a largura manda, que é a mesma inversão do bloco lá
+   em cima. */
+.side-collapsed .side-logo {
+  height: auto;
+  max-height: var(--logo-side-h);
+}
+
+/* --- o botão do Excel ---------------------------------------------------
+
+   O design system tem `primary`, `ghost` e `danger`, e nenhuma serve aqui: o
+   Excel não é a ação principal da tela (essa é "Novo produto", "Novo
+   usuário"), não é perigosa, e como `ghost` ela sumia — dois links cinzas ao
+   lado do título, indistinguíveis do texto em volta.
+
+   O verde é o do FORMATO, e por isso é literal e não sai de um token do
+   tema: é a mesma associação que faz o PDF ser vermelho em toda tela do
+   mundo, e ela funciona porque não muda com a marca do cliente. Trocá-la
+   pela cor primária da instalação seria pintar a planilha de azul num
+   cliente e de laranja noutro, perdendo justamente o que faz o botão ser
+   achado sem leitura.
+
+   `#1d6f42` é o verde escuro da própria marca do Excel. Sobre ele, texto
+   branco dá contraste 5,9:1 — acima do 4,5:1 que a WCAG pede para texto
+   normal, com folga para o peso 600 do botão. */
+.btn.excel {
+  background: #1d6f42;
+  border-color: #1d6f42;
+  color: #fff;
+}
+.btn.excel:hover {
+  background: #175834;
+  border-color: #175834;
+}
+/* O anel de foco do teclado sai do verde, e não do azul do tema: sobre um
+   fundo verde escuro, o azul do foco quase não aparece. */
+.btn.excel:focus-visible {
+  outline: 2px solid #1d6f42;
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   O seletor de idioma do cabeçalho (`plataforma/idioma_no_cabecalho.py`).
+
+   Ele reusa `.iconbtn`, que é o botão redondo do sino e do sair — mesma
+   altura, mesma área de clique, mesmo estado de foco. O que falta ao
+   `.iconbtn` é só o caso de ele conter TEXTO em vez de ícone: a sigla "ES"
+   nasceria com o tamanho de corpo de texto e desalinhada do sino ao lado.
+
+   O `<form>` em volta existe porque trocar idioma é POST com token (mudança
+   de estado não anda por link) — e um `<form>` é `display: block`, que
+   quebraria a fileira de botões do canto direito. */
+.h-actions .idioma-botao {
+  display: flex;
+  margin: 0;
+}
+/* O menu: `<details>` nativo, como o "Estreitar" do catálogo. `relative` para
+   o painel se pendurar nele; `list-style: none` (e o `::-webkit-details-marker`)
+   porque o triângulo que o navegador desenha sozinho apareceria ao lado da
+   nossa seta. */
+.h-actions .idioma-menu {
+  position: relative;
+}
+.h-actions .idioma-menu > summary {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  list-style: none;
+  /* O `.iconbtn` é quadrado; com bandeira e seta dentro, ele precisa de
+     largura própria. */
+  width: auto;
+  padding: 0 6px;
+}
+.h-actions .idioma-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.h-actions .idioma-seta {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.h-actions .idioma-menu[open] .idioma-seta {
+  transform: rotate(180deg);
+}
+
+/* O painel. `right: 0` e não `left`: ele nasce no canto direito da tela, e
+   ancorado à esquerda sairia da janela. */
+.h-actions .idioma-opcoes {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+  /* `--surface`, e não `--surface-1`: este nome nunca existiu no design
+     system (são `--surface`, `--surface-2` e `--surface-3`), então o fallback
+     `#fff` era o que valia SEMPRE — inclusive no tema escuro, onde um menu
+     branco sobre a página escura era o defeito. Ver
+     `tests/test_variavel_de_cor_existe.py`. */
+  background: var(--surface, #fff);
+  border: 1px solid var(--outline-2, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius, 6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.h-actions .idioma-opcao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+.h-actions .idioma-opcao:hover,
+.h-actions .idioma-opcao:focus-visible {
+  background: var(--surface-2, rgba(0, 0, 0, 0.05));
+}
+/* O idioma corrente fica marcado no menu também: a bandeira do `summary` já
+   diz qual é, e o menu que não repete a informação obriga a fechar e olhar. */
+.h-actions .idioma-opcao.e-atual {
+  font-weight: 700;
+}
+
+/* O MESMO menu, na tela de entrada. Ela não tem cabeçalho, então as regras de
+   cima (presas a `.h-actions`) não a alcançam — e sem isto o seletor saía como
+   texto puro no meio do cartão, que foi como o defeito apareceu em 10/09/2026.
+
+   Centrado e discreto: ali ele é a terceira coisa mais importante da tela,
+   depois de entrar e de recuperar a senha. */
+.idioma-na-entrada {
+  position: relative;
+  margin: 14px auto 0;
+  width: max-content;
+}
+.idioma-na-entrada > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--outline-2, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius, 6px);
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--on-surface-2);
+}
+.idioma-na-entrada > summary::-webkit-details-marker {
+  display: none;
+}
+.idioma-na-entrada > summary:hover {
+  border-color: var(--primary);
+}
+.idioma-na-entrada .idioma-seta {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.idioma-na-entrada[open] .idioma-seta {
+  transform: rotate(180deg);
+}
+/* O painel sobe, não desce: na entrada o controle fica no fim do cartão, e
+   para baixo o menu sairia do cartão. */
+.idioma-na-entrada .idioma-opcoes {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  top: auto;
+  right: auto;
+  z-index: 40;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+  /* `--surface`, e não `--surface-1`: este nome nunca existiu no design
+     system (são `--surface`, `--surface-2` e `--surface-3`), então o fallback
+     `#fff` era o que valia SEMPRE — inclusive no tema escuro, onde um menu
+     branco sobre a página escura era o defeito. Ver
+     `tests/test_variavel_de_cor_existe.py`. */
+  background: var(--surface, #fff);
+  border: 1px solid var(--outline-2, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius, 6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+/* Na entrada as opções são LINKS (ver `seletor_da_entrada`), e link herda
+   sublinhado e cor de link — que aqui brigariam com a bandeira ao lado. */
+.idioma-na-entrada .idioma-opcao {
+  text-decoration: none;
+  color: inherit;
+}
+.idioma-na-entrada svg.bandeira {
+  width: 20px;
+  height: 13.3px;
+  flex: none;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--outline-2, rgba(0, 0, 0, 0.15));
+}
+
+/* A bandeira dentro do botão redondo: um retângulo 3x2 centrado, com uma
+   borda de um pixel. A borda não é enfeite — a faixa branca do Paraguai some
+   no cabeçalho claro, e sem ela a bandeira vira duas faixas soltas. */
+.h-actions .idioma-botao .bandeira {
+  width: 20px;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--outline-2, rgba(0, 0, 0, 0.15));
+}
+/* O `.iconbtn` do design system dimensiona o `svg` do ícone dele por dentro;
+   a bandeira tem outra proporção e precisa dizer o próprio tamanho. */
+.h-actions .idioma-botao svg.bandeira {
+  width: 20px;
+  height: 13.3px;
+  flex: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Botão dentro da linha de item (`.itemrow`), como em Equivalências,
+   Aplicabilidade e Recomendações da bancada do produto.
+
+   O design system dá ritmo vertical ao formulário: `.form > * + * {
+   margin-top: 20px }`. Numa tela empilhada isso é o certo — mas dentro da
+   linha de item o formulário é UM BOTÃO com campos ocultos na frente, e
+   campo oculto conta como irmão: o botão nascia 20px abaixo de tudo, e o
+   "Remover" ficava desalinhado do "Editar" ao lado (relatado em 10/09/2026).
+
+   Correção na folha desta casa, e não no `nucleo`: a regra de lá está certa
+   para o caso dela. */
+.itemrow .form > * + * {
+  margin-top: 0;
+}
+/* O par Editar/Remover: um é link e o outro é `submit` dentro de um `<form>`,
+   e sem isto o `<form>` se comporta como bloco e quebra a fileira. */
+.itemrow .form {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}

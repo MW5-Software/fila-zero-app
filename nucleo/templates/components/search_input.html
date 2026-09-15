@@ -1,0 +1,7 @@
+{% import "components/_field.html" as fld %}
+{{ fld.open(c) }}
+<div class="search">
+  {{ icon("search", "sm") }}
+  <input class="ctl" type="search" value="{{ c.value }}"{{ fld.common(c) }}{{ c.attrs|attrs }}>
+</div>
+{{ fld.close(c) }}

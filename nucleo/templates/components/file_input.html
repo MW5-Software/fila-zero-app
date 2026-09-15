@@ -1,0 +1,31 @@
+{% import "components/_field.html" as fld %}
+{{ fld.open(c) }}
+<div class="filefield" data-filefield>
+  {# O input real: invisível, mas presente e focável — é ele que envia o
+     arquivo e que o teclado alcança pelo rótulo. #}
+  <input class="filefield-input" type="file" id="{{ c.name }}" name="{{ c.name }}"
+    {%- if c.accept %} accept="{{ c.accept }}"{% endif %}
+    {%- if c.required %} required{% endif %}
+    {%- if c.disabled %} disabled{% endif %}
+    {%- if c.described_by %} aria-describedby="{{ c.described_by }}"{% endif %}
+    {%- if c.preview %} data-filefield-preview{% endif %}{{ c.attrs|attrs }}>
+
+  {# O que ja esta guardado. O `<input type="file">` volta sempre vazio, entao
+     sem isto reabrir a tela mostrava "Nenhum arquivo escolhido" ao lado de uma
+     imagem que o sistema tem. O `data-vazio` continua sendo o rotulo de vazio:
+     e para onde o campo volta se a pessoa LIMPAR a escolha. #}
+  {# O ícone fica sempre, e a imagem por cima quando há uma: é para ele que o
+     `limparMiniatura` do `mw5.js` volta quando a escolha é desfeita. #}
+  <span class="filefield-thumb" data-filefield-thumb aria-hidden="true">
+    {{- icon("upload", "sm") -}}
+    {%- if c.current_url %}<img src="{{ c.current_url }}" alt="">{% endif -%}
+  </span>
+
+  <label class="filefield-trigger" for="{{ c.name }}">{{ c.button_label }}</label>
+
+  <span class="filefield-name" data-filefield-name data-vazio="{{ c.empty_label }}"
+    {%- if c.current_label %} data-escolhido{% endif %}>
+    {{- c.current_label or c.empty_label -}}
+  </span>
+</div>
+{{ fld.close(c) }}

@@ -1,0 +1,52 @@
+<aside class="side">
+  {# Duas regiões, não uma. A faixa da logo tem altura fixa e fundo próprio; o
+     menu ocupa o resto e rola sozinho, sem levar a marca junto. #}
+  <div class="side-brand">
+    {% if c.logo %}
+    <a href="{{ c.home_href }}">
+      <img class="side-logo" src="{{ c.logo }}" alt="{{ c.logo_alt }}">
+    </a>
+    {% endif %}
+  </div>
+
+  {# O menu é por níveis: um item leva direto ou abre os de dentro. Não há
+     rótulo de seção — quem agrupa é o item que abre.
+
+     Recursivo até três níveis. Só o primeiro desenha ícone: é o que sobra na
+     tela com a barra recolhida, e mais fundo ele não caberia. #}
+  {% macro no(item, nivel) %}
+    {% if item.children %}
+    <button class="submenu-toggle" type="button"
+            aria-expanded="{{ 'true' if item.is_open else 'false' }}" data-submenu-toggle>
+      {% if nivel == 1 %}{{ icon(item.icon) }}{% endif %}
+      <span class="label">{{ item.label }}</span>
+      {{ icon("chevron-down", "sm", css_class="chev") }}
+    </button>
+    <div class="submenu{% if item.is_open %} open{% endif %}">
+      <div>
+        {% for filho in item.children %}{{ no(filho, nivel + 1) }}{% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <a href="{{ item.href }}"{% if item.active %} class="active" aria-current="page"{% endif %}>
+      {% if nivel == 1 %}{{ icon(item.icon) }}{% endif %}
+      <span class="label">{{ item.label }}</span>
+      {% if item.badge %}<span class="badge">{{ item.badge }}</span>{% endif %}
+    </a>
+    {% endif %}
+  {% endmacro %}
+
+  <nav class="side-nav" aria-label="Menu principal">
+    {% for item in c.items %}{{ no(item, 1) }}{% endfor %}
+  </nav>
+
+  {# Recolher fica no rodapé da barra, e não no cabeçalho: ali embaixo ele não
+     disputa espaço com a marca nem com o primeiro item do menu. #}
+  <div class="side-foot">
+    <button class="side-toggle" type="button" data-sidebar-toggle
+            aria-expanded="true" title="Recolher menu" aria-label="Recolher menu">
+      {{ icon("chevron-left") }}
+      <span class="label">Recolher</span>
+    </button>
+  </div>
+</aside>

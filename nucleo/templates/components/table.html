@@ -1,0 +1,30 @@
+{% if c.is_empty %}
+{{ c.empty|render }}
+{% else %}
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        {% if c.selectable %}<th class="center" style="width:44px"><span class="visually-hidden">Selecionar</span></th>{% endif %}
+        {% for col in c.columns %}
+        <th{% if col.header_classes %} class="{{ col.header_classes }}"{% endif %}{% if col.width %} style="width:{{ col.width }}"{% endif %}>{{ col.label }}</th>
+        {% endfor %}
+        {% if c.row_actions %}<th class="center" style="width:56px">Ações</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in c.rows %}
+      <tr{{ c.attrs_for(row)|attrs }}>
+        {% if c.selectable %}
+        <td class="center"><input type="radio" name="{{ c.selection_name }}" value="{{ loop.index }}" aria-label="Selecionar linha {{ loop.index }}"></td>
+        {% endif %}
+        {% for col in c.columns %}
+        <td{% if col.cell_classes %} class="{{ col.cell_classes }}"{% endif %}>{{ col.value_of(row)|render }}</td>
+        {% endfor %}
+        {% if c.row_actions %}<td class="center">{{ c.actions_for(row)|render }}</td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

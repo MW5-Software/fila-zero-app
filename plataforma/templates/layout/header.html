@@ -1,0 +1,46 @@
+<header>
+  <div class="wrap">
+    <button class="iconbtn menu-btn" type="button" title="{{ traduzir("Abrir menu") }}"
+            aria-label="{{ traduzir("Abrir menu") }}" aria-expanded="false" data-menu-toggle>
+      {{ icon("menu") }}
+    </button>
+    {% if c.breadcrumb %}{{ c.breadcrumb|render }}{% else %}<span></span>{% endif %}
+    {% if c.context %}<div class="ctx-mid">{{ c.context|render }}</div>{% endif %}
+    {# O canto direito, nesta ordem, e nada além: notificações, sair, quem está
+       logado. A marca do cliente já está na faixa da barra lateral. #}
+    <div class="h-actions">
+      {# O seletor de idioma, à esquerda do sino. Ele é um FORMULÁRIO com
+         token, e não um link: trocar idioma grava na conta, e mudança de
+         estado nesta casa não anda por link (ver `contas/views_idioma.py`).
+         `is defined` porque um `Header` cru — o do design system, o dos
+         testes de componente — não tem este campo, e o ambiente roda com
+         `StrictUndefined`. #}
+      {% if c.idioma is defined and c.idioma %}{{ c.idioma|render }}{% endif %}
+      {% if c.notifications %}
+      <button class="iconbtn" type="button" title="{{ traduzir("Notificações") }}" aria-label="{{ traduzir("Notificações") }}" data-notifications>
+        {{ icon("bell") }}
+      </button>
+      {% endif %}
+      {% if c.logout_href %}
+      <a class="iconbtn" href="{{ c.logout_href }}" title="{{ traduzir("Sair") }}" aria-label="{{ traduzir("Sair") }}">{{ icon("logout") }}</a>
+      {% endif %}
+      {% if c.user %}
+        {% if user_menu %}
+        {# Botão, e não link: o menu abre aqui mesmo. Mandar a pessoa para
+           outra tela custa o contexto de onde ela estava. #}
+        <button class="userchip" type="button"
+                data-dropdown-open="{{ c.MENU_DO_USUARIO }}"
+                aria-haspopup="menu" aria-expanded="false"
+                title="{{ c.user.name }}" aria-label="{{ c.user.name }} · {{ traduzir("abrir menu") }}">
+          {{ avatar|render }}
+        </button>
+        {% else %}
+        <span class="userchip" title="{{ c.user.name }}">{{ avatar|render }}</span>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {# Solto no fim do header: o menu é `position: fixed`, então a posição vem do
+     JS, e daqui ele não é cortado por nenhum `overflow` do canto direito. #}
+  {% if user_menu %}{{ user_menu|render }}{% endif %}
+</header>

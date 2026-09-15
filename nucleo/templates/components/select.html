@@ -1,0 +1,11 @@
+{% import "components/_field.html" as fld %}
+{{ fld.open(c) }}
+<select class="ctl"{{ fld.common(c) }}{{ c.attrs|attrs }}>
+  {% if c.empty_label %}
+  <option value=""{% if not c.value %} selected{% endif %} disabled>{{ c.empty_label }}</option>
+  {% endif %}
+  {% for opt in c.options %}
+  <option value="{{ opt.value }}"{% if c.is_selected(opt) %} selected{% endif %}{% if opt.disabled %} disabled{% endif %}>{{ opt.label }}</option>
+  {% endfor %}
+</select>
+{{ fld.close(c) }}
