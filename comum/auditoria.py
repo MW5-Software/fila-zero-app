@@ -147,6 +147,30 @@ ROTULOS = {
 }
 
 
+def _conta_de(autor, login: str):
+    """O GUID da conta de `autor`, ou `None` para quem não é de conta nenhuma.
+
+    Durante a personificação `autor` já é o ALVO (ver `registrar`), então a
+    linha fica na conta de quem foi personificado — é nela que a ação
+    aconteceu. A MW5 agindo por si mesma não tem conta, e a linha fica nula.
+
+    O usuário do ORM já traz `conta_id`; o retrato do núcleo e a string crua
+    não, e são achados pelo login. Uma consulta a mais por registro, contra
+    uma trilha que não diz de que conta é.
+    """
+    if hasattr(autor, "conta_id"):
+        return autor.conta_id
+    if not login:
+        return None
+    from django.apps import apps
+    from django.conf import settings
+
+    Usuario = apps.get_model(settings.AUTH_USER_MODEL)
+    return (Usuario._default_manager
+            .filter(**{f"{Usuario.USERNAME_FIELD}__iexact": login})
+            .values_list("conta", flat=True).first())
+
+
 def _login_e_nome(autor) -> tuple[str, str]:
     """(`login`, `nome`) de `autor`, qualquer que seja a forma dele.
 
@@ -245,6 +269,7 @@ def registrar(
 
     login, nome = _login_e_nome(autor)
     _modelo().objects.create(
+        conta_guid=_conta_de(autor, login),
         acao=_truncado("acao", acao),
         autor_login=_truncado("autor_login", login),
         autor_nome=_truncado("autor_nome", nome),

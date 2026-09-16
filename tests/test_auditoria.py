@@ -433,7 +433,7 @@ def _cenario_filial_ativada():
     # sem empresa não aparece para ninguém — o POST voltaria "Filial não
     # encontrada" e o teste acusaria falta de auditoria pela razão errada.
     filial = Filial.objects.create(
-        nome="Loja 1", apelido="Loja 1", ativa=False, ordem=1,
+        nome="Loja 1", apelido="Loja 1", ativa=False,
         empresa=matriz_do_teste().empresa)
     cliente.post(reverse("filiais"), {"acao": "ativar", "filial": str(filial.pk)})
     return email_de("admin"), "Loja 1"
@@ -450,7 +450,7 @@ def _cenario_filial_desativada():
     # Na empresa da Matriz: a regra da última ativa conta dentro da empresa
     # desde 14/09/2026, e uma loja sem empresa não liberaria a desativação.
     matriz = matriz_do_teste()
-    Filial.objects.create(nome="Loja 1", apelido="Loja 1", ordem=1,
+    Filial.objects.create(nome="Loja 1", apelido="Loja 1",
                           empresa=matriz.empresa)
     cliente.post(reverse("filiais"), {"acao": "desativar", "filial": str(matriz.pk)})
     return email_de("admin"), "Matriz"
@@ -472,7 +472,7 @@ def _cenario_filial_removida():
     # E com empresa: a tela só alcança as filiais da empresa do contexto, e
     # uma filial sem empresa não aparece para ninguém.
     matriz_do_teste()
-    filial = Filial.objects.create(nome="Loja 1", apelido="Loja 1", ordem=1,
+    filial = Filial.objects.create(nome="Loja 1", apelido="Loja 1",
                                    empresa=empresa_do_teste())
     cliente.post(reverse("filiais"), {"acao": "remover", "filial": str(filial.pk)})
     return email_de("admin"), "Loja 1"

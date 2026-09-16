@@ -95,7 +95,7 @@ def _criar_a_matriz(sender, instance, created, **kwargs):
     from .models import Filial
 
     Filial.objects.create(empresa=instance, nome="Matriz", apelido="Matriz",
-                          ordem=0, e_matriz=True)
+                          e_matriz=True)
 
 
 class PlataformaConfig(AppConfig):

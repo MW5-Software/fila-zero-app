@@ -33,8 +33,8 @@ def conta():
         email="dono-tela@teste.com", password=SENHA, nivel=Nivel.TITULAR)
     aplicar(titular, Nivel.TITULAR)
     alfa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
-    norte = Filial.objects.create(empresa=alfa, nome="Norte", apelido="Norte", ordem=5)
-    sul = Filial.objects.create(empresa=alfa, nome="Sul", apelido="Sul", ordem=6)
+    norte = Filial.objects.create(empresa=alfa, nome="Norte", apelido="Norte")
+    sul = Filial.objects.create(empresa=alfa, nome="Sul", apelido="Sul")
     cargos = {c.nome: c for c in Cargo.objects.filter(conta=titular)}
 
     def membro(login, cargo, filial=None):
@@ -189,7 +189,7 @@ class TestEscaladaPeloPost:
             email="outro-fil@teste.com", password=SENHA, nivel=Nivel.TITULAR)
         beta = Empresa.objects.create(razao_social="Beta Ltda", dono=outro)
         dela = Filial.objects.create(empresa=beta, nome="Beta Centro",
-                                     apelido="Centro", ordem=5)
+                                     apelido="Centro")
 
         _criar(_entrar(conta["titular"].email), "filial-alheia@teste.com",
                (conta["alfa"], dela, conta["cargos"]["cliente"]))

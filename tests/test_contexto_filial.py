@@ -53,7 +53,7 @@ def matriz():
 def loja(matriz):
     from plataforma.models import Filial
 
-    return Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+    return Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
 
 
 class TestFiliaisDe:
@@ -108,16 +108,17 @@ class TestFilialAtual:
     def test_sem_escolha_na_sessao_a_matriz_vem_antes_de_quem_a_passa_no_alfabeto(self, raiz, matriz):
         """O defeito que se viu no app em 15/09/2026: com "Filial 1" e "Matriz"
         na mesma `ordem`, entrar caía na "Filial 1" — a primeira pelo nome. Quem
-        alcança a Matriz começa nela; a ordem do seletor continua a mesma."""
+        alcança a Matriz começa nela. Desde 16/09/2026 o seletor também a põe na
+        frente (`Filial.Meta.ordering`), e as duas regras dizem a mesma coisa."""
         from contas.backend import BackendDjango
         from plataforma.contexto import filiais_de, filial_atual
         from plataforma.models import Filial
 
-        filial_1 = Filial.objects.create(empresa=matriz.empresa, nome="Filial 1", apelido="Filial 1", ordem=matriz.ordem)
+        filial_1 = Filial.objects.create(empresa=matriz.empresa, nome="Filial 1", apelido="Filial 1")
         pedido = _pedido(raiz)
 
         assert filial_atual(pedido) == matriz
-        assert list(filiais_de(BackendDjango().buscar(str(raiz.pk)), matriz.empresa))[:2] == [filial_1, matriz]
+        assert list(filiais_de(BackendDjango().buscar(str(raiz.pk)), matriz.empresa))[:2] == [matriz, filial_1]
 
     def test_pessoa_sem_filial_nenhuma_recebe_none(self, ana):
         from plataforma.contexto import filial_atual

@@ -23,7 +23,7 @@ def conta(db):
         email="dono-aloc@teste.com", password="x", nivel=Nivel.TITULAR)
     empresa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
     norte = Filial.objects.create(empresa=empresa, nome="Norte",
-                                  apelido="Norte", ordem=5)
+                                  apelido="Norte")
     ana = Usuario.objects.create_user(
         email="ana-aloc@teste.com", password="x", nivel=Nivel.MEMBRO,
         dono=titular)

@@ -51,6 +51,11 @@ def produto_de_teste(db):
 #: ficado verde sem olhar para a primeira tabela de negócio de verdade — o
 #: pior estado possível para uma trava, parecendo que protege.
 #:
+#: **Isto cobra o MANAGER do inquilino, não a coluna da conta.** Isentar as
+#: apps inteiras deixou Filial e AparenciaDaEmpresa sem `conta_guid` até
+#: 16/09/2026; a coluna é cobrada tabela a tabela em
+#: `test_toda_linha_da_conta_leva_o_guid.py`, que não isenta app nenhuma.
+#:
 #: Invertida, um app novo já nasce coberto, e ficar de fora exige escrever o
 #: nome aqui com o motivo. `contas`, `plataforma` e `nucleo` estão fora
 #: porque usuário, perfil, marca, módulo, parâmetro e a própria empresa são

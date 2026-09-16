@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 129 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 131 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -157,6 +157,8 @@ falham na suíte, e não em produção:
 | `test_barreira.py` | a decisão de acesso divergindo entre a web e a API |
 | `test_sem_nome_de_cliente.py` | nome de cliente escrito no código |
 | `test_regra_do_inquilino.py` | tabela de negócio sem a coluna da empresa e da conta (`conta_guid`) |
+| `test_toda_linha_da_conta_leva_o_guid.py` | tabela sem `conta_guid` fora de `DA_INSTALACAO`, ou tabela de empresa cuja `conta` não é FK para `Usuario.guid` |
+| `test_filial_em_ordem_de_dicionario.py` | filial com `ordem` de volta, ou fora da ordem de dicionário |
 | `test_regra_guid.py` | tabela nossa sem GUID |
 | `test_sublinhado_e_o_gettext.py` | `_` usado como descarte, sombreando o `gettext` |
 | `test_html_preguicoso_nao_e_seguro.py` | `format_lazy` com HTML dentro (sai escapado na tela) |
@@ -248,6 +250,15 @@ integração usa esta coluna. A empresa e o usuário também têm a sua.
   a passagem pela varredura. `ModeloDaEmpresa.save` preenche `conta` sozinho a
   partir da empresa, e recusa empresa **sem titular** e conta **diferente** da
   titular.
+- **Não é só negócio** (16/09/2026). `Filial` e `AparenciaDaEmpresa` levam
+  `conta_guid` (nulo só enquanto a empresa não tem titular, derivado em
+  `plataforma.models._conta_da_empresa`), e a trilha de auditoria guarda o
+  GUID da conta de quem agiu (`RegistroDeAuditoria.conta_guid`, valor e não
+  FK — nulo para a MW5). `test_toda_linha_da_conta_leva_o_guid.py` cobra
+  TODA tabela; as da instalação ficam numa lista com o motivo.
+- **A filial não tem `ordem`** (16/09/2026): a Matriz vem na frente e as
+  outras pelo nome, com colação ICU (`comum.alfabetica.DE_DICIONARIO`),
+  porque o Postgres do Alpine ordena byte a byte.
 - **`Empresa.conta` e `Usuario.conta` são derivadas no `save`**, de `dono`. Não
   se grava `conta` à mão. No usuário, o **titular aponta para o próprio GUID**:
   `filter(conta=<guid>)` traz a conta inteira, titular incluído. A MW5 fica
@@ -545,7 +556,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 129 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 131 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

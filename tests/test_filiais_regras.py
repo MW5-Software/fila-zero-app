@@ -23,7 +23,7 @@ def loja(matriz):
     # Na empresa da Matriz: desde 14/09/2026 a regra da última ativa conta
     # dentro da empresa, e uma loja sem empresa não contaria.
     return Filial.objects.create(empresa=matriz.empresa, nome="Loja 1",
-                                 apelido="Loja 1", ordem=1)
+                                 apelido="Loja 1")
 
 
 class TestPodeDesativar:

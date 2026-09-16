@@ -86,7 +86,7 @@ class TestALista:
     def test_busca_por_filial(self, cliente_admin, matriz):
         from plataforma.models import Filial
 
-        Filial.objects.create(empresa=matriz.empresa, nome="Loja Sorriso", apelido="Sorriso", ordem=1)
+        Filial.objects.create(empresa=matriz.empresa, nome="Loja Sorriso", apelido="Sorriso")
 
         import re
 
@@ -101,7 +101,7 @@ class TestALista:
     def test_filtra_por_situacao(self, cliente_admin, matriz):
         from plataforma.models import Filial
 
-        Filial.objects.create(empresa=matriz.empresa, nome="Loja X", apelido="X", ativa=False, ordem=1)
+        Filial.objects.create(empresa=matriz.empresa, nome="Loja X", apelido="X", ativa=False)
 
         html = cliente_admin.get(
             reverse("filiais"), {"f:situacao:igual": "0"}).content.decode()
@@ -170,7 +170,7 @@ class TestCriarEditarRemover:
         from contas.models import RegistroDeAuditoria
         from plataforma.models import Filial
 
-        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
 
         cliente_admin.post(
             reverse("filiais"), {"acao": "desativar", "filial": str(loja.pk)})
@@ -188,7 +188,7 @@ class TestCriarEditarRemover:
         from contas.models import RegistroDeAuditoria
         from plataforma.models import Filial
 
-        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
 
         cliente_admin.post(
             reverse("filiais"), {"acao": "remover", "filial": str(loja.pk)})
@@ -223,7 +223,7 @@ class TestNaoFicarSemFilialAtivaNenhuma:
         from plataforma.models import Filial
 
         loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1",
-                                     apelido="Loja 1", ordem=1)
+                                     apelido="Loja 1")
         cliente_admin.post(
             reverse("filiais"), {"acao": "desativar", "filial": str(matriz.pk)})
 
@@ -239,7 +239,7 @@ class TestNaoFicarSemFilialAtivaNenhuma:
         desativar a que sobrou (agora a última) volta a ser recusado."""
         from plataforma.models import Filial
 
-        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
         cliente_admin.post(
             reverse("filiais"), {"acao": "desativar", "filial": str(loja.pk)})
 
@@ -258,7 +258,7 @@ class TestNaoRemoverFilialComGenteDentro:
     def test_recusa_com_gente_alocada_e_diz_na_tela(self, cliente_admin, matriz):
         from plataforma.models import Filial
 
-        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
         alocar(Usuario.objects.create_user(email="zeca@teste.com", password=SENHA),
                matriz.empresa, "vendedor", filial=loja)
 
@@ -282,7 +282,7 @@ class TestDesativarNaoTrancaQuemEstaUsando:
         from plataforma.contexto import CHAVE as CHAVE_FILIAL
         from plataforma.models import Filial
 
-        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+        loja = Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
         zeca = Usuario.objects.create_user(email="zeca@teste.com", password=SENHA)
         # Representante, e não Vendedor: no Fila Zero quem só tem a fila de
         # vendedor cai em /fila ao pedir a raiz, e esta prova é pela tela do

@@ -56,14 +56,12 @@ class TestFilial:
         filial = Filial.objects.create(empresa=empresa, nome="Loja 2", apelido="Loja 2")
         assert filial.ativa is True
 
-    def test_ordering_e_por_ordem_depois_nome(self):
+    def test_ordering_e_a_matriz_na_frente_e_depois_o_nome(self):
         from plataforma.models import Empresa, Filial
 
         empresa = Empresa.objects.create(razao_social="Alfa Ltda")
-        empresa.filiais.all().delete()
-        b = Filial.objects.create(empresa=empresa, nome="B", apelido="B", ordem=1)
-        a = Filial.objects.create(empresa=empresa, nome="A", apelido="A", ordem=1)
-        zero = Filial.objects.create(empresa=empresa, nome="Z", apelido="Z", ordem=0)
+        Filial.objects.create(empresa=empresa, nome="B", apelido="B")
+        Filial.objects.create(empresa=empresa, nome="A", apelido="A")
 
-        assert list(empresa.filiais.values_list("nome", flat=True)) == ["Z", "A", "B"]
-        assert [zero.nome, a.nome, b.nome] == ["Z", "A", "B"]
+        assert list(empresa.filiais.values_list("nome", flat=True)) == [
+            "Matriz", "A", "B"]

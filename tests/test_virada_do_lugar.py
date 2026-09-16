@@ -25,8 +25,8 @@ def conta():
         email="dono-virada@teste.com", password="x", nivel=Nivel.TITULAR)
     aplicar(titular, Nivel.TITULAR)
     empresa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
-    norte = Filial.objects.create(empresa=empresa, nome="Norte", apelido="Norte", ordem=5)
-    sul = Filial.objects.create(empresa=empresa, nome="Sul", apelido="Sul", ordem=6)
+    norte = Filial.objects.create(empresa=empresa, nome="Norte", apelido="Norte")
+    sul = Filial.objects.create(empresa=empresa, nome="Sul", apelido="Sul")
     cargos = {c.nome: c for c in Cargo.objects.filter(conta=titular)}
     return titular, empresa, norte, sul, cargos
 

@@ -571,6 +571,15 @@ class RegistroDeAuditoria(ComGuid):
     autor_nome = models.CharField("nome do autor", max_length=150, blank=True)
     alvo = models.CharField("alvo", max_length=255, blank=True)
     detalhe = models.CharField("detalhe", max_length=255, blank=True)
+    #: **A conta em que a ação aconteceu, pelo GUID** (16/09/2026): a regra é
+    #: que toda linha ligada a uma conta carregue o GUID do titular. Valor, e
+    #: não `ForeignKey`, pelo mesmo motivo de `autor_login` ser texto: a linha
+    #: sobrevive à conta, e um `PROTECT` impediria remover a conta que tem
+    #: trilha. Nula quando quem agiu não é de conta nenhuma — a MW5, ou um
+    #: login recusado que não corresponde a ninguém. Preenchida por
+    #: `comum.auditoria.registrar`.
+    conta_guid = models.UUIDField("GUID da conta", null=True, blank=True,
+                                  db_index=True)
 
     class Meta:
         verbose_name = "registro de auditoria"

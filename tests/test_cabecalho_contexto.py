@@ -230,8 +230,8 @@ class TestOSeletorDeFilial:
         titular = Usuario.objects.create_user(
             email="dono-cab@teste.com", password=SENHA, nivel=Nivel.TITULAR)
         alfa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
-        norte = Filial.objects.create(empresa=alfa, nome="Norte", apelido="Norte", ordem=5)
-        sul = Filial.objects.create(empresa=alfa, nome="Sul", apelido="Sul", ordem=6)
+        norte = Filial.objects.create(empresa=alfa, nome="Norte", apelido="Norte")
+        sul = Filial.objects.create(empresa=alfa, nome="Sul", apelido="Sul")
         return titular, alfa, norte, sul
 
     def _html(self, email):

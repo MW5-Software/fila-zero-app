@@ -21,8 +21,8 @@ def conta():
     titular = Usuario.objects.create_user(
         email="dono-lugar@teste.com", password="x", nivel=Nivel.TITULAR)
     empresa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
-    norte = Filial.objects.create(empresa=empresa, nome="Norte", apelido="Norte", ordem=5)
-    sul = Filial.objects.create(empresa=empresa, nome="Sul", apelido="Sul", ordem=6)
+    norte = Filial.objects.create(empresa=empresa, nome="Norte", apelido="Norte")
+    sul = Filial.objects.create(empresa=empresa, nome="Sul", apelido="Sul")
     cargos = {c.nome: c for c in Cargo.objects.filter(conta=titular)}
     return titular, empresa, norte, sul, cargos
 
@@ -57,7 +57,7 @@ class TestOsLugares:
         ana = _membro(titular, "ana")
         Alocacao.objects.create(pessoa=ana, empresa=empresa,
                                 cargo=cargos["supervisor"])
-        nova = Filial.objects.create(empresa=empresa, nome="Leste", apelido="Leste", ordem=7)
+        nova = Filial.objects.create(empresa=empresa, nome="Leste", apelido="Leste")
         alcancadas = set(filiais_da_pessoa(ana, empresa))
         assert norte in alcancadas and nova in alcancadas
         assert sul not in alcancadas
@@ -107,7 +107,7 @@ class TestAMaisEspecificaGanha:
         outro = Usuario.objects.create_user(
             email="outro-fil@teste.com", password="x", nivel=Nivel.TITULAR)
         beta = Empresa.objects.create(razao_social="Beta Ltda", dono=outro)
-        alheia = Filial.objects.create(empresa=beta, nome="X", apelido="X", ordem=9)
+        alheia = Filial.objects.create(empresa=beta, nome="X", apelido="X")
         assert alocacao_vigente(ana, empresa, alheia).cargo.nome == "cliente"
 
 

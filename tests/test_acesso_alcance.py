@@ -56,8 +56,8 @@ def cenario(db):
         "compra_b1": pessoa("compra_b1", Nivel.MEMBRO, [beta]),
     }
     alfa.refresh_from_db()
-    norte = Filial.objects.create(empresa=alfa, nome="Norte", apelido="Norte", ordem=5)
-    sul = Filial.objects.create(empresa=alfa, nome="Sul", apelido="Sul", ordem=6)
+    norte = Filial.objects.create(empresa=alfa, nome="Norte", apelido="Norte")
+    sul = Filial.objects.create(empresa=alfa, nome="Sul", apelido="Sul")
     dados.update(norte=norte, sul=sul)
     alocar(dados["vend_alfa"], alfa, "vendedor", filial=norte)
     alocar(dados["compra_a1"], alfa, "cliente", filial=norte)

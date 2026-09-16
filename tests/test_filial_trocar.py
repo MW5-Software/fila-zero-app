@@ -27,7 +27,7 @@ def matriz():
 def loja(matriz):
     from plataforma.models import Filial
 
-    return Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1", ordem=1)
+    return Filial.objects.create(empresa=matriz.empresa, nome="Loja 1", apelido="Loja 1")
 
 
 @pytest.fixture

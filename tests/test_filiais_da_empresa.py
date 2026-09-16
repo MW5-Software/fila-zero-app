@@ -47,7 +47,7 @@ def cenario(db, modulo_filiais_ligado):
     _, alfa = _titular_com_empresa("dono-alfa", "Alfa Ltda")
     _, beta = _titular_com_empresa("dono-beta", "Beta Ltda")
     loja_beta = Filial.objects.create(empresa=beta, nome="Loja da Beta",
-                                      apelido="SoDaBeta", ordem=5)
+                                      apelido="SoDaBeta")
     return {"alfa": alfa, "beta": beta, "loja_beta": loja_beta,
             "cliente": _entrar("dono-alfa")}
 
@@ -109,7 +109,7 @@ class TestAMatriz:
 
         matriz = cenario["alfa"].filiais.get(e_matriz=True)
         Filial.objects.create(empresa=cenario["alfa"], nome="Loja 2",
-                              apelido="Loja 2", ordem=2)
+                              apelido="Loja 2")
         resposta = cenario["cliente"].post(reverse("filiais"), {
             "acao": "remover", "filial": str(matriz.pk)})
 
@@ -149,7 +149,7 @@ class TestRemoverNaoDa500:
 
         alfa = cenario["alfa"]
         loja = Filial.objects.create(empresa=alfa, nome="Loja 3",
-                                     apelido="Loja 3", ordem=3)
+                                     apelido="Loja 3")
         assert _protegida(loja) is False
 
         membro = Usuario.objects.create_user(
@@ -166,7 +166,7 @@ class TestRemoverNaoDa500:
 
         alfa = cenario["alfa"]
         loja = Filial.objects.create(empresa=alfa, nome="Loja 2",
-                                     apelido="Loja 2", ordem=2)
+                                     apelido="Loja 2")
         membro = Usuario.objects.create_user(
             email="membro-fil@teste.com", password=SENHA,
             nivel=Nivel.MEMBRO, dono=alfa.dono)

@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from comum.alfabetica import DE_DICIONARIO
 from comum.guid import ComGuid
 from nucleo.theme import Brand
 
@@ -524,6 +525,33 @@ class Empresa(ComGuid):
                         empresa_id=self.pk).update(conta_id=self.conta_id)
 
 
+def _conta_da_empresa(linha, kwargs) -> None:
+    """Copia para `linha.conta` a conta da empresa dela, e recusa a divergente.
+
+    A mesma regra de `contas.inquilino.ModeloDaEmpresa.save`, para as duas
+    tabelas da conta que moram na plataforma (Filial e AparenciaDaEmpresa),
+    com uma diferença: aqui a empresa pode ainda não ter titular, e a linha
+    fica sem conta em vez de ser recusada. Uma filial não é dado de negócio
+    — é o lugar onde ele vai acontecer, e ele mesmo recusa empresa sem conta.
+
+    Não importa `contas.inquilino`: `plataforma` fica ABAIXO de `contas`
+    (`test_camadas_nao_se_invertem`), e são quatro linhas.
+    """
+    # Sem empresa não há de quem herdar, e quem recusa é o `full_clean` logo
+    # depois, com a frase do campo. Ler `linha.empresa` aqui levantaria
+    # `RelatedObjectDoesNotExist` antes dele — um 500 no lugar da mensagem.
+    if linha.empresa_id is None:
+        return
+    conta_da_empresa = linha.empresa.conta_id
+    if linha.conta_id is not None and linha.conta_id != conta_da_empresa:
+        raise ValidationError({
+            "conta": "A conta informada não é a titular desta empresa."})
+    linha.conta_id = conta_da_empresa
+    update_fields = kwargs.get("update_fields")
+    if update_fields is not None and "empresa" in update_fields:
+        kwargs["update_fields"] = set(update_fields) | {"conta"}
+
+
 class Filial(ComGuid):
     """Uma unidade da empresa — o que a pessoa escolhe e troca no cabeçalho.
 
@@ -556,8 +584,20 @@ class Filial(ComGuid):
         "plataforma.Empresa", verbose_name="empresa", on_delete=models.PROTECT,
         related_name="filiais")
 
-    nome = models.CharField("nome", max_length=120)
+    nome = models.CharField("nome", max_length=120, db_collation=DE_DICIONARIO)
     apelido = models.CharField("apelido", max_length=60)
+
+    #: **O GUID da conta dona, como em toda linha da conta** (16/09/2026).
+    #: Derivado da empresa em `save` (`_conta_da_empresa`), nunca gravado à
+    #: mão. Nulo só enquanto a empresa não tem titular — empresa nasce antes
+    #: dele, e a Matriz nasce junto com ela; quando o titular chega, `Empresa.save`
+    #: regrava esta coluna com as de todas as tabelas que têm `empresa` e
+    #: `conta`.
+    conta = models.ForeignKey(
+        "contas.Usuario", verbose_name="conta", to_field="guid",
+        db_column="conta_guid", on_delete=models.PROTECT, null=True,
+        blank=True, related_name="+",
+        help_text=_("O GUID da conta titular da empresa desta linha."))
 
     # O dígito verificador é verificado de verdade (item 28) — e o que
     # grava é normalizado: só dígitos.
@@ -574,7 +614,6 @@ class Filial(ComGuid):
     #: Desligar não apaga nada, e some do seletor e das consultas de
     #: `plataforma.contexto.filiais_de` — mesmo espírito de `Modulo.ativo`.
     ativa = models.BooleanField("ativa", default=True)
-    ordem = models.IntegerField("ordem", default=0)
 
     #: A filial com que a empresa nasceu (spec 2026-09-14, D7). Marcada por
     #: campo e não pelo nome: o titular pode renomeá-la, e uma regra que
@@ -595,13 +634,17 @@ class Filial(ComGuid):
         teste que prova a restrição (`test_uma_matriz_por_empresa`) deixaria
         de ver o `IntegrityError` que é a prova de que é o BANCO quem trava.
         """
+        _conta_da_empresa(self, kwargs)
         self.full_clean(validate_constraints=False)
         super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "filial"
         verbose_name_plural = "filiais"
-        ordering = ("ordem", "nome")
+        # A Matriz na frente e as outras pelo nome (16/09/2026). A `ordem` que
+        # vinha antes nenhuma tela preenchia, e a lista saía na ordem de
+        # cadastro. Ver `comum.alfabetica` para a colação do nome.
+        ordering = ("-e_matriz", "nome")
         constraints = [
             # Parcial: só as linhas marcadas contam. Sem `condition`, a
             # restrição proibiria a segunda filial NÃO matriz da mesma empresa.
@@ -691,6 +734,17 @@ class AparenciaDaEmpresa(ComGuid):
     empresa = models.OneToOneField(
         "Empresa", verbose_name="empresa", on_delete=models.CASCADE,
         related_name="aparencia")
+    #: **O GUID da conta dona, como em toda linha da conta** (16/09/2026).
+    #: Derivado da empresa em `save` (`_conta_da_empresa`), nunca gravado à
+    #: mão. Nulo só enquanto a empresa não tem titular — empresa nasce antes
+    #: dele, e a Matriz nasce junto com ela; quando o titular chega, `Empresa.save`
+    #: regrava esta coluna com as de todas as tabelas que têm `empresa` e
+    #: `conta`.
+    conta = models.ForeignKey(
+        "contas.Usuario", verbose_name="conta", to_field="guid",
+        db_column="conta_guid", on_delete=models.PROTECT, null=True,
+        blank=True, related_name="+",
+        help_text=_("O GUID da conta titular da empresa desta linha."))
     sidebar_bg = models.CharField("fundo do menu", max_length=9, blank=True)
     sidebar_text = models.CharField("texto do menu", max_length=9, blank=True)
     #: Bytes no banco, como `ImagemDaMarca.conteudo` e pelo mesmo motivo: o
@@ -726,6 +780,7 @@ class AparenciaDaEmpresa(ComGuid):
         """Valida cor e logo aqui — a tela não é a única porta. O logo passa
         pela mesma peneira de `ImagemDaMarca.save`; vazio quer dizer "sem
         logo", e não arquivo inválido."""
+        _conta_da_empresa(self, kwargs)
         self.clean()
         if self.logo:
             from nucleo.images import ImagemInvalida, validar
