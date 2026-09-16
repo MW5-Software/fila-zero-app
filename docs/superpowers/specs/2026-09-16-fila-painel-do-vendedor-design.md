@@ -1,7 +1,7 @@
 # Fila Zero — o painel do vendedor
 
 **Data:** 16/09/2026
-**Estado:** desenho aprovado, ainda sem plano.
+**Estado:** desenho aprovado e implementado na branch `painel-do-vendedor` (plano de 16/09/2026).
 **Depende de:** a fila (`2026-09-15-fila-da-vez-design.md`), os indicadores
 (`2026-09-15-fila-indicadores-design.md`) e as metas
 (`2026-09-15-fila-metas-design.md`), todas na `main`.
@@ -34,8 +34,11 @@ inalcançável para justamente quem ganha o painel.
 O login é da base (`contas/views.py::entrar`), que redireciona para `/` e não
 pode importar a fila (`CLAUDE.md` §3). Um sinal novo,
 `contas.entrada.destino_depois_de_entrar`, no molde de
-`plataforma.filiais.antes_de_desativar`: a base envia com `user=`, e o primeiro
-receptor que responder um caminho interno decide. Sem resposta, `/`.
+`plataforma.filiais.antes_de_desativar`: a base envia com `request=`, e o
+primeiro receptor que responder um caminho interno decide. Sem resposta, `/`.
+Vai a requisição, e não a pessoa, porque "só tem a fila" é decidido pelas
+permissões do cargo no lugar em que a sessão está, e só
+`usuario_da_sessao(request)` as resolve (ajuste P-1 do plano).
 
 Resposta que não é caminho interno (não começa com `/`, ou começa com `//`, ou
 traz esquema) é **ignorada**, para o sinal nunca virar redirecionamento aberto.
@@ -128,23 +131,26 @@ Um atendimento entra pela hora do fim e aberto não entra, como na gestão.
 ### Base (`contas/`)
 
 - `contas/entrada.py`: o sinal `destino_depois_de_entrar` e uma função
-  `destino_depois_de_entrar_para(user) -> str` que envia, descarta resposta
+  `destino_depois_de_entrar_para(request) -> str` que envia, descarta resposta
   que não é caminho interno e devolve `/` sem resposta válida.
 - `contas/views.py::entrar`: redireciona para o que essa função devolve.
 
 ### Fila
 
-- `fila/sinais.py`: `destino_do_vendedor(sender, user, **kwargs)` responde
-  `reverse("fila")` quando `tela.so_a_fila(user)`; ligado no `ready()`.
+- `fila/sinais.py`: `destino_do_vendedor(sender, request, **kwargs)` responde
+  `reverse("fila")` quando `tela.so_a_fila(usuario_da_sessao(request))`;
+  ligado no `ready()`.
 - `fila/views.py::inicio`: sai o redirecionamento; a escolha segue a ordem de
   "Quem vê o quê no Início".
 - `fila/indicadores.py`:
   - `por_grupo`, `motivos`, `pausa_por_tipo` e `por_dia` ganham `vendedor=None`,
     como `numeros` já tem. Sem ele, o resultado é o de hoje;
-  - `ranking` ganha a anotação `posicao`: `Rank()` sobre o vendido
-    decrescente, calculada numa subconsulta antes da ordenação pedida, para
-    ordenar por outra coluna não mudar a posição. Mesmo vendido, mesma posição
-    (a regra de `posicao_no_mes`).
+  - `posicoes_por_vendido(recorte) -> dict[int, int]`: a posição de cada
+    pessoa pelo vendido, calculada em Python sobre o recorte inteiro. Não é
+    `Rank()` na consulta do ranking porque a tabela filtra por nome, e a
+    window function rodaria depois do filtro: buscar "Ana" a faria virar a
+    primeira (ajuste P-2 do plano). Mesmo vendido, mesma posição (a regra de
+    `posicao_no_mes`).
 - `fila/views_indicadores.py`: `_painel`, `_listas` e `_filtros` recebem o que
   hoje leem do recorte da gestão (o vendedor, se o campo de loja aparece, se o
   aviso de esquecidos entra), sem duplicar HTML.

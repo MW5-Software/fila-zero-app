@@ -1,3 +1,9 @@
+msgid "Idioma desconhecido."
+msgstr ""
+
+msgid "Escolha um dos idiomas da instalação."
+msgstr ""
+
 msgid "O Admin dono da conta desta pessoa."
 msgstr ""
 
@@ -181,6 +187,12 @@ msgstr ""
 msgid "Usuário não encontrado."
 msgstr ""
 
+msgid "Confira os campos destacados."
+msgstr ""
+
+msgid "Algo inesperado aconteceu. O problema foi registrado."
+msgstr ""
+
 msgid "Filial"
 msgstr ""
 
@@ -251,6 +263,9 @@ msgstr ""
 msgid "O GUID da conta titular desta empresa."
 msgstr ""
 
+msgid "O GUID da conta titular da empresa desta linha."
+msgstr ""
+
 msgid "Empresa"
 msgstr ""
 
@@ -296,7 +311,40 @@ msgstr ""
 msgid "Módulos declarados"
 msgstr ""
 
+msgid "Escolha um arquivo antes de enviar."
+msgstr ""
+
 msgid "Conexão com o Kronos"
+msgstr ""
+
+msgid "Menu desta empresa"
+msgstr ""
+
+msgid "Vazio herda da instalação. Ex.: #1f275d."
+msgstr ""
+
+msgid "Fundo do menu"
+msgstr ""
+
+msgid "Texto do menu"
+msgstr ""
+
+msgid "Salvar cores"
+msgstr ""
+
+msgid "Logo do menu"
+msgstr ""
+
+msgid "Logo enviado. Envie outro para trocar."
+msgstr ""
+
+msgid "Sem logo: vale o da instalação."
+msgstr ""
+
+msgid "Enviar logo"
+msgstr ""
+
+msgid "Remover logo"
 msgstr ""
 
 msgid "Remover empresa"
@@ -359,9 +407,6 @@ msgid "Enviar"
 msgstr ""
 
 msgid "Logos e favicon"
-msgstr ""
-
-msgid "Escolha um arquivo antes de enviar."
 msgstr ""
 
 msgid "Restaurar padrão"
@@ -440,6 +485,18 @@ msgid "Você está vendo como outra pessoa"
 msgstr ""
 
 msgid "Voltar a ser eu"
+msgstr ""
+
+msgid "Entre de novo para continuar."
+msgstr ""
+
+msgid "Sua senha venceu. Troque-a para continuar."
+msgstr ""
+
+msgid "Não encontrado."
+msgstr ""
+
+msgid "Nenhuma filial liberada para você."
 msgstr ""
 
 msgid "Exemplo"
@@ -742,6 +799,32 @@ msgstr ""
 msgid "Informe o nome."
 msgstr ""
 
+msgid "Posição"
+msgstr ""
+
+msgid "Vendedor"
+msgstr ""
+
+msgid "Vendido"
+msgstr ""
+
+msgid "Conversão"
+msgstr ""
+
+#, python-format
+msgid "% da meta"
+msgstr ""
+
+msgid "Você não fechou atendimento no período."
+msgstr ""
+
+#, python-format
+msgid "Você está em %(posicao)sº de %(total)s."
+msgstr ""
+
+msgid "Ranking da loja"
+msgstr ""
+
 msgid "Sem base para comparar"
 msgstr ""
 
@@ -796,14 +879,8 @@ msgstr ""
 msgid "Atendimentos"
 msgstr ""
 
-msgid "Conversão"
-msgstr ""
-
 #, python-format
 msgid "Cliente pediu: %(quantos)s, %(conversao)s"
-msgstr ""
-
-msgid "Vendido"
 msgstr ""
 
 msgid "Ticket médio"
@@ -897,9 +974,6 @@ msgstr ""
 msgid "Ficou aberto de um dia para o outro"
 msgstr ""
 
-msgid "Vendedor"
-msgstr ""
-
 msgid "Cliente pediu"
 msgstr ""
 
@@ -907,10 +981,6 @@ msgid "Pausa"
 msgstr ""
 
 msgid "Meta"
-msgstr ""
-
-#, python-format
-msgid "% da meta"
 msgstr ""
 
 msgid "Ranking de vendedores"
@@ -1167,6 +1237,9 @@ msgid "Desde"
 msgstr ""
 
 msgid "Trocar de loja"
+msgstr ""
+
+msgid "Meu painel"
 msgstr ""
 
 msgid "Ao vivo"

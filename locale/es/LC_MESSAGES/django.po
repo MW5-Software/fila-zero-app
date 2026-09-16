@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-15 11:25-0300\n"
+"POT-Creation-Date: 2026-09-16 11:49-0300\n"
 "PO-Revision-Date: 2026-09-09 19:32-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -17,6 +17,12 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+msgid "Idioma desconhecido."
+msgstr ""
+
+msgid "Escolha um dos idiomas da instalação."
+msgstr ""
 
 msgid "O Admin dono da conta desta pessoa."
 msgstr "El titular dueño de la cuenta de esta persona."
@@ -205,6 +211,12 @@ msgstr "No puede eliminar su propia cuenta."
 msgid "Usuário não encontrado."
 msgstr "Usuario no encontrado."
 
+msgid "Confira os campos destacados."
+msgstr ""
+
+msgid "Algo inesperado aconteceu. O problema foi registrado."
+msgstr ""
+
 msgid "Filial"
 msgstr "Sucursal"
 
@@ -275,6 +287,9 @@ msgstr "El titular dueño de esta empresa."
 msgid "O GUID da conta titular desta empresa."
 msgstr "El GUID de la cuenta titular de esta empresa."
 
+msgid "O GUID da conta titular da empresa desta linha."
+msgstr ""
+
 msgid "Empresa"
 msgstr "Empresa"
 
@@ -322,8 +337,41 @@ msgstr "Ningún módulo declarado en el código de esta instalación."
 msgid "Módulos declarados"
 msgstr "Módulos declarados"
 
+msgid "Escolha um arquivo antes de enviar."
+msgstr "Elija un archivo antes de enviar."
+
 msgid "Conexão com o Kronos"
 msgstr "Conexión con Kronos"
+
+msgid "Menu desta empresa"
+msgstr ""
+
+msgid "Vazio herda da instalação. Ex.: #1f275d."
+msgstr ""
+
+msgid "Fundo do menu"
+msgstr ""
+
+msgid "Texto do menu"
+msgstr ""
+
+msgid "Salvar cores"
+msgstr ""
+
+msgid "Logo do menu"
+msgstr ""
+
+msgid "Logo enviado. Envie outro para trocar."
+msgstr ""
+
+msgid "Sem logo: vale o da instalação."
+msgstr ""
+
+msgid "Enviar logo"
+msgstr ""
+
+msgid "Remover logo"
+msgstr ""
 
 msgid "Remover empresa"
 msgstr "Eliminar empresa"
@@ -390,9 +438,6 @@ msgstr "Enviar"
 
 msgid "Logos e favicon"
 msgstr "Logos y favicon"
-
-msgid "Escolha um arquivo antes de enviar."
-msgstr "Elija un archivo antes de enviar."
 
 msgid "Restaurar padrão"
 msgstr "Restaurar el valor por defecto"
@@ -471,6 +516,18 @@ msgstr "Usted está viendo como otra persona"
 
 msgid "Voltar a ser eu"
 msgstr "Volver a ser yo"
+
+msgid "Entre de novo para continuar."
+msgstr ""
+
+msgid "Sua senha venceu. Troque-a para continuar."
+msgstr ""
+
+msgid "Não encontrado."
+msgstr ""
+
+msgid "Nenhuma filial liberada para você."
+msgstr ""
 
 msgid "Exemplo"
 msgstr "Ejemplo"
@@ -778,6 +835,32 @@ msgstr "Elija una empresa en el encabezado antes de registrar."
 msgid "Informe o nome."
 msgstr "Indique el nombre."
 
+msgid "Posição"
+msgstr "Posición"
+
+msgid "Vendedor"
+msgstr "Vendedor"
+
+msgid "Vendido"
+msgstr "Vendido"
+
+msgid "Conversão"
+msgstr "Conversión"
+
+#, python-format
+msgid "% da meta"
+msgstr "% de la meta"
+
+msgid "Você não fechou atendimento no período."
+msgstr "Usted no cerró ninguna atención en el período."
+
+#, python-format
+msgid "Você está em %(posicao)sº de %(total)s."
+msgstr "Usted está en el %(posicao)sº lugar de %(total)s."
+
+msgid "Ranking da loja"
+msgstr "Ranking de la tienda"
+
 msgid "Sem base para comparar"
 msgstr "Sin base para comparar"
 
@@ -836,15 +919,9 @@ msgstr "Meta del mes"
 msgid "Atendimentos"
 msgstr "Atenciones"
 
-msgid "Conversão"
-msgstr "Conversión"
-
 #, python-format
 msgid "Cliente pediu: %(quantos)s, %(conversao)s"
 msgstr "El cliente lo pidió: %(quantos)s, %(conversao)s"
-
-msgid "Vendido"
-msgstr "Vendido"
 
 msgid "Ticket médio"
 msgstr "Ticket promedio"
@@ -937,9 +1014,6 @@ msgstr "Abrir la fila de esta tienda"
 msgid "Ficou aberto de um dia para o outro"
 msgstr "Quedó abierto de un día para otro"
 
-msgid "Vendedor"
-msgstr "Vendedor"
-
 msgid "Cliente pediu"
 msgstr "El cliente lo pidió"
 
@@ -948,10 +1022,6 @@ msgstr "Pausa"
 
 msgid "Meta"
 msgstr "Meta"
-
-#, python-format
-msgid "% da meta"
-msgstr "% de la meta"
 
 msgid "Ranking de vendedores"
 msgstr "Ranking de vendedores"
@@ -1208,6 +1278,9 @@ msgstr "Desde"
 
 msgid "Trocar de loja"
 msgstr "Cambiar de tienda"
+
+msgid "Meu painel"
+msgstr "Mi panel"
 
 msgid "Ao vivo"
 msgstr "En vivo"

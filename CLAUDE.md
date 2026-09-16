@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 131 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 133 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -497,9 +497,10 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   Filiais tranca a linha da loja antes de perguntar, e o ponto relê a loja
   depois da mesma trava: sem as duas pontas, alguém entrava na loja que
   acabava de ser desativada e ficava preso nela.
-- **Quem só tem `fila.ver` e `fila.participar` cai em `/fila`** ao pedir a
-  raiz (`fila.views.inicio`, antes do `nucleo` em `config/urls.py`). Teste da
-  base que pede a raiz com um vendedor precisa de outro cargo.
+- **Quem só tem `fila.ver` e `fila.participar` entra por `/fila`**, mas a
+  raiz é o painel dele. O desvio é do LOGIN, e não da raiz: a base pergunta
+  pelo sinal `contas.entrada.destino_depois_de_entrar` e `fila/sinais.py`
+  responde. Na raiz ele tornava o Início inalcançável para o vendedor.
 
 
 ### Os indicadores (entrega 2)
@@ -546,6 +547,26 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
   lojas", uma loja sem meta não faz a meta das outras parecer batida.
 
+### O painel do vendedor
+
+Spec `docs/superpowers/specs/2026-09-16-fila-painel-do-vendedor-design.md`;
+plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
+
+- **O Início decide nesta ordem** (`fila.views.inicio`): `fila.relatorios` em
+  alguma loja, o painel da gestão; `fila.participar` na loja do cabeçalho, o
+  painel do vendedor (`fila/views_do_vendedor.py`); senão, a saudação.
+- **É o painel da gestão recortado pela pessoa**, com as mesmas peças
+  (`_filtros`, `_painel`, `_listas`) e as contas de `fila/indicadores.py`
+  com `vendedor=`. A loja é a do cabeçalho, sem campo de loja.
+- **O ranking da loja não mostra pausa, ticket, "cliente pediu" nem
+  atendimentos.** A posição é sempre por vendido
+  (`indicadores.posicoes_por_vendido`), calculada antes do filtro por nome:
+  com `Rank()` na consulta, buscar "Ana" a faria virar a primeira.
+- **A faixa da meta é só a meta dele** (`metas.meta_da_pessoa`); a meta da
+  loja não é régua de ninguém em particular.
+- A página da fila não tem menu: o caminho do vendedor até o painel é o link
+  "Meu painel", para quem tem `fila.participar`.
+
 ---
 
 ## Como rodar
@@ -556,7 +577,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 131 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 133 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O
