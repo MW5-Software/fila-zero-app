@@ -156,7 +156,7 @@ Um atendimento entra pela hora do fim e aberto não entra, como na gestão.
   `mostra_painel` de `fila/tela.py`, que nenhum template lê, sai: ela diz o
   contrário do que o link precisa (esconderia o painel justamente do
   vendedor).
-- As frases novas entram no castelhano (`locale/es_PY`), pela receita do Babel.
+- As frases novas entram no castelhano (`locale/es`), pela receita do Babel.
 
 ### Documentação
 
