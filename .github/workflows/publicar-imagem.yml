@@ -13,6 +13,15 @@ permissions:
   contents: read
   packages: write
 
+# Uma implantação por vez, e a mais nova ganha. Dois pushes com dois minutos
+# de diferença dispararam dois jobs em 16/09/2026, e o segundo deploy viu o
+# container sendo recriado pelo primeiro, julgou instável e desfez uma versão
+# boa. A VPS ganhou uma tranca por projeto no mesmo dia; isto evita a fila de
+# um lado só, e cancela o deploy que já nasceu velho.
+concurrency:
+  group: publicar-imagem-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publicar:
     # Só publica se a suíte de testes tiver terminado com sucesso.
