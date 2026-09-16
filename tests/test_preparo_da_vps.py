@@ -64,15 +64,23 @@ class TestOCi:
         assert "ghcr.io/mw5-software/fila-zero:${{ github.event.workflow_run.head_sha }}" in texto
 
     def test_implanta_em_homologacao_o_commit_testado(self):
-        """O commit implantado é o que a suíte testou (`head_sha` do
+        """Quando o CI implanta, o commit é o que a suíte testou (`head_sha` do
         `workflow_run`), e não o `github.sha`, que neste gatilho é a ponta da
-        `main` na hora em que o workflow começou.
+        `main` na hora em que o workflow começou. O `head_sha` pode chegar ao
+        `deploy` direto ou por uma variável do job.
 
-        O `head_sha` pode chegar ao `deploy` direto ou por uma variável do
-        job; o que se cobra é que ele seja a origem e que o `github.sha` não
-        apareça em lugar nenhum."""
+        **Implantar pelo CI é opcional, desligá-lo em silêncio não é.** Um
+        projeto cuja chave ainda aponta para produção tira o passo — e aí o
+        arquivo precisa DIZER isso, senão a ausência se lê como esquecimento
+        (o Portal de Vendas passou por isso em 16/09/2026: o `deploy` do CI
+        recriou o container de produção)."""
         texto = "\n".join(_instrucoes(PUBLICAR))
-        assert "deploy " in texto, "o CI não chama o `deploy` da VPS"
+        if "deploy " not in texto:
+            assert "IMPLANTAÇÃO AUTOMÁTICA ESTÁ DESLIGADA" in PUBLICAR.read_text(
+                encoding="utf-8"), (
+                "sem o passo de implantar e sem dizer por quê: escreva o "
+                "motivo no próprio workflow")
+            return
         assert "github.event.workflow_run.head_sha" in texto
         assert "github.sha" not in texto
 
