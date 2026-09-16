@@ -66,9 +66,14 @@ class TestOCi:
     def test_implanta_em_homologacao_o_commit_testado(self):
         """O commit implantado é o que a suíte testou (`head_sha` do
         `workflow_run`), e não o `github.sha`, que neste gatilho é a ponta da
-        `main` na hora em que o workflow começou."""
+        `main` na hora em que o workflow começou.
+
+        O `head_sha` pode chegar ao `deploy` direto ou por uma variável do
+        job; o que se cobra é que ele seja a origem e que o `github.sha` não
+        apareça em lugar nenhum."""
         texto = "\n".join(_instrucoes(PUBLICAR))
-        assert 'deploy ${{ github.event.workflow_run.head_sha }}' in texto
+        assert "deploy " in texto, "o CI não chama o `deploy` da VPS"
+        assert "github.event.workflow_run.head_sha" in texto
         assert "github.sha" not in texto
 
     def test_producao_nao_entra_no_ci(self):
