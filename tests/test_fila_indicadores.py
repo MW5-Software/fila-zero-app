@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from fila.indicadores import (Posicao, Recorte, esquecidos, lojas_com_relatorio,
                               motivos, numeros, pausa_por_tipo, por_dia,
-                              por_grupo, variacao)
+                              por_grupo, posicoes_por_vendido, variacao)
 from fila.periodo import Periodo
 from tests.fila_cenario import cadastros, nova_loja, pessoa_na_loja, sylvia
 
@@ -314,3 +314,50 @@ def test_versao_muda_quando_um_lancamento_de_hoje_e_corrigido(loja):
     antes = versao_da_fila(loja.matriz)
     Atendimento.irrestritos.filter(pk=a.pk).update(total=Decimal("150"))
     assert versao_da_fila(loja.matriz) != antes
+
+
+# --- Recortado pelo vendedor (spec 2026-09-16) --------------------------------
+
+def test_as_contas_de_um_vendedor_so_trazem_as_dele(loja):
+    from fila.models import MotivoDeNaoVenda, Pausa
+
+    caro = MotivoDeNaoVenda.irrestritos.create(empresa=loja.empresa, nome="Caro")
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="600", itens=[(loja.cad.grupo, "600")])
+    atendimento(loja, loja.bia, d, d, vendeu="300", itens=[(loja.cad.grupo2, "300")])
+    atendimento(loja, loja.ana, d, d, motivo=caro)
+    atendimento(loja, loja.bia, d, d)
+    for pessoa, minutos in ((loja.ana, 10), (loja.bia, 30)):
+        Pausa.irrestritos.create(
+            empresa=loja.empresa, filial=loja.matriz, pessoa=pessoa,
+            presenca=_presenca(loja, pessoa), tipo=loja.cad.tipo,
+            inicio=local(2026, 9, 10, 12), fim=local(2026, 9, 10, 12, minutos))
+    r = _recorte(loja)
+    assert por_grupo(r, vendedor=loja.ana) == [("Sofás", Decimal("600"))]
+    assert motivos(r, vendedor=loja.ana) == [("Caro", 1)]
+    assert pausa_por_tipo(r, vendedor=loja.ana) == [("Almoço", 10)]
+    dia = Periodo(local(2026, 9, 10), local(2026, 9, 11), "intervalo", "10")
+    assert por_dia(_recorte(loja, dia), vendedor=loja.ana)[10] == ("10h", 2, Decimal("600"), 1)
+    # Sem vendedor, a loja inteira, como sempre foi.
+    assert por_grupo(r) == [("Sofás", Decimal("600")), ("Tapetes", Decimal("300"))]
+    assert pausa_por_tipo(r) == [("Almoço", 40)]
+
+
+def test_posicoes_por_vendido_com_empate_e_quem_nao_vendeu(loja):
+    caio = pessoa_na_loja("caio", loja.empresa, loja.matriz)
+    dora = pessoa_na_loja("dora", loja.empresa, loja.matriz)
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, caio, d, d, vendeu="900")
+    atendimento(loja, loja.ana, d, d, vendeu="500")
+    atendimento(loja, loja.bia, d, d, vendeu="500")
+    atendimento(loja, dora, d, d)  # atendeu e não vendeu: entra, em último
+    assert posicoes_por_vendido(_recorte(loja)) == {
+        caio.pk: 1, loja.ana.pk: 2, loja.bia.pk: 2, dora.pk: 4}
+
+
+def test_posicoes_so_do_recorte(loja):
+    centro = nova_loja(loja.empresa, "Centro")
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="100")
+    atendimento(loja, loja.bia, d, d, vendeu="999", filial=centro)
+    assert posicoes_por_vendido(_recorte(loja)) == {loja.ana.pk: 1}

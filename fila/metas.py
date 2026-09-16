@@ -23,7 +23,7 @@ from .periodo import ANOS_ACEITOS
 
 __all__ = ["Acompanhamento", "Linha", "MES_ENCERRADO", "MetaDoRecorte", "ValoresInvalidos",
            "acompanhar", "copiar_do_anterior", "gravar", "lojas_com_metas",
-           "mes_anterior", "mes_do_texto", "mes_do_periodo", "mes_encerrado", "mes_seguinte", "meta_do_recorte",
+           "mes_anterior", "mes_do_texto", "mes_do_periodo", "mes_encerrado", "mes_seguinte", "meta_da_pessoa", "meta_do_recorte",
            "meta_da_loja", "pessoas_da_lista", "primeiro_do_mes",
            "ultimo_do_mes", "valor_do_campo"]
 
@@ -330,6 +330,18 @@ class MetaDoRecorte:
     soma_vendedores: Decimal
 
 
+def _vendido_ate_ontem(empresa, lojas, periodo, agora, vendedor=None) -> "Decimal | None":
+    """O vendido do período até o fim de ontem, para a projeção (M5). `None`
+    em período terminado: mês encerrado não tem ritmo."""
+    from .indicadores import Recorte, numeros
+    from .periodo import Periodo, inicio_do_dia
+
+    if periodo.ate <= agora:
+        return None
+    ontem = Periodo(periodo.de, inicio_do_dia(timezone.localdate(agora)), "intervalo", "")
+    return numeros(Recorte(empresa, lojas, ontem), vendedor=vendedor).vendido
+
+
 def meta_do_recorte(recorte, agora: "datetime | None" = None) -> "MetaDoRecorte | None":
     """A meta das lojas do recorte contra o vendido DESSAS lojas.
 
@@ -339,7 +351,6 @@ def meta_do_recorte(recorte, agora: "datetime | None" = None) -> "MetaDoRecorte 
     """
     from .indicadores import Recorte, numeros
     from .models import MetaDeVenda
-    from .periodo import Periodo, inicio_do_dia
 
     agora = agora or timezone.now()
     mes = mes_do_periodo(recorte.periodo)
@@ -357,11 +368,36 @@ def meta_do_recorte(recorte, agora: "datetime | None" = None) -> "MetaDoRecorte 
         .filter(filial__in=com_meta, mes=mes, pessoa__isnull=False)
         .values_list("valor", flat=True), ZERO)
     vendido = numeros(Recorte(recorte.empresa, com_meta, recorte.periodo)).vendido
-    ate_ontem = None
-    if recorte.periodo.ate > agora:
-        ontem = Periodo(recorte.periodo.de, inicio_do_dia(timezone.localdate(agora)),
-                        "intervalo", "")
-        ate_ontem = numeros(Recorte(recorte.empresa, com_meta, ontem)).vendido
+    ate_ontem = _vendido_ate_ontem(recorte.empresa, com_meta, recorte.periodo, agora)
     return MetaDoRecorte(
         acompanhar(sum(por_loja.values(), ZERO), vendido, mes, agora, ate_ontem),
         len(com_meta), len(recorte.lojas), soma_vendedores)
+
+
+def meta_da_pessoa(recorte, pessoa, agora: "datetime | None" = None) -> "MetaDoRecorte | None":
+    """A meta de `pessoa` nas lojas do recorte contra o vendido DELA nelas: o
+    painel do vendedor (spec 2026-09-16). A meta da loja não entra: ela não é
+    a régua de ninguém em particular.
+
+    Devolve o mesmo `MetaDoRecorte` do painel da gestão, para a mesma faixa
+    desenhar os dois, com as lojas todas "com meta" e sem soma de vendedores:
+    as frases de cobertura e de "N de M lojas" são conversa da gestão.
+    """
+    from .indicadores import numeros
+    from .models import MetaDeVenda
+
+    agora = agora or timezone.now()
+    mes = mes_do_periodo(recorte.periodo)
+    if mes is None:
+        return None
+    valores = list(MetaDeVenda.objects.da_empresa(recorte.empresa)
+                   .filter(filial__in=recorte.lojas, mes=mes, pessoa=pessoa)
+                   .values_list("valor", flat=True))
+    if not valores:
+        return None
+    vendido = numeros(recorte, vendedor=pessoa).vendido
+    ate_ontem = _vendido_ate_ontem(recorte.empresa, recorte.lojas, recorte.periodo,
+                                   agora, vendedor=pessoa)
+    lojas = len(recorte.lojas)
+    return MetaDoRecorte(acompanhar(sum(valores, ZERO), vendido, mes, agora, ate_ontem),
+                         lojas, lojas, ZERO)

@@ -32,7 +32,7 @@ from .periodo import Periodo, inicio_do_dia
 __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
            "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
-           "por_dia", "por_grupo", "posicao_no_mes", "ranking", "variacao"]
+           "por_dia", "por_grupo", "posicao_no_mes", "posicoes_por_vendido", "ranking", "variacao"]
 
 ZERO = Decimal("0")
 _DINHEIRO = DecimalField(max_digits=14, decimal_places=2)
@@ -91,16 +91,15 @@ def variacao(atual, anterior, *, pontos: bool = False) -> "Variacao | None":
     return Variacao(round((float(atual) - float(anterior)) * 100 / float(anterior), 1), "%")
 
 
-def _atendimentos(recorte: Recorte):
-    return (Atendimento.objects.da_empresa(recorte.empresa)
-            .filter(filial__in=recorte.lojas, fim__gte=recorte.periodo.de,
-                    fim__lt=recorte.periodo.ate))
+def _atendimentos(recorte: Recorte, vendedor=None):
+    consulta = (Atendimento.objects.da_empresa(recorte.empresa)
+                .filter(filial__in=recorte.lojas, fim__gte=recorte.periodo.de,
+                        fim__lt=recorte.periodo.ate))
+    return consulta if vendedor is None else consulta.filter(vendedor=vendedor)
 
 
 def numeros(recorte: Recorte, vendedor=None) -> Numeros:
-    consulta = _atendimentos(recorte)
-    if vendedor is not None:
-        consulta = consulta.filter(vendedor=vendedor)
+    consulta = _atendimentos(recorte, vendedor)
     venda = Q(resultado=Resultado.VENDEU)
     return Numeros(**consulta.aggregate(
         atendimentos=Count("pk"),
@@ -111,24 +110,26 @@ def numeros(recorte: Recorte, vendedor=None) -> Numeros:
     ))
 
 
-def por_grupo(recorte: Recorte) -> "list[tuple[str, Decimal]]":
+def por_grupo(recorte: Recorte, vendedor=None) -> "list[tuple[str, Decimal]]":
+    itens = (ItemVendido.objects.da_empresa(recorte.empresa)
+             .filter(atendimento__filial__in=recorte.lojas,
+                     atendimento__fim__gte=recorte.periodo.de,
+                     atendimento__fim__lt=recorte.periodo.ate))
+    if vendedor is not None:
+        itens = itens.filter(atendimento__vendedor=vendedor)
     return [(linha["grupo__nome"], linha["valor"]) for linha in (
-        ItemVendido.objects.da_empresa(recorte.empresa)
-        .filter(atendimento__filial__in=recorte.lojas,
-                atendimento__fim__gte=recorte.periodo.de,
-                atendimento__fim__lt=recorte.periodo.ate)
-        .values("grupo__nome").annotate(valor=Sum("valor"))
+        itens.values("grupo__nome").annotate(valor=Sum("valor"))
         .order_by("-valor", "grupo__nome"))]
 
 
-def motivos(recorte: Recorte) -> "list[tuple[str, int]]":
+def motivos(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
     return [(linha["motivo__nome"], linha["n"]) for linha in (
-        _atendimentos(recorte).filter(resultado=Resultado.NAO_VENDEU)
+        _atendimentos(recorte, vendedor).filter(resultado=Resultado.NAO_VENDEU)
         .values("motivo__nome").annotate(n=Count("pk"))
         .order_by("-n", "motivo__nome"))]
 
 
-def pausa_por_tipo(recorte: Recorte) -> "list[tuple[str, int]]":
+def pausa_por_tipo(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
     """Minutos de pausa por tipo. Só pausas fechadas, e só a parte de cada uma
     que cai dentro do período: a pausa das 23:40 às 00:20 conta 20 minutos em
     cada dia."""
@@ -137,10 +138,12 @@ def pausa_por_tipo(recorte: Recorte) -> "list[tuple[str, int]]":
         Least("fim", Value(ate, output_field=DateTimeField()))
         - Greatest("inicio", Value(de, output_field=DateTimeField())),
         output_field=DurationField())
-    linhas = (Pausa.objects.da_empresa(recorte.empresa)
+    pausas = (Pausa.objects.da_empresa(recorte.empresa)
               .filter(filial__in=recorte.lojas, fim__isnull=False,
-                      inicio__lt=ate, fim__gt=de)
-              .annotate(dentro=dentro)
+                      inicio__lt=ate, fim__gt=de))
+    if vendedor is not None:
+        pausas = pausas.filter(pessoa=vendedor)
+    linhas = (pausas.annotate(dentro=dentro)
               .values("tipo__nome").annotate(total=Sum("dentro"))
               .order_by("-total", "tipo__nome"))
     return [(linha["tipo__nome"], int(linha["total"].total_seconds() // 60))
@@ -154,7 +157,7 @@ class Fatia(NamedTuple):
     vendas: int
 
 
-def por_dia(recorte: Recorte) -> "list[Fatia]":
+def por_dia(recorte: Recorte, vendedor=None) -> "list[Fatia]":
     """(rótulo, atendimentos, vendido, vendas) por dia; por hora quando o
     período é um dia só. Os vazios aparecem com zero: um gráfico que pula o dia
     sem atendimento esconde justamente o dia ruim. As vendas vêm junto para a
@@ -165,7 +168,7 @@ def por_dia(recorte: Recorte) -> "list[Fatia]":
     venda = Q(resultado=Resultado.VENDEU)
     achados = {
         linha["fatia"]: (linha["n"], linha["v"], linha["vendas"]) for linha in (
-            _atendimentos(recorte).annotate(fatia=fatia).values("fatia")
+            _atendimentos(recorte, vendedor).annotate(fatia=fatia).values("fatia")
             .annotate(n=Count("pk"), vendas=Count("pk", filter=venda),
                       v=Coalesce(Sum("total", filter=venda), Value(ZERO),
                                  output_field=_DINHEIRO))
@@ -322,6 +325,25 @@ def ranking(recorte: Recorte, mes: "date | None" = None):
                     Cast("vendido", real) * 100.0 / Cast("meta", real),
                     output_field=real),
                 output_field=real)))
+
+
+def posicoes_por_vendido(recorte: Recorte) -> "dict[int, int]":
+    """A posição de cada pessoa do ranking pelo vendido, qualquer que seja a
+    ordem em que a tabela está (spec 2026-09-16, V5): reordenar por conversão
+    não pode fazer alguém "subir" para o primeiro lugar. Mesmo vendido, mesma
+    posição, e quem atendeu sem vender entra, no fim.
+
+    Em Python, e não com `Rank()` na consulta do ranking: a tabela filtra por
+    nome, e uma window function roda DEPOIS do filtro — buscar "Ana" a faria
+    virar a primeira. Uma loja tem dezenas de vendedores."""
+    venda = Q(resultado=Resultado.VENDEU)
+    totais = dict(
+        _atendimentos(recorte).values("vendedor")
+        .annotate(v=Coalesce(Sum("total", filter=venda), Value(ZERO),
+                             output_field=_DINHEIRO))
+        .values_list("vendedor", "v"))
+    return {pessoa: 1 + sum(1 for outro in totais.values() if outro > v)
+            for pessoa, v in totais.items()}
 
 
 @dataclass(frozen=True)

@@ -277,6 +277,33 @@ def test_meta_do_recorte_so_em_mes_e_so_das_lojas_com_meta(loja):
     assert meta_do_recorte(Recorte(loja.empresa, (centro,), _periodo("mes")), agora) is None
 
 
+def test_meta_da_pessoa_e_so_a_dela_contra_o_vendido_dela(loja):
+    from fila.indicadores import Recorte
+    from fila.metas import meta_da_pessoa, primeiro_do_mes
+
+    centro = nova_loja(loja.empresa, "Centro")
+    agora = timezone.now()
+    mes = primeiro_do_mes(timezone.localdate(agora))
+    hoje = timezone.localtime(agora).replace(minute=0, second=0, microsecond=0)
+    atendimento(loja, loja.ana, hoje, hoje, vendeu="1000")
+    atendimento(loja, loja.bia, hoje, hoje, vendeu="7000")
+    atendimento(loja, loja.ana, hoje, hoje, vendeu="5000", filial=centro)
+    so_matriz = Recorte(loja.empresa, (loja.matriz,), _periodo("mes"))
+
+    # A meta da LOJA não é a meta dela.
+    meta(loja, valor="10000", mes=mes)
+    assert meta_da_pessoa(so_matriz, loja.ana, agora) is None
+
+    meta(loja, pessoa=loja.ana, valor="4000", mes=mes)
+    meta(loja, pessoa=loja.ana, valor="8000", mes=mes, filial=centro)
+    m = meta_da_pessoa(so_matriz, loja.ana, agora)
+    assert m.acompanhamento.meta == Decimal("4000")
+    assert m.acompanhamento.vendido == Decimal("1000")
+    assert (m.lojas_com_meta, m.lojas, m.soma_vendedores) == (1, 1, Decimal("0"))
+    assert meta_da_pessoa(Recorte(loja.empresa, (loja.matriz,), _periodo("7dias")),
+                          loja.ana, agora) is None
+
+
 def test_ranking_com_meta_e_porcentagem(loja):
     from fila.indicadores import Recorte, ranking
     from fila.metas import primeiro_do_mes
