@@ -24,7 +24,8 @@ from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_login, exigir_permissao
 from comum.personificacao import PersonificacaoRecusada, encerrar, iniciar
 
-from .entrada import CREDENCIAIS_INVALIDAS, autenticar_e_entrar, sair_e_registrar
+from .entrada import (CREDENCIAIS_INVALIDAS, autenticar_e_entrar,
+                      destino_depois_de_entrar_para, sair_e_registrar)
 
 __all__ = ["entrar", "personificar", "sair", "voltar_a_ser_eu"]
 
@@ -94,7 +95,7 @@ def entrar(request) -> HttpResponse:
     user = autenticar_e_entrar(request, login_digitado, request.POST.get("senha", ""))
     if user is None:
         return _desenhar(request, marca, erro=CREDENCIAIS_INVALIDAS)
-    return HttpResponseRedirect("/")
+    return HttpResponseRedirect(destino_depois_de_entrar_para(request))
 
 
 def sair(request) -> HttpResponse:
