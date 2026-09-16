@@ -1,7 +1,9 @@
 """As rotas da marca: servir o logo e o favicon gravados no banco.
 
-A rota de servir é aberta de propósito (ver `TELAS_ABERTAS`): a tela de
-entrada e o favicon precisam dela antes de qualquer sessão existir. O que
+A rota de servir a marca DA INSTALAÇÃO é aberta de propósito (ver
+`TELAS_ABERTAS`): a tela de entrada e o favicon precisam dela antes de
+qualquer sessão existir. As do menu DA EMPRESA (15/09/2026) exigem sessão —
+elas dependem de quem pede, e antes do login não há quem. O que
 protege não é guarda de login — é a peneira na gravação
 (`ImagemDaMarca.save`, que só aceita o que `nucleo.images.validar` aprova)
 mais os cabeçalhos seguros na resposta, os mesmos do avatar.
@@ -26,11 +28,12 @@ from nucleo.images import CABECALHOS_SEGUROS
 
 from comum.auditoria import ACOES, registrar
 from comum.csrf import campo_csrf
-from comum.guardas_de_acesso import exigir_permissao
+from comum.guardas_de_acesso import exigir_login, exigir_permissao
 
 from .models import LUGARES_DA_IMAGEM, ImagemDaMarca
 
-__all__ = ["ROTULOS", "aparencia_logo", "cartao_de_logos", "marca_imagem"]
+__all__ = ["ROTULOS", "aparencia_logo", "cartao_de_logos", "logo_da_empresa",
+           "marca_imagem", "tema_da_empresa"]
 
 #: Os lugares abertos ao cliente, com o nome que a tela mostra. É também o `alvo` da
 #: auditoria — quem lê o registro seis meses depois encontra "Menu lateral",
@@ -216,3 +219,44 @@ def aparencia_logo(request) -> HttpResponse:
     except ValidationError as erro:
         return _desenhar(request, valores, erro="; ".join(erro.messages))
     return HttpResponseRedirect(reverse("aparencia") + "?logo=1")
+
+
+@exigir_login
+def tema_da_empresa(request) -> HttpResponse:
+    """Só as variáveis do menu da empresa de quem pede, depois da folha da casa.
+
+    Separada do `/tema.css` porque aquela é ABERTA e igual para todos: a tela
+    de entrada precisa dela antes da sessão, e o `/api/tema` precisa bater com
+    ela. `private`: o conteúdo depende da sessão, e um cache compartilhado
+    entregaria a cor de um cliente para outro. Sem aparência, folha vazia — e
+    não 404, porque toda página logada a pede.
+    """
+    from .marca import aparencia_da_requisicao, folha_do_menu, marca_da_requisicao
+
+    corpo = ""
+    if aparencia_da_requisicao(request) is not None:
+        corpo = folha_do_menu(marca_da_requisicao(request))
+    resposta = HttpResponse(corpo, content_type="text/css")
+    resposta["Cache-Control"] = "private, no-cache"
+    return resposta
+
+
+@exigir_login
+def logo_da_empresa(request) -> HttpResponse:
+    """O logo do menu DA EMPRESA DE QUEM PEDE. Não há empresa na URL: quem
+    decide é a sessão, e por isso não há o que trocar para ver o de outra."""
+    from .marca import logo_da_empresa_de
+
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    achado = logo_da_empresa_de(request)
+    if achado is None:
+        return HttpResponseNotFound()
+    conteudo, tipo = achado
+    resposta = HttpResponse(conteudo, content_type=tipo)
+    # Os mesmos cabeçalhos do logo da instalação: bytes enviados por
+    # terceiro, servidos pela nossa origem.
+    for chave, valor in CABECALHOS_SEGUROS.items():
+        resposta[chave] = valor
+    resposta["Cache-Control"] = "private, no-cache"
+    return resposta

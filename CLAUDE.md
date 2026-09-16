@@ -100,6 +100,19 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
 - **`fila/`** — o negócio do Fila Zero (§10). É app de primeiro nível, e não
   pasta dentro de `modulos/`, por ser o produto inteiro; para as varreduras
   ele é negócio como qualquer outro.
+- **A API do app** mora em `api.py`, ao lado do `views.py` de cada pasta, e é
+  juntada em `config/api.py`, sob `/api/`. Veio do Portal de Vendas em
+  15/09/2026, sem a pasta `app/` (o Expo é de cada produto): a base entrega a
+  moldura — entrar, sair, `/api/v1/eu`, tema, entrada, filial e a lista de
+  filiais —, e cada SaaS acrescenta o router do negócio dele em
+  `config/api.py::_routers`. As duas cascas chamam a mesma regra e não se
+  importam (`test_api_nao_importa_view.py`). O token é a própria chave da
+  sessão Django, lida do cabeçalho `Authorization` — em `/api/` o cookie é
+  ignorado, e é isso que torna segura a isenção de CSRF
+  (`comum/sessao_por_cabecalho.py`). A decisão de acesso é a MESMA da web
+  (`comum.guardas_de_acesso.barreira`), traduzida em HTML ou JSON. O contrato
+  sai por `python -m config.openapi`, e `FILA_APP_MINIMO` é a versão mínima
+  do app que ainda abre.
 - **`config/`**, **`deploy/`**, **`locale/`**, **`docs/`** — configuração,
   publicação, as traduções (§8) e as decisões escritas. Em `docs/`, os
   `plans/` e `specs/` são registros datados: descrevem o dia em que foram
@@ -108,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 111 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 129 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -132,10 +145,16 @@ falham na suíte, e não em produção:
 
 | arquivo | o que recusa |
 |---|---|
-| `test_guarda.py` | rota sem guarda de acesso |
-| `test_guarda_modulo.py` | rota de módulo sem `@exigir_modulo_ligado` |
-| `test_personificacao.py` | tela sem o aviso de "você está vendo como" |
-| `test_regra_tabela.py` | tabela sem filtro/ordenação/paginação |
+| `test_guarda.py` | rota ou operação de API sem guarda de acesso |
+| `test_guarda_modulo.py` | rota de módulo sem `@exigir_modulo_ligado`; operação de API sem módulo nem motivo em `SEM_MODULO_NA_API` |
+| `test_personificacao.py` | tela sem o aviso de "você está vendo como"; resposta de API sem `X-Vendo-Como` |
+| `test_regra_tabela.py` | tabela ou lista da API sem filtro/ordenação/paginação |
+| `test_api_ignora_cookie.py` | `/api/` aceitando sessão por cookie, ou gravando cookie |
+| `test_api_nao_expoe_id.py` | esquema da API com `id`, `pk` ou `*_id` sequencial |
+| `test_api_nao_importa_view.py` | `api.py` importando `views*` (ou o contrário), ou adiando anotações com `__future__` |
+| `test_api_tema.py` | `/api/tema` diferente dos tokens do `/tema.css`, ou fechada |
+| `test_falha_da_api_e_gravada.py` | exceção em rota de API sem linha em `Falha` |
+| `test_barreira.py` | a decisão de acesso divergindo entre a web e a API |
 | `test_sem_nome_de_cliente.py` | nome de cliente escrito no código |
 | `test_regra_do_inquilino.py` | tabela de negócio sem a coluna da empresa e da conta (`conta_guid`) |
 | `test_regra_guid.py` | tabela nossa sem GUID |
@@ -309,6 +328,24 @@ O que custa quando se esquece:
   - se for a última ativa da empresa.
 - **O módulo de Filiais nasce desligado** (`ativo_por_padrao=False`). Numa
   instalação, a MW5 liga em Módulos para o titular ver a tela.
+
+### O menu de cada empresa (15/09/2026, vindo do Portal)
+
+- `plataforma.AparenciaDaEmpresa` guarda **logo, fundo e texto do menu** de uma
+  empresa. **Só a MW5 configura** (`mw5.aparencia`), num modal da tela de
+  Empresas; o titular não mexe.
+- **Toda tela logada usa `plataforma.marca.marca_da_requisicao(request)`** (via
+  `montar_site`): a marca da instalação com o menu da empresa de quem é VISTO
+  por cima — a MW5 vê a instalação, e em "ver como" vê a do cliente. Campo em
+  branco herda; entrada, rodapé (R48) e o resto do tema não mudam. Com cor
+  própria, hover e selecionado voltam a ser derivados dela.
+- **O `/tema.css` continua da instalação e aberto.** As cores da empresa vêm de
+  `/tema-da-empresa.css`, carregada depois da folha da casa, com
+  `Cache-Control: private`. O logo sai por `/marca/empresa/menu`, sempre o da
+  empresa de quem pede — nunca por id na URL.
+- **O logo perde a margem na gravação** (`plataforma/logo.py`): a barra ajusta o
+  arquivo inteiro à caixa, e borda branca no arquivo é desenho menor no menu.
+  É por isso que o Pillow é dependência de PRODUÇÃO desta base.
 
 ### O que sustenta a permissão
 
@@ -508,7 +545,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 111 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 129 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

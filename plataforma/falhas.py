@@ -22,15 +22,16 @@ from django.http import HttpResponse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-__all__ = ["MiddlewareDeFalhas", "pagina_de_erro", "pagina_nao_encontrada"]
+__all__ = ["MiddlewareDeFalhas", "pagina_de_erro", "pagina_nao_encontrada", "registrar_falha"]
 
 #: Teto do traceback gravado. O inteiro vai para o log; no banco basta o
 #: começo — é consulta, não arquivo.
 _TETO_DO_TRACEBACK = 8000
 
 
-def _gravar(request, erro: BaseException) -> None:
-    """A linha da falha. Levantar aqui é proibido — o chamador depende."""
+def _gravar(request, erro: BaseException) -> "Falha | None":
+    """A linha da falha, ou `None` se não deu para gravar. Levantar aqui é
+    proibido — o chamador depende."""
     try:
         from .models import Falha
 
@@ -46,7 +47,7 @@ def _gravar(request, erro: BaseException) -> None:
             pass  # a falha pode SER a sessão; o registro vale sem autor
 
         origem = _traceback.format_exc()
-        Falha.objects.create(
+        return Falha.objects.create(
             caminho=getattr(request, "path", "")[:255],
             metodo=getattr(request, "method", "")[:10],
             autor_login=autor_login[:150],
@@ -56,11 +57,38 @@ def _gravar(request, erro: BaseException) -> None:
         )
     except Exception:
         pass  # engolir DE PROPÓSITO — ver o docstring do módulo
+    return None
 
 
 #: Marca posta na própria exceção depois de gravada, para os dois caminhos
 #: abaixo nunca registrarem a mesma falha duas vezes.
 _JA_GRAVADA = "_falha_ja_registrada"
+
+
+def registrar_falha(request, erro: BaseException) -> "Falha | None":
+    """Grava a falha uma vez só e escreve no log. Devolve a linha, ou `None`
+    se ela já tinha sido gravada ou a gravação falhou.
+
+    É o caminho do middleware e o do tratador de exceção da API
+    (`plataforma.api_tratadores`). Um caminho só, com a mesma marca
+    `_JA_GRAVADA`: gravar por dois caminhos diferentes é como a mesma falha
+    vira duas linhas — ou nenhuma.
+
+    `_gravar` é buscada no módulo a cada chamada, e não guardada: é o que
+    deixa `tests/test_falhas.py` trocá-la por uma que quebra.
+    """
+    try:
+        if getattr(erro, _JA_GRAVADA, False):
+            return None
+        setattr(erro, _JA_GRAVADA, True)
+        falha = _gravar(request, erro)
+        logging.getLogger("plataforma.falhas").exception(
+            "500 em %s %s: %s",
+            getattr(request, "path", "?"),
+            getattr(request, "method", "?"), erro)
+        return falha
+    except Exception:
+        return None
 
 
 class MiddlewareDeFalhas:
@@ -106,20 +134,9 @@ class MiddlewareDeFalhas:
 
     @staticmethod
     def _registrar(request, erro) -> None:
-        # O engolir é AQUI no ponto de chamada (e não só dentro de
-        # `_gravar`): se a gravação falhar por qualquer motivo, a exceção
-        # ORIGINAL sobe — nunca uma segunda exceção por cima.
-        try:
-            if getattr(erro, _JA_GRAVADA, False):
-                return
-            setattr(erro, _JA_GRAVADA, True)
-            _gravar(request, erro)
-            logging.getLogger("plataforma.falhas").exception(
-                "500 em %s %s: %s",
-                getattr(request, "path", "?"),
-                getattr(request, "method", "?"), erro)
-        except Exception:
-            pass
+        # O engolir mora em `registrar_falha`: se a gravação falhar por
+        # qualquer motivo, a exceção ORIGINAL sobe — nunca uma segunda por cima.
+        registrar_falha(request, erro)
 
 
 def _html_cru() -> HttpResponse:

@@ -26,10 +26,12 @@ from comum.ambiente import ambiente
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
 
-from .filiais import pode_desativar, pode_remover
+from .filiais import (
+    FILTRAVEIS, ORDENAVEIS, ROTULOS, filiais_da_empresa, pode_desativar, pode_remover,
+)
 from comum.exportacao import ColunaDeExportacao, botoes, preparar_exportacao
 from comum.guardas_de_modulo import exigir_modulo_ligado
-from comum.listagem import ColunaFiltravel, montar_pagina
+from comum.listagem import montar_pagina
 from comum.pedido import id_do_post
 from .models import Filial
 from .parametro_catalogo import valor_de
@@ -103,13 +105,13 @@ def _colunas_da_lista(pagina) -> list[Column]:
     """`pagina.cabecalho` transforma o rótulo em link de ordenar — ver
     `comum.listagem` e R46."""
     return [
-        Column("filial", pagina.cabecalho("filial", "Filial"), strong=True,
+        Column("filial", pagina.cabecalho("filial", ROTULOS["filial"]), strong=True,
                render=lambda f: str(f)),
-        Column("cnpj", pagina.cabecalho("cnpj", "CNPJ"),
+        Column("cnpj", pagina.cabecalho("cnpj", ROTULOS["cnpj"]),
                render=lambda f: f.cnpj or "—"),
-        Column("municipio", pagina.cabecalho("municipio", "Município/UF"),
+        Column("municipio", pagina.cabecalho("municipio", ROTULOS["municipio"]),
                render=lambda f: f"{f.municipio}/{f.uf}" if f.municipio else "—"),
-        Column("situacao", pagina.cabecalho("situacao", "Situação"),
+        Column("situacao", pagina.cabecalho("situacao", ROTULOS["situacao"]),
                align="center", render=lambda f: Badge(
             label="Ativa" if f.ativa else "Inativa",
             tone="primary" if f.ativa else "neutral")),
@@ -202,47 +204,6 @@ def _modais_de_filial(request, filial: Filial) -> list[Modal]:
     ]
 
 
-#: `chave da URL -> campo(s) do ORM` — só o que esta lista declara pode
-#: entrar em `order_by` (ver `comum.listagem._resolver_ordenacao`).
-def _filiais_da_empresa(request):
-    """As filiais que ESTA tela enxerga: as da empresa do contexto, e só elas.
-
-    **É a trava desta tela, e é o que permitiu dar `filiais.editar` ao
-    titular** (14/09/2026). Até ali ela listava `Filial.objects.all()` — as
-    filiais da instalação inteira —, o que era aceitável enquanto só a MW5 a
-    abria e seria vazamento na mão de um cliente: o titular da Alfa veria, e
-    editaria, as lojas da Beta.
-
-    Listagem, exportação e TODAS as ações passam por aqui. Uma ação que
-    buscasse a filial por conta própria seria a porta para o id de outra
-    empresa chegar pelo POST.
-
-    Sem empresa no contexto, nada: `none()` e não `all()`, porque o erro de
-    faltar contexto não pode ser mostrar tudo.
-    """
-    empresa = empresa_atual(request)
-    if empresa is None:
-        return Filial.objects.none()
-    return Filial.objects.filter(empresa=empresa)
-
-
-_ORDENAVEIS = {
-    "filial": ("apelido", "nome"),
-    "cnpj": ("cnpj",),
-    "municipio": ("municipio", "uf"),
-    "situacao": ("ativa", "apelido"),
-}
-
-_FILTRAVEIS = {
-    "filial": ColunaFiltravel(("apelido", "nome"), "Filial"),
-    # Caixa de escolha, não campo de digitar — mesmo raciocínio da coluna
-    # "Situação" de `contas.views_usuarios`: ativa ou inativa são dois
-    # valores conhecidos, e um campo de texto sobre eles convida ao erro.
-    "situacao": ColunaFiltravel("ativa", "Situação", tipo="opcoes",
-                                opcoes=lambda: [("1", "Ativa"), ("0", "Inativa")]),
-}
-
-
 def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
     env = ambiente()
     with use_environment(env):
@@ -263,8 +224,8 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             conteudo.append(Alert(message=erro, tone="danger"))
 
         listagem = montar_pagina(
-            request, _filiais_da_empresa(request), ordenaveis=_ORDENAVEIS,
-            padrao="filial", filtraveis=_FILTRAVEIS)
+            request, filiais_da_empresa(request), ordenaveis=ORDENAVEIS,
+            padrao="filial", filtraveis=FILTRAVEIS)
         filiais_existentes = listagem.linhas
 
         conteudo.append(Card(
@@ -372,9 +333,10 @@ def _trocar_estado(request, filial, ativar: bool) -> HttpResponse:
     with transaction.atomic():
         if not ativar:
             # A linha da filial trancada ANTES de perguntar: um módulo que
-            # recusa pelo que está acontecendo na filial (a fila tranca a
-            # mesma linha para bater o ponto) não pode ver "ninguém" e, no
-            # instante seguinte, alguém entrar na loja que vai ser desativada.
+            # recusa pelo que está acontecendo na filial (no Fila Zero, a fila
+            # tranca a mesma linha para bater o ponto) não pode ver "ninguém"
+            # e, no instante seguinte, alguém entrar na loja que vai ser
+            # desativada.
             Filial.objects.select_for_update().filter(pk=filial.pk).first()
             motivo = pode_desativar(filial)
             if motivo:
@@ -429,10 +391,10 @@ def filiais(request) -> HttpResponse:
         # A exportação roda aqui dentro, depois dos guardas.
         if request.GET.get("formato"):
             exportacao = preparar_exportacao(
-                request, queryset=_filiais_da_empresa(request),
+                request, queryset=filiais_da_empresa(request),
                 colunas=COLUNAS_DE_EXPORTACAO,
-                ordenaveis=_ORDENAVEIS, padrao="filial",
-                filtraveis=_FILTRAVEIS, titulo=_("Filiais"))
+                ordenaveis=ORDENAVEIS, padrao="filial",
+                filtraveis=FILTRAVEIS, titulo=_("Filiais"))
             if exportacao is not None:
                 return exportacao
         return _desenhar(request)
@@ -448,7 +410,7 @@ def filiais(request) -> HttpResponse:
         return HttpResponseRedirect(reverse("filiais"))
 
     # A partir daqui toda ação mexe numa filial JÁ existente.
-    filial = _filiais_da_empresa(request).filter(
+    filial = filiais_da_empresa(request).filter(
         pk=id_do_post(request, "filial")).first()
     if filial is None:
         return _desenhar(request, erro=_("Filial não encontrada."))

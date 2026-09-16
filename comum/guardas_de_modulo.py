@@ -16,7 +16,7 @@ from django.http import HttpResponseNotFound
 from django.utils.translation import gettext_lazy as _
 
 
-__all__ = ["SEM_GUARDA_DE_MODULO", "exigir_filial", "exigir_modulo_ligado"]
+__all__ = ["SEM_GUARDA_DE_MODULO", "exigir_filial", "exigir_modulo_ligado", "modulo_ligado"]
 
 #: As rotas de módulo declarado que podem viver sem `exigir_modulo_ligado`,
 #: e o motivo de cada uma — mesmo espírito de
@@ -33,6 +33,12 @@ __all__ = ["SEM_GUARDA_DE_MODULO", "exigir_filial", "exigir_modulo_ligado"]
 SEM_GUARDA_DE_MODULO: frozenset[str] = frozenset({
     "aparencia", "modulos", "falhas",
 })
+
+
+def modulo_ligado(chave: str) -> bool:
+    """Se o módulo `chave` está ligado nesta instalação. Sem linha é
+    desligado: nenhuma linha não pode significar "libera"."""
+    return _modulo().objects.filter(chave=chave, ativo=True).exists()
 
 
 def exigir_modulo_ligado(chave: str):
@@ -57,7 +63,9 @@ def exigir_modulo_ligado(chave: str):
     def decorar(view):
         @wraps(view)
         def guardada(request, *args, **kwargs):
-            if not _modulo().objects.filter(chave=chave, ativo=True).exists():
+            from comum.guardas_de_acesso import barreira
+
+            if barreira(request, exige_sessao=False, modulo=chave) is not None:
                 return HttpResponseNotFound()
             return view(request, *args, **kwargs)
 
@@ -106,10 +114,11 @@ def exigir_filial(view):
         from nucleo.rendering import use_environment
         from nucleo.resposta import render
 
-        from plataforma.contexto import filial_atual
         from plataforma.site import montar_site
 
-        if filial_atual(request) is not None:
+        from comum.guardas_de_acesso import barreira
+
+        if barreira(request, exige_sessao=False, exige_filial=True) is None:
             return view(request, *args, **kwargs)
 
         env = ambiente()

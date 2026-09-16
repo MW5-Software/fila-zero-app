@@ -35,9 +35,38 @@ def _existe(codigo: str) -> bool:
     return any(codigo == chave for chave, _ in settings.LANGUAGES)
 
 
+def _e_da_api(request) -> bool:
+    from .sessao_por_cabecalho import e_da_api
+
+    return e_da_api(getattr(request, "path", ""))
+
+
+def _do_aparelho(request) -> str:
+    """O idioma do aparelho, para a API ANTES de haver pessoa.
+
+    **Só na API.** Na web o navegador não opina (docstring do módulo): quem
+    ainda não entrou escolhe na tela de entrada, e a escolha fica na sessão.
+    O app não tem essa tela antes do login, e o celular de um paraguaio já diz
+    `es-PY`. Depois do login, a coluna da pessoa vence o aparelho, como na web.
+    """
+    from django.utils.translation import get_supported_language_variant
+    from django.utils.translation.trans_real import parse_accept_lang_header
+
+    bruto = request.META.get("HTTP_ACCEPT_LANGUAGE", "")
+    for codigo, peso in parse_accept_lang_header(bruto):
+        if codigo == "*":
+            continue
+        try:
+            return get_supported_language_variant(codigo)
+        except LookupError:
+            continue
+    return ""
+
+
 def idioma_da_requisicao(request) -> str:
     """O idioma desta requisição: a escolha desta sessão, senão a coluna de
-    quem entrou, senão o padrão da instalação.
+    quem entrou, senão — só na API, antes de haver pessoa — o do aparelho
+    (`_do_aparelho`), senão o padrão da instalação.
 
     **A sessão na frente da coluna, e não o contrário.** "Escolhi agora, vale
     agora" é o que a pessoa espera ao clicar — e é o que faz a escolha feita
@@ -55,6 +84,9 @@ def idioma_da_requisicao(request) -> str:
 
     if not escolhido:
         escolhido = getattr(_pessoa_da_vez(request), "idioma", "") or ""
+
+    if not escolhido and _e_da_api(request):
+        escolhido = _do_aparelho(request)
 
     return escolhido if _existe(escolhido) else settings.LANGUAGE_CODE
 

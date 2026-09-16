@@ -608,3 +608,45 @@ class TestOAvisoApareceEmTodaTela:
             f"chame `comum.personificacao.aviso(request)` no `content=` da "
             f"tela, ou justifique a isenção em `ISENTAS`."
         )
+
+
+@pytest.mark.django_db
+class TestAApiAvisaEmTodaResposta:
+    """O equivalente, para a API, do aviso que toda tela mostra.
+
+    Um cabeçalho em TODA resposta de `/api/`, e não um campo em cada schema:
+    campo se esquece numa operação nova; o middleware não tem como esquecer.
+    """
+
+    def _personificar(self, alvo):
+        from tests.conftest import cliente_da_api, sessao_do_token
+
+        api, token = cliente_da_api("raiz@teste.com", SENHA)
+        sessao = sessao_do_token(token)
+        sessao["usuario_personificado_id"] = str(alvo.pk)
+        sessao.save()
+        return api
+
+    def _caminhos_sem_parametro(self):
+        from tests.conftest import operacoes_da_api
+
+        return sorted({caminho for caminho, op in operacoes_da_api()
+                       if "GET" in op.methods and "{" not in caminho})
+
+    def test_toda_operacao_leva_o_aviso(self, raiz, alvo):
+        api = self._personificar(alvo)
+        caminhos = [*self._caminhos_sem_parametro(), "/api/nao-existe"]
+        assert len(caminhos) > 1
+        for caminho in caminhos:
+            assert api.get(caminho).get("X-Vendo-Como") == str(alvo.guid), caminho
+
+    def test_sem_personificacao_nao_ha_aviso(self, raiz):
+        from tests.conftest import cliente_da_api
+
+        api, token = cliente_da_api("raiz@teste.com", SENHA)
+        assert "X-Vendo-Como" not in api.get("/api/v1/eu")
+
+    def test_original_rebaixado_perde_o_aviso(self, raiz, alvo):
+        api = self._personificar(alvo)
+        Usuario.objects.filter(pk=raiz.pk).update(is_superuser=False)
+        assert "X-Vendo-Como" not in api.get("/api/v1/eu")

@@ -11,9 +11,13 @@ from __future__ import annotations
 
 from django.dispatch import Signal
 
+from comum.listagem import ColunaFiltravel
+
+from .contexto import empresa_atual
 from .models import Filial
 
-__all__ = ["antes_de_desativar", "pode_desativar", "pode_remover"]
+__all__ = ["FILTRAVEIS", "ORDENAVEIS", "ROTULOS", "antes_de_desativar",
+           "filiais_da_empresa", "pode_desativar", "pode_remover"]
 
 #: Perguntado antes de desativar uma filial, com `filial=`. Quem responder
 #: uma frase recusa a desativação, e a tela mostra a frase.
@@ -22,7 +26,8 @@ __all__ = ["antes_de_desativar", "pode_desativar", "pode_remover"]
 #: importá-los (`CLAUDE.md` §3), mas é o módulo que sabe se desativar prende
 #: alguém: no Fila Zero, quem estava presente numa loja desativada ficava sem
 #: conseguir bater o ponto em outra até alguém reativá-la (revisão final,
-#: 15/09/2026). O módulo liga o receptor no `ready()` do app.
+#: 15/09/2026). O módulo liga o receptor no `ready()` do app. Como
+#: `pode_remover` encadeia `pode_desativar`, a recusa vale para remover também.
 antes_de_desativar = Signal()
 
 
@@ -62,17 +67,34 @@ def pode_desativar(filial: Filial) -> "str | None":
     return None
 
 
-def _protegida(filial: Filial) -> bool:
-    """Se algum `PROTECT` recusaria apagar esta filial."""
+def _o_que_protege(filial: Filial) -> list[str]:
+    """O nome, no plural, de cada tabela cujo `PROTECT` recusaria apagar esta
+    filial — lista vazia se nenhuma recusaria.
+
+    Pergunta ao próprio `Collector` do Django, que é quem o `delete()` usa: a
+    base não conhece os módulos de negócio e não pode importá-los (`CLAUDE.md`
+    §3). Nomear aqui uma relação deles (`filial.orcamentos`, que esta função
+    substituiu em 15/09/2026) é a mesma camada invertida sem o `import`: a
+    varredura `test_camadas_nao_se_invertem.py` não vê, e a cópia desta base
+    para um produto sem orçamento quebraria com `AttributeError` — o mesmo
+    tipo de preço que o backup já pagou com `No module named 'catalogo'`.
+    """
     from django.db import router
     from django.db.models.deletion import Collector, ProtectedError
 
     coletor = Collector(using=router.db_for_write(Filial, instance=filial))
     try:
         coletor.collect([filial])
-    except ProtectedError:
-        return True
-    return False
+    except ProtectedError as recusa:
+        return sorted({str(type(obj)._meta.verbose_name_plural)
+                       for obj in recusa.protected_objects})
+    return []
+
+
+def _protegida(filial: Filial) -> bool:
+    """Se algum `PROTECT` recusaria apagar esta filial. O nome é o da base
+    KRONOS, para o porte de lá para cá continuar batendo."""
+    return bool(_o_que_protege(filial))
 
 
 def pode_remover(filial: Filial) -> "str | None":
@@ -90,21 +112,78 @@ def pode_remover(filial: Filial) -> "str | None":
 
     # A alocação aponta para a filial com `PROTECT`: sem esta frase, remover
     # daria erro 500 em vez de dizer o motivo. O lugar de trabalho de alguém
-    # não some junto com a loja.
+    # não some junto com a loja. Ela fica com frase própria, antes da
+    # genérica, porque é da base e o remédio é outro (tirar a alocação, e não
+    # desativar).
     if filial.alocacoes.exists():
         return ("Esta filial tem pessoas alocadas e não pode ser removida. "
                 "Remova as alocações antes.")
 
     # **Qualquer outra tabela que proteja a filial**, dos módulos de negócio
-    # que cada SaaS acrescenta (no Portal de Vendas, o orçamento). A base não
-    # conhece esses módulos e não pode importá-los (`CLAUDE.md` §2), então
-    # pergunta ao próprio Django o que um `delete()` recusaria — sem isto, a
-    # primeira tabela de negócio com `PROTECT` para filial voltaria a dar 500.
-    if _protegida(filial):
-        return ("Esta filial tem registros ligados a ela e não pode ser "
-                "removida. Desative-a em vez disso.")
+    # que cada SaaS acrescenta. Sem isto, a primeira tabela de negócio com
+    # `PROTECT` para filial voltaria a dar 500. A frase diz QUAIS registros,
+    # pelo nome que o próprio model declara, porque "registros ligados"
+    # sozinho deixaria a pessoa sem saber onde procurar.
+    protegem = _o_que_protege(filial)
+    if protegem:
+        return (f"Esta filial tem registros ligados a ela "
+                f"({', '.join(protegem)}) e não pode ser removida. "
+                f"Desative-a em vez disso.")
 
     # Sem gente presa, o que resta é o mesmo risco de `pode_desativar`:
     # remover não pode ser o jeito de a instalação ficar sem filial ativa
     # nenhuma, do mesmo jeito que desativar não pode.
     return pode_desativar(filial)
+
+
+def filiais_da_empresa(request):
+    """As filiais que a tela e a API enxergam: as da empresa do contexto, e só elas.
+
+    **É a trava da tela de Filiais, e é o que permitiu dar `filiais.editar` ao
+    titular** (14/09/2026). Até ali ela listava `Filial.objects.all()` — as
+    filiais da instalação inteira —, o que era aceitável enquanto só a MW5 a
+    abria e seria vazamento na mão de um cliente: o titular da Alfa veria, e
+    editaria, as lojas da Beta.
+
+    Listagem, exportação, TODAS as ações da tela e a lista da API passam por
+    aqui — e é por isso que mora aqui e não na view: a API não importa view
+    (`tests/test_api_nao_importa_view.py`), e uma segunda cópia desta trava é
+    a cópia que alguém esquece de corrigir.
+
+    Sem empresa no contexto, nada: `none()` e não `all()`, porque o erro de
+    faltar contexto não pode ser mostrar tudo.
+    """
+    empresa = empresa_atual(request)
+    if empresa is None:
+        return Filial.objects.none()
+    return Filial.objects.filter(empresa=empresa)
+
+
+#: As colunas ordenáveis e filtráveis da lista de filiais — as mesmas na tela,
+#: na exportação e na API. Moradas aqui pelo motivo de `filiais_da_empresa`.
+#: `chave da URL -> campo(s) do ORM`: só o que esta lista declara pode entrar
+#: em `order_by` (ver `comum.listagem._resolver_ordenacao`).
+ORDENAVEIS = {
+    "filial": ("apelido", "nome"),
+    "cnpj": ("cnpj",),
+    "municipio": ("municipio", "uf"),
+    "situacao": ("ativa", "apelido"),
+}
+
+FILTRAVEIS = {
+    "filial": ColunaFiltravel(("apelido", "nome"), "Filial"),
+    # Caixa de escolha, não campo de digitar — mesmo raciocínio da coluna
+    # "Situação" de `contas.views_usuarios`: ativa ou inativa são dois
+    # valores conhecidos, e um campo de texto sobre eles convida ao erro.
+    "situacao": ColunaFiltravel("ativa", "Situação", tipo="opcoes",
+                                opcoes=lambda: [("1", "Ativa"), ("0", "Inativa")]),
+}
+
+#: Os rótulos das colunas, para a API descrever as que só ordenam — na tela,
+#: eles vão direto no `pagina.cabecalho(...)`.
+ROTULOS = {
+    "filial": "Filial",
+    "cnpj": "CNPJ",
+    "municipio": "Município/UF",
+    "situacao": "Situação",
+}

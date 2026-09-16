@@ -110,6 +110,30 @@ def _pessoas_desta_pessoa(request):
     return pessoas_alcancadas(getattr(request, "usuario", None))
 
 
+def _com_empresa(pessoas):
+    """A empresa de cada pessoa, anotada numa subconsulta — `empresa_nome`.
+
+    **Pela CONTA**, que é de onde a empresa se deriva (CLAUDE.md §7): o titular
+    é o dono da empresa, e o usuário pertence à conta desse dono. Uma conta,
+    uma empresa, então a subconsulta devolve uma linha. MW5 não é de conta
+    nenhuma, e fica `None` (a tela escreve "—").
+
+    Anotação, e não leitura na linha: a coluna, o filtro, a ordenação e a
+    exportação leem o mesmo valor, e ler `pessoa.dono.empresa_da_conta` na
+    renderização seria uma consulta por pessoa.
+    """
+    from django.db.models import OuterRef, Q, Subquery, Value
+    from django.db.models.functions import Coalesce, NullIf
+
+    from plataforma.models import Empresa
+
+    nome = Coalesce(NullIf("nome_fantasia", Value("")), "razao_social")
+    da_conta = (Empresa.objects
+                .filter(Q(dono=OuterRef("pk")) | Q(dono=OuterRef("dono")))
+                .annotate(nome=nome).order_by("pk").values("nome")[:1])
+    return pessoas.annotate(empresa_nome=Subquery(da_conta))
+
+
 def _alcancavel(request, id_bruto: str) -> "Usuario | None":
     """O usuário que quem está logado tem alcance para alterar, ou `None`.
 
@@ -393,6 +417,8 @@ def _colunas_da_lista(pagina) -> list[Column]:
                render=lambda u: u.email),
         Column("nivel", pagina.cabecalho("nivel", "Nível"),
                render=_nivel_de),
+        Column("empresa", pagina.cabecalho("empresa", "Empresa"),
+               render=lambda u: u.empresa_nome or "—"),
         Column("situacao", pagina.cabecalho("situacao", "Situação"),
                align="center", render=lambda u: Badge(
             label="Ativo" if u.is_active else "Inativo",
@@ -655,7 +681,15 @@ def _bloco_de_alocacoes(request, oferta, alvo=None) -> list:
     linhas = format_html_join("", "{}", (
         (_linha_de_alocacao(oferta, a),) for a in [*existentes, None]))
     lista = f"aloc-lista-{alvo.pk if alvo is not None else 'nova'}"
-    return [Box(body=[
+    # **Some para titular e MW5** (15/09/2026): nenhum dos dois é alocado (D3)
+    # — o titular alcança a conta toda, e a MW5 não é de conta nenhuma. Com o
+    # bloco à vista, cadastrar um titular pedia um lugar e um cargo que o
+    # servidor jogaria fora. O script esconde e DESLIGA (o marcador
+    # `alocacoes` sai do POST junto), pelo mesmo par nível↔bloco da Conta.
+    # Sem seletor de nível (quem não é MW5 cadastra só usuário), nada muda.
+    sem_alocacao = ",".join(str(int(n)) for n in (Nivel.MASTER, Nivel.TITULAR))
+    return [Box(attrs={"data-nivel-sem-alocacao": sem_alocacao,
+                       "data-desligar-escondido": "1"}, body=[
         SectionLabel(label=_("Alocações")),
         Raw(html=_legenda(
             "Onde e com qual cargo",
@@ -957,6 +991,7 @@ _ORDENAVEIS = {
     # Master, Vendedor" não é ordem nenhuma. Desempata pelo login como as
     # outras.
     "nivel": ("nivel", "email"),
+    "empresa": ("empresa_nome", "email"),
     "situacao": ("is_active", "email"),
 }
 
@@ -985,6 +1020,9 @@ _FILTRAVEIS = {
     # deixado sem filtro por não existir caixa de escolha — agora existe.
     "situacao": ColunaFiltravel("is_active", "Situação", tipo="opcoes",
                                 opcoes=lambda: [("1", "Ativo"), ("0", "Inativo")]),
+    # A anotação de `_com_empresa`, e não um caminho de relação: a empresa do
+    # titular e a do usuário chegam por lados diferentes da conta.
+    "empresa": ColunaFiltravel("empresa_nome", "Empresa"),
 }
 
 
@@ -1038,7 +1076,7 @@ def _desenhar(
         # 131 com 25, ou seja ~4 por linha. Em SQLite local cada uma custa
         # décimos de milissegundo; em Postgres com rede, cada ida e volta é
         # ~1ms, e as 25 linhas do padrão viram +100ms de tela.
-        pessoas = (_pessoas_desta_pessoa(request)
+        pessoas = (_com_empresa(_pessoas_desta_pessoa(request))
                    .prefetch_related("alocacoes__empresa", "alocacoes__filial",
                                      "alocacoes__cargo"))
 
@@ -1102,6 +1140,7 @@ COLUNAS_DE_EXPORTACAO = (
     ColunaDeExportacao("nome", "Nome", lambda u: u.get_full_name() or ""),
     ColunaDeExportacao("login", "Login", lambda u: u.email),
     ColunaDeExportacao("nivel", "Nível", _nivel_de),
+    ColunaDeExportacao("empresa", "Empresa", lambda u: u.empresa_nome or ""),
     ColunaDeExportacao("situacao", "Situação",
                        lambda u: "Ativo" if u.is_active else "Inativo"),
 )
@@ -1457,8 +1496,9 @@ def _acao_remover(request, alvo) -> HttpResponse:
     except ProtectedError:
         # Um módulo de negócio guarda o histórico desta pessoa com `PROTECT`
         # (no Fila Zero, ponto, atendimentos e pausas). Apagar levaria o
-        # histórico junto, e o banco recusa; sem esta frase a recusa chegaria
-        # como "Algo inesperado aconteceu". O `atomic` já desfez o registro.
+        # histórico junto, e o banco
+        # recusa; sem esta frase a recusa chegaria como "Algo inesperado
+        # aconteceu". O `atomic` já desfez o registro.
         return _desenhar(request, erro=(
             f"{alvo.email} tem histórico gravado. Desative em vez de "
             f"remover."))
@@ -1489,7 +1529,7 @@ def usuarios(request) -> HttpResponse:
         if request.GET.get("formato"):
             exportacao = preparar_exportacao(
                 request,
-                queryset=_pessoas_desta_pessoa(request),
+                queryset=_com_empresa(_pessoas_desta_pessoa(request)),
                 colunas=COLUNAS_DE_EXPORTACAO,
                 ordenaveis=_ORDENAVEIS, padrao="login",
                 filtraveis=_FILTRAVEIS, titulo=_("Usuários"))

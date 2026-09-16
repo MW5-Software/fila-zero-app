@@ -119,3 +119,19 @@
   background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 .ep-senha .ctl { padding-right: 42px; }
+
+
+/* O seletor de cor ao lado do campo de texto (`seletor_de_cor.js`). O texto
+   ocupa a linha e o seletor fica do tamanho de um botão quadrado, na mesma
+   altura do campo. */
+.com-seletor-de-cor { display: flex; gap: 8px; align-items: stretch; }
+.com-seletor-de-cor > input:first-child { flex: 1; min-width: 0; }
+.seletor-de-cor {
+  inline-size: var(--control-h, 40px);
+  min-block-size: var(--control-h, 40px);
+  padding: 2px;
+  border: 1px solid var(--outline-2);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  cursor: pointer;
+}

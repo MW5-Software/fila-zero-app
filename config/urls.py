@@ -1,5 +1,7 @@
 from django.urls import include, path
 
+from config.api import api
+
 from plataforma.falhas import pagina_de_erro, pagina_nao_encontrada
 
 #: As páginas de erro são de produção (Bloco 7): o 500 do Django padrão é
@@ -9,6 +11,9 @@ handler404 = "plataforma.falhas.pagina_nao_encontrada"
 handler500 = "plataforma.falhas.pagina_de_erro"
 
 urlpatterns = [
+    # A API do app. Antes dos `include` da web só por clareza: nenhuma rota
+    # da web começa com `api/`.
+    path("api/", api.urls),
     path("", include("contas.urls")),
     # Antes do `nucleo`: a raiz `/` da fila manda quem só tem a fila direto
     # para ela, e o primeiro padrão que casa é o que vale.

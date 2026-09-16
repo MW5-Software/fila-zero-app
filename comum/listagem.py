@@ -21,7 +21,8 @@ from django.utils.html import format_html
 from nucleo.components import Pagination as _PaginacaoNucleo, Raw
 
 __all__ = ["OPERADORES", "PARAM_ORDENAR", "PARAM_PAGINA", "POR_PAGINA",
-           "Pagina", "montar_pagina", "nome_do_campo"]
+           "Pagina", "colunas_da_lista", "listar_para_api", "montar_pagina",
+           "nome_do_campo", "paginar"]
 
 #: 25 linhas por página — o PADRÃO do código, e não mais o número que
 #: `montar_pagina` de fato usa: cada instalação pode mudá-lo pelo parâmetro
@@ -325,6 +326,82 @@ def preparar_consulta(
     return queryset.order_by(*campos), crus
 
 
+def paginar(queryset, bruto: "str | None") -> "tuple[list, int, int, int]":
+    """`(linhas, total, numero, por_pagina)` — a paginação sem HTML.
+
+    Usada pela tela (`montar_pagina`) e pela API (`listar_para_api`): o número
+    de linhas por página e a volta para a página 1 existem num lugar só.
+    """
+    # Import adiado: `parametro_catalogo` não é importado no topo do arquivo
+    # de propósito — evita ciclo com `plataforma.parametro`, que declara o
+    # parâmetro abaixo e importa `POR_PAGINA` DESTE módulo (ver o docstring
+    # dela). Por essa mesma razão `POR_PAGINA` continua existindo aqui: é o
+    # padrão que a declaração referencia, e não um número duplicado à parte.
+    from plataforma.parametro_catalogo import valor_de
+
+    por_pagina = valor_de("itens_por_pagina")
+    total = queryset.count()
+    numero = _pagina_valida(bruto)
+    inicio = (numero - 1) * por_pagina
+    linhas = list(queryset[inicio:inicio + por_pagina])
+    # Página pedida além do fim de verdade (a lista encolheu desde o último
+    # clique, ou o número foi forjado na mão) — volta pra 1 em vez de
+    # devolver uma lista vazia por acidente de aritmética.
+    if not linhas and total and numero != 1:
+        numero = 1
+        linhas = list(queryset[:por_pagina])
+    return linhas, total, numero, por_pagina
+
+
+def colunas_da_lista(ordenaveis: Ordenaveis, filtraveis, rotulos: "dict[str, str]") -> list[dict]:
+    """A descrição das colunas para a API desenhar a barra de filtro.
+
+    Sai das MESMAS declarações que a tela usa (`ordenaveis`, `filtraveis`):
+    declarar as colunas de novo no app é como as duas pontas divergem.
+    `opcoes` é avaliado agora, pelo mesmo motivo de ser `Callable` na tela.
+    """
+    filtraveis = filtraveis or {}
+    colunas = []
+    for chave in dict.fromkeys([*ordenaveis, *filtraveis]):
+        coluna = filtraveis.get(chave)
+        operadores = ([op for op, *resto in OPERADORES.get(coluna.tipo, OPERADORES["texto"])]
+                      if coluna else [])
+        opcoes = None
+        if coluna is not None and coluna.opcoes is not None:
+            opcoes = [{"valor": str(valor), "rotulo": str(rotulo)}
+                      for valor, rotulo in coluna.opcoes()]
+        colunas.append({
+            "chave": chave,
+            "rotulo": str(rotulos.get(chave) or (coluna.rotulo if coluna else chave)),
+            "tipo": coluna.tipo if coluna else None,
+            "operadores": operadores,
+            "ordenavel": chave in ordenaveis,
+            "opcoes": opcoes,
+        })
+    return colunas
+
+
+def listar_para_api(request, queryset, *, ordenaveis: Ordenaveis, padrao: str,
+                    filtraveis=None, rotulos: "dict[str, str]", item) -> dict:
+    """A página inteira da R46 para a API — o mesmo filtro, a mesma ordenação
+    e a mesma paginação da tela, pelo mesmo vocabulário de querystring
+    (`f:<coluna>:<operador>`, `ordenar`, `pagina`). `item` converte uma linha
+    no dicionário do schema."""
+    consulta, crus = preparar_consulta(request, queryset, ordenaveis=ordenaveis,
+                                       padrao=padrao, filtraveis=filtraveis)
+    chave, desc, campos_orm = _resolver_ordenacao(
+        request.GET.get(PARAM_ORDENAR, ""), ordenaveis, padrao)
+    linhas, total, numero, por_pagina = paginar(consulta, request.GET.get(PARAM_PAGINA))
+    return {
+        "itens": [item(linha) for linha in linhas],
+        "pagina": numero,
+        "por_pagina": por_pagina,
+        "total": total,
+        "ordenar": f"-{chave}" if desc else chave,
+        "colunas": colunas_da_lista(ordenaveis, filtraveis, rotulos),
+    }
+
+
 def montar_pagina(
     request,
     queryset: QuerySet,
@@ -352,26 +429,7 @@ def montar_pagina(
     chave, desc, _ = _resolver_ordenacao(
         request.GET.get(PARAM_ORDENAR, ""), ordenaveis, padrao)
 
-    # Import adiado: `parametro_catalogo` não é importado no topo do arquivo
-    # de propósito — evita ciclo com `plataforma.parametro`, que declara o
-    # parâmetro abaixo e importa `POR_PAGINA` DESTE módulo (ver o docstring
-    # dela). Por essa mesma razão `POR_PAGINA` continua existindo aqui: é o
-    # padrão que a declaração referencia, e não um número duplicado à parte.
-    from plataforma.parametro_catalogo import valor_de
-
-    por_pagina = valor_de("itens_por_pagina")
-
-    total = queryset.count()
-    numero = _pagina_valida(request.GET.get(PARAM_PAGINA))
-    inicio = (numero - 1) * por_pagina
-    linhas = list(queryset[inicio:inicio + por_pagina])
-    # Página pedida além do fim de verdade (a lista encolheu desde o último
-    # clique, ou o número foi forjado na mão) — volta pra 1 em vez de
-    # desenhar uma tabela vazia por acidente de aritmética, com resultado
-    # que existe mas mora noutra página.
-    if not linhas and total and numero != 1:
-        numero = 1
-        linhas = list(queryset[:por_pagina])
+    linhas, total, numero, por_pagina = paginar(queryset, request.GET.get(PARAM_PAGINA))
 
     def url_for_page(pagina: int) -> str:
         return _url_com(request, {PARAM_PAGINA: pagina})

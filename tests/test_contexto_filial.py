@@ -105,6 +105,20 @@ class TestFilialAtual:
 
         assert filial_atual(pedido) == loja
 
+    def test_sem_escolha_na_sessao_a_matriz_vem_antes_de_quem_a_passa_no_alfabeto(self, raiz, matriz):
+        """O defeito que se viu no app em 15/09/2026: com "Filial 1" e "Matriz"
+        na mesma `ordem`, entrar caía na "Filial 1" — a primeira pelo nome. Quem
+        alcança a Matriz começa nela; a ordem do seletor continua a mesma."""
+        from contas.backend import BackendDjango
+        from plataforma.contexto import filiais_de, filial_atual
+        from plataforma.models import Filial
+
+        filial_1 = Filial.objects.create(empresa=matriz.empresa, nome="Filial 1", apelido="Filial 1", ordem=matriz.ordem)
+        pedido = _pedido(raiz)
+
+        assert filial_atual(pedido) == matriz
+        assert list(filiais_de(BackendDjango().buscar(str(raiz.pk)), matriz.empresa))[:2] == [filial_1, matriz]
+
     def test_pessoa_sem_filial_nenhuma_recebe_none(self, ana):
         from plataforma.contexto import filial_atual
 

@@ -297,6 +297,17 @@ def _cenario_logo_removido():
     return email_de("raiz"), "Menu lateral"
 
 
+def _cenario_menu_da_empresa_alterado():
+    from plataforma.models import Empresa
+
+    empresa = Empresa.objects.create(razao_social="Menu Ltda")
+    cliente = _cliente_logado("raiz", superuser=True)
+    cliente.post(reverse("empresa_menu", args=[empresa.pk]),
+                 {"acao": "cores", "sidebar_bg": "#112233",
+                  "sidebar_text": ""})
+    return email_de("raiz"), "Menu Ltda"
+
+
 def _cenario_personificacao_iniciada():
     cliente = _cliente_logado("raiz", superuser=True)
     zeca = Usuario.objects.create_user(email="zeca@teste.com", password=SENHA)
@@ -788,6 +799,7 @@ _CENARIOS = {
     "APARENCIA_ALTERADA": _cenario_aparencia_alterada,
     "LOGO_ALTERADO": _cenario_logo_alterado,
     "LOGO_REMOVIDO": _cenario_logo_removido,
+    "MENU_DA_EMPRESA_ALTERADO": _cenario_menu_da_empresa_alterado,
     "PERSONIFICACAO_INICIADA": _cenario_personificacao_iniciada,
     "PERSONIFICACAO_ENCERRADA": _cenario_personificacao_encerrada,
     "FILIAL_TROCADA": _cenario_filial_trocada,

@@ -19,7 +19,7 @@ from .documentos import documento_limpo, erro_de_cep, erro_de_cnpj, erro_de_ie
 from .marca import ACCENT_DO_PRODUTO, AREAS_DO_PRODUTO
 from .uf import erro_de_uf
 
-__all__ = ["Empresa", "Filial", "ImagemDaMarca", "LUGARES_DA_IMAGEM",
+__all__ = ["AparenciaDaEmpresa", "Empresa", "Filial", "ImagemDaMarca", "LUGARES_DA_IMAGEM",
            "Marca", "Modulo", "Parametro"]
 
 
@@ -669,6 +669,81 @@ class ImagemDaMarca(ComGuid):
             raise ValidationError(str(exc)) from exc
         self.conteudo = imagem.data
         self.tipo = imagem.media_type
+        super().save(*args, **kwargs)
+
+
+class AparenciaDaEmpresa(ComGuid):
+    """O menu de UMA empresa: logo, fundo e texto (15/09/2026).
+
+    A marca continua sendo da instalação (`Marca`); isto é o que cada cliente
+    tem de próprio por cima dela, e é pouco de propósito — é o bastante para
+    o cliente se reconhecer no menu, e a forma da tela continua sendo do
+    produto. Só a MW5 configura (`mw5.aparencia`), na tela de Empresas.
+
+    Tabela à parte, e não colunas em `Empresa`, porque o logo são bytes: em
+    `Empresa`, toda consulta de empresa (e são várias por tela) arrastaria a
+    imagem junto.
+
+    Campo em branco herda da instalação — ver
+    `plataforma.marca.marca_da_requisicao`.
+    """
+
+    empresa = models.OneToOneField(
+        "Empresa", verbose_name="empresa", on_delete=models.CASCADE,
+        related_name="aparencia")
+    sidebar_bg = models.CharField("fundo do menu", max_length=9, blank=True)
+    sidebar_text = models.CharField("texto do menu", max_length=9, blank=True)
+    #: Bytes no banco, como `ImagemDaMarca.conteudo` e pelo mesmo motivo: o
+    #: backup do banco leva tudo.
+    logo = models.BinaryField("logo do menu", null=True, blank=True)
+    #: Decidido lendo os bytes na gravação, como `ImagemDaMarca.tipo`. A rota
+    #: serve com este valor, então ele é parte da defesa, não uma etiqueta.
+    logo_tipo = models.CharField("tipo do logo", max_length=40, blank=True)
+    atualizada_em = models.DateTimeField("atualizada em", auto_now=True)
+
+    class Meta:
+        verbose_name = "aparência da empresa"
+        verbose_name_plural = "aparências das empresas"
+
+    def __str__(self) -> str:
+        return f"Menu de {self.empresa}"
+
+    def clean(self) -> None:
+        """A cor é conferida pela MESMA regra do design system
+        (`AreaColors.__post_init__`), traduzida para `ValidationError` — como
+        `Marca.clean` faz. Cor que não vira token é borda que some ou texto
+        invisível, e só apareceria na primeira tela do cliente."""
+        super().clean()
+        from nucleo.theme.brand import AreaColors
+
+        try:
+            AreaColors(sidebar_bg=self.sidebar_bg or None,
+                       sidebar_text=self.sidebar_text or None)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+    def save(self, *args, **kwargs):
+        """Valida cor e logo aqui — a tela não é a única porta. O logo passa
+        pela mesma peneira de `ImagemDaMarca.save`; vazio quer dizer "sem
+        logo", e não arquivo inválido."""
+        self.clean()
+        if self.logo:
+            from nucleo.images import ImagemInvalida, validar
+
+            from .logo import sem_margem
+
+            try:
+                imagem = validar(bytes(self.logo))
+            except ImagemInvalida as exc:
+                raise ValidationError(str(exc)) from exc
+            # Sem a margem em volta do desenho: a barra ajusta o arquivo
+            # inteiro à caixa, e borda no arquivo é desenho menor no menu
+            # (`plataforma/logo.py`). Depois de validar, para só abrir no
+            # Pillow bytes que já se provaram imagem.
+            self.logo = sem_margem(imagem.data, imagem.media_type)
+            self.logo_tipo = imagem.media_type
+        else:
+            self.logo, self.logo_tipo = None, ""
         super().save(*args, **kwargs)
 
 

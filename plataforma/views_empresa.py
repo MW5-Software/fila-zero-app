@@ -35,8 +35,8 @@ from comum.guardas_de_modulo import exigir_modulo_ligado
 from comum.listagem import ColunaFiltravel, montar_pagina
 from comum.personificacao import aviso as aviso_de_personificacao
 from nucleo.components import (
-    Alert, Badge, Box, Button, Card, Column, Form, FormGrid, IconButton,
-    Modal, PageHeader, Raw, SectionLabel, Table, TextInput,
+    Alert, Badge, Box, Button, Card, Column, FileInput, Form, FormGrid,
+    IconButton, Modal, PageHeader, Raw, SectionLabel, Table, TextInput,
 )
 from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
@@ -45,8 +45,8 @@ from nucleo.resposta import render
 from .models import Empresa
 from .site import montar_site
 
-__all__ = ["campos_do_cadastro", "criar_do_post", "empresa",
-           "senha_do_banco"]
+__all__ = ["campos_do_cadastro", "criar_do_post", "desenhar_com_erro",
+           "empresa", "senha_do_banco"]
 
 #: Os campos do cadastro, na ordem em que aparecem: nome no model, rótulo, e
 #: quantas colunas ocupa na grade.
@@ -337,7 +337,16 @@ def _id_do_modal(acao: str, pk: int) -> str:
     return f"empresa-{pk}-{acao}"
 
 
-def _acoes_da_linha(pode_remover: bool):
+def _configura_menu(request) -> bool:
+    """Quem vê o ícone e o modal do menu da empresa. A tranca de verdade é a
+    da rota (`views_aparencia_da_empresa`); isto só não oferece o que vai ser
+    recusado."""
+    from nucleo.permissoes import pode
+
+    return pode(getattr(request, "usuario", None), "mw5.aparencia")
+
+
+def _acoes_da_linha(pode_remover: bool, pode_menu: bool = False):
     """Editar e senha para quem alcança a empresa; REMOVER só para a MW5.
 
     O botão de remover não fica desabilitado, fica ausente: um ícone que
@@ -352,6 +361,10 @@ def _acoes_da_linha(pode_remover: bool):
             IconButton(icon="edit", title=_("Editar"),
                        attrs={"data-open-modal": _id_do_modal("editar", e.pk)}),
         ]
+        if pode_menu:
+            botoes.append(IconButton(
+                icon="palette", title=_("Menu desta empresa"),
+                attrs={"data-open-modal": _id_do_modal("menu", e.pk)}))
         if pode_remover:
             botoes.append(IconButton(
                 icon="trash", title=_("Remover"),
@@ -359,6 +372,65 @@ def _acoes_da_linha(pode_remover: bool):
         return Box(direction="row", gap="sm", wrap=False, align="end",
                    cross="center", body=botoes)
     return acoes
+
+
+def _modal_do_menu(request, e: Empresa) -> Modal:
+    """Logo e cores do menu DESTA empresa (15/09/2026) — ver
+    `views_aparencia_da_empresa` para o porquê de ser da MW5 e de serem dois
+    formulários.
+
+    Sem prévia do logo aqui: a rota do logo da empresa entrega o da empresa DE
+    QUEM PEDE, e a MW5 não tem empresa. O texto de ajuda diz se há logo.
+    """
+    from .marca import marca_da_instalacao
+    from .views_marca import MEDIDAS
+
+    aparencia = getattr(e, "aparencia", None)
+    # A cor que vale com o campo vazio: é a que o seletor mostra antes de
+    # alguém escolher (`seletor_de_cor.js`).
+    herdadas = marca_da_instalacao().tokens("light")
+    acao = reverse("empresa_menu", args=[e.pk])
+    tem_logo = bool(aparencia and aparencia.logo_tipo)
+    herda = _("Vazio herda da instalação. Ex.: #1f275d.")
+    corpo = [
+        Form(action=acao, children=[
+            Raw(html=campo_csrf(request)),
+            Raw(html=_campo_oculto("acao", "cores")),
+            FormGrid(children=[
+                TextInput(name="sidebar_bg", label=_("Fundo do menu"), span=6,
+                          value=aparencia.sidebar_bg if aparencia else "",
+                          help=herda,
+                          attrs={"data-seletor-de-cor": "1",
+                                 "data-cor-herdada": herdadas["sidebar-bg"]}),
+                TextInput(name="sidebar_text", label=_("Texto do menu"),
+                          span=6,
+                          value=aparencia.sidebar_text if aparencia else "",
+                          help=herda,
+                          attrs={"data-seletor-de-cor": "1",
+                                 "data-cor-herdada": herdadas["sidebar-text"]}),
+            ]),
+            Button(label=_("Salvar cores"), variant="primary", type="submit"),
+        ]),
+        Form(action=acao, multipart=True, children=[
+            Raw(html=campo_csrf(request)),
+            Raw(html=_campo_oculto("acao", "logo")),
+            FileInput(name="arquivo", label=_("Logo do menu"),
+                      accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml",
+                      help=(_("Logo enviado. Envie outro para trocar.")
+                            if tem_logo else
+                            _("Sem logo: vale o da instalação."))
+                      + " " + MEDIDAS["sidebar"]),
+            Button(label=_("Enviar logo"), variant="primary", type="submit"),
+        ]),
+    ]
+    if tem_logo:
+        corpo.append(Form(action=acao, children=[
+            Raw(html=campo_csrf(request)),
+            Raw(html=_campo_oculto("acao", "remover_logo")),
+            Button(label=_("Remover logo"), variant="ghost", type="submit"),
+        ]))
+    return Modal(id=_id_do_modal("menu", e.pk), title=_("Menu desta empresa"),
+                 body=corpo)
 
 
 def _modais_da_empresa(request, e: Empresa,
@@ -373,6 +445,8 @@ def _modais_da_empresa(request, e: Empresa,
                   Raw(html=_rodape("Salvar")),
               ])),
     ]
+    if _configura_menu(request):
+        modais.append(_modal_do_menu(request, e))
     if mestre:
         modais.append(Modal(
             id=_id_do_modal("remover", e.pk), title=_("Remover empresa"),
@@ -447,7 +521,8 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             conteudo.append(Alert(message=erro, tone="danger"))
 
         listagem = montar_pagina(
-            request, _alcancadas(request), ordenaveis=_ORDENAVEIS,
+            request, _com_aparencia(request, _alcancadas(request)),
+            ordenaveis=_ORDENAVEIS,
             padrao="empresa", filtraveis=_FILTRAVEIS)
 
         # **A conta sem empresa precisa de frase, e não de tabela vazia.** É
@@ -470,7 +545,8 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             body=[
                 listagem.barra,
                 Table(columns=_colunas(listagem), rows=listagem.linhas,
-                      row_actions=_acoes_da_linha(mestre)),
+                      row_actions=_acoes_da_linha(
+                          mestre, pode_menu=_configura_menu(request))),
                 listagem.paginacao,
             ],
         ))
@@ -484,13 +560,35 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             width="full",
             stylesheets=["/static/plataforma/listagem.css",
                          "/static/plataforma/empresa.css"],
-            scripts=["/static/plataforma/empresa.js"],
+            scripts=["/static/plataforma/empresa.js",
+                     "/static/plataforma/seletor_de_cor.js"],
             content=conteudo,
             crumbs=[Crumb(_("Empresas") if mestre else _("Empresa"))],
             user=getattr(request, "usuario", None),
             overlays=modais,
         )
         return render(pagina)
+
+
+def _com_aparencia(request, consulta):
+    """Para a MW5, a aparência de cada empresa vem junto — numa consulta só, e
+    SEM os bytes do logo: o modal só precisa saber se há logo, e ler
+    `e.aparencia` linha a linha seria uma consulta (com imagem) por empresa."""
+    if not _configura_menu(request):
+        return consulta
+    from django.db.models import Prefetch
+
+    from .models import AparenciaDaEmpresa
+
+    return consulta.prefetch_related(Prefetch(
+        "aparencia", queryset=AparenciaDaEmpresa.objects.defer("logo")))
+
+
+def desenhar_com_erro(request, erro: str) -> HttpResponse:
+    """A tela de Empresas com o erro no topo — a porta para quem age sobre
+    uma empresa fora deste arquivo (o menu da empresa) redesenhar a tela sem
+    importar a função privada."""
+    return _desenhar(request, erro=erro)
 
 
 def _dados_do_post(request) -> dict[str, str]:

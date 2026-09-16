@@ -2,7 +2,7 @@
 
 `nucleo.site.Site` nasce de novo em cada requisição — nunca mutado como um
 global de módulo (ver o comentário de `nucleo/views.py`). Isso fez a mesma
-construção (`brand=marca_da_instalacao()`, `nav=montar(request.usuario)`,
+construção (`brand=marca_da_requisicao(request)`, `nav=montar(request.usuario)`,
 `theme_href="/tema.css"`) se repetir, igual, em oito lugares diferentes —
 `contas/views_perfil.py`, a extinta tela de Perfis, `contas/views_usuarios.py`,
 `plataforma/views.py` (duas vezes), `nucleo/views.py` (duas vezes) e
@@ -26,7 +26,7 @@ from nucleo.layout import ContextLevel, ContextOption, ContextSwitcher
 from nucleo.site import Site
 
 from .contexto import CHAVE, CHAVE_EMPRESA, niveis_de_contexto
-from .marca import FOLHA_DA_CASA, NOME_DO_PRODUTO, marca_da_instalacao
+from .marca import FOLHA_DA_CASA, NOME_DO_PRODUTO, marca_da_requisicao
 from .menu import montar
 
 if TYPE_CHECKING:
@@ -180,7 +180,9 @@ class SiteDoProduto(Site):
 
 def montar_site(request) -> Site:
     """O `Site` desta requisição, com marca, menu e contexto já resolvidos."""
-    marca = marca_da_instalacao()
+    # Da REQUISIÇÃO, e não da instalação (15/09/2026): o menu veste a empresa
+    # de quem é visto. Ver `plataforma.marca.marca_da_requisicao`.
+    marca = marca_da_requisicao(request)
 
     def context_line(user: Any) -> "Renderable":
         return construir_context_switcher(marca, niveis_de_contexto(request))
@@ -190,6 +192,9 @@ def montar_site(request) -> Site:
         brand=marca,
         nav=montar(request.usuario),
         theme_href="/tema.css",
-        stylesheets=[versionado(FOLHA_DA_CASA)],
+        # A folha da empresa DEPOIS da casa: as duas declaram variáveis na
+        # `:root`, e quem vem por último ganha. Só as do menu, e vazia para
+        # quem não tem aparência própria.
+        stylesheets=[versionado(FOLHA_DA_CASA), "/tema-da-empresa.css"],
         context_line=context_line,
     )

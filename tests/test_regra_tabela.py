@@ -135,3 +135,50 @@ class TestTodaTabelaTemFiltroOrdenacaoEPaginacao:
             f"monte a listagem com `comum.listagem.montar_pagina`, ou "
             f"justifique a isenção em `ISENTAS`."
         )
+
+
+class TestTodaListaDaApiTemFiltroOrdenacaoEPaginacao:
+    """A R46 para a API, lida do contrato (OpenAPI) e não das respostas.
+
+    Toda resposta com `itens` precisa trazer o resto da página — sem isso, a
+    lista funciona com doze linhas e para de funcionar no primeiro cliente de
+    verdade, igual à tabela sem paginação. E nenhuma operação devolve lista
+    crua: uma lista crua não tem onde pôr total, página nem colunas.
+    """
+
+    CAMPOS_DA_PAGINA = ("pagina", "por_pagina", "total", "ordenar", "colunas")
+
+    def test_toda_lista_traz_a_pagina_inteira(self):
+        from config.api import api
+
+        doc = api.get_openapi_schema(path_prefix="/api/")
+        esquemas = doc["components"]["schemas"]
+
+        def resolver(no):
+            while isinstance(no, dict) and "$ref" in no:
+                no = esquemas[no["$ref"].rsplit("/", 1)[-1]]
+            return no
+
+        problemas, listas = [], 0
+        for caminho, metodos in doc["paths"].items():
+            for metodo, operacao in metodos.items():
+                for status, resposta in operacao.get("responses", {}).items():
+                    if not str(status).startswith("2"):
+                        continue
+                    esquema = resolver(resposta.get("content", {})
+                                       .get("application/json", {}).get("schema", {}))
+                    if esquema.get("type") == "array":
+                        problemas.append(f"{metodo.upper()} {caminho}: lista crua")
+                        continue
+                    propriedades = esquema.get("properties", {})
+                    if "itens" not in propriedades:
+                        continue
+                    listas += 1
+                    faltando = [c for c in self.CAMPOS_DA_PAGINA if c not in propriedades]
+                    if faltando:
+                        problemas.append(f"{metodo.upper()} {caminho}: falta {faltando}")
+
+        assert not problemas, (
+            f"listas da API fora da R46: {problemas}. Herde de "
+            f"`comum.esquemas_da_api.Pagina` e monte com `comum.listagem.listar_para_api`.")
+        assert listas, "nenhuma lista na API — a varredura olharia o vazio"

@@ -136,6 +136,40 @@ class TestNenhumaTelaNasceAberta:
         )
 
 
+class TestNenhumaOperacaoDaApiNasceAberta:
+    """A mesma rede, para a API: toda operação exige sessão ou está declarada
+    aberta com o motivo em `comum.guardas_da_api.ABERTAS_DA_API`."""
+
+    def test_toda_operacao_exige_login_ou_esta_declarada_aberta(self):
+        from comum.guardas_da_api import ABERTAS_DA_API
+        from tests.conftest import operacoes_da_api
+
+        desprotegidas = [
+            f"{'/'.join(op.methods)} {caminho} ({op.view_func.__name__})"
+            for caminho, op in operacoes_da_api()
+            if op.view_func.__name__ not in ABERTAS_DA_API
+            and not getattr(op.view_func, "exige_login", False)
+        ]
+        assert not desprotegidas, (
+            f"operações de API sem guarda: {desprotegidas}. Decore com "
+            f"@api_exigir_login/@api_exigir_permissao, ou declare em "
+            f"ABERTAS_DA_API dizendo por quê.")
+
+    def test_a_varredura_enxerga_operacoes(self):
+        from tests.conftest import operacoes_da_api
+
+        assert operacoes_da_api(), "nenhuma operação — a varredura olharia o vazio"
+
+    def test_nenhuma_isencao_aponta_para_operacao_que_nao_existe(self):
+        """Isenção de algo que não existe mais é gaveta: ninguém relê, e no
+        dia em que uma operação nova ganhar o mesmo nome ela nasce aberta."""
+        from comum.guardas_da_api import ABERTAS_DA_API
+        from tests.conftest import operacoes_da_api
+
+        nomes = {op.view_func.__name__ for resto, op in operacoes_da_api()}
+        assert ABERTAS_DA_API <= nomes, sorted(ABERTAS_DA_API - nomes)
+
+
 def _rotas_do_projeto():
     """Toda rota do projeto, como (nome, view).
 
@@ -143,6 +177,12 @@ def _rotas_do_projeto():
     exige argumento faria `reverse()` sem args levantar, e a varredura
     pularia a rota **em silêncio** — o pior defeito possível numa rede de
     segurança, porque ela continua parecendo completa.
+
+    **Pula o `include` do Ninja (`app_name == "ninja"`).** Lá, uma view só
+    atende todas as operações de um caminho, e a marca da guarda mora na
+    função de cada operação — esta varredura não a enxergaria e acusaria toda
+    rota da API. Quem cobra a API é `TestNenhumaOperacaoDaApiNasceAberta`,
+    logo abaixo, operação por operação.
     """
     from django.urls import get_resolver
     from django.urls.resolvers import URLPattern, URLResolver
@@ -150,6 +190,8 @@ def _rotas_do_projeto():
     def caminhar(padroes):
         for padrao in padroes:
             if isinstance(padrao, URLResolver):
+                if padrao.app_name == "ninja":
+                    continue
                 yield from caminhar(padrao.url_patterns)
             elif isinstance(padrao, URLPattern):
                 yield padrao.name, padrao.callback

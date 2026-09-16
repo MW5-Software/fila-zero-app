@@ -20,7 +20,16 @@ def test_os_apps_do_kronos_estao_instalados():
 
 
 def test_o_middleware_de_sessao_e_de_autenticacao_esta_no_lugar():
-    assert "django.contrib.sessions.middleware.SessionMiddleware" in settings.MIDDLEWARE
+    """A sessão pode vir por uma SUBCLASSE do `SessionMiddleware` — desde
+    14/09/2026 é `comum.sessao_por_cabecalho.MiddlewareDeSessao`, que lê a
+    chave do cabeçalho em `/api/`. O que não pode é a sessão sumir; o nome
+    exato do Django não é o que importa, e conferir por ele recusava a
+    subclasse."""
+    from django.contrib.sessions.middleware import SessionMiddleware
+    from django.utils.module_loading import import_string
+
+    assert any(issubclass(import_string(caminho), SessionMiddleware)
+               for caminho in settings.MIDDLEWARE)
     assert "django.contrib.auth.middleware.AuthenticationMiddleware" in settings.MIDDLEWARE
 
 

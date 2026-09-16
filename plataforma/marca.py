@@ -8,13 +8,16 @@ from nucleo.theme import Brand
 from nucleo.theme.brand import AreaColors, Assets
 
 __all__ = [
-    "ACCENT_DO_PRODUTO", "AREAS_DO_LOGO_DO_PRODUTO", "AREAS_DO_PRODUTO",
+    "ACCENT_DO_PRODUTO", "AJUSTES_DA_FOLHA_DA_CASA", "AREAS_DO_LOGO_DO_PRODUTO", "AREAS_DO_PRODUTO",
     "AREAS_DO_RODAPE", "ASSETS_DO_PRODUTO",
-    "CAMINHO_DA_IMAGEM", "CONTRASTE_MINIMO", "FOLHA_DA_CASA",
+    "CAMINHO_DA_IMAGEM", "CAMINHO_DO_LOGO_DA_EMPRESA", "CONTRASTE_MINIMO",
+    "FOLHA_DA_CASA", "TOKENS_DO_MENU",
     "LOGO_DO_PRODUTO_ENTRADA",
     "LOGO_DO_PRODUTO_MENU", "LOGO_DO_PRODUTO_RODAPE", "MARCA_PADRAO",
     "NOME_DO_PRODUTO",
-    "assets_da_instalacao", "conferir_legibilidade", "marca_da_instalacao",
+    "aparencia_da_requisicao", "assets_da_instalacao", "conferir_legibilidade",
+    "empresa_da_marca", "folha_do_menu", "logo_da_empresa_de",
+    "marca_da_instalacao", "marca_da_requisicao",
 ]
 
 #: O prefixo fixo da rota que serve as imagens da marca. Constante e não
@@ -27,6 +30,24 @@ CAMINHO_DA_IMAGEM = "/marca/imagem/"
 #: design system que ainda não subiu para o `mw5_admin` — ver o cabeçalho do
 #: arquivo. Caminho literal pelo mesmo motivo do `CAMINHO_DA_IMAGEM` acima.
 FOLHA_DA_CASA = "/static/plataforma/kronos.css"
+
+#: Os tokens que a `kronos.css` redefine na `:root`, POR CIMA do que
+#: `nucleo.theme.tokens.build` calcula — o tamanho do desenho do logo na barra,
+#: no rodapé e na entrada. O motivo de morarem na folha, e não em `logo_areas`,
+#: está escrito lá: subir `logo-side-h` na marca subiria junto a faixa e o
+#: cabeçalho da web inteira.
+#:
+#: Estão repetidos aqui porque o app não lê CSS: `GET /api/tema` entrega os
+#: tokens da marca com estes ajustes, e é isso que faz o logo do app ter o
+#: tamanho do da web. `tests/test_api_tema.py` compara este dicionário com a
+#: `:root` da folha, e fica vermelho quando um muda sem o outro.
+AJUSTES_DA_FOLHA_DA_CASA: dict[str, str] = {
+    "logo-side-h": "108px",
+    "sidebar-brand-pad": "12px",
+    "logo-footer-h": "56px",
+    "logo-footer-w": "96px",
+    "logo-login-h": "112px",
+}
 
 #: Como o logo do rodapé se chama para quem usa leitor de tela. É o nome do
 #: PRODUTO, e não o do cliente: no rodapé a imagem é sempre a mesma.
@@ -107,10 +128,10 @@ ACCENT_DO_PRODUTO = "#217598"
 #: a MW5 troca a marca do cliente na tela de Aparência; o rodapé continua o
 #: mesmo.
 #:
-#: **No Fila Zero, a marca de nascença é "Fila Zero".** Na base era só
-#: KRONOS, e sem a troca toda instalação nova nasceria com a identidade da
-#: base na tela de entrada, no menu e na aba do navegador. O cliente troca na
-#: tela de Aparência.
+#: **Na base, o nome é só KRONOS.** Cada SaaS que nasce dela troca por o
+#: dele (o Portal de Vendas usa "Painel de Vendas Kronos") — sem isso, toda
+#: instalação nova do produto novo nasceria com a identidade da base na tela
+#: de entrada, no menu e na aba do navegador.
 MARCA_PADRAO = Brand(client_name="Fila Zero",
                      system_name="Fila Zero",
                      accent=ACCENT_DO_PRODUTO,
@@ -196,6 +217,139 @@ def marca_da_instalacao() -> Brand:
         # dois lugares, o rótulo divergiria no dia em que um deles mudasse.
         login=replace(brand.login, **ENTRADA_POR_EMAIL),
     )
+
+
+#: Onde o logo do menu da EMPRESA é servido na web. Sem id nem GUID: a rota
+#: entrega o logo da empresa de quem pede (`views_marca.logo_da_empresa`), e
+#: não há nada na URL para trocar por outra empresa.
+CAMINHO_DO_LOGO_DA_EMPRESA = "/marca/empresa/menu"
+
+#: As variáveis que o menu da empresa muda: fundo e texto, e as de hover e
+#: selecionado que o tema DERIVA deles (`nucleo/theme/tokens.py`,
+#: `_interacao_do_menu`). A altura do logo fica de fora: a folha da casa
+#: (`kronos.css`) a fixa para todo logo, e repeti-la aqui desfaria o ajuste.
+TOKENS_DO_MENU = (
+    "sidebar-bg", "sidebar-text", "sidebar-hover-bg", "sidebar-hover-text",
+    "sidebar-active-bg", "sidebar-active-text",
+)
+
+
+def empresa_da_marca(request):
+    """A empresa cujo menu esta tela veste.
+
+    `identidade_da_sessao`, e não `usuario_da_sessao`: a marca não depende das
+    permissões do lugar, e é quem é VISTO que decide — a MW5 em "ver como"
+    vê o menu do cliente, que é para isso que o "ver como" existe.
+    `empresa_de` devolve `None` para a MW5, e a MW5 vê a instalação.
+
+    Import tardio: `contas` é a camada de fora, e `contas.alcance` importa
+    `plataforma.models` — o mesmo motivo de `plataforma/contexto.py`.
+    """
+    from comum.sessao import identidade_da_sessao
+    from contas.alcance import empresa_de
+
+    return empresa_de(identidade_da_sessao(request))
+
+
+def aparencia_da_requisicao(request):
+    """A `AparenciaDaEmpresa` de quem é visto, sem os bytes do logo — ou
+    `None`. `defer("logo")` porque a marca só precisa saber SE há logo, e
+    isso o `logo_tipo` responde; os bytes só a rota do logo lê."""
+    from .models import AparenciaDaEmpresa
+
+    empresa = empresa_da_marca(request)
+    if empresa is None:
+        return None
+    return (AparenciaDaEmpresa.objects.filter(empresa=empresa)
+            .defer("logo").first())
+
+
+def marca_da_requisicao(request) -> Brand:
+    """A marca da instalação, com o menu da empresa de quem é visto por cima.
+
+    Só o menu: entrada, rodapé, favicon, primária e o resto continuam da
+    instalação (spec de 15/09/2026, §5). Sem empresa, sem aparência, ou com os
+    campos em branco, é exatamente `marca_da_instalacao()`.
+    """
+    brand = marca_da_instalacao()
+    aparencia = aparencia_da_requisicao(request)
+    if aparencia is None:
+        return brand
+
+    cores = {campo: valor for campo, valor in (
+        ("sidebar_bg", aparencia.sidebar_bg),
+        ("sidebar_text", aparencia.sidebar_text)) if valor}
+    if cores:
+        # Hover e selecionado voltam a ser DERIVADOS do menu novo. A marca do
+        # produto os fixa à mão (`AREAS_DO_PRODUTO`, calculados para o
+        # azul-marinho), e escolha explícita vence a derivação: sem limpar,
+        # um menu claro de cliente ficaria com o hover do azul escuro — o
+        # teste do hover pegou isso no primeiro dia.
+        derivadas = dict.fromkeys(("sidebar_hover_bg", "sidebar_hover_text",
+                                   "sidebar_active_bg", "sidebar_active_text"))
+        brand = replace(brand, areas=replace(brand.areas, **derivadas, **cores))
+
+    if aparencia.logo_tipo:
+        # A mesma regra de altura de `marca_da_instalacao` para o logo de
+        # cliente: ele não herda os 84px da marca empilhada do KRONOS.
+        areas = dict(brand.logo_areas)
+        areas.pop("logo-side-h", None)
+        brand = replace(
+            brand, logo_areas=areas,
+            assets=replace(brand.assets,
+                           sidebar_logo=CAMINHO_DO_LOGO_DA_EMPRESA))
+    return brand
+
+
+def logo_da_empresa_de(request) -> "tuple[bytes, str] | None":
+    """Os bytes e o tipo do logo do menu da empresa DE QUEM PEDE, ou `None`.
+
+    A empresa vem da sessão, nunca de um parâmetro: é o que faz a rota não ter
+    o que trocar para ver o logo de outra conta. As duas cascas — a rota da
+    web e a operação da API do app — chamam esta, e não se importam.
+    """
+    from .models import AparenciaDaEmpresa
+
+    empresa = empresa_da_marca(request)
+    if empresa is None:
+        return None
+    aparencia = AparenciaDaEmpresa.objects.filter(empresa=empresa).first()
+    if aparencia is None or not aparencia.logo_tipo:
+        return None
+    return bytes(aparencia.logo), aparencia.logo_tipo
+
+
+def _bloco(seletor: str, tokens: dict[str, str], recuo: str = "") -> str:
+    """O mesmo formato de `nucleo/theme/css.py::_block`, copiado e não
+    importado: aquele nome é privado do design system, e nome privado muda
+    sem aviso no próximo porte."""
+    linhas = [f"{recuo}{seletor}{{"]
+    linhas += [f"{recuo}  --{nome}:{valor};" for nome, valor in tokens.items()]
+    linhas.append(f"{recuo}}}")
+    return "\n".join(linhas)
+
+
+def folha_do_menu(brand: Brand) -> str:
+    """Só as variáveis do menu, nas mesmas camadas do `/tema.css`.
+
+    As mesmas camadas porque o `/tema.css` declara as variáveis também em
+    `:root[data-theme="light"]`, que vence `:root` por especificidade: uma
+    folha só com `:root` perderia do tema da instalação no navegador em que o
+    tema foi escolhido. Com os mesmos seletores e carregada DEPOIS, ela ganha.
+    """
+    def so_menu(modo: str) -> dict[str, str]:
+        tokens = brand.tokens(modo)
+        return {nome: tokens[nome] for nome in TOKENS_DO_MENU}
+
+    claro, escuro = so_menu("light"), so_menu("dark")
+    base = escuro if brand.default_theme == "dark" else claro
+    partes = [_bloco(":root", base)]
+    if brand.default_theme == "system":
+        partes.append("@media (prefers-color-scheme:dark){\n"
+                      + _bloco(":root", escuro, recuo="  ") + "\n}")
+    partes.append(_bloco(':root[data-theme="light"]', claro))
+    partes.append(_bloco(':root[data-theme="dark"]', escuro))
+    return "\n".join(partes) + "\n"
 
 
 #: O mínimo da WCAG AA para texto normal. Abaixo disso a pessoa não lê.

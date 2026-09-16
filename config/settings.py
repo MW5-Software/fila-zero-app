@@ -79,9 +79,9 @@ INSTALLED_APPS = [
     # Módulos de negócio de cada SaaS entram aqui, DEPOIS da base — ver
     # `modulos/exemplo/` para a forma, e `CLAUDE.md` §2 para a regra de
     # camada: a base nunca importa um deles.
-    "modulos.exemplo",
     # O negócio do Fila Zero: a fila da vez das lojas.
     "fila",
+    "modulos.exemplo",
 ]
 
 MIDDLEWARE = [
@@ -91,13 +91,19 @@ MIDDLEWARE = [
     # só apareceu fora dos testes: a suíte roda com DJANGO_DEBUG=1, onde o
     # próprio Django serve estático).
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    # O `SessionMiddleware` do Django com uma diferença: em `/api/` a chave
+    # vem do cabeçalho `Authorization` e o cookie é ignorado — é o que torna
+    # segura a isenção de CSRF das rotas do Ninja. Ver o docstring do módulo.
+    "comum.sessao_por_cabecalho.MiddlewareDeSessao",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # DEPOIS da autenticação de propósito: o idioma é uma coluna da pessoa
     # (`comum/idioma.py`), e antes daqui `request.user` ainda não existe.
     "comum.idioma.MiddlewareDeIdioma",
+    # O aviso de personificação da API (`X-Vendo-Como`). Depois da sessão,
+    # que ele lê; antes das falhas, para o erro que sobe continuar intacto.
+    "comum.aviso_na_api.MiddlewareDoVendoComo",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # O erro em produção (Bloco 7): toda exceção de view grava uma linha em
@@ -337,3 +343,10 @@ if not DEBUG:
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+#: Abaixo desta versão o app instalado mostra "atualize" em vez de abrir
+#: (`plataforma.api.versao`). Existe porque a web muda para todos no deploy e
+#: o app no bolso da pessoa não: sem este piso, uma mudança de API quebraria o
+#: app velho no meio de uma tela, sem dizer por quê.
+APP_MINIMO = os.environ.get("FILA_APP_MINIMO", "1.0.0")

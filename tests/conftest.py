@@ -345,3 +345,52 @@ def dar_permissoes(pessoa, *codenames, empresa=None):
     nome = ("com-" + "-".join(chaves).replace("_", "-").replace("*", "tudo"))[:60]
     cargo = cargo_com(empresa, *chaves, nome=nome)
     return alocar(pessoa, empresa, cargo)
+
+
+def operacoes_da_api():
+    """Toda operação da API de verdade, como `(caminho, operação do Ninja)`.
+
+    As varreduras de guarda caminham por aqui, e não pelos padrões de URL:
+    o Ninja embrulha todas as operações de um caminho numa view só, e a marca
+    que a guarda grava (`exige_login`, `permissao`, `modulo`) fica na função da
+    OPERAÇÃO, não nessa view. `_get_bound_routers` não é API pública — por isso
+    o `<1.8` no `pyproject.toml`.
+    """
+    from config.api import api
+
+    achadas = []
+    for montado in api._get_bound_routers():
+        for caminho, visao in montado.path_operations.items():
+            for operacao in visao.operations:
+                completo = "/api/" + "/".join(
+                    parte.strip("/") for parte in (montado.prefix, caminho)
+                    if parte.strip("/"))
+                achadas.append((completo, operacao))
+    return achadas
+
+
+def cliente_da_api(email: str, senha: str):
+    """`(Client, token)` falando com a API como o app fala.
+
+    Entra por `POST /api/v1/sessao` — o caminho real, e não um atalho que
+    grava a sessão por baixo: um atalho provaria que a API aceita uma sessão,
+    e não que o login da API produz uma.
+    """
+    from django.test import Client
+
+    resposta = Client().post("/api/v1/sessao", {"email": email, "senha": senha},
+                             content_type="application/json")
+    assert resposta.status_code == 200, resposta.content
+    token = resposta.json()["token"]
+    return Client(HTTP_AUTHORIZATION=f"Bearer {token}"), token
+
+
+def sessao_do_token(token: str):
+    """A sessão guardada por trás de um token, para o teste que precisa pôr
+    nela o que só uma tela ainda não construída poria (a personificação, que
+    chega pela API no subprojeto 5)."""
+    from importlib import import_module
+
+    from django.conf import settings
+
+    return import_module(settings.SESSION_ENGINE).SessionStore(token)

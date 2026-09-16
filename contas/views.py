@@ -18,20 +18,15 @@ from nucleo.resposta import render
 from comum.estaticos import versionado
 from plataforma.marca import FOLHA_DA_CASA
 
-from comum.auditoria import ACOES, registrar
-from .backend import BackendDjango
 from .views_idioma import guardar_escolha
 from comum.confirmacao import tela_de_confirmacao
 from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_login, exigir_permissao
-from comum.personificacao import PersonificacaoRecusada, encerrar, iniciar, personificando
-from comum.sessao import entrar_na_sessao, sair_da_sessao, usuario_da_sessao
+from comum.personificacao import PersonificacaoRecusada, encerrar, iniciar
+
+from .entrada import CREDENCIAIS_INVALIDAS, autenticar_e_entrar, sair_e_registrar
 
 __all__ = ["entrar", "personificar", "sair", "voltar_a_ser_eu"]
-
-#: A mesma frase para login inexistente, senha errada e usuário inativo.
-#: Distinguir os três entrega a lista de quem existe a quem estiver tentando.
-CREDENCIAIS_INVALIDAS = "Credenciais inválidas."
 
 
 def _desenhar(request, marca, erro: "str | None" = None) -> HttpResponse:
@@ -96,19 +91,9 @@ def entrar(request) -> HttpResponse:
     # o identificador como `name="usuario"` — não `"login"` — então é essa a
     # chave que o formulário de verdade envia.
     login_digitado = request.POST.get("usuario", "")
-    user = BackendDjango().autenticar(login_digitado, request.POST.get("senha", ""))
+    user = autenticar_e_entrar(request, login_digitado, request.POST.get("senha", ""))
     if user is None:
-        # Só o login digitado, nunca a senha, e nunca distinguindo "não
-        # existe" de "senha errada" — essa distinção é o que
-        # `CREDENCIAIS_INVALIDAS`, acima, já existe para não entregar. Um
-        # registro que a escrevesse de outro jeito (por exemplo, só gravando
-        # quando o login existe) recriaria a mesma informação por outra
-        # porta.
-        registrar(ACOES.ENTRADA_RECUSADA, login_digitado, alvo=login_digitado)
         return _desenhar(request, marca, erro=CREDENCIAIS_INVALIDAS)
-
-    entrar_na_sessao(request, user)
-    registrar(ACOES.ENTROU, user, alvo=user.login)
     return HttpResponseRedirect("/")
 
 
@@ -129,32 +114,9 @@ def sair(request) -> HttpResponse:
         )
     if request.method != "POST":
         return HttpResponseNotAllowed(["GET", "POST"])
-    # Quem aperta "sair", personificando ou não, é sempre o ORIGINAL — o
-    # alvo nunca chamou rota nenhuma, é só quem `usuario_da_sessao` devolve
-    # enquanto a personificação dura. Encerrar ANTES de ler `usuario` fecha
-    # essa janela (grava `PERSONIFICACAO_ENCERRADA` em nome do original, via
-    # `encerrar`) e faz a leitura abaixo devolver o original em vez do alvo.
-    # Sem isto: a trilha dizia que o ALVO saiu — ele nunca esteve aqui de
-    # verdade — e nenhum registro fechava o período em que ações foram
-    # feitas em nome de outra pessoa; a personificação ficava aberta para
-    # sempre no papel, mesmo com a sessão inteira já derrubada.
-    if personificando(request):
-        encerrar(request)
-    # Lido ANTES de derrubar a sessão: depois de `sair_da_sessao` não haveria
-    # mais quem atribuir o registro. Uma sessão órfã (conta apagada ou
-    # desativada depois do login — ver o comentário de `TELAS_ABERTAS` em
-    # `guardas.py`) já não reconstrói ninguém aqui, e nesse caso não há o que
-    # registrar: não existe mais uma pessoa para dizer que saiu.
-    usuario = usuario_da_sessao(request)
-    # `registrar` também é chamado ANTES de `sair_da_sessao`, e com
-    # `request=request`: a personificação já foi encerrada acima (se havia),
-    # então `personificando(request)` aqui já é sempre falso — mas ler a
-    # sessão depois de `flush()` seria perguntar a uma sessão que não existe
-    # mais, e não há necessidade de arriscar isso por uma nota que já não se
-    # aplica.
-    if usuario is not None:
-        registrar(ACOES.SAIU, usuario, alvo=usuario.login, request=request)
-    sair_da_sessao(request)
+    # A ordem (encerrar a personificação, registrar quem saiu, derrubar a
+    # sessão) mora em `contas.entrada.sair_e_registrar`, que a API também chama.
+    sair_e_registrar(request)
     return HttpResponseRedirect(reverse("entrar"))
 
 

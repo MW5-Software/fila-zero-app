@@ -164,16 +164,18 @@ class TestNoCabecalhoDeVerdade:
     def test_marca_com_rotulos_proprios_aparece_no_cabecalho_de_verdade(
         self, cliente_logado, monkeypatch,
     ):
-        """O mesmo cenário acima, mas com a marca desta instalação
-        (`plataforma.marca.marca_da_instalacao`, o único lugar que
-        `plataforma.site.montar_site` consulta) devolvendo rótulos
-        trocados — como uma rede que chama de bandeira e loja faria."""
+        """O mesmo cenário acima, mas com a marca da tela
+        (`plataforma.marca.marca_da_requisicao`, o único lugar que
+        `plataforma.site.montar_site` consulta desde 15/09/2026 — antes era
+        `marca_da_instalacao`) devolvendo rótulos trocados — como uma rede que
+        chama de bandeira e loja faria."""
         import plataforma.site as site_mod
 
         marca_custom = Brand(client_name="Rede X", header=HeaderBrand(
             context_labels=("Bandeira", "Loja"),
         ))
-        monkeypatch.setattr(site_mod, "marca_da_instalacao", lambda: marca_custom)
+        monkeypatch.setattr(site_mod, "marca_da_requisicao",
+                            lambda request: marca_custom)
 
         html = cliente_logado.get(reverse("home")).content.decode()
 

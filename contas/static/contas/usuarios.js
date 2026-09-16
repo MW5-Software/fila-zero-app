@@ -47,16 +47,21 @@
       desligar(titular, esconder);
     }
 
-    // O inverso: bloco que some para ALGUNS níveis. Lista de níveis (`0,1`) e
-    // não "todos menos um": o dia em que existir outro nível, quem o criar
+    // O inverso: blocos que somem para ALGUNS níveis. Lista de níveis (`0,1`)
+    // e não "todos menos um": o dia em que existir outro nível, quem o criar
     // decide de que lado ele cai, em vez de herdar a resposta por acidente.
-    var caixa = formulario.querySelector("[data-nivel-sem-conta]");
-    if (caixa) {
-      var niveis = caixa.getAttribute("data-nivel-sem-conta").split(",");
-      var some = niveis.indexOf(seletor.value) !== -1;
+    //
+    // TODOS os blocos, e não o primeiro: desde 15/09/2026 são dois — a Conta
+    // e as Alocações, que também não valem para titular nem MW5 — e um
+    // `querySelector` só esconderia a Conta.
+    var caixas = formulario.querySelectorAll("[data-nivel-sem-conta], [data-nivel-sem-alocacao]");
+    Array.prototype.forEach.call(caixas, function (caixa) {
+      var lista = caixa.getAttribute("data-nivel-sem-conta")
+        || caixa.getAttribute("data-nivel-sem-alocacao");
+      var some = lista.split(",").indexOf(seletor.value) !== -1;
       caixa.style.display = some ? "none" : "";
       desligar(caixa, some);
-    }
+    });
   }
 
   function ligar() {

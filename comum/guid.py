@@ -20,12 +20,12 @@ Ver `docs/superpowers/specs/2026-09-02-saas-identidade-e-acesso-design.md`.
 
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-__all__ = ["ComGuid"]
+__all__ = ["ComGuid", "como_uuid"]
 
 
 class ComGuid(models.Model):
@@ -36,3 +36,16 @@ class ComGuid(models.Model):
 
     class Meta:
         abstract = True
+
+
+def como_uuid(texto) -> "UUID | None":
+    """O GUID que veio de fora (querystring, caminho da API), ou `None`.
+
+    Filtrar `guid="abc"` levanta no banco; a API responde 404 para GUID que não
+    existe, e um GUID mal escrito também não existe. Uma função só, para cada
+    rota não inventar o próprio `try`.
+    """
+    try:
+        return UUID(str(texto))
+    except (TypeError, ValueError, AttributeError):
+        return None

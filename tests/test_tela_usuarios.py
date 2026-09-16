@@ -294,6 +294,32 @@ class TestCriarEditarRemover:
             reverse("usuarios"), {"acao": "remover", "id": str(alvo.pk)})
         assert not Usuario.objects.filter(pk=alvo.pk).exists()
 
+    def test_remover_quem_tem_historico_protegido_responde_com_frase(
+            self, admin_do_cliente, db, monkeypatch):
+        """Um módulo de negócio guarda o histórico da pessoa com `PROTECT`, e o
+        banco recusa apagar. Sem o tratamento, a tela respondia 500. Veio do
+        Fila Zero (15/09/2026), onde ponto e atendimentos protegem o vendedor;
+        aqui a recusa é simulada, porque a base não tem módulo de negócio."""
+        from django.db.models import ProtectedError
+
+        from comum.auditoria import ACOES
+        from contas.models import RegistroDeAuditoria
+
+        alvo = Usuario.objects.create_user(email="alvo@teste.com", password=SENHA)
+
+        def recusa(self, *args, **kwargs):
+            raise ProtectedError("protegido", set())
+
+        monkeypatch.setattr(Usuario, "delete", recusa)
+        resposta = admin_do_cliente.post(
+            reverse("usuarios"), {"acao": "remover", "id": str(alvo.pk)})
+        assert resposta.status_code == 200
+        assert "histórico" in resposta.content.decode()
+        assert Usuario.objects.filter(pk=alvo.pk).exists()
+        # O registro da remoção desfaz junto: a trilha não conta o que não houve.
+        assert not RegistroDeAuditoria.objects.filter(
+            acao=ACOES.USUARIO_REMOVIDO).exists()
+
     def test_desativar_alguem_derruba_a_sessao_aberta_dela_na_hora(
             self, admin_do_cliente, db):
         """Já vale sozinho, porque `BackendDjango.buscar` roda a cada
@@ -667,7 +693,8 @@ class TestAColunaDaListaEONivel:
         self._com_nivel("membro.x", Nivel.MEMBRO)
         html = admin_do_cliente.get(reverse("usuarios")).content.decode()
         assert "Nível" in html
-        assert "Membro" in html
+        # "Usuário" desde 15/09/2026 (era "Membro").
+        assert "Usuário" in html
         assert ">Perfis<" not in html
 
     def test_quem_nunca_foi_configurado_aparece_como_membro(
@@ -685,7 +712,7 @@ class TestAColunaDaListaEONivel:
         linhas = self._linhas(
             mw5_logada.get(reverse("usuarios")).content.decode())
         dela = [l for l in linhas if len(l) > 2 and "sem.acesso" in l[1]]
-        assert dela and dela[0][2] == "Membro", linhas
+        assert dela and dela[0][2] == "Usuário", linhas
 
     def test_o_filtro_por_nivel_devolve_so_aquele_nivel(self, mw5_logada, db):
         """Olha as LINHAS da tabela, e não a página inteira: um login pode
@@ -703,8 +730,12 @@ class TestAColunaDaListaEONivel:
         assert "membro.y@teste.com" not in logins
 
     def test_ordena_pela_hierarquia_e_nao_pelo_alfabeto(self, mw5_logada, db):
-        """O NÚMERO do nível, e não o rótulo: "Master, Membro, Titular" é ordem
-        alfabética, e não diz nada sobre quem manda em quem.
+        """O NÚMERO do nível, e não o rótulo: a ordem alfabética dos rótulos não
+        diz nada sobre quem manda em quem.
+
+        **Desde 15/09/2026 os rótulos ("Master, Titular, Usuário") coincidem
+        em ordem alfabética com a hierarquia**, então só o desempate pelos
+        logins invertidos abaixo continua pegando uma ordenação errada.
 
         **Os logins são escolhidos ao contrário de propósito.** O membro se
         chama `a.` e o titular `z.`, então a ordem alfabética é o INVERSO da
@@ -719,12 +750,12 @@ class TestAColunaDaListaEONivel:
         crescente = self._linhas(mw5_logada.get(
             reverse("usuarios"), {"ordenar": "nivel"}).content.decode())
         niveis = [l[2] for l in crescente if len(l) > 2]
-        assert niveis.index("Titular") < niveis.index("Membro"), niveis
+        assert niveis.index("Titular") < niveis.index("Usuário"), niveis
 
         decrescente = self._linhas(mw5_logada.get(
             reverse("usuarios"), {"ordenar": "-nivel"}).content.decode())
         invertidos = [l[2] for l in decrescente if len(l) > 2]
-        assert invertidos.index("Membro") < invertidos.index("Titular")
+        assert invertidos.index("Usuário") < invertidos.index("Titular")
 
     def test_o_arquivo_exportado_leva_o_nivel(self, admin_do_cliente, db):
         from contas.models import Nivel
@@ -736,7 +767,7 @@ class TestAColunaDaListaEONivel:
         conteudo = b"".join(resposta.streaming_content).decode("utf-8-sig") \
             if resposta.streaming else resposta.content.decode("utf-8-sig")
         assert "Nível" in conteudo
-        assert "Membro" in conteudo
+        assert "Usuário" in conteudo
 
 
 @pytest.mark.django_db

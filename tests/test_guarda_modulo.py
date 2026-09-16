@@ -161,3 +161,42 @@ class TestAIsencaoDasTelasDaMw5:
         por_chave = {spec.chave: spec for spec in declarados()}
         for chave in SEM_GUARDA_DE_MODULO:
             assert por_chave[chave].so_mw5, chave
+
+
+class TestNenhumaOperacaoDaApiNasceForaDeModulo:
+    """A irmã da varredura acima, para a API — e mais estrita que ela.
+
+    A da web caminha `ModuloSpec.rota`, então só cobra a tela principal de
+    cada módulo. Aqui TODA operação precisa dizer de que módulo é (`.modulo`,
+    gravado por `api_exigir_modulo_ligado`) ou estar em `SEM_MODULO_NA_API`
+    com o motivo. Uma operação de negócio que nascesse só com login abriria
+    com o módulo desligado, e nada perguntaria.
+    """
+
+    def test_toda_operacao_tem_modulo_ou_esta_declarada_fora(self):
+        from comum.guardas_da_api import SEM_MODULO_NA_API
+        from plataforma.declaracao import declarados
+        from tests.conftest import operacoes_da_api
+
+        chaves = {spec.chave for spec in declarados()}
+        problemas = []
+        for caminho, op in operacoes_da_api():
+            nome = op.view_func.__name__
+            modulo = getattr(op.view_func, "modulo", None)
+            if nome in SEM_MODULO_NA_API:
+                continue
+            if modulo not in chaves:
+                problemas.append(f"{caminho} ({nome}): sem guarda de módulo")
+                continue
+            permissao = getattr(op.view_func, "permissao", "") or ""
+            if permissao and permissao.split(".")[0] != modulo:
+                problemas.append(f"{caminho} ({nome}): permissão {permissao} "
+                                 f"de outro módulo que não {modulo}")
+        assert not problemas, problemas
+
+    def test_nenhuma_isencao_aponta_para_operacao_que_nao_existe(self):
+        from comum.guardas_da_api import SEM_MODULO_NA_API
+        from tests.conftest import operacoes_da_api
+
+        nomes = {op.view_func.__name__ for resto, op in operacoes_da_api()}
+        assert SEM_MODULO_NA_API <= nomes, sorted(SEM_MODULO_NA_API - nomes)

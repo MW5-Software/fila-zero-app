@@ -70,6 +70,9 @@ class ACOES:
     PARAMETRO_RESTAURADO = "parametro_restaurado"
     LOGO_ALTERADO = "logo_alterado"
     LOGO_REMOVIDO = "logo_removido"
+    #: Uma ação só para logo e cores do menu de uma empresa (15/09/2026): o
+    #: `alvo` diz a empresa, e o que se mexe ali é sempre a mesma pergunta.
+    MENU_DA_EMPRESA_ALTERADO = "menu_da_empresa_alterado"
     # As ações dos módulos de negócio de cada SaaS entram aqui, cada uma com o
     # rótulo em `ROTULOS` e o cenário que `tests/test_auditoria.py` exige.
     # As correções da fila do Fila Zero (`fila/correcoes.py`). As ações do
@@ -131,6 +134,7 @@ ROTULOS = {
     ACOES.PARAMETRO_RESTAURADO: "Parâmetro restaurado",
     ACOES.LOGO_ALTERADO: "Logo alterado",
     ACOES.LOGO_REMOVIDO: "Logo removido",
+    ACOES.MENU_DA_EMPRESA_ALTERADO: "Menu da empresa alterado",
     ACOES.FILA_PESSOA_TIRADA: "Pessoa tirada da loja",
     ACOES.FILA_ATENDIMENTO_FECHADO: "Atendimento fechado pelo gerente",
     ACOES.FILA_PAUSA_ENCERRADA: "Pausa encerrada pelo gerente",

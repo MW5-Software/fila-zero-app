@@ -59,7 +59,10 @@ class Nivel(models.IntegerChoices):
     #: enxerga — passou a ser o CARGO da alocação (`contas.Cargo`), que muda
     #: por lugar. `contas/0017` levou o 3 para 2 e deu a cada um o cargo que o
     #: nível significava.
-    MEMBRO = 2, "Membro"
+    #: **"Usuário" na tela desde 15/09/2026** — era "Membro", palavra que
+    #: ninguém fora do código usava. O nome da constante e o número ficam: o
+    #: banco guarda 2, e `MEMBRO` é o que o código inteiro já lê.
+    MEMBRO = 2, "Usuário"
 
 
 class GerenteDeUsuario(BaseUserManager):

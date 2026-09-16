@@ -9,6 +9,7 @@ filial valer na hora**, e não no próximo login — a mesma propriedade que
 
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING
 
 from comum.memoria import lembrar
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CHAVE", "CHAVE_EMPRESA", "empresa_atual", "empresa_permitida",
     "empresas_de", "escolher", "escolher_empresa", "filial_permitida",
+    "filial_permitida_por_guid",
     "filiais_de", "filial_atual", "niveis_de_contexto",
 ]
 
@@ -185,7 +187,11 @@ def _decidir_filial(request) -> "Filial | None":
             if escolhida is not None:
                 return escolhida
 
-    return permitidas.first()
+    # Sem escolha, começa na Matriz — e não na primeira da ordem do seletor, que
+    # desempata pelo nome: "Filial 1" passa na frente de "Matriz" no alfabeto, e
+    # entrar caía numa filial qualquer. Quem não alcança a Matriz fica com a
+    # primeira que alcança. O seletor continua na ordem de sempre.
+    return permitidas.filter(e_matriz=True).first() or permitidas.first()
 
 
 def filial_permitida(request, filial_id) -> "Filial | None":
@@ -204,6 +210,20 @@ def filial_permitida(request, filial_id) -> "Filial | None":
         return None
 
     return filiais_de(identidade_da_sessao(request), empresa_atual(request)).filter(pk=filial_id).first()
+
+
+def filial_permitida_por_guid(request, guid) -> "Filial | None":
+    """`filial_permitida`, pelo GUID — o identificador que a API expõe.
+
+    Texto que não é UUID vira `None`, e não 500: `filter(guid="lixo")` levanta
+    `ValidationError` no Django, e o 404 de um GUID malformado precisa ser
+    idêntico ao de um GUID de outra conta.
+    """
+    try:
+        guid = uuid.UUID(str(guid))
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return filiais_de(identidade_da_sessao(request), empresa_atual(request)).filter(guid=guid).first()
 
 
 def escolher(request, filial_id) -> "Filial | None":

@@ -12,10 +12,19 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "openpyxl>=3.1",
     "whitenoise>=6.7",
+    # A base PROCESSA imagem em produção desde 15/09/2026: o logo do menu de
+    # cada empresa perde a margem em volta do desenho na gravação
+    # (`plataforma/logo.py`). Também lê as dimensões do logo do produto
+    # nos testes e gera os PNGs em `ferramentas/gerar_logos.py`.
+    "pillow>=11.0",
     # Cifragem em repouso da senha do Oracle no cadastro de conexão
     # (`plataforma/cifra.py`). Fernet, o mesmo mecanismo que o painel de
     # versões usa para a chave SSH privada de cada instalação.
     "cryptography>=43.0",
+    # A API do app (`config/api.py`). Presa a 1.7 porque `conftest` percorre
+    # `api._get_bound_routers()` para varrer as operações — nome interno, que
+    # a 1.8 pode mudar.
+    "django-ninja>=1.7,<1.8",
 ]
 
 [project.optional-dependencies]
@@ -37,11 +46,6 @@ dev = [
     # e não lê template Jinja2, que é o desta casa. O Babel é Python puro e
     # entra no `uv sync` como qualquer dependência.
     "babel>=2.18",
-    # Lê as dimensões do logo do produto nos testes (`tests/test_logo_do_produto.py`)
-    # e gera os PNGs em `ferramentas/gerar_logos.py`. Só em desenvolvimento: a
-    # base não processa imagem em produção — no Portal de Vendas ele é
-    # dependência de verdade, da galeria do catálogo.
-    "pillow>=11.0",
 ]
 
 [tool.pytest.ini_options]

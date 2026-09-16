@@ -20,7 +20,8 @@ def _voltar_seguro(request, voltar: str) -> str:
     """O `voltar` pedido, se for um caminho DESTA instalação; senão, a raiz.
 
     Existe para a página que trocou de filial receber a pessoa de volta (a
-    fila do Fila Zero, 15/09/2026). Só caminho local: aceitar um endereço de
+    fila do Fila Zero, 15/09/2026, o primeiro SaaS a precisar). Só caminho
+    local: aceitar um endereço de
     fora faria a troca de filial virar um redirecionamento aberto.
     """
     from django.utils.http import url_has_allowed_host_and_scheme
