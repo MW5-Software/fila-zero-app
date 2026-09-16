@@ -228,15 +228,27 @@ def test_id_que_nao_e_numero_nao_estoura(loja):
                  valor=["10"]).status_code == 302
 
 
-# --- Onde se cai depois de entrar (D-4) -----------------------------------
+# --- Onde se cai depois de entrar (spec 2026-09-16, V1) ------------------------
 
-def test_quem_so_tem_a_fila_cai_nela_depois_de_entrar(loja):
+def _entrar(pessoa):
     from django.test import Client
 
-    cliente = Client()
-    resposta = cliente.post(reverse("entrar"), {
-        "usuario": loja.ana.email, "senha": "segredo-de-teste"}, follow=True)
-    assert resposta.redirect_chain[-1][0] == reverse("fila")
+    return Client().post(reverse("entrar"), {
+        "usuario": pessoa.email, "senha": "segredo-de-teste"})
+
+
+def test_quem_so_tem_a_fila_entra_por_ela(loja):
+    """Sem `follow`: é o LOGIN que manda para a fila, e não a raiz."""
+    assert _entrar(loja.ana)["Location"] == reverse("fila")
+
+
+def test_quem_tem_mais_que_a_fila_entra_pela_raiz(loja):
+    assert _entrar(loja.gil)["Location"] == "/"
+
+
+def test_o_vendedor_abre_a_raiz_sem_ser_mandado_para_a_fila(loja):
+    resposta = logado("ana").get("/")
+    assert resposta.status_code == 200
 
 
 def test_quem_tem_mais_que_a_fila_cai_no_painel(loja):

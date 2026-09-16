@@ -8,7 +8,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from django.urls import reverse
 from django.utils import timezone
 
 from tests.fila_cenario import cadastros, logado, nova_loja, pessoa_na_loja, sylvia
@@ -61,11 +60,6 @@ def test_quem_nao_tem_relatorios_ve_so_a_saudacao(rede):
 def test_gestao_ve_o_dashboard_abaixo_da_saudacao(rede):
     html = _html(logado("gil"), periodo="hoje")
     assert html.index("Olá, Gil!") < html.index("Ranking de vendedores")
-
-
-def test_vendedor_continua_caindo_na_fila(rede):
-    resposta = logado("ana").get("/")
-    assert resposta.status_code == 302 and resposta["Location"] == reverse("fila")
 
 
 def test_a_tela_antiga_redireciona_para_o_inicio_com_os_filtros(rede):

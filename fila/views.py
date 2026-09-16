@@ -37,23 +37,23 @@ CHAVE_DA_RECUSA = "fila:recusa"
 
 @exigir_login
 def inicio(request) -> HttpResponse:
-    """A raiz. Quem só tem a fila de vendedor não tem o que fazer no
-    dashboard, e cairia numa saudação vazia a cada login (D-4); a gestão vê
-    os indicadores da fila abaixo da saudação."""
-    from nucleo.views import home
-    from plataforma.models import Modulo
+    """A raiz. A gestão vê os indicadores da fila abaixo da saudação; o
+    resto, a saudação.
 
-    if not Modulo.objects.filter(chave="fila", ativo=True).exists():
-        return home(request)
-    if tela.so_a_fila(request.usuario):
-        return HttpResponseRedirect(reverse("fila"))
-    # Quem lê indicadores em alguma loja tem o dashboard no Início, abaixo do
-    # "Olá" (15/09/2026). Quem não lê continua com a saudação sozinha.
+    Quem só tem a fila de vendedor era mandado daqui para `/fila` (D-4), e
+    por isso nunca via o Início. O desvio passou para a entrada
+    (`fila.sinais.destino_do_vendedor`): ele continua entrando pela fila, e a
+    raiz é dele quando quiser.
+    """
+    from nucleo.views import home
     from plataforma.contexto import empresa_atual
+    from plataforma.models import Modulo
 
     from .indicadores import lojas_com_relatorio
     from .views_indicadores import inicio_com_indicadores
 
+    if not Modulo.objects.filter(chave="fila", ativo=True).exists():
+        return home(request)
     empresa = empresa_atual(request)
     permitidas = lojas_com_relatorio(usuario_de(request.usuario), empresa)
     if permitidas:

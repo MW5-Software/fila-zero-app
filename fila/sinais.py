@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from django.utils.translation import ngettext
 
-__all__ = ["recusar_desativar_loja_com_gente"]
+__all__ = ["destino_do_vendedor", "recusar_desativar_loja_com_gente"]
 
 
 def recusar_desativar_loja_com_gente(sender, filial, **kwargs) -> "str | None":
@@ -35,3 +35,22 @@ def recusar_desativar_loja_com_gente(sender, filial, **kwargs) -> "str | None":
         "fila antes de desativar.",
         "Há %(n)s pessoas presentes nesta loja. Tire todas da loja na página "
         "da fila antes de desativar.", presentes) % {"n": presentes}
+
+
+def destino_do_vendedor(sender, request, **kwargs) -> "str | None":
+    """Quem só tem a fila de vendedor entra direto nela (spec 2026-09-16, V1).
+
+    O desvio morava na raiz, e o Início ficava inalcançável para o vendedor
+    justamente quando passou a ser o painel dele. Aqui ele vale só na
+    entrada: depois, `/` abre o painel.
+
+    Lê `usuario_da_sessao`, e não a pessoa crua, porque `so_a_fila` decide
+    pelas permissões do cargo no lugar em que a sessão está.
+    """
+    from django.urls import reverse
+
+    from comum.sessao import usuario_da_sessao
+
+    from .tela import so_a_fila
+
+    return reverse("fila") if so_a_fila(usuario_da_sessao(request)) else None
