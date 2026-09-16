@@ -52,6 +52,12 @@
 }
 .fila-hero-loja { display: inline-flex; align-items: center; gap: 6px; }
 .fila-hero-vivo { display: inline-flex; align-items: center; gap: 7px; }
+/* "Meu painel": a página da fila não tem menu, e este é o caminho do
+   vendedor até o Início (spec 2026-09-16). Na cor do link da loja ao lado. */
+.fila-hero-direita { display: inline-flex; align-items: center; gap: 14px; }
+.fila-meu-painel { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); text-decoration: none; }
+.fila-meu-painel:hover { text-decoration: underline; }
+.fila-hero:has(.painel-sua-vez) .fila-meu-painel { color: inherit; }
 .fila-trocar-loja { position: relative; }
 .fila-trocar-loja summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--primary); }
 .fila-trocar-loja summary::-webkit-details-marker { display: none; }

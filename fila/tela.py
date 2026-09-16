@@ -63,7 +63,9 @@ def trocar_e_abrir_a_fila(loja) -> str:
 
 
 def so_a_fila(user) -> bool:
-    """Desvio D-4: cai direto em `/fila` quem só tem a fila de vendedor."""
+    """Desvio D-4: entra direto em `/fila` quem só tem a fila de vendedor.
+    Vale só na entrada (`fila.sinais.destino_do_vendedor`): a raiz é o painel
+    dele (spec 2026-09-16)."""
     if user is None or user.superuser:
         return False
     permissoes = frozenset(user.permissions)
@@ -236,7 +238,6 @@ def _contexto(request, filial, recusa=""):
         "agora": timezone.now(),
         "pode_participar": pode(request.usuario, "fila.participar"),
         "pode_gerenciar": pode_gerenciar,
-        "mostra_painel": not so_a_fila(request.usuario),
         "csrf": Markup(campo_csrf(request)),
         "url_fila": reverse("fila"),
         "url_agir": reverse("fila_agir"),

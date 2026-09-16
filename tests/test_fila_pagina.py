@@ -256,6 +256,19 @@ def test_quem_tem_mais_que_a_fila_cai_no_painel(loja):
     assert resposta.status_code == 200
 
 
+def test_quem_participa_acha_o_painel_pela_fila(loja):
+    """Sem menu na página da fila, o link é o caminho do vendedor até o
+    painel dele (spec 2026-09-16)."""
+    html = _html(logado("ana"))
+    assert 'href="/" data-meu-painel' in html and "Meu painel" in html
+
+
+def test_quem_so_ve_a_fila_nao_tem_o_link_do_painel(loja):
+    # Supervisor de fábrica: fila.ver e fila.gerenciar, sem fila.participar.
+    pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")
+    assert "data-meu-painel" not in _html(logado("sara"))
+
+
 def test_as_folhas_abrem_pela_url(loja):
     """Sem JavaScript, a folha abre por `?folha=`. Cada uma desenha o
     formulário que o POST espera; a de corrigir só abre com alvo desta loja."""

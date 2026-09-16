@@ -18,7 +18,10 @@
       {% else %}
       <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
       {% endif %}
-      <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>
+      <span class="fila-hero-direita">
+        {% if pode_participar %}<a class="fila-meu-painel" href="/" data-meu-painel>{{ icon("chart-column", "sm") }}<span>{{ traduzir("Meu painel") }}</span></a>{% endif %}
+        <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>
+      </span>
     </div>
     <div class="fila-hero-corpo">
       <div id="fila-painel" class="fila-hero-painel">{% include "fila/_painel.html" %}</div>
