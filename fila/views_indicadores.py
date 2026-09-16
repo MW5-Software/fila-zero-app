@@ -238,10 +238,10 @@ def _lista(titulo, subtitulo, linhas, tom):
     return Cell(span=4, children=Card(title=titulo, subtitle=subtitulo, body=corpo))
 
 
-def _listas(recorte, n):
-    grupos = ind.por_grupo(recorte)
-    motivos = ind.motivos(recorte)
-    pausas = ind.pausa_por_tipo(recorte)
+def _listas(recorte, n, vendedor=None):
+    grupos = ind.por_grupo(recorte, vendedor)
+    motivos = ind.motivos(recorte, vendedor)
+    pausas = ind.pausa_por_tipo(recorte, vendedor)
     sem_venda = sum(q for _m, q in motivos)
     return FormGrid(attrs={"data-ind": "listas"}, children=[
         _lista(_("Vendido por grupo de item"),

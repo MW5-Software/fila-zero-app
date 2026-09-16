@@ -37,8 +37,9 @@ CHAVE_DA_RECUSA = "fila:recusa"
 
 @exigir_login
 def inicio(request) -> HttpResponse:
-    """A raiz. A gestão vê os indicadores da fila abaixo da saudação; o
-    resto, a saudação.
+    """A raiz. A gestão vê os indicadores da fila abaixo da saudação; quem
+    vende na loja do cabeçalho, o painel dele (spec 2026-09-16); o resto, a
+    saudação.
 
     Quem só tem a fila de vendedor era mandado daqui para `/fila` (D-4), e
     por isso nunca via o Início. O desvio passou para a entrada
@@ -50,6 +51,7 @@ def inicio(request) -> HttpResponse:
     from plataforma.models import Modulo
 
     from .indicadores import lojas_com_relatorio
+    from .views_do_vendedor import inicio_do_vendedor
     from .views_indicadores import inicio_com_indicadores
 
     if not Modulo.objects.filter(chave="fila", ativo=True).exists():
@@ -58,6 +60,11 @@ def inicio(request) -> HttpResponse:
     permitidas = lojas_com_relatorio(usuario_de(request.usuario), empresa)
     if permitidas:
         return inicio_com_indicadores(request, empresa, permitidas)
+    # `pode` já traz as permissões do cargo NA loja do cabeçalho: o vendedor
+    # de uma loja que só vê a outra não ganha painel na outra.
+    loja = filial_atual(request)
+    if loja is not None and pode(request.usuario, "fila.participar"):
+        return inicio_do_vendedor(request, empresa, loja, usuario_de(request.usuario))
     return home(request)
 
 

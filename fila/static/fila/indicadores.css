@@ -170,3 +170,9 @@ form[action="/"] .formgrid { align-items: end; }
 /* A escolha de mês e loja da tela de metas alinha pela base, como os
    filtros do Início: os botões na linha dos campos. */
 [data-metas="escolha"] .formgrid { align-items: end; }
+
+/* --- O ranking da loja, no painel do vendedor ---------------------------- */
+
+/* A linha de quem está olhando: é o "você está aqui" do placar. Fundo do
+   tema, e não cor nova, para funcionar no claro e no escuro. */
+tr.ind-eu td { background: var(--surface-2); font-weight: 700; }
