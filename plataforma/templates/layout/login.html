@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="{{ idioma_html() }}"{% if c.brand.default_theme != "system" %} data-theme="{{ c.brand.default_theme }}"{% endif %}>
+<html lang="{{ idioma_html() }}" data-theme="light">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ c.document_title }}</title>
 {% if c.brand.assets.favicon %}<link rel="icon" href="{{ c.brand.assets.favicon }}">{% endif %}
@@ -10,9 +11,6 @@
 {% for folha in c.stylesheets %}
 <link rel="stylesheet" href="{{ folha }}">
 {% endfor %}
-<script>
-(function(){try{var t=localStorage.getItem("mw5-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
-</script>
 </head>
 <body class="login">
 
