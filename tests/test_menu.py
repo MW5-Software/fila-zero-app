@@ -456,9 +456,10 @@ def test_o_cadastro_reune_empresa_usuarios_e_produtos(db):
                permissions=["*"])
     grupos = {g.label: [f.label for f in (g.children or [])]
               for g in montar(mw5)}
-    # "Empresa" no SINGULAR desde 09/09/2026: uma conta tem uma empresa, e
-    # para o titular — que é quase todo mundo que abre este menu — a tela é o
-    # cadastro da empresa dele, não uma lista.
+    # "Empresa" no SINGULAR desde 09/09/2026: a conta da maioria tem uma
+    # empresa, e para o titular — que é quase todo mundo que abre este menu —
+    # a tela é o cadastro dela. O rótulo acompanha a tela, e muda junto com
+    # ela quando a lista de empresas voltar (entrega 2 do spec de 17/09/2026).
     assert {"Empresa", "Usuários", "Filiais", "Cargos"} <= \
         set(grupos["Cadastro"])
     for cadastro in ("Usuários", "Empresa", "Filiais", "Cargos"):

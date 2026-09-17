@@ -568,7 +568,7 @@ class TestOOlhoDaSenhaDoBanco:
 
 @pytest.mark.django_db
 class TestOTitularVeAEmpresaDele:
-    """Uma conta, uma empresa — e o titular vê a TABELA, como em toda outra
+    """O titular vê a TABELA das empresas da conta dele, como em toda outra
     tela de cadastro desta casa.
 
     **É a segunda vez que esta tela troca de forma, e as duas razões estão
@@ -579,8 +579,9 @@ class TestOTitularVeAEmpresaDele:
     tabela com filtro, ordenação e paginação (R46), e uma que foge disso
     obriga quem já aprendeu o padrão a aprender uma exceção.
 
-    O que NÃO mudou nas duas idas: ele não cria e não remove. A empresa nasce
-    no cadastro dele e morre com a conta, e as duas ações são da MW5.
+    O que NÃO mudou nas duas idas: ele não cria e não remove. A primeira
+    empresa nasce no cadastro dele, as outras a MW5 cadastra (17/09/2026), e
+    remover é da MW5.
     """
 
     @pytest.fixture

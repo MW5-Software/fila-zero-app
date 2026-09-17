@@ -1,6 +1,7 @@
 """O titular e a empresa dele nascem no mesmo cadastro.
 
-Uma conta tem UMA empresa (09/09/2026). Separar os dois cadastros seria pedir
+A conta nasce com a PRIMEIRA empresa dela (09/09/2026; desde 17/09/2026 ela
+pode ter outras, criadas depois pela MW5). Separar os dois cadastros seria pedir
 para criar o titular, salvar, ir a Empresas, criar a empresa e ligar as duas —
 quatro passos para dizer uma coisa só, e três chances de parar no meio e
 deixar um titular sem empresa (que entra no sistema e não enxerga nada) ou uma

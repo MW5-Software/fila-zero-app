@@ -10,8 +10,7 @@ A semeadura fazia sentido enquanto a instalação era de UM cliente e a empresa
 era dado dela, como a marca: a tela de Empresa precisava de uma linha para
 editar desde o primeiro `migrate`.
 
-Com **uma conta, uma empresa**, o que aquele `post_migrate` criava era uma
-empresa SEM DONO — ninguém a abre, ela fica na lista da MW5 sem nada
+O que aquele `post_migrate` criava era uma empresa SEM DONO — ninguém a abre, ela fica na lista da MW5 sem nada
 explicando o que falta nela, e é exatamente o estado cujo caminho de criação
 foi fechado quando "Nova empresa" saiu da tela de Empresas.
 
