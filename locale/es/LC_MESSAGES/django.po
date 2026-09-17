@@ -1389,3 +1389,93 @@ msgstr "en el mes"
 
 msgid "O que faltava foi dividido entre quem estava sem meta. Confira e salve."
 msgstr "Lo que faltaba se dividió entre quienes no tenían meta. Revise y guarde."
+
+msgid "Ação"
+msgstr "Acción"
+
+msgid "Corrigiu o lançamento"
+msgstr "Corrigió el registro"
+
+msgid "Escolha o lugar na fila."
+msgstr "Elija el lugar en la fila."
+
+msgid "Escolha uma posição da fila."
+msgstr "Elija una posición de la fila."
+
+msgid "Escreva o motivo da correção."
+msgstr "Escriba el motivo de la corrección."
+
+msgid "Essa pessoa já está nessa posição."
+msgstr "Esa persona ya está en esa posición."
+
+msgid "Essa pessoa não está na fila."
+msgstr "Esa persona no está en la fila."
+
+msgid "Ex.: foi ao banco e esqueceu de pausar"
+msgstr "Ej.: fue al banco y olvidó pausar"
+
+msgid "Fechou o atendimento"
+msgstr "Cerró la atención"
+
+msgid "Histórico"
+msgstr "Historial"
+
+msgid "Histórico da fila"
+msgstr "Historial de la fila"
+
+msgid "Motivo"
+msgstr "Motivo"
+
+msgid "Motivo da correção"
+msgstr "Motivo de la corrección"
+
+msgid "Mudar de posição"
+msgstr "Cambiar de posición"
+
+msgid "Mudou de posição"
+msgstr "Cambió de posición"
+
+msgid "O motivo cabe em 200 caracteres."
+msgstr "El motivo cabe en 200 caracteres."
+
+msgid "Para qual posição?"
+msgstr "¿Para qué posición?"
+
+msgid "Para quem saiu e não apertou Pausa."
+msgstr "Para quien salió y no apretó Pausa."
+
+msgid "Pôr em pausa"
+msgstr "Poner en pausa"
+
+msgid "Pôs em pausa"
+msgstr "Puso en pausa"
+
+msgid "Quando"
+msgstr "Cuándo"
+
+msgid "Quem corrigiu"
+msgstr "Quién corrigió"
+
+msgid "Tirou da loja"
+msgstr "Sacó de la tienda"
+
+msgid "Tirou da pausa"
+msgstr "Sacó de la pausa"
+
+msgid "ação"
+msgstr "acción"
+
+msgid "correção na fila"
+msgstr "corrección en la fila"
+
+msgid "correções na fila"
+msgstr "correcciones en la fila"
+
+msgid "detalhe"
+msgstr "detalle"
+
+msgid "quando"
+msgstr "cuándo"
+
+msgid "quem corrigiu"
+msgstr "quién corrigió"
