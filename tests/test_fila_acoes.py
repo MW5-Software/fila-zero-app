@@ -438,3 +438,104 @@ def test_atendendo_numa_empresa_a_recusa_diz_a_loja_e_a_empresa(loja):
         bater_ponto(loja.ana, loja_beta)
     frase = recusa.value.frase
     assert str(loja.matriz) in frase and str(loja.empresa) in frase
+
+
+# --- O fluxo da empresa (spec 2026-09-17-fluxo-da-fila-por-empresa) ---------
+
+def _com_espera(loja):
+    from plataforma.models import FluxoDaFila
+
+    loja.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
+    loja.empresa.save(update_fields=["fluxo_da_fila"])
+    return loja
+
+
+def test_no_fluxo_de_hoje_lancar_volta_para_o_fim(loja):
+    """A regressão da Sylvia: o fluxo padrão não muda em nada."""
+    from fila.acoes import bater_ponto, finalizar, vou_atender
+    from fila.models import Estado, LugarNaFila
+
+    bater_ponto(loja.ana, loja.matriz)
+    bater_ponto(loja.bia, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    finalizar(loja.ana, loja.matriz, _nao_venda(loja.cad.motivo.pk))
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA
+    assert _ordem(loja.matriz) == ["Bia", "Ana"]
+
+
+def test_no_fluxo_de_espera_lancar_tira_da_fila(loja):
+    from fila.acoes import bater_ponto, finalizar, vou_atender
+    from fila.models import Estado, LugarNaFila, Pausa
+
+    _com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    bater_ponto(loja.bia, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    finalizar(loja.ana, loja.matriz, _nao_venda(loja.cad.motivo.pk))
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_ESPERA
+    assert _ordem(loja.matriz) == ["Bia"]
+    # Espera não é pausa: nenhuma linha de pausa, e nada a fechar depois.
+    assert not Pausa.irrestritos.exists()
+
+
+def test_entrar_na_fila_poe_no_fim(loja):
+    from fila.acoes import bater_ponto, entrar_na_fila, finalizar, vou_atender
+    from fila.models import Estado, LugarNaFila
+
+    _com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    bater_ponto(loja.bia, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    finalizar(loja.ana, loja.matriz, _nao_venda(loja.cad.motivo.pk))
+    entrar_na_fila(loja.ana, loja.matriz)
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA
+    assert _ordem(loja.matriz) == ["Bia", "Ana"]
+
+
+def test_entrar_na_fila_de_quem_ja_esta_na_fila(loja):
+    from fila.acoes import Recusa, bater_ponto, entrar_na_fila
+
+    _com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        entrar_na_fila(loja.ana, loja.matriz)
+    assert recusa.value.frase == "Você já está na fila."
+
+
+def test_entrar_na_fila_de_quem_atende_ou_esta_em_pausa(loja):
+    from fila.acoes import Recusa, bater_ponto, entrar_na_fila, pausar, vou_atender
+
+    _com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        entrar_na_fila(loja.ana, loja.matriz)
+    assert recusa.value.frase == "Finalize o atendimento primeiro."
+
+    bater_ponto(loja.bia, loja.matriz)
+    pausar(loja.bia, loja.matriz, loja.cad.tipo.pk)
+    with pytest.raises(Recusa) as recusa:
+        entrar_na_fila(loja.bia, loja.matriz)
+    assert recusa.value.frase == "Encerre a pausa primeiro."
+
+
+def test_encerrar_a_pausa_segue_o_fluxo_da_empresa(loja):
+    from fila.acoes import bater_ponto, pausar, voltar_para_a_fila
+    from fila.models import Estado, LugarNaFila, Pausa
+
+    _com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    pausar(loja.ana, loja.matriz, loja.cad.tipo.pk)
+    voltar_para_a_fila(loja.ana, loja.matriz)
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_ESPERA
+    # A pausa fecha do mesmo jeito: o que muda é só para onde a pessoa vai.
+    assert Pausa.irrestritos.get(pessoa=loja.ana).fim is not None
+
+
+def test_bater_o_ponto_continua_entrando_na_fila(loja):
+    from fila.acoes import bater_ponto
+    from fila.models import Estado, LugarNaFila
+
+    _com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA

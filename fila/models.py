@@ -34,6 +34,12 @@ class Estado(models.TextChoices):
     NA_FILA = "na_fila", _("Na fila")
     ATENDENDO = "atendendo", _("Atendendo")
     EM_PAUSA = "em_pausa", _("Em pausa")
+    #: Fora da fila por vontade da pessoa, com o ponto aberto: o fluxo em que
+    #: quem lança o atendimento só volta à fila quando quiser (spec
+    #: 2026-09-17-fluxo-da-fila-por-empresa). **Não é pausa**: não existe
+    #: linha de `Pausa`, e o tempo aqui não entra em indicador de pausa
+    #: nenhum.
+    EM_ESPERA = "em_espera", _("Em espera")
 
 
 class Resultado(models.TextChoices):
