@@ -310,7 +310,7 @@ def _filtros(request, periodo, permitidas, loja):
     # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
     # troca a querystring inteira, e aplicar o período apagava os dois.
     for chave, valor in request.GET.items():
-        if chave not in ("periodo", "loja", "pagina") and valor:
+        if chave not in ("periodo", "loja", "pagina", "ranking_mes") and valor:
             campos.append(Raw(html=format_html(
                 '<input type="hidden" name="{}" value="{}">', chave, valor)))
     # Sem título: o período e a loja escolhidos já estão nos campos, e o
@@ -398,6 +398,47 @@ def _por_loja(recorte):
                 body=Raw(html=format_html('<ol class="ind-lojas">{}</ol>', itens)))
 
 
+def mes_do_ranking(request):
+    """O mês do ranking, de `?ranking_mes=2026-09`. Vazio, inválido ou
+    futuro cai no mês atual: mês que não começou não tem posição."""
+    atual = regras_de_meta.primeiro_do_mes(timezone.localdate())
+    return min(regras_de_meta.mes_do_texto(request.GET.get("ranking_mes")), atual)
+
+
+def _endereco_do_mes(request, mes) -> str:
+    """A URL de agora com outro mês no ranking. O resto da URL (período,
+    loja, filtro e ordem) viaja junto; a página volta para a primeira, porque
+    a de outro mês pode nem existir."""
+    consulta = request.GET.copy()
+    consulta["ranking_mes"] = f"{mes:%Y-%m}"
+    consulta.pop("pagina", None)
+    return f"{request.path}?{consulta.urlencode()}"
+
+
+def cartao_do_ranking(request, mes, *, subtitulo=None, attrs=None, body=None):
+    """O cartão do ranking com o mês no título e as setas no cabeçalho.
+
+    Desde 17/09/2026 o ranking tem o próprio mês, e não o período do painel:
+    em "7 dias", ninguém sabia de quando era a posição. O título diz o mês por
+    extenso, e a seta do mês seguinte some no mês atual.
+    """
+    from nucleo.views import _MESES
+
+    atual = regras_de_meta.primeiro_do_mes(timezone.localdate())
+    setas = [Button(label="", icon="chevron-left", variant="ghost", size="sm",
+                    href=_endereco_do_mes(request, regras_de_meta.mes_anterior(mes)),
+                    title=str(_("Mês anterior")),
+                    attrs={"aria-label": _("Mês anterior")})]
+    if mes < atual:
+        setas.append(Button(label="", icon="chevron-right", variant="ghost", size="sm",
+                            href=_endereco_do_mes(request, regras_de_meta.mes_seguinte(mes)),
+                            title=str(_("Mês seguinte")),
+                            attrs={"aria-label": _("Mês seguinte")}))
+    titulo = _("Ranking de %(mes)s") % {"mes": f"{_MESES[mes.month - 1]} de {mes.year}"}
+    return Card(title=titulo, subtitle=subtitulo, padded=False, attrs=attrs or {},
+                header_actions=setas, body=body)
+
+
 def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     """Os blocos do dashboard (filtros, esquecidos, números, gráficos e
     ranking) para as lojas `permitidas`, que quem chama já tirou do alcance do
@@ -416,24 +457,25 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
         _listas(recorte, n),
     ]
     todas = loja is None
-    ordenaveis = (ind.ORDENAVEIS_DO_RANKING_COM_META
-                  if mes_da_meta else ind.ORDENAVEIS_DO_RANKING)
+    mes = mes_do_ranking(request)
+    do_mes = ind.recorte_do_mes(empresa, tuple(lojas), mes)
+    ordenaveis = ind.ORDENAVEIS_DO_RANKING_COM_META
     if todas:
         blocos.insert(3, _por_loja(recorte))
         # Uma linha por pessoa em cada loja: somada, a venda do Centro parecia
         # ser da Matriz.
-        consulta = ind.ranking_por_loja(recorte, mes_da_meta)
+        consulta = ind.ranking_por_loja(do_mes, mes)
         ordenaveis = {**ordenaveis, "loja": ("loja_nome", "nome")}
     else:
-        consulta = ind.ranking(recorte, mes_da_meta)
+        consulta = ind.ranking(do_mes, mes)
     listagem = montar_pagina(request, consulta,
                              ordenaveis=ordenaveis,
                              padrao=ind.PADRAO_DO_RANKING,
                              filtraveis=_FILTRAVEIS_POR_LOJA if todas else _FILTRAVEIS,
-                             preservar=("periodo", "loja"))
-    blocos.append(Card(title=_("Ranking de vendedores"), padded=False, body=[
+                             preservar=("periodo", "loja", "ranking_mes"))
+    blocos.append(cartao_do_ranking(request, mes, attrs={"data-ind": "ranking"}, body=[
         listagem.barra,
-        Table(columns=_colunas(listagem, com_meta=mes_da_meta is not None, por_loja=todas),
+        Table(columns=_colunas(listagem, com_meta=True, por_loja=todas),
               rows=listagem.linhas),
         listagem.paginacao,
     ]))

@@ -57,8 +57,8 @@ def _antes_do_ranking(html):
 def test_o_vendedor_ve_o_painel_dele_abaixo_da_saudacao(loja):
     html = _html(logado("ana"), periodo="hoje")
     assert html.index("Olá, Ana!") < html.index('data-ind="painel"')
-    assert "Ranking da loja" in html
-    assert "Ranking de vendedores" not in html
+    assert 'data-ind="ranking-da-loja"' in html
+    assert 'data-ind="ranking"' not in html
 
 
 def test_os_numeros_as_listas_e_o_grafico_sao_so_dele(loja):
@@ -121,7 +121,7 @@ def test_ordenar_por_pausa_nao_vale_para_o_vendedor(loja):
     """A coluna não existe para ele; a URL forjada cai na ordem padrão."""
     _atendimento(loja, loja.ana, "300")
     html = _html(logado("ana"), periodo="hoje", ordenar="-pausa")
-    assert "Ranking da loja" in html
+    assert 'data-ind="ranking-da-loja"' in html
 
 
 def test_a_linha_dele_vem_marcada(loja):
@@ -177,7 +177,8 @@ def test_a_meta_dele_aparece_so_no_mes_e_nao_a_da_loja(loja):
     assert "lojas com meta" not in html and "metas dos vendedores" not in html
     assert 'data-ind="meta"' not in _html(ana, periodo="7dias")
     assert "% da meta" in _html(ana, periodo="mes")
-    assert "% da meta" not in _html(ana, periodo="hoje")
+    # O ranking é do mês desde 17/09/2026: a coluna vale em qualquer período.
+    assert "% da meta" in _html(ana, periodo="hoje")
 
 
 def test_sem_esquecidos_no_painel_do_vendedor(loja):
@@ -191,7 +192,7 @@ def test_sem_esquecidos_no_painel_do_vendedor(loja):
 
 def test_o_gerente_continua_com_o_painel_da_gestao(loja):
     html = _html(logado("gil"), periodo="hoje")
-    assert "Ranking de vendedores" in html and "Ranking da loja" not in html
+    assert 'data-ind="ranking"' in html and 'data-ind="ranking-da-loja"' not in html
 
 
 def test_quem_so_ve_a_fila_recebe_a_saudacao(loja):
@@ -215,3 +216,21 @@ def test_vendedor_sem_loja_recebe_a_saudacao_e_nao_500(loja):
 def test_sem_atendimento_mostra_traco(loja):
     html = _html(logado("ana"), periodo="hoje")
     assert "Nenhum atendimento fechado no período." in html
+
+
+def test_o_ranking_da_loja_e_a_posicao_sao_do_mes(loja):
+    """17/09/2026: em "Hoje", a posição dizia o lugar de hoje, e o vendedor
+    lia como o do mês. Agora o ranking tem o próprio mês."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from fila.models import Atendimento
+
+    antigo = _atendimento(loja, loja.bia, "900")
+    fim = timezone.localtime().replace(day=1, hour=12) - timedelta(days=1)
+    Atendimento.irrestritos.filter(pk=antigo.pk).update(inicio=fim, fim=fim)
+    _atendimento(loja, loja.ana, "100")
+    ranking = _html(logado("ana"), periodo="mes_passado").split('data-ind="ranking-da-loja"')[1]
+    assert "Você está em 1º de 1." in ranking
+    assert "Bia" not in ranking

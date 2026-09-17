@@ -1029,6 +1029,10 @@ msgstr "Meta"
 msgid "Ranking de vendedores"
 msgstr "Ranking de vendedores"
 
+#, python-format
+msgid "Ranking de %(mes)s"
+msgstr "Ranking de %(mes)s"
+
 msgid "Mês"
 msgstr "Mes"
 

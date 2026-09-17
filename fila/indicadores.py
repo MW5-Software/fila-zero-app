@@ -33,7 +33,7 @@ __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
            "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
            "por_dia", "por_grupo", "por_loja", "posicao_no_mes", "posicoes_por_vendido", "ranking",
-           "ranking_por_loja", "variacao"]
+           "ranking_por_loja", "recorte_do_mes", "variacao"]
 
 ZERO = Decimal("0")
 _DINHEIRO = DecimalField(max_digits=14, decimal_places=2)
@@ -90,6 +90,16 @@ def variacao(atual, anterior, *, pontos: bool = False) -> "Variacao | None":
     if not anterior:
         return None
     return Variacao(round((float(atual) - float(anterior)) * 100 / float(anterior), 1), "%")
+
+
+def recorte_do_mes(empresa, lojas, mes: date) -> Recorte:
+    """O mês inteiro de `mes` (dia 1), para o ranking. O fim é o dia 1 do mês
+    seguinte: no mês em andamento, o que ainda não aconteceu não conta."""
+    from .metas import mes_seguinte
+
+    return Recorte(empresa, tuple(lojas),
+                   Periodo(inicio_do_dia(mes), inicio_do_dia(mes_seguinte(mes)),
+                           "ranking", f"{mes:%m/%Y}"))
 
 
 def _atendimentos(recorte: Recorte, vendedor=None):

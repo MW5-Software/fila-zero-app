@@ -54,12 +54,12 @@ def test_quem_nao_tem_relatorios_ve_so_a_saudacao(rede):
     pessoa_na_loja("rita", rede.empresa, rede.centro, cargo="representante")
     html = _html(logado("rita"))
     assert "Olá, Rita!" in html
-    assert "Ranking de vendedores" not in html
+    assert 'data-ind="ranking"' not in html
 
 
 def test_gestao_ve_o_dashboard_abaixo_da_saudacao(rede):
     html = _html(logado("gil"), periodo="hoje")
-    assert html.index("Olá, Gil!") < html.index("Ranking de vendedores")
+    assert html.index("Olá, Gil!") < html.index('data-ind="ranking"')
 
 
 def test_a_tela_antiga_redireciona_para_o_inicio_com_os_filtros(rede):
@@ -128,7 +128,7 @@ def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
     _venda_hoje(rede, rede.caio, rede.matriz, "200")
     html = _html(logado("sylvia"), periodo="hoje", loja="todas")
-    ranking = html[html.index("Ranking de vendedores"):]
+    ranking = html[html.index('data-ind="ranking"'):]
     assert re.search(r"<th[^>]*>\s*<a[^>]*>Loja", ranking)
     linhas = re.findall(r"<tr[^>]*>(.*?)</tr>", ranking, re.S)
     do_caio = [l for l in linhas if "Caio" in l]
@@ -312,7 +312,7 @@ def test_o_painel_abre_no_vendido_e_marca_o_dia_em_andamento(rede):
     assert 'class="ind-serie visivel" data-serie="vendido"' in html
     # Hoje é a última coluna do mês em andamento, listrada e com "até agora".
     assert "ind-col agora" in html and "até agora" in html
-    assert "<svg" not in html.split("Ranking de vendedores")[0].split("ind-painel")[1]
+    assert "<svg" not in html.split('data-ind="ranking"')[0].split("ind-painel")[1]
 
 
 def test_periodo_terminado_nao_tem_coluna_em_andamento(rede):
@@ -372,7 +372,8 @@ def test_ranking_ganha_meta_e_porcentagem_ordenaveis(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "500")
     html = _html(logado("gil"), periodo="mes", ordenar="-pct_meta")
     assert "% da meta" in html and "50,0%" in html
-    assert "% da meta" not in _html(logado("gil"), periodo="hoje")
+    # O ranking é do mês desde 17/09/2026: a meta vale em qualquer período.
+    assert "% da meta" in _html(logado("gil"), periodo="hoje")
 
 
 def test_os_filtros_tem_os_atalhos_e_nao_tem_mais_de_e_ate(rede):
@@ -382,3 +383,68 @@ def test_os_filtros_tem_os_atalhos_e_nao_tem_mais_de_e_ate(rede):
     assert 'name="de"' not in html and 'name="ate"' not in html
     assert '<option value="90dias" selected>90 dias</option>' in html
     assert "90 dias, Matriz" in html
+
+
+# --- O ranking é do mês (17/09/2026) ----------------------------------------
+# O ranking seguia o período do painel, e em "7 dias" ninguém sabia de quando
+# era a posição. Agora ele tem o próprio mês, com as setas.
+
+def _ranking(html):
+    return html[html.index('data-ind="ranking"'):]
+
+
+def _nome_do_mes(dia):
+    from nucleo.views import _MESES
+
+    return f"{_MESES[dia.month - 1]} de {dia.year}"
+
+
+def _mes_passado():
+    return timezone.localdate().replace(day=1) - timedelta(days=1)
+
+
+def _para_o_mes_passado(atendimento):
+    from fila.models import Atendimento
+
+    fim = timezone.localtime().replace(day=1, hour=12) - timedelta(days=1)
+    Atendimento.irrestritos.filter(pk=atendimento.pk).update(
+        inicio=fim - timedelta(minutes=5), fim=fim)
+
+
+def test_o_ranking_e_do_mes_e_nao_do_periodo(rede):
+    _para_o_mes_passado(_venda_hoje(rede, rede.caio, rede.centro, "500"))
+    _venda_hoje(rede, rede.gil, rede.centro, "80")
+    html = _html(logado("gil"), periodo="mes_passado")
+    assert "R$ 500,00" in html[:html.index('data-ind="ranking"')]
+    ranking = _ranking(html)
+    assert f"Ranking de {_nome_do_mes(timezone.localdate())}" in ranking
+    assert "Caio" not in ranking and "Gil" in ranking
+
+
+def test_as_setas_levam_ao_mes_passado_sem_perder_os_filtros(rede):
+    import re
+
+    _para_o_mes_passado(_venda_hoje(rede, rede.caio, rede.centro, "500"))
+    mes = f"{_mes_passado():%Y-%m}"
+    atual = _ranking(_html(logado("sara"), periodo="7dias", loja=str(rede.centro.pk), pagina="2"))
+    anterior = re.search(r'href="([^"]*ranking_mes=%s[^"]*)"' % mes, atual)
+    assert anterior, "a seta do mês anterior não apareceu"
+    link = anterior.group(1).replace("&amp;", "&")
+    assert "periodo=7dias" in link and f"loja={rede.centro.pk}" in link
+    assert "pagina=" not in link
+    passado = _ranking(_html(logado("sara"), periodo="7dias", loja=str(rede.centro.pk),
+                             ranking_mes=mes))
+    assert f"Ranking de {_nome_do_mes(_mes_passado())}" in passado
+    assert "Caio" in passado and "R$ 500,00" in passado
+
+
+def test_mes_futuro_ou_invalido_cai_no_mes_atual(rede):
+    atual = f"Ranking de {_nome_do_mes(timezone.localdate())}"
+    for mes in ("2999-01", "abc", "2026-13"):
+        assert atual in _html(logado("gil"), ranking_mes=mes)
+
+
+def test_no_mes_atual_nao_ha_seta_para_o_seguinte(rede):
+    ranking = _ranking(_html(logado("gil")))
+    assert 'aria-label="Mês seguinte"' not in ranking
+    assert 'aria-label="Mês anterior"' in ranking
