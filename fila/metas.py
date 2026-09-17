@@ -24,8 +24,9 @@ from .periodo import ANOS_ACEITOS
 __all__ = ["Acompanhamento", "Linha", "MES_ENCERRADO", "MetaDoRecorte", "ValoresInvalidos",
            "acompanhar", "copiar_do_anterior", "gravar", "lojas_com_metas",
            "mes_anterior", "mes_do_texto", "mes_do_periodo", "mes_encerrado", "mes_seguinte", "meta_da_pessoa", "meta_do_recorte",
-           "meta_da_loja", "pessoas_da_lista", "primeiro_do_mes",
-           "ultimo_do_mes", "valor_do_campo"]
+           "meta_da_loja", "metas_do_mes", "pessoas_da_lista", "primeiro_do_mes",
+           "Ritmo", "dividir_o_que_falta", "repartir", "ritmo",
+           "ultimo_do_mes", "valor_do_campo", "vendido_no_mes"]
 
 ZERO = Decimal("0")
 CENTAVO = Decimal("0.01")
@@ -192,7 +193,12 @@ def pessoas_da_lista(loja, mes, editor) -> "list[Linha]":
 
 
 def valor_do_campo(valor: "Decimal | None") -> str:
-    return "" if valor is None else f"{valor:.2f}".replace(".", ",")
+    """O valor no campo, como a máscara o deixaria ("180.000,00"). Sem o ponto
+    de milhar, o primeiro dígito digitado reformatava o campo inteiro na cara
+    de quem edita (17/09/2026)."""
+    from .valores import em_reais
+
+    return "" if valor is None else em_reais(valor)[3:]
 
 
 class ValoresInvalidos(Exception):
@@ -312,6 +318,107 @@ def copiar_do_anterior(loja, mes, linhas: "list[Linha]") -> "dict[str, str]":
         if linha.valor is None and linha.pessoa.pk in antes:
             copia[str(linha.pessoa.pk)] = valor_do_campo(antes[linha.pessoa.pk])
     return copia
+
+
+def metas_do_mes(loja, mes) -> "dict[int | None, Decimal]":
+    """As metas da loja no mês, pela pessoa (`None` é a da loja). A tela mostra
+    a do mês anterior embaixo de cada campo, como referência."""
+    return dict(_metas_do_mes(loja, mes).values_list("pessoa_id", "valor"))
+
+
+def vendido_no_mes(loja, mes) -> "dict[int, Decimal]":
+    """O vendido de cada pessoa NESTA loja no mês, pela hora do fim, como o
+    ranking. Só quem vendeu aparece."""
+    from django.db.models import Sum
+
+    from .indicadores import _atendimentos, recorte_do_mes
+    from .models import Resultado
+
+    return dict(_atendimentos(recorte_do_mes(loja.empresa, (loja,), mes))
+                .filter(resultado=Resultado.VENDEU).order_by()
+                .values("vendedor").annotate(v=Sum("total"))
+                .values_list("vendedor", "v"))
+
+
+def repartir(total: Decimal, partes: int) -> "list[Decimal]":
+    """`total` em `partes` que somam exatamente `total`. O centavo que sobra
+    da divisão vai para as primeiras: 100 em 3 é 33,34 + 33,33 + 33,33, e não
+    três 33,33 que deixariam a loja um centavo descoberta."""
+    centavos = int((total / CENTAVO).to_integral_value(ROUND_HALF_UP))
+    base, sobra = divmod(centavos, partes)
+    return [Decimal(base + (1 if i < sobra else 0)) * CENTAVO for i in range(partes)]
+
+
+def dividir_o_que_falta(loja, mes, linhas: "list[Linha]",
+                        valores: "dict[str, str | None]") -> "tuple[dict[str, str], str | None]":
+    """O que falta para cobrir a meta da loja, repartido entre quem está sem
+    meta. Devolve `(campos, aviso)`; não grava, como copiar (M6).
+
+    Vale o que está DIGITADO na tela, e não o que está salvo: quem acabou de
+    digitar a meta da loja e clicou em dividir ainda não salvou nada. A meta
+    de quem edita (travada, fora do POST) conta na soma pelo valor salvo.
+    Quem já tem meta não é tocado (pedido do cliente, 17/09/2026): dividir
+    por cima apagaria o que o gerente acertou à mão.
+    """
+    campos = {chave: (texto or "") for chave, texto in valores.items()}
+    da_loja, erro = _ler(campos.get("loja", ""))
+    if da_loja is None or erro:
+        return campos, _("Defina a meta da loja antes de dividir.")
+    soma, sem_meta = ZERO, []
+    for linha in linhas:
+        if linha.propria:
+            soma += linha.valor or ZERO
+            continue
+        valor, erro = _ler(campos.get(str(linha.pessoa.pk)) or "")
+        if valor is not None:
+            soma += valor
+        elif not erro and linha.na_loja:
+            sem_meta.append(linha)
+    falta = da_loja - soma
+    if falta <= ZERO:
+        return campos, _("As metas dos vendedores já cobrem a loja.")
+    if not sem_meta:
+        return campos, _("Todos já têm meta. Apague a de quem deve receber a divisão.")
+    for linha, parte in zip(sem_meta, repartir(falta, len(sem_meta))):
+        campos[str(linha.pessoa.pk)] = valor_do_campo(parte) if parte else ""
+    return campos, None
+
+
+@dataclass(frozen=True)
+class Ritmo:
+    """A barra de uma meta na tela. `esperado` é onde a barra deveria estar
+    hoje para bater a meta no fim do mês (o traço dentro dela)."""
+
+    estado: str   # sem_meta | futuro | no_ritmo | atras | bateu | nao_bateu
+    pct: "float | None" = None
+    esperado: "float | None" = None
+
+    @property
+    def largura(self) -> float:
+        return min(self.pct or 0.0, 100.0)
+
+
+#: Abaixo desta fração do esperado, a pessoa está "atrás". A folga existe
+#: porque venda não é linear: sábado vende o que a terça não vendeu, e a barra
+#: vermelha toda terça seria alarme que ninguém mais lê.
+FOLGA_DO_RITMO = 0.85
+
+
+def ritmo(meta: "Decimal | None", vendido: Decimal, mes: date,
+          agora: "datetime | None" = None) -> Ritmo:
+    if meta is None:
+        return Ritmo("sem_meta")
+    hoje = _hoje(agora)
+    atual = primeiro_do_mes(hoje)
+    if mes > atual:
+        return Ritmo("futuro")
+    pct = round(float(vendido * 100 / meta), 1)
+    if mes < atual:
+        return Ritmo("bateu" if vendido >= meta else "nao_bateu", pct)
+    esperado = round(100 * hoje.day / ultimo_do_mes(mes).day, 1)
+    if vendido >= meta:
+        return Ritmo("bateu", pct, esperado)
+    return Ritmo("no_ritmo" if pct >= esperado * FOLGA_DO_RITMO else "atras", pct, esperado)
 
 
 def mes_do_periodo(periodo) -> "date | None":

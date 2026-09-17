@@ -1,9 +1,10 @@
-"""A tela das metas de venda (spec 2026-09-15-fila-metas, "Cadastro").
+"""A tela das metas de venda (spec 2026-09-15-fila-metas, "Cadastro";
+refeita em 17/09/2026 pela maquete A aprovada pelo cliente).
 
 Um formulário de campos, e não uma tabela: cada linha é um valor do mesmo
 formulário, e uma loja tem dezenas de pessoas, não milhares (a R46 vale para
 tabela que lista registros). As regras moram em `fila/metas.py`; aqui só se
-desenha e se lê o POST.
+monta o contexto do template (`fila/templates/fila/metas.html`) e se lê o POST.
 """
 
 from __future__ import annotations
@@ -12,8 +13,10 @@ from urllib.parse import urlencode
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
-from django.utils.html import format_html
+from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
+from markupsafe import Markup
 
 from comum.ambiente import ambiente
 from comum.csrf import campo_csrf
@@ -22,8 +25,7 @@ from comum.guardas_de_modulo import exigir_modulo_ligado
 from comum.pedido import id_do_post, inteiro_do_texto
 from comum.personificacao import aviso as aviso_de_personificacao
 from contas.identidade import usuario_de
-from nucleo.components import (Alert, Box, Button, Card, Cell, Form, FormGrid,
-                               Option, PageHeader, Raw, Select, TextInput)
+from nucleo.components import Alert, PageHeader, Raw
 from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
@@ -50,101 +52,178 @@ def _endereco(mes, loja) -> str:
     return reverse("fila_metas") + "?" + urlencode({"mes": f"{mes:%Y-%m}", "loja": loja.pk})
 
 
-def _escolha(mes, loja, permitidas):
-    anterior, seguinte = regras.mes_anterior(mes), regras.mes_seguinte(mes)
-    campos = [
-        TextInput(name="mes", label=_("Mês"), type="month", span=3,
-                  value=f"{mes:%Y-%m}"),
-    ]
-    if len(permitidas) > 1:
-        campos.append(Select(name="loja", label=_("Loja"), span=4, value=str(loja.pk),
-                             options=[Option(str(l.pk), str(l)) for l in permitidas]))
+def _nome_do_mes(mes) -> str:
+    """ "Setembro de 2026". A tupla fixa do `nucleo`, e não `strftime("%B")`,
+    pelo motivo escrito lá: o nome do mês não pode depender do locale da
+    máquina que serve a requisição."""
+    from nucleo.views import _MESES
+
+    return f"{_MESES[mes.month - 1].capitalize()} de {mes.year}"
+
+
+def _curto(nome: str) -> str:
+    return nome.split()[0] if nome.strip() else nome
+
+
+def _andamento(mes, agora) -> tuple:
+    """`(estado do mês, frase)`: "atual" com o dia, "encerrado" ou "futuro"."""
+    hoje = timezone.localdate(agora)
+    if regras.mes_encerrado(mes, agora):
+        return "encerrado", _("Mês encerrado")
+    if mes > regras.primeiro_do_mes(hoje):
+        return "futuro", _("O mês ainda não começou")
+    return "atual", (_("Dia %(dia)s de %(total)s") % {
+        "dia": hoje.day, "total": regras.ultimo_do_mes(mes).day})
+
+
+_ESTADOS = {"bateu": gettext_lazy("Bateu"), "no_ritmo": gettext_lazy("No ritmo"),
+            "atras": gettext_lazy("Atrás"), "nao_bateu": gettext_lazy("Não bateu")}
+
+
+def _estado(r) -> str:
+    rotulo = _ESTADOS.get(r.estado)
+    if rotulo is None:
+        return "—"
+    return f"{rotulo} · {r.pct:.0f}%".replace(".", ",")
+
+
+def _regua(linhas, da_loja):
+    """A régua de cobertura: cada vendedor com meta é um trecho, e a meta da
+    loja é a linha. A escala é a maior das duas pontas, para a linha e os
+    trechos caberem na mesma régua."""
+    soma = sum((l["valor"] for l in linhas if l["valor"] is not None), regras.ZERO)
+    base = max(soma, da_loja or regras.ZERO) or 1
+    trechos = [{"pk": l["pk"], "nome": l["nome"], "curto": _curto(l["nome"]),
+                "largura": float((l["valor"] or regras.ZERO) * 100 / base)}
+               for l in linhas if not l["saiu_sem_meta"]]
+    if da_loja is None:
+        tom, veredito = "", _("Sem meta da loja neste mês.")
+    elif soma < da_loja:
+        tom, veredito = "warn", _("Faltam %(valor)s para cobrir a loja") % {
+            "valor": em_reais(da_loja - soma)}
+    elif soma == da_loja:
+        tom, veredito = "ok", _("Cobre exatamente a meta da loja")
     else:
-        campos.append(Raw(html=format_html('<input type="hidden" name="loja" value="{}">', loja.pk)))
-    # Os botões numa célula própria: soltos na grade, cada um ocupava uma
-    # linha e a escolha virava uma coluna de botões.
-    campos.append(Cell(span=5, children=Box(direction="row", gap="sm", body=[
-        Button(label=_("Abrir"), variant="primary", type="submit"),
-        Button(label=_("Mês anterior"), icon="chevron-left",
-               href=_endereco(anterior, loja)),
-        Button(label=_("Mês seguinte"), icon_right="chevron-right",
-               href=_endereco(seguinte, loja)),
-    ])))
-    return Card(attrs={"data-metas": "escolha"},
-                body=Form(method="get", action=reverse("fila_metas"),
-                          children=FormGrid(children=campos)))
-
-
-def _campo(nome, rotulo, valor, *, erro=None, travado=False, ajuda=None):
-    return TextInput(name=nome, label=rotulo, value=valor, span=4, error=erro,
-                     disabled=travado, help=ajuda, placeholder=_("Sem meta"),
-                     attrs={"inputmode": "decimal", "autocomplete": "off"})
+        tom, veredito = "ok", _("Cobre a loja, com %(valor)s de folga") % {
+            "valor": em_reais(soma - da_loja)}
+    return {"soma": em_reais(soma), "trechos": trechos, "tom": tom, "veredito": veredito,
+            "linha_loja": None if da_loja is None else float(da_loja * 100 / base),
+            "rotulo_loja": "" if da_loja is None else _("meta da loja %(valor)s") % {
+                "valor": em_reais(da_loja)}}
 
 
 def _desenhar(request, loja, mes, permitidas, editor, *, digitados=None,
               erros=None, aviso=None) -> HttpResponse:
+    """A tela refeita em 17/09/2026 (maquete A aprovada pelo cliente): o mês
+    como título, a meta da loja com a régua de cobertura, e uma linha por
+    vendedor com o vendido e o ritmo. `digitados` são os campos como a pessoa
+    deixou (erro, copiar ou dividir), e valem sobre o que está salvo."""
+    from contas.models import Usuario
     from plataforma.site import montar_site
 
-    digitados, erros = digitados or {}, erros or {}
-    encerrado = regras.mes_encerrado(mes)
-    linhas = regras.pessoas_da_lista(loja, mes, editor)
-    da_loja = regras.meta_da_loja(loja, mes)
-    soma = sum((l.valor for l in linhas if l.valor is not None), regras.ZERO)
+    from .ambiente import ambiente_da_fila
+    from .valores import ler_valor
 
-    def valor(chave, salvo):
+    agora = timezone.now()
+    digitados, erros = digitados or {}, erros or {}
+    encerrado = regras.mes_encerrado(mes, agora)
+    estado_do_mes, andamento = _andamento(mes, agora)
+    anterior = regras.mes_anterior(mes)
+    salvas_antes = regras.metas_do_mes(loja, anterior)
+    vendido = ({} if estado_do_mes == "futuro" else regras.vendido_no_mes(loja, mes))
+    pessoas = regras.pessoas_da_lista(loja, mes, editor)
+    com_foto = set(Usuario.objects.filter(pk__in=[l.pessoa.pk for l in pessoas],
+                                          avatar__isnull=False).values_list("pk", flat=True))
+
+    def campo(chave, salvo):
         return digitados.get(chave, regras.valor_do_campo(salvo))
 
-    subtitulo = (_("Vendedores somam %(soma)s de %(loja)s")
-                 % {"soma": em_reais(soma), "loja": em_reais(da_loja)}
-                 if da_loja is not None else None)
-    pessoas = []
-    for l in linhas:
-        ajuda = None
+    def do_campo(texto):
+        valor = ler_valor(texto or "")
+        return valor if valor is not None and valor > regras.ZERO else None
+
+    nome_anterior = _nome_do_mes(anterior).split(" de ")[0]
+    linhas = []
+    for l in pessoas:
+        # A própria linha é sempre o valor salvo: ela não vem no POST, e o
+        # dividir devolveria o campo vazio por cima da meta que existe.
+        texto = (regras.valor_do_campo(l.valor) if l.propria
+                 else campo(str(l.pessoa.pk), l.valor))
+        valor = l.valor if l.propria else do_campo(texto)
         if l.propria:
             ajuda = _("A sua meta é definida por outra pessoa.")
         elif not l.na_loja:
             ajuda = _("Não está mais nesta loja.")
-        pessoas.append(_campo(f"valor_{l.pessoa.pk}", nome_de(l.pessoa),
-                              valor(str(l.pessoa.pk), l.valor),
-                              erro=erros.get(str(l.pessoa.pk)),
-                              travado=encerrado or l.propria, ajuda=ajuda))
+        elif l.pessoa.pk in salvas_antes:
+            ajuda = f"{nome_anterior}: {em_reais(salvas_antes[l.pessoa.pk])}"
+        else:
+            ajuda = _("Sem meta em %(mes)s") % {"mes": nome_anterior.lower()}
+        do_mes = vendido.get(l.pessoa.pk, regras.ZERO)
+        r = regras.ritmo(valor, do_mes, mes, agora)
+        linhas.append({
+            "pk": l.pessoa.pk, "nome": nome_de(l.pessoa), "tem_foto": l.pessoa.pk in com_foto,
+            "campo": texto, "valor": valor, "erro": erros.get(str(l.pessoa.pk)),
+            "travado": encerrado or l.propria, "ajuda": ajuda,
+            "saiu_sem_meta": not l.na_loja and valor is None,
+            "vendido": do_mes, "vendido_centavos": int(do_mes * 100),
+            "ritmo": r, "estado": _estado(r)})
 
-    corpo = [
-        Raw(html=campo_csrf(request)),
-        Raw(html=format_html('<input type="hidden" name="mes" value="{}">'
-                             '<input type="hidden" name="loja" value="{}">',
-                             f"{mes:%Y-%m}", loja.pk)),
-        Card(title=_("Meta da loja"), subtitle=subtitulo, body=FormGrid(children=[
-            _campo("valor_loja", str(loja), valor("loja", da_loja),
-                   erro=erros.get("loja"), travado=encerrado)])),
-        Card(title=_("Metas dos vendedores"),
-             body=FormGrid(children=pessoas) if pessoas else Raw(html=format_html(
-                 '<p class="ind-vazio">{}</p>', _("Ninguém participa da fila nesta loja.")))),
-    ]
-    if not encerrado:
-        corpo.append(Box(direction="row", gap="sm", body=[
-            Button(label=_("Salvar metas"), variant="primary", type="submit",
-                   attrs={"name": "acao", "value": "salvar"}),
-            Button(label=_("Copiar metas do mês anterior"), type="submit",
-                   attrs={"name": "acao", "value": "copiar"}),
-        ]))
+    texto_loja = campo("loja", regras.meta_da_loja(loja, mes))
+    da_loja = do_campo(texto_loja)
+    total_vendido = sum(vendido.values(), regras.ZERO)
+    info_vendido = None
+    if estado_do_mes != "futuro":
+        info_vendido = (_("Vendido no mês: %(valor)s") % {"valor": em_reais(total_vendido)})
+        if da_loja:
+            info_vendido += f" ({float(total_vendido * 100 / da_loja):.0f}%)".replace(".", ",")
+    info_anterior = (f"{nome_anterior}: {em_reais(salvas_antes[None])}"
+                     if None in salvas_antes else None)
+
+    contexto = {
+        "loja": loja, "lojas": permitidas, "encerrado": encerrado,
+        "mes_titulo": _nome_do_mes(mes), "mes_valor": f"{mes:%Y-%m}",
+        "andamento": andamento, "estado_do_mes": estado_do_mes,
+        "url_metas": reverse("fila_metas"),
+        "url_anterior": _endereco(anterior, loja),
+        "url_seguinte": _endereco(regras.mes_seguinte(mes), loja),
+        "url_descartar": _endereco(mes, loja),
+        "csrf": Markup(campo_csrf(request)),
+        "da_loja": {"campo": texto_loja, "erro": erros.get("loja"),
+                    "vendido": info_vendido, "anterior": info_anterior},
+        "regua": _regua(linhas, da_loja),
+        "linhas": linhas,
+        "texto_copiar": _("Copiar metas de %(mes)s") % {"mes": nome_anterior.lower()},
+        # As frases que o script recalcula, no idioma de quem abriu a tela:
+        # o script troca o número, e não escreve frase.
+        "textos": {
+            "falta": _("Faltam %(valor)s para cobrir a loja"),
+            "cobre": _("Cobre a loja, com %(valor)s de folga"),
+            "exata": _("Cobre exatamente a meta da loja"),
+            "sem_loja": _("Sem meta da loja neste mês."),
+            "rotulo_loja": _("meta da loja %(valor)s"),
+            "uma_mudanca": _("1 meta alterada"),
+            "varias_mudancas": _("%(n)s metas alteradas"),
+            "bateu": _ESTADOS["bateu"], "no_ritmo": _ESTADOS["no_ritmo"],
+            "atras": _ESTADOS["atras"]},
+    }
 
     conteudo = [
         aviso_de_personificacao(request),
         PageHeader(title=_("Metas de venda"),
                    subtitle=_("Quanto cada loja e cada vendedor deve vender no mês.")),
-        _escolha(mes, loja, permitidas),
     ]
     if encerrado:
         conteudo.append(Alert(tone="info", message=str(regras.MES_ENCERRADO)))
     if aviso:
         conteudo.append(aviso)
-    conteudo.append(Form(method="post", action=reverse("fila_metas"), children=corpo))
+    conteudo.append(Raw(html=ambiente_da_fila().get_template("fila/metas.html").render(**contexto)))
 
     with use_environment(ambiente()):
         site = montar_site(request)
         pagina = site.page(title=_("Metas de venda"), width="full",
-                           stylesheets=["/static/fila/indicadores.css"],
+                           stylesheets=["/static/fila/metas.css"],
+                           # A máscara antes da tela: o recálculo lê o valor já formatado.
+                           scripts=["/static/fila/valor.js", "/static/fila/metas.js"],
                            content=conteudo, crumbs=[Crumb(_("Metas de venda"))],
                            user=request.usuario)
         return render(pagina)
@@ -166,6 +245,16 @@ def metas(request) -> HttpResponse:
         return _desenhar(request, loja, mes, permitidas, editor)
 
     linhas = regras.pessoas_da_lista(loja, mes, editor)
+    chaves = ["loja", *(str(l.pessoa.pk) for l in linhas)]
+    campos = {"loja": "valor_loja", **{str(l.pessoa.pk): f"valor_{l.pessoa.pk}"
+                                       for l in linhas}}
+    valores = {c: request.POST.get(campos[c]) for c in chaves}
+    if request.POST.get("acao") == "dividir" and not regras.mes_encerrado(mes):
+        digitados, recusa = regras.dividir_o_que_falta(loja, mes, linhas, valores)
+        aviso = Alert(tone="info" if recusa else "ok", message=recusa or _(
+            "O que faltava foi dividido entre quem estava sem meta. Confira e salve."))
+        return _desenhar(request, loja, mes, permitidas, editor,
+                         digitados=digitados, aviso=aviso)
     if request.POST.get("acao") == "copiar":
         copia = regras.copiar_do_anterior(loja, mes, linhas)
         aviso = Alert(tone="info", message=(
@@ -174,10 +263,6 @@ def metas(request) -> HttpResponse:
         return _desenhar(request, loja, mes, permitidas, editor,
                          digitados=copia, aviso=aviso)
 
-    chaves = ["loja", *(str(l.pessoa.pk) for l in linhas)]
-    campos = {"loja": "valor_loja", **{str(l.pessoa.pk): f"valor_{l.pessoa.pk}"
-                                       for l in linhas}}
-    valores = {c: request.POST.get(campos[c]) for c in chaves}
     try:
         regras.gravar(loja, mes, editor, valores, request=request)
     except Recusa as recusa:

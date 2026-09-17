@@ -1,0 +1,150 @@
+/* A tela de metas (refeita em 17/09/2026, maquete A aprovada pelo cliente).
+   Só tokens do tema: é uma tela do sistema como as outras, e a primeira
+   versão da fila com paleta própria foi recusada por parecer outro produto. */
+
+[data-metas] [hidden] { display: none !important; }
+
+.metas { display: grid; gap: var(--grid-gap); padding-bottom: 8px; }
+
+/* --- O mês é o assunto da tela ------------------------------------------ */
+
+.metas-topo { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
+.metas-mes { display: flex; align-items: center; gap: 4px; }
+.metas-mes h2 {
+  font-family: var(--font-display); font-size: 22px; font-weight: 800;
+  letter-spacing: -.01em; min-width: 200px; text-align: center;
+}
+.metas-andamento { margin: 0; font-size: 13px; color: var(--on-surface-2); }
+.metas-loja { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.metas-loja label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--on-surface-2); }
+.metas-loja select { min-width: 180px; }
+/* Com script, trocar a loja já abre: o botão só existe para quem não tem. */
+.metas-com-script [data-sem-script] { display: none; }
+.metas-uma-loja { margin: 0 0 0 auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--on-surface-2); }
+
+/* --- A loja: a meta e se os vendedores a cobrem ------------------------- */
+
+.metas-loja-card { padding: var(--card-pad); display: grid; grid-template-columns: minmax(220px, 260px) 1fr; gap: 28px; }
+.metas-rotulo { display: block; font-size: 13px; font-weight: 600; color: var(--on-surface-2); margin-bottom: 6px; }
+.metas-apoio { margin: 8px 0 0; font-size: 12.5px; color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+.metas-erro { display: block; margin: 4px 0 0; font-size: 12.5px; font-weight: 600; color: var(--danger); }
+
+.metas-dinheiro { position: relative; display: block; }
+.metas-dinheiro > span {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; font-weight: 600; color: var(--on-surface-2); pointer-events: none;
+}
+.metas-dinheiro input {
+  width: 100%; padding-left: 40px; text-align: right;
+  font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.metas-dinheiro input::placeholder { font-weight: 500; }
+.metas-dinheiro.grande input { height: 52px; font-family: var(--font-display); font-size: 22px; }
+.metas-dinheiro.com-erro input { border-color: var(--danger); }
+.metas-dinheiro input:disabled { background: var(--surface-2); color: var(--on-surface-2); }
+
+.metas-cobertura-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.metas-cobertura-cab strong { white-space: nowrap; font-family: var(--font-display); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* A régua: cada vendedor é um trecho; o listrado é o que ainda não tem dono;
+   a linha preta é a meta da loja, com o valor embaixo dela. */
+.metas-regua {
+  position: relative; display: flex; height: 36px; margin: 10px 0 30px;
+  border-radius: var(--radius-control);
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--surface-3) 6px 12px);
+}
+.metas-trecho {
+  display: flex; align-items: center; min-width: 0; overflow: hidden;
+  background: var(--primary); color: var(--on-primary);
+  box-shadow: inset -2px 0 0 var(--surface);
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  transition: width .2s ease;
+}
+.metas-trecho:nth-child(even) { background: var(--accent); color: var(--on-accent); }
+.metas-trecho:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.metas-trecho > span { padding: 0 8px; overflow: hidden; text-overflow: ellipsis; }
+.metas-linha-loja { position: absolute; top: -6px; bottom: -6px; width: 2px; margin-left: -1px; background: var(--on-surface); }
+.metas-linha-loja > span {
+  position: absolute; top: calc(100% + 4px); right: 0; white-space: nowrap;
+  font-size: 11.5px; font-weight: 600; color: var(--on-surface); font-variant-numeric: tabular-nums;
+}
+.metas-veredito { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.metas-pill:not(.ok):not(.warn) { color: var(--on-surface-2); background: var(--surface-2); }
+
+/* --- Os vendedores ------------------------------------------------------- */
+
+.metas-pessoas { padding: 0; overflow: hidden; }
+.metas-pessoas-cab {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px var(--card-pad); border-bottom: 1px solid var(--outline-2);
+}
+.metas-pessoas-cab h2 { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+.metas-conta { margin-left: 4px; color: var(--on-surface-2); font-weight: 600; }
+
+.metas-grade {
+  display: grid; align-items: center; column-gap: 20px;
+  grid-template-columns: minmax(180px, 1.3fr) minmax(150px, 180px) 130px minmax(200px, 1.5fr);
+  padding: 12px var(--card-pad);
+}
+.metas-colunas { padding-top: 8px; padding-bottom: 8px; background: var(--surface-2); font-size: 12px; font-weight: 600; color: var(--on-surface-2); }
+.metas .num { text-align: right; }
+.metas-lista { list-style: none; margin: 0; padding: 0; }
+.metas-linha { position: relative; border-top: 1px solid var(--outline-2); }
+.metas-lista .metas-linha:first-child { border-top: 0; }
+/* Linha mexida e não salva: a borda da esquerda na cor primária. */
+.metas-linha.mudou { background: color-mix(in srgb, var(--primary) 5%, var(--surface)); }
+.metas-linha.mudou::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--primary); }
+
+.metas-quem { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.metas-quem-txt { display: flex; flex-direction: column; min-width: 0; }
+.metas-quem-txt label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metas-quem-txt small { font-size: 12px; color: var(--on-surface-2); }
+.metas-vendido { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.metas-vendido small { font-size: 12px; color: var(--on-surface-2); }
+
+.metas-ritmo { display: grid; grid-template-columns: 1fr 104px; align-items: center; gap: 10px; }
+.metas-barra { position: relative; height: 10px; border-radius: 5px; background: var(--surface-3); }
+.metas-barra > span { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--primary); transition: width .2s ease; }
+.metas-barra[data-ritmo="bateu"] > span { background: var(--ok); }
+.metas-barra[data-ritmo="atras"] > span,
+.metas-barra[data-ritmo="nao_bateu"] > span { background: var(--warn); }
+.metas-barra > i { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--on-surface); opacity: .55; }
+.metas-estado { font-size: 12.5px; font-weight: 600; text-align: right; white-space: nowrap; color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+.metas-estado[data-ritmo="bateu"] { color: var(--ok); }
+.metas-estado[data-ritmo="atras"],
+.metas-estado[data-ritmo="nao_bateu"] { color: var(--warn); }
+
+.metas-legenda { margin: 0; padding: 12px var(--card-pad); border-top: 1px solid var(--outline-2); font-size: 12px; color: var(--on-surface-2); }
+.metas-legenda i { display: inline-block; width: 2px; height: 12px; margin-right: 8px; vertical-align: -2px; background: var(--on-surface); opacity: .55; }
+.metas-vazio { margin: 0; padding: 40px var(--card-pad); text-align: center; color: var(--on-surface-2); }
+
+/* --- Salvar -------------------------------------------------------------- */
+
+/* Presa ao pé da tela enquanto se rola a lista. Com script, ela se esconde
+   até alguma meta mudar e diz quantas mudaram; sem script, fica sempre. */
+.metas-salvar {
+  position: sticky; bottom: 0; z-index: 5; margin-top: var(--grid-gap);
+  display: flex; align-items: center; gap: 12px; padding: 12px var(--card-pad);
+  background: var(--surface); border: 1px solid var(--outline); border-radius: var(--radius);
+  box-shadow: 0 -6px 20px color-mix(in srgb, var(--on-surface) 8%, transparent);
+}
+.metas-salvar p { margin: 0 auto 0 0; font-weight: 600; }
+.metas-salvar[data-limpo] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .metas-trecho, .metas-barra > span { transition: none; }
+}
+
+@media (max-width: 760px) {
+  .metas-mes h2 { min-width: 0; font-size: 19px; }
+  .metas-loja, .metas-uma-loja { margin-left: 0; width: 100%; }
+  .metas-loja label, .metas-loja select { flex: 1; }
+  .metas-loja-card { grid-template-columns: 1fr; gap: 18px; }
+  .metas-colunas { display: none; }
+  .metas-grade { grid-template-columns: 1fr minmax(130px, 150px); row-gap: 10px; }
+  .metas .metas-vendido { text-align: left; flex-direction: row; align-items: baseline; gap: 6px; }
+  /* O botão de dividir tem a frase inteira: no celular ele quebra a linha em
+     vez de empurrar a página para o lado. */
+  .metas-veredito .btn { width: 100%; height: auto; min-height: var(--button-h); white-space: normal; text-align: left; padding-top: 8px; padding-bottom: 8px; }
+  .metas-ritmo { grid-column: 1 / -1; }
+}

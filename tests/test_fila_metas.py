@@ -237,7 +237,7 @@ def test_copiar_preenche_so_o_vazio_e_nao_traz_quem_saiu(loja):
     meta(loja, pessoa=loja.bia, valor="22000")  # setembro já tem a da Bia
     linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
     assert regras.copiar_do_anterior(loja.matriz, SETEMBRO, linhas) == {
-        "loja": "200000,00", str(loja.ana.pk): "25000,00"}
+        "loja": "200.000,00", str(loja.ana.pk): "25.000,00"}
 
 
 # --- A meta do recorte (painel) e o ranking --------------------------------------
@@ -317,3 +317,82 @@ def test_ranking_com_meta_e_porcentagem(loja):
         Recorte(loja.empresa, (loja.matriz,), _periodo("mes")), mes)}
     assert linhas["Ana"].meta == Decimal("4000") and linhas["Ana"].pct_meta == 25.0
     assert linhas["Bia"].meta is None and linhas["Bia"].pct_meta is None
+
+
+# --- A tela refeita (17/09/2026): dividir, ritmo e o que cada linha mostra ----
+
+def test_o_campo_sai_no_formato_da_mascara():
+    """O campo nasce como a máscara o deixaria: sem o ponto de milhar, o
+    primeiro dígito digitado reformatava o valor inteiro na cara de quem edita."""
+    assert regras.valor_do_campo(Decimal("180000")) == "180.000,00"
+    assert regras.valor_do_campo(Decimal("0.5")) == "0,50"
+    assert regras.valor_do_campo(None) == ""
+
+
+def test_repartir_nao_perde_centavo():
+    partes = regras.repartir(Decimal("100.00"), 3)
+    assert partes == [Decimal("33.34"), Decimal("33.33"), Decimal("33.33")]
+    assert sum(partes) == Decimal("100.00")
+    assert regras.repartir(Decimal("0.01"), 3) == [Decimal("0.01"), Decimal("0"), Decimal("0")]
+
+
+def test_dividir_reparte_o_que_falta_so_entre_quem_esta_sem_meta(loja):
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    caio = pessoa_na_loja("caio", loja.empresa, loja.matriz)
+    dora = pessoa_na_loja("dora", loja.empresa, loja.matriz)
+    meta(loja, pessoa=gil, valor="10000")   # a própria, travada, conta na soma
+    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
+    # O que está DIGITADO vale, e não o que está salvo: quem digitou a meta
+    # da loja e clicou em dividir não salvou nada ainda.
+    digitados, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {
+        "loja": "100.000,00", str(loja.ana.pk): "30.000,00",
+        str(loja.bia.pk): "", str(caio.pk): None, str(dora.pk): "  "})
+    assert aviso is None
+    assert digitados == {
+        "loja": "100.000,00", str(loja.ana.pk): "30.000,00",
+        str(loja.bia.pk): "20.000,00", str(caio.pk): "20.000,00",
+        str(dora.pk): "20.000,00"}
+
+
+def test_dividir_nao_divide_quando_nao_ha_o_que_dividir(loja):
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
+    sem_loja, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {"loja": ""})
+    assert aviso == "Defina a meta da loja antes de dividir."
+    assert sem_loja == {"loja": ""}
+    _d, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {
+        "loja": "1000", str(loja.ana.pk): "1000"})
+    assert aviso == "As metas dos vendedores já cobrem a loja."
+    _d, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {
+        "loja": "5000", str(loja.ana.pk): "1000", str(loja.bia.pk): "1000"})
+    assert aviso == "Todos já têm meta. Apague a de quem deve receber a divisão."
+    _d, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {"loja": "abc"})
+    assert aviso == "Defina a meta da loja antes de dividir."
+
+
+def test_ritmo_do_mes():
+    dia_15 = local(2026, 9, 15, 10)   # 15 de 30: o esperado é 50%
+    r = regras.ritmo(Decimal("1000"), Decimal("450"), SETEMBRO, dia_15)
+    assert (r.estado, r.pct, r.esperado) == ("no_ritmo", 45.0, 50.0)
+    assert regras.ritmo(Decimal("1000"), Decimal("300"), SETEMBRO, dia_15).estado == "atras"
+    assert regras.ritmo(Decimal("1000"), Decimal("1200"), SETEMBRO, dia_15).estado == "bateu"
+    assert regras.ritmo(None, Decimal("1200"), SETEMBRO, dia_15).estado == "sem_meta"
+    outubro = date(2026, 10, 1)
+    assert regras.ritmo(Decimal("1000"), Decimal("0"), outubro, dia_15).estado == "futuro"
+    encerrado = regras.ritmo(Decimal("1000"), Decimal("900"), date(2026, 8, 1), dia_15)
+    assert (encerrado.estado, encerrado.esperado) == ("nao_bateu", None)
+    assert regras.ritmo(Decimal("1000"), Decimal("1000"), date(2026, 8, 1), dia_15).estado == "bateu"
+
+
+def test_vendido_no_mes_e_meta_do_mes_anterior_por_pessoa(loja):
+    centro = nova_loja(loja.empresa, "Centro")
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="300")
+    atendimento(loja, loja.ana, d, d, vendeu="200")
+    atendimento(loja, loja.ana, d, d, vendeu="999", filial=centro)
+    atendimento(loja, loja.bia, local(2026, 8, 30, 10), local(2026, 8, 30, 10), vendeu="50")
+    assert regras.vendido_no_mes(loja.matriz, SETEMBRO) == {loja.ana.pk: Decimal("500")}
+    meta(loja, valor="9000", mes=date(2026, 8, 1))
+    meta(loja, pessoa=loja.ana, valor="3000", mes=date(2026, 8, 1))
+    assert regras.metas_do_mes(loja.matriz, date(2026, 8, 1)) == {
+        None: Decimal("9000"), loja.ana.pk: Decimal("3000")}

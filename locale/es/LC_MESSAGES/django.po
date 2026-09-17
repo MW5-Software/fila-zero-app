@@ -1292,3 +1292,100 @@ msgstr "Mi panel"
 msgid "Ao vivo"
 msgstr "En vivo"
 
+#, python-format
+msgid "%(n)s metas alteradas"
+msgstr "%(n)s metas modificadas"
+
+msgid "1 meta alterada"
+msgstr "1 meta modificada"
+
+msgid "As metas dos vendedores já cobrem a loja."
+msgstr "Las metas de los vendedores ya cubren la tienda."
+
+msgid "As metas dos vendedores somam"
+msgstr "Las metas de los vendedores suman"
+
+msgid "Atrás"
+msgstr "Atrasado"
+
+msgid "Bateu"
+msgstr "Cumplió"
+
+#, python-format
+msgid "Cobre a loja, com %(valor)s de folga"
+msgstr "Cubre la tienda, con %(valor)s de margen"
+
+msgid "Cobre exatamente a meta da loja"
+msgstr "Cubre exactamente la meta de la tienda"
+
+msgid "Confira os valores e salve."
+msgstr "Revise los valores y guarde."
+
+#, python-format
+msgid "Copiar metas de %(mes)s"
+msgstr "Copiar metas de %(mes)s"
+
+msgid "Defina a meta da loja antes de dividir."
+msgstr "Defina la meta de la tienda antes de dividir."
+
+msgid "Descartar"
+msgstr "Descartar"
+
+#, python-format
+msgid "Dia %(dia)s de %(total)s"
+msgstr "Día %(dia)s de %(total)s"
+
+msgid "Dividir o que falta entre quem está sem meta"
+msgstr "Dividir lo que falta entre quienes no tienen meta"
+
+#, python-format
+msgid "Faltam %(valor)s para cobrir a loja"
+msgstr "Faltan %(valor)s para cubrir la tienda"
+
+msgid "Mês encerrado"
+msgstr "Mes cerrado"
+
+msgid "No ritmo"
+msgstr "Al ritmo"
+
+msgid "Não bateu"
+msgstr "No cumplió"
+
+msgid "O mês ainda não começou"
+msgstr "El mes todavía no comenzó"
+
+msgid "O traço é onde a barra deveria estar hoje para bater a meta."
+msgstr "La marca es donde la barra debería estar hoy para cumplir la meta."
+
+msgid "Ritmo"
+msgstr "Ritmo"
+
+msgid "Sem meta da loja neste mês."
+msgstr "Sin meta de la tienda este mes."
+
+#, python-format
+msgid "Sem meta em %(mes)s"
+msgstr "Sin meta en %(mes)s"
+
+msgid "Soma das metas dos vendedores contra a meta da loja"
+msgstr "Suma de las metas de los vendedores frente a la meta de la tienda"
+
+msgid "Todos já têm meta. Apague a de quem deve receber a divisão."
+msgstr "Todos ya tienen meta. Borre la de quien debe recibir la división."
+
+msgid "Vendedores"
+msgstr "Vendedores"
+
+#, python-format
+msgid "Vendido no mês: %(valor)s"
+msgstr "Vendido en el mes: %(valor)s"
+
+#, python-format
+msgid "meta da loja %(valor)s"
+msgstr "meta de la tienda %(valor)s"
+
+msgid "no mês"
+msgstr "en el mes"
+
+msgid "O que faltava foi dividido entre quem estava sem meta. Confira e salve."
+msgstr "Lo que faltaba se dividió entre quienes no tenían meta. Revise y guarde."

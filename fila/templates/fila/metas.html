@@ -1,0 +1,119 @@
+{% from "fila/_macros.html" import avatar %}
+{# A tela de metas (refeita em 17/09/2026). Desenhada inteira no servidor: o
+   script (`fila/static/fila/metas.js`) só recalcula larguras e textos que já
+   estão aqui, e sem ele a tela salva, divide e copia do mesmo jeito. #}
+<div class="metas" data-metas
+     data-falta="{{ textos.falta }}" data-cobre="{{ textos.cobre }}"
+     data-exata="{{ textos.exata }}" data-sem-loja="{{ textos.sem_loja }}"
+     data-rotulo-loja="{{ textos.rotulo_loja }}"
+     data-uma-mudanca="{{ textos.uma_mudanca }}" data-varias-mudancas="{{ textos.varias_mudancas }}"
+     data-bateu="{{ textos.bateu }}" data-no-ritmo="{{ textos.no_ritmo }}" data-atras="{{ textos.atras }}">
+
+  <div class="metas-topo">
+    <nav class="metas-mes" aria-label="{{ traduzir('Mês') }}">
+      <a class="iconbtn" href="{{ url_anterior }}" title="{{ traduzir('Mês anterior') }}" aria-label="{{ traduzir('Mês anterior') }}">{{ icon("chevron-left") }}</a>
+      <h2>{{ mes_titulo }}</h2>
+      <a class="iconbtn" href="{{ url_seguinte }}" title="{{ traduzir('Mês seguinte') }}" aria-label="{{ traduzir('Mês seguinte') }}">{{ icon("chevron-right") }}</a>
+    </nav>
+    <p class="metas-andamento">{{ andamento }}</p>
+    {% if lojas|length > 1 %}
+    <form class="metas-loja" method="get" action="{{ url_metas }}">
+      <input type="hidden" name="mes" value="{{ mes_valor }}">
+      <label><span>{{ traduzir("Loja") }}</span>
+        <select class="ctl" name="loja" data-trocar-loja>
+          {% for l in lojas %}<option value="{{ l.pk }}"{% if l.pk == loja.pk %} selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn" type="submit" data-sem-script>{{ traduzir("Abrir") }}</button>
+    </form>
+    {% else %}
+    <p class="metas-uma-loja">{{ icon("store", "sm") }}<span>{{ loja }}</span></p>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{{ url_metas }}" class="metas-form" data-metas-form>
+    {{ csrf }}
+    <input type="hidden" name="mes" value="{{ mes_valor }}">
+    <input type="hidden" name="loja" value="{{ loja.pk }}">
+
+    <section class="card metas-loja-card" aria-labelledby="metas-t-loja">
+      <div class="metas-loja-meta">
+        <label class="metas-rotulo" id="metas-t-loja" for="metas-valor-loja">{{ traduzir("Meta da loja") }}</label>
+        <span class="metas-dinheiro grande{% if da_loja.erro %} com-erro{% endif %}">
+          <span aria-hidden="true">R$</span>
+          <input class="ctl" id="metas-valor-loja" name="valor_loja" inputmode="numeric" data-valor data-campo-loja autocomplete="off"
+                 placeholder="{{ traduzir('Sem meta') }}" value="{{ da_loja.campo }}"{% if encerrado %} disabled{% endif %}>
+        </span>
+        {% if da_loja.erro %}<p class="metas-erro">{{ da_loja.erro }}</p>{% endif %}
+        {% if da_loja.vendido is not none %}<p class="metas-apoio">{{ da_loja.vendido }}</p>{% endif %}
+        {% if da_loja.anterior %}<p class="metas-apoio">{{ da_loja.anterior }}</p>{% endif %}
+      </div>
+
+      <div class="metas-cobertura">
+        <div class="metas-cobertura-cab">
+          <span class="metas-rotulo">{{ traduzir("As metas dos vendedores somam") }}</span>
+          <strong data-soma>{{ regua.soma }}</strong>
+        </div>
+        <div class="metas-regua" role="img" aria-label="{{ traduzir('Soma das metas dos vendedores contra a meta da loja') }}">
+          {%- for t in regua.trechos %}<span class="metas-trecho" data-trecho="{{ t.pk }}" style="width: {{ '%.2f'|format(t.largura) }}%" title="{{ t.nome }}"><span>{{ t.curto }}</span></span>{% endfor -%}
+          <span class="metas-linha-loja" data-linha-loja style="left: {{ '%.2f'|format(regua.linha_loja or 0) }}%"{% if regua.linha_loja is none %} hidden{% endif %}><span data-rotulo>{{ regua.rotulo_loja }}</span></span>
+        </div>
+        <div class="metas-veredito">
+          <span class="pill metas-pill {{ regua.tom }}" data-veredito>{{ regua.veredito }}</span>
+          {% if not encerrado %}
+          <button class="btn" type="submit" name="acao" value="dividir">{{ icon("users", "sm") }}<span>{{ traduzir("Dividir o que falta entre quem está sem meta") }}</span></button>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card metas-pessoas" aria-labelledby="metas-t-vend">
+      <header class="metas-pessoas-cab">
+        <h2 id="metas-t-vend">{{ traduzir("Vendedores") }} <span class="metas-conta">{{ linhas|length }}</span></h2>
+        {% if not encerrado %}
+        <button class="btn ghost" type="submit" name="acao" value="copiar">{{ icon("copy", "sm") }}<span>{{ texto_copiar }}</span></button>
+        {% endif %}
+      </header>
+      {% if linhas %}
+      <div class="metas-grade metas-colunas" aria-hidden="true">
+        <span>{{ traduzir("Vendedor") }}</span><span>{{ traduzir("Meta do mês") }}</span>
+        <span class="num">{{ traduzir("Vendido") }}</span><span>{{ traduzir("Ritmo") }}</span>
+      </div>
+      <ol class="metas-lista">
+        {% for l in linhas %}
+        <li class="metas-grade metas-linha{% if l.travado %} travada{% endif %}" data-pessoa="{{ l.pk }}" data-vendido="{{ l.vendido_centavos }}" data-esperado="{{ l.ritmo.esperado if l.ritmo.esperado is not none else '' }}" data-mes="{{ estado_do_mes }}">
+          <span class="metas-quem">
+            {{ avatar(l.pk, l.nome, l.tem_foto) }}
+            <span class="metas-quem-txt"><label for="metas-valor-{{ l.pk }}">{{ l.nome }}</label><small>{{ l.ajuda }}</small></span>
+          </span>
+          <span class="metas-campo">
+            <span class="metas-dinheiro{% if l.erro %} com-erro{% endif %}">
+              <span aria-hidden="true">R$</span>
+              <input class="ctl" id="metas-valor-{{ l.pk }}" name="valor_{{ l.pk }}" inputmode="numeric" data-valor autocomplete="off"
+                     placeholder="{{ traduzir('Sem meta') }}" value="{{ l.campo }}"{% if l.travado %} disabled{% endif %}>
+            </span>
+            {% if l.erro %}<span class="metas-erro">{{ l.erro }}</span>{% endif %}
+          </span>
+          <span class="metas-vendido num"><b>{{ l.vendido|reais }}</b><small>{{ traduzir("no mês") }}</small></span>
+          <span class="metas-ritmo">
+            <span class="metas-barra" data-ritmo="{{ l.ritmo.estado }}"><span style="width: {{ '%.1f'|format(l.ritmo.largura) }}%"></span>{% if l.ritmo.esperado is not none %}<i style="left: {{ '%.1f'|format(l.ritmo.esperado) }}%"></i>{% endif %}</span>
+            <span class="metas-estado" data-ritmo="{{ l.ritmo.estado }}">{{ l.estado }}</span>
+          </span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% if estado_do_mes == "atual" %}<p class="metas-legenda"><i aria-hidden="true"></i>{{ traduzir("O traço é onde a barra deveria estar hoje para bater a meta.") }}</p>{% endif %}
+      {% else %}
+      <p class="metas-vazio">{{ traduzir("Ninguém participa da fila nesta loja.") }}</p>
+      {% endif %}
+    </section>
+
+    {% if not encerrado %}
+    <div class="metas-salvar" data-salvar>
+      <p data-mudadas>{{ traduzir("Confira os valores e salve.") }}</p>
+      <a class="btn" href="{{ url_descartar }}">{{ traduzir("Descartar") }}</a>
+      <button class="btn primary" type="submit" name="acao" value="salvar">{{ icon("check", "sm") }}<span>{{ traduzir("Salvar metas") }}</span></button>
+    </div>
+    {% endif %}
+  </form>
+</div>

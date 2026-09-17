@@ -550,6 +550,14 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   lê só os campos da lista que ele mesmo monta, e campo ausente não mexe.
 - **A projeção usa só os dias fechados**: com o dia de hoje pela metade, o
   dia 1 projetaria o mês com uma venda.
+- **A tela foi refeita em 17/09/2026** (`fila/templates/fila/metas.html`):
+  o mês com setas, a régua de cobertura da loja e uma linha por vendedor
+  com vendido e ritmo. "Dividir" reparte o que falta SÓ entre quem está
+  sem meta, pelo que está digitado, e não grava (`metas.dividir_o_que_falta`).
+  O script (`metas.js`) só recalcula o que o servidor desenhou; sem ele a
+  tela funciona igual.
+- **O ranking do Início é sempre de um mês** (`?ranking_mes=`), e não do
+  período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
   lojas", uma loja sem meta não faz a meta das outras parecer batida.
 

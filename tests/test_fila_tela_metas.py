@@ -110,7 +110,7 @@ def test_copiar_preenche_e_nao_salva(rede):
     resposta = logado("gil").post(reverse("fila_metas"), {
         "acao": "copiar", "mes": _mes_atual(), "loja": str(rede.centro.pk)})
     assert resposta.status_code == 200
-    assert 'value="180000,00"' in resposta.content.decode()
+    assert 'value="180.000,00"' in resposta.content.decode()
     assert not MetaDeVenda.irrestritos.filter(mes=mes).exists()
 
 
@@ -119,4 +119,102 @@ def test_soma_dos_vendedores_ao_lado_da_meta_da_loja(rede):
     gil.post(reverse("fila_metas"), {
         "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
         "valor_loja": "50000", f"valor_{rede.caio.pk}": "30000"})
-    assert "Vendedores somam R$ 30.000,00 de R$ 50.000,00" in _get(gil)
+    html = _get(gil)
+    assert "As metas dos vendedores somam" in html and "R$ 30.000,00" in html
+    assert "Faltam R$ 20.000,00 para cobrir a loja" in html
+
+
+# --- A tela refeita (17/09/2026) --------------------------------------------
+
+def _venda(rede, pessoa, loja, valor):
+    from datetime import timedelta
+
+    from fila.models import Atendimento, Presenca
+
+    agora = timezone.now()
+    presenca = Presenca.irrestritos.create(empresa=rede.empresa, filial=loja, pessoa=pessoa,
+                                          entrada=agora, saida=agora)
+    Atendimento.irrestritos.create(empresa=rede.empresa, filial=loja, vendedor=pessoa,
+                                   presenca=presenca, inicio=agora - timedelta(minutes=5),
+                                   fim=agora, resultado="vendeu", total=Decimal(valor))
+
+
+def _meta(rede, loja, valor, pessoa=None, mes=None):
+    from fila.models import MetaDeVenda
+
+    MetaDeVenda.irrestritos.create(empresa=rede.empresa, filial=loja, pessoa=pessoa,
+                                   mes=mes or timezone.localdate().replace(day=1),
+                                   valor=Decimal(valor))
+
+
+def test_o_mes_e_o_titulo_com_as_setas(rede):
+    from fila.metas import mes_anterior, mes_seguinte
+    from nucleo.views import _MESES
+
+    hoje = timezone.localdate()
+    html = _get(logado("gil"))
+    assert f"{_MESES[hoje.month - 1].capitalize()} de {hoje.year}" in html
+    mes = hoje.replace(day=1)
+    assert f"mes={mes_anterior(mes):%Y-%m}" in html and f"mes={mes_seguinte(mes):%Y-%m}" in html
+    assert f"Dia {hoje.day} de" in html
+
+
+def test_cada_linha_mostra_o_vendido_a_meta_anterior_e_o_ritmo(rede):
+    from fila.metas import mes_anterior
+
+    mes = timezone.localdate().replace(day=1)
+    _meta(rede, rede.centro, "40000", pessoa=rede.caio)
+    _meta(rede, rede.centro, "28000", pessoa=rede.caio, mes=mes_anterior(mes))
+    _venda(rede, rede.caio, rede.centro, "44000")
+    html = _get(logado("gil"))
+    linha = html[html.index(f'data-pessoa="{rede.caio.pk}"'):]
+    linha = linha[:linha.index("</li>")]
+    assert "R$ 44.000,00" in linha
+    assert "R$ 28.000,00" in linha
+    assert "Bateu" in linha and 'data-ritmo="bateu"' in linha
+
+
+def test_a_regua_mostra_quem_cobre_a_meta_da_loja(rede):
+    _meta(rede, rede.centro, "50000")
+    _meta(rede, rede.centro, "30000", pessoa=rede.caio)
+    html = _get(logado("gil"))
+    regua = html[html.index('class="metas-regua"'):]
+    regua = regua[:regua.index("</div>")]
+    assert "Caio" in regua and "width: 60.00%" in regua
+
+
+def test_dividir_preenche_quem_esta_sem_meta_e_nao_salva(rede):
+    from fila.models import MetaDeVenda
+
+    dora = pessoa_na_loja("dora", rede.empresa, rede.centro)
+    resposta = logado("gil").post(reverse("fila_metas"), {
+        "acao": "dividir", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "90.000,00", f"valor_{rede.caio.pk}": "30.000,00",
+        f"valor_{dora.pk}": ""})
+    assert resposta.status_code == 200
+    html = resposta.content.decode()
+    import re
+    campo = re.search(rf'<input[^>]*name="valor_{dora.pk}"[^>]*>', html).group(0)
+    assert 'value="60.000,00"' in campo
+    assert 'value="90.000,00"' in html
+    assert "Confira e salve." in html
+    assert not MetaDeVenda.irrestritos.exists()
+
+
+def test_dividir_sem_meta_da_loja_avisa(rede):
+    resposta = logado("gil").post(reverse("fila_metas"), {
+        "acao": "dividir", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": ""})
+    assert "Defina a meta da loja antes de dividir." in resposta.content.decode()
+
+
+def test_mes_encerrado_nao_tem_salvar_nem_dividir(rede):
+    html = _get(logado("gil"), mes="2020-01")
+    assert "Salvar metas" not in html and 'value="dividir"' not in html
+    assert 'value="copiar"' not in html
+
+
+def test_os_campos_de_valor_tem_a_mascara(rede):
+    html = _get(logado("gil"))
+    assert 'name="valor_loja" inputmode="numeric" data-valor' in html
+    assert "/static/fila/valor.js" in html and "/static/fila/metas.js" in html
