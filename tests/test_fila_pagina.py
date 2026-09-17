@@ -632,3 +632,20 @@ def test_entrar_na_fila_de_quem_nao_esta_em_espera_volta_com_a_frase(loja):
     _agir(ana, acao="ponto")
     _agir(ana, acao="entrar_na_fila")
     assert "Você já está na fila." in _html(ana)
+
+
+def test_a_folha_corrigir_oferece_por_na_fila_para_quem_espera(loja):
+    from fila.models import Estado, LugarNaFila
+
+    _empresa_em_espera(loja)
+    ana = logado("ana")
+    _lancar(ana, loja)
+    gil = logado("gil")
+    corrigir = _html(gil, f"/fila?folha=corrigir&pessoa={loja.ana.pk}")
+    assert "folha=por_na_fila" in corrigir
+    folha = _html(gil, f"/fila?folha=por_na_fila&pessoa={loja.ana.pk}")
+    aberta = folha[folha.index('id="folha-por_na_fila"'):]
+    assert 'name="motivo_da_correcao"' in aberta[:aberta.index("</form>")]
+    _agir(gil, acao="por_na_fila", pessoa=str(loja.ana.pk),
+          motivo_da_correcao="cliente chegou")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA

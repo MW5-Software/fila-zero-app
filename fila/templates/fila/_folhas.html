@@ -100,6 +100,10 @@
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Fecha o atendimento como não venda e encerra o ponto.") }}</small></span></a>
   </div>
+  <div data-para="em_espera"{% if alvo and alvo.estado != "em_espera" %} hidden{% endif %}>
+    <a class="fila-corrigir-item" href="{{ url_fila }}?folha=por_na_fila&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="por_na_fila" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
+      <span class="ci">{{ icon("log-in") }}</span><span><strong>{{ traduzir("Pôr na fila") }}</strong><small>{{ traduzir("Entra no fim da fila.") }}</small></span></a>
+  </div>
   <div data-para="na_fila"{% if alvo and alvo.estado != "na_fila" %} hidden{% endif %}>
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=mover&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="mover" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("arrow-up-down") }}</span><span><strong>{{ traduzir("Mudar de posição") }}</strong><small>{{ traduzir("Escolha o lugar na fila.") }}</small></span></a>
@@ -112,7 +116,7 @@
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar_pausa&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar_pausa" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("arrow-left") }}</span><span><strong>{{ traduzir("Tirar da pausa") }}</strong><small>{{ traduzir("Encerra a pausa e põe no fim da fila.") }}</small></span></a>
   </div>
-  <div data-para="na_fila em_pausa"{% if alvo and alvo.estado == "atendendo" %} hidden{% endif %}>
+  <div data-para="na_fila em_pausa em_espera"{% if alvo and alvo.estado == "atendendo" %} hidden{% endif %}>
     <a class="fila-corrigir-item fila-corrigir-perigo" href="{{ url_fila }}?folha=sair&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="sair" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Para quem esqueceu de sair. Encerra o ponto.") }}</small></span></a>
   </div>
@@ -149,6 +153,21 @@
   <div class="mfoot">
     <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
     <button type="submit" class="btn primary">{{ traduzir("Tirar da pausa") }}</button>
+  </div>
+</form>
+{% endcall %}
+
+{% call modal("por_na_fila", traduzir("Pôr na fila"), folha == "por_na_fila" and alvo, alvo.nome if alvo else "") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
+    {{ csrf }}<input type="hidden" name="acao" value="por_na_fila">
+    <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+    <p class="muted">{{ traduzir("Entra no fim da fila.") }}</p>
+    {{ motivo_da_correcao() }}
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Pôr na fila") }}</button>
   </div>
 </form>
 {% endcall %}

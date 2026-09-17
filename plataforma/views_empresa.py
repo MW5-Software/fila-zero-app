@@ -659,11 +659,16 @@ def _dados_do_post(request) -> dict[str, str]:
         campo for campo in CAMPOS if campo not in CONEXAO)
     dados = {nome: request.POST.get(nome, "").strip()
              for nome, _resto, _resto in editaveis}
+    # **Campo ausente não mexe** (a mesma regra das metas): um POST sem o
+    # fluxo — de uma tela que não o desenha, ou de um cliente antigo — deixa
+    # o valor gravado onde está, em vez de zerá-lo.
+    #
     # Escolha fechada, conferida pelo MODEL: `Empresa.save` chama
     # `full_clean`, que recusa valor fora das opções, e a tela mostra a frase
     # (`_frase_da_recusa`). Normalizar aqui também seria a segunda cópia da
     # mesma regra — e a cópia que alguém esqueceria de mudar junto.
-    dados["fluxo_da_fila"] = request.POST.get("fluxo_da_fila", "").strip()
+    if "fluxo_da_fila" in request.POST:
+        dados["fluxo_da_fila"] = request.POST["fluxo_da_fila"].strip()
     return dados
 
 

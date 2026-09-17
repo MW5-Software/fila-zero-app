@@ -84,6 +84,7 @@ class ACOES:
     FILA_LANCAMENTO_CORRIGIDO = "fila_lancamento_corrigido"
     FILA_POSICAO_MOVIDA = "fila_posicao_movida"
     FILA_PAUSA_INICIADA = "fila_pausa_iniciada"
+    FILA_POSTO_NA_FILA = "fila_posto_na_fila"
     # Os três cadastros da fila; o alvo leva o nome do cadastro na frente
     # ("Grupo de item: Sofás"), porque os três dividem as mesmas três ações.
     FILA_CADASTRO_CRIADO = "fila_cadastro_criado"
@@ -143,6 +144,7 @@ ROTULOS = {
     ACOES.FILA_LANCAMENTO_CORRIGIDO: "Lançamento corrigido",
     ACOES.FILA_POSICAO_MOVIDA: "Posição na fila mudada pelo gerente",
     ACOES.FILA_PAUSA_INICIADA: "Pausa iniciada pelo gerente",
+    ACOES.FILA_POSTO_NA_FILA: "Posto na fila pelo gerente",
     ACOES.FILA_CADASTRO_CRIADO: "Cadastro da fila criado",
     ACOES.FILA_CADASTRO_EDITADO: "Cadastro da fila editado",
     ACOES.FILA_CADASTRO_REMOVIDO: "Cadastro da fila removido",

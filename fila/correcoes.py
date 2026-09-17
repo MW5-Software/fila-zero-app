@@ -23,15 +23,16 @@ from django.utils.translation import gettext_lazy
 from comum.auditoria import ACOES, registrar
 
 from . import acoes
-from .acoes import (Recusa, _abrir_pausa, _gravar_lancamento,
-                    _fechar_atendimento, _lugar_na_loja, _sair, _travar,
-                    _validar, _voltar_ao_fim)
+from .acoes import (Recusa, _abrir_pausa, _depois_do_atendimento,
+                    _gravar_lancamento, _fechar_atendimento, _lugar_na_loja,
+                    _sair, _travar, _validar, _voltar_ao_fim)
 from .estado import na_fila, nome_de
 from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
            "lancamentos_de_hoje", "ler_observacao", "mover", "por_em_pausa",
+           "por_na_fila",
            "tirar_da_loja",
            "tirar_da_pausa"]
 
@@ -48,6 +49,7 @@ NAO_ENCONTRADO = gettext_lazy("Essa pessoa não está nesta loja.")
 MOTIVO_CURTO = gettext_lazy("Escreva o motivo da correção.")
 MOTIVO_LONGO = gettext_lazy("O motivo cabe em 200 caracteres.")
 NAO_ESTA_NA_FILA = gettext_lazy("Essa pessoa não está na fila.")
+NAO_ESTA_EM_ESPERA = gettext_lazy("Essa pessoa não está em espera.")
 _MICRO = timedelta(microseconds=1)
 
 
@@ -142,7 +144,9 @@ def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, observacao,
                                                   fim__isnull=True)
         agora = _agora()
         _fechar_atendimento(atendimento, lancamento, agora, fechado_por=autor)
-        _voltar_ao_fim(lugar, agora)
+        # Pelo fluxo da empresa, como quando é o próprio vendedor que lança
+        # (spec 2026-09-17): quem fechou não muda para onde a pessoa vai.
+        _depois_do_atendimento(lugar, filial, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.FECHAR, observacao,
                    descrever(atendimento), agora,
                    auditoria=ACOES.FILA_ATENDIMENTO_FECHADO,
@@ -278,10 +282,33 @@ def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
-        if lugar.estado != Estado.NA_FILA:
+        # Em espera também: a pessoa saiu da fila por conta própria, e pôr em
+        # pausa é dizer por que ela não está disponível (spec 2026-09-17).
+        if lugar.estado not in (Estado.NA_FILA, Estado.EM_ESPERA):
             raise Recusa(NAO_ESTA_NA_FILA)
         agora = _agora()
         tipo = _abrir_pausa(lugar, filial, tipo_id, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.PAUSAR, observacao,
                    tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_INICIADA,
+                   alvo=_alvo(lugar, filial), request=request)
+
+
+def por_na_fila(autor, filial, pessoa_id, *, observacao, request=None):
+    """O gerente põe na fila quem está em espera (spec 2026-09-17).
+
+    Entra no FIM, como quem entra sozinho: a ordem da fila é a hora de
+    entrada, e o gerente que quer alguém na frente usa "Mudar de posição".
+    """
+    observacao = ler_observacao(observacao)
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_de_outro(autor, filial, pessoa_id)
+        if lugar.estado == Estado.NA_FILA:
+            raise Recusa(_("Essa pessoa já está na fila."))
+        if lugar.estado != Estado.EM_ESPERA:
+            raise Recusa(NAO_ESTA_EM_ESPERA)
+        agora = _agora()
+        _voltar_ao_fim(lugar, agora)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.POR_NA_FILA,
+                   observacao, "", agora, auditoria=ACOES.FILA_POSTO_NA_FILA,
                    alvo=_alvo(lugar, filial), request=request)

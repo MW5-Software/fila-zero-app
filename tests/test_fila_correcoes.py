@@ -392,3 +392,109 @@ def test_por_em_pausa_recusa_quem_atende_e_tipo_que_nao_serve(loja):
             por_em_pausa(loja.gerente, loja.matriz, loja.bia.pk, tipo_id,
                          observacao="teste ok")
         assert recusa.value.frase == "Escolha o tipo de pausa."
+
+
+# --- O fluxo de espera (spec 2026-09-17-fluxo-da-fila-por-empresa) ----------
+
+def _empresa_com_espera(loja):
+    from plataforma.models import FluxoDaFila
+
+    loja.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
+    loja.empresa.save(update_fields=["fluxo_da_fila"])
+
+
+def _ana_em_espera(loja):
+    from fila.acoes import bater_ponto, finalizar, vou_atender
+
+    _empresa_com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    finalizar(loja.ana, loja.matriz, _nao_venda(loja))
+
+
+def test_o_gerente_poe_na_fila_quem_esta_em_espera(loja):
+    from fila.correcoes import por_na_fila
+    from fila.models import CorrecaoNaFila, Estado, LugarNaFila
+
+    _ana_em_espera(loja)
+    por_na_fila(loja.gerente, loja.matriz, loja.ana.pk, observacao="cliente chegou")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA
+    correcao = CorrecaoNaFila.irrestritos.get()
+    assert (correcao.acao, correcao.observacao) == ("por_na_fila", "cliente chegou")
+    assert _ultima_trilha().acao == "fila_posto_na_fila"
+
+
+def test_por_na_fila_recusa_quem_ja_esta_na_fila(loja):
+    from fila.acoes import Recusa, bater_ponto
+    from fila.correcoes import por_na_fila
+
+    bater_ponto(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        por_na_fila(loja.gerente, loja.matriz, loja.ana.pk, observacao="teste ok")
+    assert recusa.value.frase == "Essa pessoa já está na fila."
+
+
+def test_por_na_fila_recusa_quem_atende_ou_esta_em_pausa(loja):
+    """Só quem está EM ESPERA entra por aqui: quem atende precisa do
+    atendimento fechado, e quem está em pausa, da pausa encerrada."""
+    from fila.acoes import Recusa, bater_ponto, pausar, vou_atender
+    from fila.correcoes import por_na_fila
+
+    _empresa_com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        por_na_fila(loja.gerente, loja.matriz, loja.ana.pk, observacao="teste ok")
+    assert recusa.value.frase == "Essa pessoa não está em espera."
+
+    bater_ponto(loja.bia, loja.matriz)
+    pausar(loja.bia, loja.matriz, loja.cad.tipo.pk)
+    with pytest.raises(Recusa) as recusa:
+        por_na_fila(loja.gerente, loja.matriz, loja.bia.pk, observacao="teste ok")
+    assert recusa.value.frase == "Essa pessoa não está em espera."
+
+
+def test_o_gerente_fechando_o_atendimento_segue_o_fluxo(loja):
+    from fila.acoes import bater_ponto, vou_atender
+    from fila.correcoes import fechar_atendimento
+    from fila.models import Estado, LugarNaFila
+
+    _empresa_com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    fechar_atendimento(loja.gerente, loja.matriz, loja.ana.pk, _nao_venda(loja),
+                       observacao="esqueceu de lançar")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_ESPERA
+
+
+def test_tirar_da_pausa_manda_para_a_fila_nos_dois_fluxos(loja):
+    """A ação é do GERENTE: ele está decidindo que a pessoa atende agora."""
+    from fila.acoes import bater_ponto, pausar
+    from fila.correcoes import tirar_da_pausa
+    from fila.models import Estado, LugarNaFila
+
+    _empresa_com_espera(loja)
+    bater_ponto(loja.ana, loja.matriz)
+    pausar(loja.ana, loja.matriz, loja.cad.tipo.pk)
+    tirar_da_pausa(loja.gerente, loja.matriz, loja.ana.pk, observacao="voltou")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA
+
+
+def test_por_em_pausa_aceita_quem_esta_em_espera(loja):
+    from fila.correcoes import por_em_pausa
+    from fila.models import Estado, LugarNaFila
+
+    _ana_em_espera(loja)
+    por_em_pausa(loja.gerente, loja.matriz, loja.ana.pk, loja.cad.tipo.pk,
+                 observacao="foi ao banco")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_PAUSA
+
+
+def test_mover_continua_recusando_quem_esta_em_espera(loja):
+    from fila.acoes import Recusa
+    from fila.correcoes import mover
+
+    _ana_em_espera(loja)
+    with pytest.raises(Recusa) as recusa:
+        mover(loja.gerente, loja.matriz, loja.ana.pk, 1, observacao="teste ok")
+    assert recusa.value.frase == "Essa pessoa não está na fila."

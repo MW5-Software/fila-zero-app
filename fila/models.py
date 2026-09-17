@@ -278,6 +278,7 @@ class AcaoDeCorrecao(models.TextChoices):
     FECHAR = "fechar", _("Fechou o atendimento")
     TIRAR = "tirar", _("Tirou da loja")
     EDITAR = "editar", _("Corrigiu o lançamento")
+    POR_NA_FILA = "por_na_fila", _("Pôs na fila")
 
 
 class CorrecaoNaFila(ModeloDaEmpresa):
