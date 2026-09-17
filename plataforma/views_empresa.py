@@ -45,7 +45,7 @@ from nucleo.resposta import render
 
 from comum.pedido import id_do_post
 
-from .models import Empresa
+from .models import Empresa, FluxoDaFila
 from .site import montar_site
 
 __all__ = ["campos_do_cadastro", "criar_do_post", "desenhar_com_erro",
@@ -167,7 +167,10 @@ def _campo_oculto(nome: str, valor: str) -> str:
 
 def _valores_de(linha: "Empresa | None") -> dict[str, str]:
     origem = linha or Empresa()
-    return {nome: getattr(origem, nome) or "" for nome, _resto, _resto in CAMPOS}
+    valores = {nome: getattr(origem, nome) or ""
+               for nome, _resto, _resto in CAMPOS}
+    valores["fluxo_da_fila"] = origem.fluxo_da_fila or FluxoDaFila.VOLTA
+    return valores
 
 
 def _validar(dados: dict[str, str]) -> "str | None":
@@ -262,6 +265,18 @@ def _campos(valores: dict[str, str], alvo: "Empresa | None" = None,
         ])
         for titulo, campos in GRUPOS
     ]
+    # A caixa do fluxo fica FORA de `GRUPOS` porque aquela lista é de campos
+    # de texto, lidos direto do POST e atribuídos à coluna (`_dados_do_post`).
+    # Este é escolha fechada: valor de fora das opções cai no padrão, e não
+    # vira coluna com lixo (spec 2026-09-17).
+    esquerda.append(Box(body=[
+        SectionLabel(label=_("Fila da vez")),
+        FormGrid(children=[Select(
+            name="fluxo_da_fila", label=_("Depois de lançar o atendimento"),
+            span=12, value=valores.get("fluxo_da_fila", FluxoDaFila.VOLTA),
+            options=[Option(v, r) for v, r in FluxoDaFila.choices],
+            help=_("Vale para todas as lojas desta empresa."))]),
+    ]))
 
     if not conexao:
         # Uma coluna só. Sem a `ep-duas` em volta, o formulário ocupa a
@@ -642,8 +657,14 @@ def _dados_do_post(request) -> dict[str, str]:
     """
     editaveis = CAMPOS if _e_master(request) else tuple(
         campo for campo in CAMPOS if campo not in CONEXAO)
-    return {nome: request.POST.get(nome, "").strip()
-            for nome, _resto, _resto in editaveis}
+    dados = {nome: request.POST.get(nome, "").strip()
+             for nome, _resto, _resto in editaveis}
+    # Escolha fechada: valor fora das opções vira o PADRÃO, e não erro nem
+    # coluna com lixo. É o mesmo cuidado do `id_do_post` com id forjado.
+    bruto = request.POST.get("fluxo_da_fila", "")
+    dados["fluxo_da_fila"] = (bruto if bruto in FluxoDaFila.values
+                              else FluxoDaFila.VOLTA)
+    return dados
 
 
 def _frase_da_recusa(erro) -> str:

@@ -808,3 +808,55 @@ class TestAMW5CriaEmpresaDeNovo:
         html = cenario["dele"].get(reverse("empresa")).content.decode()
         assert "Alfa Ltda" in html and "Beta Ltda" in html
         assert "Empresas" in html
+
+
+@pytest.mark.django_db
+class TestOFluxoDaFilaDaEmpresa:
+    """17/09/2026: a empresa escolhe o que acontece depois de lançar o
+    atendimento — voltar ao fim da fila (o de sempre) ou ficar em espera."""
+
+    @pytest.fixture
+    def titular(self, db):
+        from contas.fabrica import aplicar
+        from contas.models import Nivel
+        from plataforma.models import Empresa
+
+        pessoa = Usuario.objects.create_user(
+            email="dono-fluxo@teste.com", password=SENHA, nivel=Nivel.TITULAR)
+        Empresa.objects.create(razao_social="Normadin Ltda", dono=pessoa)
+        aplicar(pessoa, Nivel.TITULAR)
+        c = Client()
+        c.post(reverse("entrar"), {"usuario": "dono-fluxo@teste.com",
+                                   "senha": SENHA})
+        return c
+
+    def test_o_padrao_e_o_fluxo_de_hoje(self, db):
+        from plataforma.models import Empresa, FluxoDaFila
+
+        nova = Empresa.objects.create(razao_social="Padrao Ltda")
+        assert nova.fluxo_da_fila == FluxoDaFila.VOLTA
+
+    def test_o_titular_troca_o_fluxo_pela_tela(self, titular):
+        from plataforma.models import Empresa, FluxoDaFila
+
+        alvo = Empresa.objects.get(razao_social="Normadin Ltda")
+        titular.post(reverse("empresa"), {
+            "acao": "salvar", "empresa": str(alvo.pk),
+            "razao_social": "Normadin Ltda", "fluxo_da_fila": "espera"})
+        alvo.refresh_from_db()
+        assert alvo.fluxo_da_fila == FluxoDaFila.ESPERA
+
+    def test_valor_forjado_nao_troca_o_fluxo(self, titular):
+        from plataforma.models import Empresa, FluxoDaFila
+
+        alvo = Empresa.objects.get(razao_social="Normadin Ltda")
+        titular.post(reverse("empresa"), {
+            "acao": "salvar", "empresa": str(alvo.pk),
+            "razao_social": "Normadin Ltda", "fluxo_da_fila": "voar"})
+        alvo.refresh_from_db()
+        assert alvo.fluxo_da_fila == FluxoDaFila.VOLTA
+
+    def test_a_tela_oferece_as_duas_opcoes(self, titular):
+        html = titular.get(reverse("empresa")).content.decode()
+        assert 'name="fluxo_da_fila"' in html
+        assert "Volta para o fim da fila" in html and "Fica em espera" in html
