@@ -235,6 +235,8 @@ def _contexto(request, filial, recusa=""):
         "filial": filial,
         "nome": nome_de(pessoa) if pessoa else "",
         "eu_id": pessoa.pk if pessoa else None,
+        "eu_tem_foto": bool(pessoa) and type(pessoa).objects.filter(
+            pk=pessoa.pk, avatar__isnull=False).exists(),
         "agora": timezone.now(),
         "pode_participar": pode(request.usuario, "fila.participar"),
         "pode_gerenciar": pode_gerenciar,

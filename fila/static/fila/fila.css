@@ -51,6 +51,17 @@
   font-size: 13px; font-weight: 600; color: var(--on-surface-2);
 }
 .fila-hero-loja { display: inline-flex; align-items: center; gap: 6px; }
+.fila-hero-esquerda { display: inline-flex; align-items: center; gap: 14px; min-width: 0; flex-wrap: wrap; }
+/* O nome de quem está logado vem na cor do texto, e não no cinza da loja:
+   é a primeira coisa que se lê antes de tocar num botão. */
+.fila-hero-quem { display: inline-flex; align-items: center; gap: 8px; color: var(--on-surface); font-size: 14px; font-weight: 700; }
+.fila-hero:has(.painel-sua-vez) .fila-hero-quem { color: var(--on-primary); }
+/* Com o nome à esquerda, "Meu painel" e "Ao vivo" quebravam em duas linhas
+   no celular: eles não quebram, e o nome e a loja empilham. */
+.fila-hero-direita > * { white-space: nowrap; }
+@media (max-width: 480px) {
+  .fila-hero-esquerda { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
 .fila-hero-vivo { display: inline-flex; align-items: center; gap: 7px; }
 /* "Meu painel": a página da fila não tem menu, e este é o caminho do
    vendedor até o Início (spec 2026-09-16). Na cor do link da loja ao lado. */

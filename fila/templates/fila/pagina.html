@@ -1,3 +1,4 @@
+{% from "fila/_macros.html" import avatar %}
 {# O miolo da página da fila, posto dentro do shell do sistema (`fila.tela`).
    Os ids `fila-*` são os pedaços que o script troca a cada consulta. #}
 <div class="fila" id="fila" data-estado-url="{{ url_estado }}" data-agir-url="{{ url_agir }}" data-versao="{{ r.versao }}">
@@ -7,6 +8,10 @@
 
   <section class="fila-hero" aria-live="polite">
     <div class="fila-hero-topo">
+      <span class="fila-hero-esquerda">
+      {# Quem está logado, antes da loja: o celular da loja passa de mão em
+         mão, e o nome em cima evita bater o ponto no lugar de outro. #}
+      {% if eu_id %}<span class="fila-hero-quem" data-quem>{{ avatar(eu_id, nome, eu_tem_foto, "sm") }}<span>{{ nome }}</span></span>{% endif %}
       {% if outras_lojas %}
       <details class="fila-hero-loja fila-trocar-loja">
         <summary>{{ icon("store", "sm") }}<span>{{ filial }}</span>{{ icon("chevron-down", "sm") }}</summary>
@@ -18,6 +23,7 @@
       {% else %}
       <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
       {% endif %}
+      </span>
       <span class="fila-hero-direita">
         {% if pode_participar %}<a class="fila-meu-painel" href="/" data-meu-painel>{{ icon("chart-column", "sm") }}<span>{{ traduzir("Meu painel") }}</span></a>{% endif %}
         <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>

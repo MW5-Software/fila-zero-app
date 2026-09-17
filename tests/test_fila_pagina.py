@@ -501,3 +501,20 @@ def test_a_versao_muda_quando_a_meta_muda(loja):
     m.valor = m.valor + 1
     m.save()
     assert versao_da_fila(loja.matriz) != depois
+
+
+# --- Quem está logado (17/09/2026) ------------------------------------------
+
+def test_o_nome_de_quem_esta_logado_fica_no_topo(loja):
+    """O celular da loja passa de mão em mão: o nome em cima diz de quem é a
+    fila que está aberta, antes de alguém bater o ponto no lugar de outro."""
+    import re
+
+    from contas.models import Usuario
+
+    Usuario.objects.filter(pk=loja.ana.pk).update(nome="Ana Souza")
+    html = _html(logado("ana"))
+    topo = re.search(r'<div class="fila-hero-topo">(.*?)<div class="fila-hero-corpo">', html, re.S)
+    assert topo and 'data-quem' in topo.group(1)
+    assert "Ana Souza" in topo.group(1)
+    assert "Ana Souza" in _html(logado("ana"), "/fila?folha=pausa")
