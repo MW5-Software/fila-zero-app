@@ -21,7 +21,7 @@
       <option value="">{{ traduzir("Escolha o grupo") }}</option>
       {% for g in grupos %}<option value="{{ g.pk }}"{% if item and item.grupo_id == g.pk %} selected{% endif %}>{{ g.nome }}</option>{% endfor %}
     </select>
-    <label class="fila-valor"><span>R$</span><input class="ctl" name="valor" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="{{ traduzir('Valor') }}" value="{{ (item.valor|reais)[3:] if item else '' }}"></label>
+    <label class="fila-valor"><span>R$</span><input class="ctl" name="valor" inputmode="numeric" data-valor autocomplete="off" placeholder="0,00" aria-label="{{ traduzir('Valor') }}" value="{{ (item.valor|reais)[3:] if item else '' }}"></label>
   </div>
   {% endfor %}
 </div>

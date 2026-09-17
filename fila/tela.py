@@ -283,7 +283,8 @@ def _no_shell(request, titulo: str, conteudo, overlays=""):
             content=[aviso_de_personificacao(request), conteudo],
             overlays=overlays, user=request.usuario,
             stylesheets=["/static/fila/fila.css"],
-            scripts=["/static/fila/fila.js"])
+            # A máscara antes da fila: a soma do total lê o valor já formatado.
+            scripts=["/static/fila/valor.js", "/static/fila/fila.js"])
         pagina.sidebar = None
         pagina.footer = None
         pagina.body_class = "fila-pagina"
