@@ -132,17 +132,14 @@ class TestOsComponentesAparecem:
         assert 'class="card' in html
 
 
-class TestOsDoisTemas:
+class TestTema:
     def test_o_css_serve_claro_e_escuro(self):
         corpo = Client().get(reverse("tema")).content.decode()
         assert ':root[data-theme="light"]' in corpo
         assert ':root[data-theme="dark"]' in corpo
 
-    def test_a_pagina_aplica_o_tema_salvo_no_navegador(self, html):
-        """Não há botão de tema — o design system o removeu de propósito
-        (ver `test_nao_ha_mais_botao_de_tema` em `test_components.py`). O que
-        existe é o script de bootstrap embutido em `page.html`, que lê
-        `mw5-theme` do `localStorage` e aplica `data-theme` na raiz do
-        documento antes da primeira pintura."""
-        assert 'localStorage.getItem("mw5-theme")' in html
-        assert 'document.documentElement.setAttribute("data-theme",t)' in html
+    def test_a_pagina_mantem_o_tema_claro(self, html):
+        """O tema claro é fixo, mesmo com uma preferência antiga no navegador."""
+        assert '<html lang="pt-BR" data-theme="light">' in html
+        assert '<meta name="color-scheme" content="light">' in html
+        assert 'localStorage.getItem("mw5-theme")' not in html
