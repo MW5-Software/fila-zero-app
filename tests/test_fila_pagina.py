@@ -587,3 +587,65 @@ def test_gerente_poe_em_pausa_pela_folha(loja):
     _agir(gil, acao="por_em_pausa", pessoa=str(loja.ana.pk), tipo=str(loja.cad.tipo.pk),
           motivo_da_correcao="foi ao banco")
     assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_PAUSA
+
+
+# --- O fluxo de espera (spec 2026-09-17-fluxo-da-fila-por-empresa) ----------
+
+def _empresa_em_espera(loja):
+    from plataforma.models import FluxoDaFila
+
+    loja.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
+    loja.empresa.save(update_fields=["fluxo_da_fila"])
+
+
+def _lancar(cliente, loja):
+    _agir(cliente, acao="ponto")
+    _agir(cliente, acao="atender")
+    _agir(cliente, acao="finalizar", resultado="nao_vendeu",
+          motivo=str(loja.cad.motivo.pk))
+
+
+def test_quem_esta_em_espera_ve_o_cartao_e_o_botao(loja):
+    _empresa_em_espera(loja)
+    ana = logado("ana")
+    _lancar(ana, loja)
+    html = _html(ana)
+    assert "Você está em espera" in html
+    assert 'value="entrar_na_fila"' in html
+    assert "Em espera" in html          # o bloco da lista
+    _agir(ana, acao="entrar_na_fila")
+    # Sozinha na loja, ela volta como a primeira: o painel diz "É a sua vez".
+    depois = _html(ana)
+    assert "É a sua vez" in depois
+    assert "Você está em espera" not in depois
+
+
+def test_no_fluxo_de_hoje_nao_ha_espera_na_tela(loja):
+    ana = logado("ana")
+    _lancar(ana, loja)
+    html = _html(ana)
+    assert "Em espera" not in html and 'value="entrar_na_fila"' not in html
+
+
+def test_entrar_na_fila_de_quem_nao_esta_em_espera_volta_com_a_frase(loja):
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    _agir(ana, acao="entrar_na_fila")
+    assert "Você já está na fila." in _html(ana)
+
+
+def test_a_folha_corrigir_oferece_por_na_fila_para_quem_espera(loja):
+    from fila.models import Estado, LugarNaFila
+
+    _empresa_em_espera(loja)
+    ana = logado("ana")
+    _lancar(ana, loja)
+    gil = logado("gil")
+    corrigir = _html(gil, f"/fila?folha=corrigir&pessoa={loja.ana.pk}")
+    assert "folha=por_na_fila" in corrigir
+    folha = _html(gil, f"/fila?folha=por_na_fila&pessoa={loja.ana.pk}")
+    aberta = folha[folha.index('id="folha-por_na_fila"'):]
+    assert 'name="motivo_da_correcao"' in aberta[:aberta.index("</form>")]
+    _agir(gil, acao="por_na_fila", pessoa=str(loja.ana.pk),
+          motivo_da_correcao="cliente chegou")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA

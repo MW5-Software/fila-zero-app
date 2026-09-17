@@ -35,8 +35,8 @@ from .models import (Atendimento, Estado, GrupoDeItem, ItemVendido,
                      Resultado, TipoDePausa)
 
 __all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto",
-           "cliente_pediu", "finalizar", "pausar", "sair_da_loja",
-           "voltar_para_a_fila", "vou_atender"]
+           "cliente_pediu", "entrar_na_fila", "finalizar", "pausar",
+           "sair_da_loja", "voltar_para_a_fila", "vou_atender"]
 
 NAO_ESTA_NA_LOJA = gettext_lazy("Você não está nesta loja. Bata o ponto primeiro.")
 
@@ -103,6 +103,39 @@ def _voltar_ao_fim(lugar, agora) -> None:
     lugar.na_fila_desde = agora
     lugar.desde = agora
     lugar.save(update_fields=["estado", "na_fila_desde", "desde"])
+
+
+def _depois_do_atendimento(lugar, filial, agora) -> None:
+    """Para onde a pessoa vai quando o atendimento termina — ou a pausa dela.
+
+    Depende do fluxo da EMPRESA da loja (spec 2026-09-17): no de sempre, o fim
+    da fila; no outro, a espera, de onde ela entra quando quiser. Um lugar só
+    decide isso, porque quem termina o atendimento, quem encerra a pausa e o
+    gerente que fecha no lugar do vendedor precisam da MESMA resposta.
+    """
+    from plataforma.models import FluxoDaFila
+
+    if filial.empresa.fluxo_da_fila != FluxoDaFila.ESPERA:
+        _voltar_ao_fim(lugar, agora)
+        return
+    lugar.estado = Estado.EM_ESPERA
+    lugar.desde = agora
+    lugar.save(update_fields=["estado", "desde"])
+
+
+def entrar_na_fila(pessoa, filial) -> None:
+    """Quem está em espera volta à fila, no FIM — a mesma regra de sempre, e
+    não uma posição guardada."""
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_na_loja(pessoa.pk, filial)
+        if lugar.estado == Estado.NA_FILA:
+            raise Recusa(_("Você já está na fila."))
+        if lugar.estado == Estado.ATENDENDO:
+            raise Recusa(_("Finalize o atendimento primeiro."))
+        if lugar.estado == Estado.EM_PAUSA:
+            raise Recusa(_("Encerre a pausa primeiro."))
+        _voltar_ao_fim(lugar, _agora())
 
 
 def _sair(lugar, agora, fechada_por=None) -> None:
@@ -270,7 +303,7 @@ def finalizar(pessoa, filial, lancamento) -> None:
                                                   fim__isnull=True)
         agora = _agora()
         _fechar_atendimento(atendimento, lancamento, agora)
-        _voltar_ao_fim(lugar, agora)
+        _depois_do_atendimento(lugar, filial, agora)
 
 
 def _abrir_pausa(lugar, filial, tipo_id, agora):
@@ -308,7 +341,7 @@ def voltar_para_a_fila(pessoa, filial) -> None:
         agora = _agora()
         Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).update(
             fim=agora)
-        _voltar_ao_fim(lugar, agora)
+        _depois_do_atendimento(lugar, filial, agora)
 
 
 def sair_da_loja(pessoa, filial) -> None:

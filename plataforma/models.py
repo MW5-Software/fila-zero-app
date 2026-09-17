@@ -326,6 +326,19 @@ class Parametro(ComGuid):
         return self.chave
 
 
+class FluxoDaFila(models.TextChoices):
+    """O que acontece com o vendedor depois que o atendimento é lançado
+    (spec 2026-09-17-fluxo-da-fila-por-empresa).
+
+    Mora na EMPRESA, e não na loja: a rede trabalha do mesmo jeito nas lojas
+    dela, e um campo por loja seria a mesma resposta repetida em cada uma, com
+    a chance de duas divergirem por esquecimento.
+    """
+
+    VOLTA = "volta_para_a_fila", _("Volta para o fim da fila")
+    ESPERA = "espera", _("Fica em espera e entra na fila quando quiser")
+
+
 class Empresa(ComGuid):
     """Uma empresa atendida por esta instalação, com a conexão de onde o cron
     lê os dados dela no Kronos legado.
@@ -378,6 +391,14 @@ class Empresa(ComGuid):
     #: Cifrada. O tamanho é o da origem; o conteúdo é Fernet, não texto claro
     #: — ver `plataforma/cifra.py` para o porquê.
     senha = models.CharField("senha (cifrada)", max_length=255, blank=True, default="")
+
+    #: O padrão é o fluxo de hoje: toda instalação que já existe continua
+    #: idêntica sem ninguém tocar em nada (spec 2026-09-17).
+    fluxo_da_fila = models.CharField(
+        _("fluxo da fila"), max_length=20, choices=FluxoDaFila.choices,
+        default=FluxoDaFila.VOLTA,
+        help_text=_("O que acontece com o vendedor depois de lançar o "
+                    "atendimento."))
 
     #: **O Admin dono desta empresa — a CONTA.** Uma conta tem VÁRIAS
     #: empresas desde 17/09/2026 (spec

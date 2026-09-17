@@ -64,6 +64,30 @@
       {% endif %}
     </section>
 
+    {# O bloco da espera só existe onde o fluxo da empresa a usa: com o
+       fluxo de sempre ele estaria sempre vazio, ocupando a coluna. #}
+    {% if r.em_espera %}
+    <section class="fila-lado-secao fila-lado-espera">
+      <header class="fila-secao-cab">
+        <h2><span class="fila-marca-estado"></span>{{ traduzir("Em espera") }}</h2>
+        <span class="fila-conta">{{ r.em_espera|length }}</span>
+      </header>
+      <ul class="fila-linhas">
+        {% for l in r.em_espera %}
+        <li class="fila-linha{% if l.e_voce %} fila-linha-voce{% endif %}">
+          {{ avatar(l.pessoa_id, l.nome, l.tem_foto) }}
+          <span class="fila-linha-txt">
+            <span class="fila-linha-nome">{{ l.nome }} {{ voce(l) }}</span>
+            <span class="fila-linha-meta">{{ traduzir("Fora da fila") }}</span>
+          </span>
+          <span class="fila-cronometro" data-minutos="{{ l.desde.isoformat() }}">{{ l.desde|minutos(agora) }}<small>min</small></span>
+          {{ corrigir(l) }}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
     <section class="fila-lado-secao fila-lado-pausa">
       <header class="fila-secao-cab">
         <h2><span class="fila-marca-estado"></span>{{ traduzir("Em pausa") }}</h2>

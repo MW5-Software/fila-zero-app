@@ -78,3 +78,34 @@ def test_a_versao_muda_quando_a_fila_muda_e_so_entao(relogio):
     assert versao_da_fila(matriz) != atendendo
     sair_da_loja(ana, matriz)
     assert versao_da_fila(matriz) != atendendo
+
+
+@pytest.mark.django_db
+def test_o_retrato_separa_quem_esta_em_espera(relogio):
+    """Espera é estado próprio: não entra na fila nem na pausa (spec
+    2026-09-17-fluxo-da-fila-por-empresa)."""
+    from fila.acoes import bater_ponto, finalizar, vou_atender
+    from fila.estado import retrato
+    from fila.models import Estado
+    from plataforma.models import FluxoDaFila
+    from tests.fila_cenario import cadastros, pessoa_na_loja, sylvia
+
+    empresa, matriz, _titular = sylvia()
+    empresa.fluxo_da_fila = FluxoDaFila.ESPERA
+    empresa.save(update_fields=["fluxo_da_fila"])
+    cad = cadastros(empresa)
+    ana = pessoa_na_loja("ana", empresa, matriz)
+    bia = pessoa_na_loja("bia", empresa, matriz)
+    bater_ponto(ana, matriz)
+    bater_ponto(bia, matriz)
+    vou_atender(ana, matriz)
+    from fila.acoes import Lancamento
+
+    finalizar(ana, matriz, Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
+
+    r = retrato(matriz, ana)
+    assert [l.pessoa_id for l in r.em_espera] == [ana.pk]
+    assert [l.pessoa_id for l in r.fila] == [bia.pk]
+    assert r.em_pausa == []
+    assert r.meu is not None and r.meu.estado == Estado.EM_ESPERA
+    assert r.meu.posicao is None

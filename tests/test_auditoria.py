@@ -736,6 +736,20 @@ def _cenario_fila_pausa_iniciada():
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
+def _cenario_fila_posto_na_fila():
+    from fila.acoes import Lancamento, finalizar, vou_atender
+    from fila.correcoes import por_na_fila
+    from plataforma.models import FluxoDaFila
+
+    dona, zeca, matriz, cad = _loja_com_gente_da_fila()
+    matriz.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
+    matriz.empresa.save(update_fields=["fluxo_da_fila"])
+    vou_atender(zeca, matriz)
+    finalizar(zeca, matriz, Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
+    por_na_fila(dona, matriz, zeca.pk, observacao="cliente chegou")
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
 def _cenario_fila_posicao_movida():
     from contas.models import Usuario
     from fila.acoes import bater_ponto
@@ -842,6 +856,7 @@ _CENARIOS = {
     "FILA_LANCAMENTO_CORRIGIDO": _cenario_fila_lancamento_corrigido,
     "FILA_POSICAO_MOVIDA": _cenario_fila_posicao_movida,
     "FILA_PAUSA_INICIADA": _cenario_fila_pausa_iniciada,
+    "FILA_POSTO_NA_FILA": _cenario_fila_posto_na_fila,
     "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
     "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,

@@ -65,6 +65,15 @@
   </div>
 </div>
 
+{% elif meu.estado == Estado.EM_ESPERA %}
+<div class="fila-estado painel-espera">
+  <span class="fila-estado-icone">{{ icon("hourglass") }}</span>
+  <div class="fila-estado-txt">
+    <p class="fila-estado-titulo">{{ traduzir("Você está em espera") }}</p>
+    <p class="fila-estado-apoio">{{ traduzir("Desde") }} {{ meu.desde|hora }}. {{ traduzir("Entre na fila quando estiver pronto.") }}</p>
+  </div>
+</div>
+
 {% else %}
 <div class="fila-estado painel-pausa">
   <p class="fila-numeral" aria-hidden="true"><span class="fila-numeral-n" data-minutos="{{ meu.desde.isoformat() }}">{{ meu.desde|minutos(agora) }}</span><span class="fila-numeral-sufixo">min</span></p>

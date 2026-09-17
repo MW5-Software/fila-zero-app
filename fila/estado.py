@@ -119,6 +119,9 @@ class Retrato:
     atendendo: "list[Linha]"
     fila: "list[Linha]"
     em_pausa: "list[Linha]"
+    #: Fora da fila, com o ponto aberto (spec 2026-09-17). Ordenada por
+    #: `desde`, como a pausa: quem está em espera não tem posição.
+    em_espera: "list[Linha]"
     meu: "Linha | None"
 
 
@@ -134,7 +137,7 @@ def retrato(filial, pessoa) -> Retrato:
                  .filter(filial=filial, fim__isnull=True)
                  .values_list("pessoa_id", "tipo__nome"))
     posicao = 0
-    atendendo, fila, em_pausa = [], [], []
+    atendendo, fila, em_pausa, em_espera = [], [], [], []
     for lugar in lugares:
         if lugar.estado == Estado.NA_FILA:
             posicao += 1
@@ -145,9 +148,12 @@ def retrato(filial, pessoa) -> Retrato:
             tipo_de_pausa=tipos.get(lugar.pessoa_id, ""),
             e_voce=lugar.pessoa_id == pessoa_id, tem_foto=lugar.tem_foto)
         {Estado.NA_FILA: fila, Estado.ATENDENDO: atendendo,
-         Estado.EM_PAUSA: em_pausa}[lugar.estado].append(linha)
+         Estado.EM_PAUSA: em_pausa,
+         Estado.EM_ESPERA: em_espera}[lugar.estado].append(linha)
     atendendo.sort(key=lambda l: l.desde)
     em_pausa.sort(key=lambda l: l.desde)
-    meu = next((l for l in (*atendendo, *fila, *em_pausa) if l.e_voce), None)
+    em_espera.sort(key=lambda l: l.desde)
+    meu = next((l for l in (*atendendo, *fila, *em_pausa, *em_espera)
+                if l.e_voce), None)
     return Retrato(versao=versao_da_fila(filial), atendendo=atendendo,
-                   fila=fila, em_pausa=em_pausa, meu=meu)
+                   fila=fila, em_pausa=em_pausa, em_espera=em_espera, meu=meu)
