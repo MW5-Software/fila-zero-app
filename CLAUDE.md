@@ -514,6 +514,12 @@ Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
   redireciona para lá com os mesmos filtros. As lojas saem de
   `fila.indicadores.lojas_com_relatorio` (o cargo no lugar), e a `?loja=` só
   filtra dentro delas.
+- **O painel abre na loja do cabeçalho** (17/09/2026); "Todas as lojas"
+  (`?loja=todas`) é escolha explícita de quem alcança mais de uma. Antes a
+  soma era o padrão, e a Sylvia na Matriz via o vendedor do Centro no
+  ranking. Em "Todas", o ranking é uma linha por pessoa EM CADA loja
+  (`indicadores.ranking_por_loja`, com a coluna Loja) e o bloco "Por loja"
+  põe as lojas lado a lado.
 - `fila/periodo.py` resolve o período e o anterior (em andamento compara até
   o mesmo ponto); `fila/indicadores.py` faz as contas, na hora, sempre por
   `objects.da_empresa`.

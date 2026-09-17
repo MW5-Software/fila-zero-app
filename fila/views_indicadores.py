@@ -6,7 +6,11 @@ como redirecionamento, para link antigo não quebrar.
 
 As lojas que a pessoa enxerga saem de `fila.indicadores.lojas_com_relatorio`,
 e a `?loja=` da URL só filtra DENTRO delas: uma loja forjada não amplia o
-recorte, ela é descartada e a tela mostra as permitidas.
+recorte, ela é descartada e a tela mostra a loja do cabeçalho.
+
+Desde 17/09/2026 o painel abre na loja do cabeçalho, e "Todas as lojas" é uma
+escolha explícita. Antes, sem `?loja=`, ele somava todas: a Sylvia na Matriz
+via o vendedor do Centro no ranking, sem coluna que dissesse a loja.
 """
 
 from __future__ import annotations
@@ -258,13 +262,32 @@ def _listas(recorte, n, vendedor=None):
     ])
 
 
+#: O valor de "Todas as lojas" no campo Loja. Texto, e não vazio: vazio é o
+#: que chega quando ninguém escolheu, e aí vale a loja do cabeçalho.
+TODAS = "todas"
+
+
 def _lojas_do_pedido(request, permitidas):
+    """`(lojas do recorte, loja)`, com `loja` nula em "Todas as lojas".
+
+    Sem `?loja=` válida, vale a loja do cabeçalho: é onde a pessoa disse que
+    está, e é a que o seletor lá em cima mostra. Se o cargo não traz
+    relatório nela, a primeira permitida. "Todas" só existe para quem alcança
+    mais de uma: com uma loja só, "todas" é ela mesma.
+    """
+    from plataforma.contexto import filial_atual
+
+    if len(permitidas) > 1 and request.GET.get("loja") == TODAS:
+        return permitidas, None
     try:
         escolhida = int(request.GET.get("loja", ""))
     except ValueError:
-        return permitidas, None
-    uma = [loja for loja in permitidas if loja.pk == escolhida]
-    return (uma, uma[0]) if uma else (permitidas, None)
+        escolhida = None
+    if escolhida is None or not any(l.pk == escolhida for l in permitidas):
+        cabecalho = filial_atual(request)
+        escolhida = cabecalho.pk if cabecalho is not None else None
+    uma = [l for l in permitidas if l.pk == escolhida] or list(permitidas[:1])
+    return uma, uma[0]
 
 
 def _filtros(request, periodo, permitidas, loja):
@@ -284,9 +307,9 @@ def _filtros(request, periodo, permitidas, loja):
     ]
     if len(permitidas) > 1:
         campos.append(Select(
-            name="loja", label=_("Loja"), span=3, value=str(loja.pk) if loja else "",
-            options=[Option("", _("Todas as lojas")),
-                     *(Option(str(l.pk), str(l)) for l in permitidas)]))
+            name="loja", label=_("Loja"), span=3, value=str(loja.pk) if loja else TODAS,
+            options=[*(Option(str(l.pk), str(l)) for l in permitidas),
+                     Option(TODAS, _("Todas as lojas"))]))
     campos.append(Cell(span=2, children=Button(label=_("Aplicar"), variant="primary",
                                                 type="submit")))
     # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
@@ -325,12 +348,15 @@ def _esquecidos(lista):
 
 
 _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
+_FILTRAVEIS_POR_LOJA = {**_FILTRAVEIS, "loja": ColunaFiltravel("loja_nome", "Loja")}
 
 
-def _colunas(pagina, com_meta=False):
+def _colunas(pagina, com_meta=False, por_loja=False):
     colunas = [
         Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
                render=lambda p: p.nome or p.email),
+        *([Column("loja", pagina.cabecalho("loja", str(_("Loja"))),
+                  render=lambda p: str(p.loja))] if por_loja else []),
         Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
                render=lambda p: em_reais(p.vendido)),
         Column("atendimentos", pagina.cabecalho("atendimentos", str(_("Atendimentos"))), align="num"),
@@ -353,6 +379,30 @@ def _colunas(pagina, com_meta=False):
     return colunas
 
 
+def _por_loja(recorte):
+    """As lojas lado a lado, só em "Todas as lojas": é a separação que a soma
+    esconde. Lista, e não `<table>`: são poucas linhas, sem filtro nem página
+    que façam sentido, e a barra do vendido compara as lojas de relance."""
+    linhas = ind.por_loja(recorte)
+    maior = max((float(l.numeros.vendido) for l in linhas), default=0) or 1
+    itens = format_html_join("", (
+        '<li><span class="ind-loja-nome">{}</span>'
+        '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
+        '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
+        '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
+        '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
+        '<span class="ind-rank-barra"><span style="width: {}%"></span></span></li>'), (
+        (l.loja,
+         _("Vendido"), em_reais(l.numeros.vendido),
+         _("Atendimentos"), l.numeros.atendimentos,
+         _("Conversão"), _pct(l.numeros.conversao),
+         _("Ticket médio"), _dinheiro(l.numeros.ticket),
+         f"{100 * float(l.numeros.vendido) / maior:.2f}")
+        for l in linhas))
+    return Card(title=_("Por loja"), attrs={"data-ind": "por-loja"},
+                body=Raw(html=format_html('<ol class="ind-lojas">{}</ol>', itens)))
+
+
 def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     """Os blocos do dashboard (filtros, esquecidos, números, gráficos e
     ranking) para as lojas `permitidas`, que quem chama já tirou do alcance do
@@ -370,15 +420,25 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                 meta=regras_de_meta.meta_do_recorte(recorte)),
         _listas(recorte, n),
     ]
-    listagem = montar_pagina(request, ind.ranking(recorte, mes_da_meta),
-                             ordenaveis=(ind.ORDENAVEIS_DO_RANKING_COM_META
-                                         if mes_da_meta else ind.ORDENAVEIS_DO_RANKING),
+    todas = loja is None
+    ordenaveis = (ind.ORDENAVEIS_DO_RANKING_COM_META
+                  if mes_da_meta else ind.ORDENAVEIS_DO_RANKING)
+    if todas:
+        blocos.insert(3, _por_loja(recorte))
+        # Uma linha por pessoa em cada loja: somada, a venda do Centro parecia
+        # ser da Matriz.
+        consulta = ind.ranking_por_loja(recorte, mes_da_meta)
+        ordenaveis = {**ordenaveis, "loja": ("loja_nome", "nome")}
+    else:
+        consulta = ind.ranking(recorte, mes_da_meta)
+    listagem = montar_pagina(request, consulta,
+                             ordenaveis=ordenaveis,
                              padrao=ind.PADRAO_DO_RANKING,
-                             filtraveis=_FILTRAVEIS,
+                             filtraveis=_FILTRAVEIS_POR_LOJA if todas else _FILTRAVEIS,
                              preservar=("periodo", "de", "ate", "loja"))
     blocos.append(Card(title=_("Ranking de vendedores"), padded=False, body=[
         listagem.barra,
-        Table(columns=_colunas(listagem, com_meta=mes_da_meta is not None),
+        Table(columns=_colunas(listagem, com_meta=mes_da_meta is not None, por_loja=todas),
               rows=listagem.linhas),
         listagem.paginacao,
     ]))

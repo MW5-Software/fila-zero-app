@@ -1005,6 +1005,9 @@ msgstr "Tienda"
 msgid "Todas as lojas"
 msgstr "Todas las tiendas"
 
+msgid "Por loja"
+msgstr "Por tienda"
+
 msgid "Aplicar"
 msgstr "Aplicar"
 

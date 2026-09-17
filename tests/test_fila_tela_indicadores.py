@@ -79,18 +79,86 @@ def test_gerente_ve_so_a_loja_dele_e_a_forjada_e_descartada(rede):
     assert "Ana" not in forjada and "R$ 9.000,00" not in forjada
 
 
-def test_supervisor_ve_todas_e_filtra_por_loja(rede):
+def test_supervisor_escolhe_todas_as_lojas_e_filtra_por_loja(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
     _venda_hoje(rede, rede.ana, rede.matriz, "300")
     sara = logado("sara")
-    assert "R$ 1.000,00" in _html(sara, periodo="hoje")
-    so_matriz = _html(sara, periodo="hoje", loja=str(rede.matriz.pk))
-    assert "R$ 300,00" in so_matriz and "Caio" not in so_matriz
+    assert "R$ 1.000,00" in _html(sara, periodo="hoje", loja="todas")
+    so_centro = _html(sara, periodo="hoje", loja=str(rede.centro.pk))
+    assert "R$ 700,00" in so_centro and "Ana" not in so_centro
 
 
-def test_titular_ve_a_empresa(rede):
+# --- A loja do cabeçalho (17/09/2026) ---------------------------------------
+# O painel somava todas as lojas quando a URL não dizia a loja, e o ranking da
+# Sylvia na Matriz mostrava o vendedor do Centro como se fosse da Matriz.
+
+def _na_loja(cliente, loja):
+    from plataforma.contexto import CHAVE
+
+    sessao = cliente.session
+    sessao[CHAVE] = loja.pk
+    sessao.save()
+    return cliente
+
+
+def test_titular_ve_a_loja_do_cabecalho(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
-    assert "Caio" in _html(logado("sylvia"), periodo="hoje")
+    _venda_hoje(rede, rede.ana, rede.matriz, "300")
+    na_matriz = _html(logado("sylvia"), periodo="hoje")
+    assert "Ana" in na_matriz and "Caio" not in na_matriz
+    assert "R$ 700,00" not in na_matriz
+    no_centro = _html(_na_loja(logado("sylvia"), rede.centro), periodo="hoje")
+    assert "Caio" in no_centro and "Ana" not in no_centro
+
+
+def test_gerente_de_duas_lojas_ve_a_do_cabecalho(rede):
+    from tests.conftest import alocar
+
+    alocar(rede.gil, rede.empresa, "gerente", filial=rede.matriz)
+    _venda_hoje(rede, rede.caio, rede.centro, "700")
+    _venda_hoje(rede, rede.ana, rede.matriz, "300")
+    html = _html(_na_loja(logado("gil"), rede.centro), periodo="hoje")
+    assert "Caio" in html and "Ana" not in html
+    assert "Ana" in _html(_na_loja(logado("gil"), rede.matriz), periodo="hoje")
+
+
+def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
+    import re
+
+    _venda_hoje(rede, rede.caio, rede.centro, "700")
+    _venda_hoje(rede, rede.caio, rede.matriz, "200")
+    html = _html(logado("sylvia"), periodo="hoje", loja="todas")
+    ranking = html[html.index("Ranking de vendedores"):]
+    assert re.search(r"<th[^>]*>\s*<a[^>]*>Loja", ranking)
+    linhas = re.findall(r"<tr[^>]*>(.*?)</tr>", ranking, re.S)
+    do_caio = [l for l in linhas if "Caio" in l]
+    assert len(do_caio) == 2
+    assert any("Centro" in l and "R$ 700,00" in l for l in do_caio)
+    assert any("Matriz" in l and "R$ 200,00" in l for l in do_caio)
+
+
+def test_o_bloco_por_loja_so_aparece_em_todas_as_lojas(rede):
+    _venda_hoje(rede, rede.caio, rede.centro, "700")
+    todas = _html(logado("sylvia"), periodo="hoje", loja="todas")
+    assert 'data-ind="por-loja"' in todas
+    assert "Centro" in todas[todas.index('data-ind="por-loja"'):]
+    assert 'data-ind="por-loja"' not in _html(logado("sylvia"), periodo="hoje")
+
+
+def test_uma_loja_nao_tem_coluna_de_loja(rede):
+    import re
+
+    _venda_hoje(rede, rede.ana, rede.matriz, "300")
+    html = _html(logado("sylvia"), periodo="hoje")
+    assert not re.search(r"<th[^>]*>\s*<a[^>]*>Loja", html)
+
+
+def test_gerente_de_uma_loja_nao_ganha_todas_as_lojas(rede):
+    _venda_hoje(rede, rede.caio, rede.centro, "700")
+    _venda_hoje(rede, rede.ana, rede.matriz, "9000")
+    html = _html(logado("gil"), periodo="hoje", loja="todas")
+    assert "Caio" in html and "Ana" not in html
+    assert 'data-ind="por-loja"' not in html
 
 
 def test_ranking_tem_filtro_ordenacao_e_paginacao(rede):
@@ -98,7 +166,7 @@ def test_ranking_tem_filtro_ordenacao_e_paginacao(rede):
         _MARCADOR_FILTRO, _MARCADOR_PAGINACAO, _PADRAO_CABECALHO_ORDENAVEL)
 
     _venda_hoje(rede, rede.caio, rede.centro, "700")
-    html = _html(logado("sylvia"), periodo="hoje")
+    html = _html(logado("sylvia"), periodo="hoje", loja=str(rede.centro.pk))
     assert "<table" in html
     assert _MARCADOR_FILTRO in html and _MARCADOR_PAGINACAO in html
     assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
@@ -137,7 +205,7 @@ def test_todas_as_lojas_e_intervalo_podem_ser_escolhidos_de_volta(rede):
     import re
 
     html = _html(logado("sara"), periodo="hoje", loja=str(rede.centro.pk))
-    todas = re.search(r'<option[^>]*value=""[^>]*>Todas as lojas</option>', html)
+    todas = re.search(r'<option[^>]*value="todas"[^>]*>Todas as lojas</option>', html)
     assert todas and "disabled" not in todas.group(0)
 
 
@@ -163,7 +231,7 @@ def test_esquecido_leva_a_fila_da_loja_do_item(rede):
     Presenca.irrestritos.create(empresa=rede.empresa, filial=rede.centro,
                                 pessoa=rede.caio,
                                 entrada=timezone.now() - timedelta(days=2))
-    html = _html(logado("sara"), periodo="hoje")
+    html = _html(logado("sara"), periodo="hoje", loja="todas")
     assert f"/filial/trocar?filial_id={rede.centro.pk}&amp;voltar=%2Ffila" in html
 
 
@@ -172,7 +240,7 @@ def test_a_linha_de_comparacao_so_aparece_quando_ha_base(rede):
     mas "Comparado a …" embaixo de "Sem base para comparar" se contradiz."""
     from fila.models import Atendimento
 
-    sem_base = _html(logado("sylvia"), periodo="hoje")
+    sem_base = _html(logado("sylvia"), periodo="hoje", loja=str(rede.centro.pk))
     assert "Sem base para comparar" in sem_base
     assert "Comparado a" not in sem_base
 
@@ -181,7 +249,7 @@ def test_a_linha_de_comparacao_so_aparece_quando_ha_base(rede):
         inicio=ontem.inicio - timedelta(days=1), fim=ontem.fim - timedelta(days=1))
     _venda_hoje(rede, rede.caio, rede.centro, "300")
     # A venda de ontem caiu antes da mesma hora de hoje: é base para "Hoje".
-    com_base = _html(logado("sylvia"), periodo="hoje")
+    com_base = _html(logado("sylvia"), periodo="hoje", loja=str(rede.centro.pk))
     assert "Comparado a" in com_base
 
 
@@ -238,7 +306,7 @@ def test_lista_ranqueada_mede_a_barra_pelo_maior_e_a_parte_pelo_total():
 
 def test_o_painel_abre_no_vendido_e_marca_o_dia_em_andamento(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
-    html = _html(logado("sylvia"), periodo="mes")
+    html = _html(logado("sylvia"), periodo="mes", loja=str(rede.centro.pk))
     assert '<input type="radio" name="ind-serie" value="vendido" checked>' in html
     assert html.count('name="ind-serie"') == 4
     assert 'class="ind-serie visivel" data-serie="vendido"' in html
@@ -255,16 +323,16 @@ def test_periodo_terminado_nao_tem_coluna_em_andamento(rede):
         inicio=ontem.inicio - timedelta(days=1), fim=ontem.fim - timedelta(days=1))
     # Por hora (um dia só) e por dia (intervalo que acabou ontem): nenhum dos
     # dois caminhos pode listrar a última coluna.
-    assert "ind-col agora" not in _html(logado("sylvia"), periodo="ontem")
+    assert "ind-col agora" not in _html(logado("sylvia"), periodo="ontem", loja=str(rede.centro.pk))
     ontem_local = timezone.localdate() - timedelta(days=1)
     intervalo = _html(logado("sylvia"), de=str(ontem_local - timedelta(days=3)),
-                      ate=str(ontem_local))
+                      ate=str(ontem_local), loja=str(rede.centro.pk))
     assert "ind-serie" in intervalo and "ind-col agora" not in intervalo
 
 
 def test_as_listas_dizem_o_total_no_subtitulo(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
-    html = _html(logado("sylvia"), periodo="hoje")
+    html = _html(logado("sylvia"), periodo="hoje", loja=str(rede.centro.pk))
     assert "1 venda" in html
     assert "0 atendimentos sem venda" in html
 
@@ -292,7 +360,7 @@ def test_a_faixa_da_meta_aparece_no_mes_e_some_em_7_dias(rede):
 def test_todas_as_lojas_diz_quantas_tem_meta(rede):
     _meta_da_loja(rede, rede.centro, "1000")
     _meta_da_loja(rede, rede.centro, "600", pessoa=rede.caio)
-    html = _html(logado("sara"), periodo="mes")
+    html = _html(logado("sara"), periodo="mes", loja="todas")
     assert "1 de 2 lojas com meta" in html
     assert "As metas dos vendedores somam R$ 600,00, abaixo da meta da loja." in html
 

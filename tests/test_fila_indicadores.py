@@ -361,3 +361,47 @@ def test_posicoes_so_do_recorte(loja):
     atendimento(loja, loja.ana, d, d, vendeu="100")
     atendimento(loja, loja.bia, d, d, vendeu="999", filial=centro)
     assert posicoes_por_vendido(_recorte(loja)) == {loja.ana.pk: 1}
+
+
+def test_ranking_por_loja_separa_a_pessoa_em_cada_loja(loja):
+    """17/09/2026: em "Todas as lojas", quem vendeu na Matriz e no Centro
+    aparecia numa linha só, somada, e sem dizer a loja — o vendedor do Centro
+    parecia estar na Matriz. Agora é uma linha por pessoa em cada loja, e a
+    pausa também é a daquela loja."""
+    from fila.indicadores import ranking_por_loja
+    from fila.models import Pausa
+
+    centro = nova_loja(loja.empresa, "Centro")
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="300")
+    atendimento(loja, loja.ana, d, d, vendeu="200", filial=centro)
+    atendimento(loja, loja.ana, d, d, filial=centro)
+    atendimento(loja, loja.bia, d, d, vendeu="500")
+    Pausa.irrestritos.create(empresa=loja.empresa, filial=loja.matriz,
+                             pessoa=loja.ana, presenca=_presenca(loja, loja.ana),
+                             tipo=loja.cad.tipo, inicio=local(2026, 9, 10, 12),
+                             fim=local(2026, 9, 10, 12, 45))
+    linhas = {(l.pk, l.loja_id): l
+              for l in ranking_por_loja(_recorte(loja, lojas=[loja.matriz, centro]))}
+    assert set(linhas) == {(loja.ana.pk, loja.matriz.pk), (loja.ana.pk, centro.pk),
+                           (loja.bia.pk, loja.matriz.pk)}
+    na_matriz, no_centro = linhas[loja.ana.pk, loja.matriz.pk], linhas[loja.ana.pk, centro.pk]
+    assert (na_matriz.vendido, na_matriz.atendimentos, na_matriz.pausa) == (
+        Decimal("300"), 1, timedelta(minutes=45))
+    assert (no_centro.vendido, no_centro.atendimentos, no_centro.pausa) == (
+        Decimal("200"), 2, timedelta(0))
+    assert no_centro.conversao == 50.0 and no_centro.nome == "Ana"
+    assert str(no_centro.loja) == str(centro)
+
+
+def test_por_loja_compara_as_lojas_do_recorte(loja):
+    from fila.indicadores import por_loja
+
+    centro = nova_loja(loja.empresa, "Centro")
+    d = local(2026, 9, 10, 10)
+    atendimento(loja, loja.ana, d, d, vendeu="300")
+    atendimento(loja, loja.ana, d, d, vendeu="200", filial=centro)
+    atendimento(loja, loja.bia, d, d, filial=centro)
+    linhas = {l.loja.pk: l.numeros for l in por_loja(_recorte(loja, lojas=[loja.matriz, centro]))}
+    assert (linhas[loja.matriz.pk].vendido, linhas[loja.matriz.pk].atendimentos) == (Decimal("300"), 1)
+    assert (linhas[centro.pk].vendido, linhas[centro.pk].conversao) == (Decimal("200"), 50.0)

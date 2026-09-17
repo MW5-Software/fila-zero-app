@@ -17,12 +17,12 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import NamedTuple
 
-from django.db.models import (Case, Count, DateTimeField, DecimalField,
+from django.db.models import (Case, CharField, Count, DateTimeField, DecimalField,
                               DurationField, ExpressionWrapper, F, FloatField,
                               IntegerField,
                               OuterRef, Q, Subquery, Sum, Value, When)
 from django.db.models.functions import (Cast, Coalesce, Greatest, Least,
-                                       TruncDate, TruncHour)
+                                       NullIf, TruncDate, TruncHour)
 from django.utils import timezone
 
 from .estado import nome_de
@@ -32,7 +32,8 @@ from .periodo import Periodo, inicio_do_dia
 __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
            "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
-           "por_dia", "por_grupo", "posicao_no_mes", "posicoes_por_vendido", "ranking", "variacao"]
+           "por_dia", "por_grupo", "por_loja", "posicao_no_mes", "posicoes_por_vendido", "ranking",
+           "ranking_por_loja", "variacao"]
 
 ZERO = Decimal("0")
 _DINHEIRO = DecimalField(max_digits=14, decimal_places=2)
@@ -325,6 +326,120 @@ def ranking(recorte: Recorte, mes: "date | None" = None):
                     Cast("vendido", real) * 100.0 / Cast("meta", real),
                     output_field=real),
                 output_field=real)))
+
+
+class _LinhaPorLoja(dict):
+    """Uma linha de `ranking_por_loja`: o dicionário do `values()` lido como
+    objeto, para a MESMA coluna da tela (`p.nome`, `p.vendido`) desenhar as
+    duas consultas."""
+
+    __getattr__ = dict.__getitem__
+
+
+class _ConsultaPorLoja:
+    """Embrulha a consulta de `ranking_por_loja` para as linhas saírem como
+    `_LinhaPorLoja`, com a loja já carregada. A listagem só filtra, ordena,
+    conta e fatia: o resto vai direto à consulta de verdade."""
+
+    def __init__(self, consulta, lojas):
+        self._consulta, self._lojas = consulta, {l.pk: l for l in lojas}
+
+    def filter(self, *args, **kwargs):
+        return _ConsultaPorLoja(self._consulta.filter(*args, **kwargs), self._lojas.values())
+
+    def order_by(self, *campos):
+        return _ConsultaPorLoja(self._consulta.order_by(*campos), self._lojas.values())
+
+    def count(self) -> int:
+        return self._consulta.count()
+
+    def __getitem__(self, fatia):
+        return [_LinhaPorLoja(linha, loja=self._lojas[linha["loja_id"]])
+                for linha in self._consulta[fatia]]
+
+    def __iter__(self):
+        return iter(self[:])
+
+    def __getattr__(self, nome):
+        return getattr(self._consulta, nome)
+
+
+def ranking_por_loja(recorte: Recorte, mes: "date | None" = None):
+    """O ranking de "Todas as lojas": uma linha por pessoa EM CADA loja.
+
+    Somar a pessoa entre as lojas (o `ranking`) escondia de onde veio a venda:
+    na tela da Sylvia, o vendedor do Centro aparecia no meio da Matriz
+    (17/09/2026). A pausa e a meta também são as daquela loja.
+
+    Agrupa o próprio atendimento por vendedor e loja, e não parte do usuário,
+    porque a linha é o par, e o usuário não tem relação reversa com o
+    histórico (ver `_por_pessoa`). `pk` é o do vendedor, para a mesma regra de
+    posição e de "sou eu" valer nas duas consultas.
+    """
+    venda = Q(resultado=Resultado.VENDEU)
+    de, ate = recorte.periodo.de, recorte.periodo.ate
+    pausas = (Pausa.objects.da_empresa(recorte.empresa)
+              .filter(pessoa=OuterRef("vendedor"), filial=OuterRef("filial"),
+                      fim__isnull=False, inicio__lt=ate, fim__gt=de)
+              .order_by().values("pessoa")
+              .annotate(x=Sum(ExpressionWrapper(
+                  Least("fim", Value(ate, output_field=DateTimeField()))
+                  - Greatest("inicio", Value(de, output_field=DateTimeField())),
+                  output_field=DurationField())))
+              .values("x")[:1])
+    consulta = (_atendimentos(recorte).order_by()
+                .values("vendedor", "filial")
+                .annotate(
+                    pk=F("vendedor"), loja_id=F("filial"),
+                    nome=Coalesce(NullIf("vendedor__nome", Value("")), "vendedor__email",
+                                  output_field=CharField()),
+                    loja_nome=F("filial__apelido"),
+                    atendimentos=Count("pk"),
+                    vendas=Count("pk", filter=venda),
+                    vendido=Coalesce(Sum("total", filter=venda), Value(ZERO),
+                                     output_field=_DINHEIRO),
+                    pediu=Count("pk", filter=Q(cliente_pediu=True)),
+                    pausa=Coalesce(Subquery(pausas, output_field=DurationField()),
+                                   Value(timedelta(0)), output_field=DurationField()))
+                .annotate(
+                    conversao=Case(When(atendimentos=0, then=Value(None)),
+                                   default=ExpressionWrapper(F("vendas") * 100.0 / F("atendimentos"),
+                                                             output_field=FloatField()),
+                                   output_field=FloatField()),
+                    ticket=Case(When(vendas=0, then=Value(None)),
+                                default=ExpressionWrapper(F("vendido") / F("vendas"),
+                                                          output_field=_DINHEIRO),
+                                output_field=_DINHEIRO)))
+    if mes is not None:
+        from .models import MetaDeVenda
+
+        real = FloatField()
+        meta = (MetaDeVenda.objects.da_empresa(recorte.empresa)
+                .filter(pessoa=OuterRef("vendedor"), filial=OuterRef("filial"), mes=mes)
+                .values("valor")[:1])
+        consulta = (consulta
+                    .annotate(meta=Subquery(meta, output_field=_DINHEIRO))
+                    .annotate(pct_meta=Case(
+                        When(meta__isnull=True, then=Value(None)),
+                        default=ExpressionWrapper(
+                            Cast("vendido", real) * 100.0 / Cast("meta", real),
+                            output_field=real),
+                        output_field=real)))
+    return _ConsultaPorLoja(consulta, recorte.lojas)
+
+
+@dataclass(frozen=True)
+class DaLoja:
+    loja: object
+    numeros: Numeros
+
+
+def por_loja(recorte: Recorte) -> "list[DaLoja]":
+    """Os números de cada loja do recorte, lado a lado, na ordem do recorte
+    (a do seletor). Uma consulta por loja: são poucas, e `numeros` já é a
+    conta que o painel usa, então as duas telas não divergem."""
+    return [DaLoja(loja, numeros(Recorte(recorte.empresa, (loja,), recorte.periodo)))
+            for loja in recorte.lojas]
 
 
 def posicoes_por_vendido(recorte: Recorte) -> "dict[int, int]":
