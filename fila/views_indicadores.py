@@ -29,6 +29,7 @@ from comum.ambiente import ambiente
 from comum.guardas_de_acesso import exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
 from comum.listagem import ColunaFiltravel, montar_pagina
+from comum.pedido import inteiro_do_texto
 from comum.personificacao import aviso as aviso_de_personificacao
 from nucleo.components import (Alert, Button, Card, Cell, Column, Form,
                                FormGrid, Option, PageHeader, Raw, Select,
@@ -267,6 +268,29 @@ def _listas(recorte, n, vendedor=None):
 TODAS = "todas"
 
 
+def _empresas_do_pedido(request, pessoa):
+    """`(empresas do recorte, empresa)`, com `empresa` nula em "Todas as
+    empresas" (17/09/2026).
+
+    A mesma regra da loja, um nível acima: sem `?empresa=` válida vale a do
+    cabeçalho, e "todas" só existe para quem alcança mais de uma. Uma empresa
+    forjada é descartada, e o recorte cai na do cabeçalho — ela nunca amplia
+    o alcance.
+    """
+    from plataforma.contexto import empresa_atual
+
+    alcancadas = ind.empresas_com_relatorio(pessoa)
+    do_cabecalho = empresa_atual(request)
+    if len(alcancadas) > 1 and request.GET.get("empresa") == TODAS:
+        return alcancadas, None
+    escolhida = inteiro_do_texto(request.GET.get("empresa", ""))
+    uma = [e for e in alcancadas if e.pk == escolhida]
+    if not uma:
+        uma = [e for e in alcancadas if do_cabecalho and e.pk == do_cabecalho.pk]
+    uma = uma or alcancadas[:1]
+    return uma, (uma[0] if uma else None)
+
+
 def _lojas_do_pedido(request, permitidas):
     """`(lojas do recorte, loja)`, com `loja` nula em "Todas as lojas".
 
@@ -290,7 +314,7 @@ def _lojas_do_pedido(request, permitidas):
     return uma, uma[0]
 
 
-def _filtros(request, periodo, permitidas, loja):
+def _filtros(request, periodo, permitidas, loja, empresas=(), empresa=None):
     campos = [
         # Só atalhos desde 17/09/2026: De/Até saíram a pedido do cliente.
         # "Todas as lojas" é opção comum, e não `empty_label`: o do design
@@ -300,6 +324,14 @@ def _filtros(request, periodo, permitidas, loja):
         Select(name="periodo", label=_("Período"), span=3, value=periodo.chave,
                options=[Option(chave, rotulo) for chave, rotulo in ATALHOS]),
     ]
+    # A empresa vem antes da loja: é ela que contém as lojas, e a ordem dos
+    # campos é a da hierarquia (17/09/2026).
+    if len(empresas) > 1:
+        campos.append(Select(
+            name="empresa", label=_("Empresa"), span=3,
+            value=str(empresa.pk) if empresa else TODAS,
+            options=[*(Option(str(e.pk), str(e)) for e in empresas),
+                     Option(TODAS, _("Todas as empresas"))]))
     if len(permitidas) > 1:
         campos.append(Select(
             name="loja", label=_("Loja"), span=3, value=str(loja.pk) if loja else TODAS,
@@ -310,7 +342,8 @@ def _filtros(request, periodo, permitidas, loja):
     # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
     # troca a querystring inteira, e aplicar o período apagava os dois.
     for chave, valor in request.GET.items():
-        if chave not in ("periodo", "loja", "pagina", "ranking_mes") and valor:
+        if chave not in ("periodo", "empresa", "loja", "pagina",
+                         "ranking_mes") and valor:
             campos.append(Raw(html=format_html(
                 '<input type="hidden" name="{}" value="{}">', chave, valor)))
     # Sem título: o período e a loja escolhidos já estão nos campos, e o
@@ -374,12 +407,12 @@ def _colunas(pagina, com_meta=False, por_loja=False):
     return colunas
 
 
-def _por_loja(recorte):
-    """As lojas lado a lado, só em "Todas as lojas": é a separação que a soma
-    esconde. Lista, e não `<table>`: são poucas linhas, sem filtro nem página
-    que façam sentido, e a barra do vendido compara as lojas de relance."""
-    linhas = ind.por_loja(recorte)
-    maior = max((float(l.numeros.vendido) for l in linhas), default=0) or 1
+def _lado_a_lado(titulo, marca, linhas):
+    """Uma lista comparando os pedaços do recorte (lojas ou empresas), com a
+    barra do vendido medindo cada um contra o maior. Lista, e não `<table>`:
+    são poucas linhas, sem filtro nem página que façam sentido, e a barra
+    compara de relance."""
+    maior = max((float(n.vendido) for _nome, n in linhas), default=0) or 1
     itens = format_html_join("", (
         '<li><span class="ind-loja-nome">{}</span>'
         '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
@@ -387,15 +420,28 @@ def _por_loja(recorte):
         '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
         '<span class="ind-loja-num"><small>{}</small><b>{}</b></span>'
         '<span class="ind-rank-barra"><span style="width: {}%"></span></span></li>'), (
-        (l.loja,
-         _("Vendido"), em_reais(l.numeros.vendido),
-         _("Atendimentos"), l.numeros.atendimentos,
-         _("Conversão"), _pct(l.numeros.conversao),
-         _("Ticket médio"), _dinheiro(l.numeros.ticket),
-         f"{100 * float(l.numeros.vendido) / maior:.2f}")
-        for l in linhas))
-    return Card(title=_("Por loja"), attrs={"data-ind": "por-loja"},
+        (nome,
+         _("Vendido"), em_reais(n.vendido),
+         _("Atendimentos"), n.atendimentos,
+         _("Conversão"), _pct(n.conversao),
+         _("Ticket médio"), _dinheiro(n.ticket),
+         f"{100 * float(n.vendido) / maior:.2f}")
+        for nome, n in linhas))
+    return Card(title=titulo, attrs={"data-ind": marca},
                 body=Raw(html=format_html('<ol class="ind-lojas">{}</ol>', itens)))
+
+
+def _por_empresa(recorte):
+    return _lado_a_lado(_("Por empresa"), "por-empresa",
+                        [(str(l.empresa), l.numeros) for l in ind.por_empresa(recorte)])
+
+
+def _por_loja(recorte):
+    """As lojas lado a lado, só em "Todas as lojas": é a separação que a soma
+    esconde. Lista, e não `<table>`: são poucas linhas, sem filtro nem página
+    que façam sentido, e a barra do vendido compara as lojas de relance."""
+    return _lado_a_lado(_("Por loja"), "por-loja",
+                        [(str(l.loja), l.numeros) for l in ind.por_loja(recorte)])
 
 
 def mes_do_ranking(request):
@@ -441,16 +487,34 @@ def cartao_do_ranking(request, mes, *, subtitulo=None, attrs=None, body=None):
 
 def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     """Os blocos do dashboard (filtros, esquecidos, números, gráficos e
-    ranking) para as lojas `permitidas`, que quem chama já tirou do alcance do
-    cargo (`indicadores.lojas_com_relatorio`)."""
+    ranking).
+
+    `permitidas` são as lojas da empresa do cabeçalho, que quem chama já tirou
+    do alcance do cargo. Em "Todas as empresas" (17/09/2026) as lojas passam a
+    ser as das empresas alcançadas, pela mesma regra, uma empresa por vez.
+    """
+    from contas.identidade import usuario_de
+
     periodo = periodo_do_pedido(request.GET)
+    pessoa = usuario_de(request.usuario)
+    empresas, escolhida = _empresas_do_pedido(request, pessoa)
+    if escolhida is None:
+        # "Todas as empresas": as lojas de cada uma, pela mesma pergunta de
+        # sempre (`lojas_com_relatorio`), e o campo Loja fica com todas.
+        permitidas = [loja for e in empresas
+                      for loja in ind.lojas_com_relatorio(pessoa, e)]
+    elif escolhida.pk != empresa.pk:
+        empresa = escolhida
+        permitidas = ind.lojas_com_relatorio(pessoa, escolhida)
     lojas, loja = _lojas_do_pedido(request, permitidas)
-    recorte = ind.Recorte(empresa, tuple(lojas), periodo)
-    anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo))
+    recorte = ind.Recorte(empresa, tuple(lojas), periodo, tuple(empresas))
+    anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo),
+                           tuple(empresas))
     n, a = ind.numeros(recorte), ind.numeros(anterior)
     mes_da_meta = regras_de_meta.mes_do_periodo(periodo)
     blocos = [
-        _filtros(request, periodo, permitidas, loja),
+        _filtros(request, periodo, permitidas, loja,
+                 empresas=ind.empresas_com_relatorio(pessoa), empresa=escolhida),
         _esquecidos(ind.esquecidos(empresa, lojas)),
         _painel(periodo, loja, n, a, anterior, ind.por_dia(recorte),
                 meta=regras_de_meta.meta_do_recorte(recorte)),
@@ -458,8 +522,10 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     ]
     todas = loja is None
     mes = mes_do_ranking(request)
-    do_mes = ind.recorte_do_mes(empresa, tuple(lojas), mes)
+    do_mes = ind.recorte_do_mes(empresa, tuple(lojas), mes, tuple(empresas))
     ordenaveis = ind.ORDENAVEIS_DO_RANKING_COM_META
+    if escolhida is None:
+        blocos.insert(3, _por_empresa(recorte))
     if todas:
         blocos.insert(3, _por_loja(recorte))
         # Uma linha por pessoa em cada loja: somada, a venda do Centro parecia
@@ -472,7 +538,8 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                              ordenaveis=ordenaveis,
                              padrao=ind.PADRAO_DO_RANKING,
                              filtraveis=_FILTRAVEIS_POR_LOJA if todas else _FILTRAVEIS,
-                             preservar=("periodo", "loja", "ranking_mes"))
+                             preservar=("periodo", "empresa", "loja",
+                                        "ranking_mes"))
     blocos.append(cartao_do_ranking(request, mes, attrs={"data-ind": "ranking"}, body=[
         listagem.barra,
         Table(columns=_colunas(listagem, com_meta=True, por_loja=todas),

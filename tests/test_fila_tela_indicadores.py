@@ -448,3 +448,86 @@ def test_no_mes_atual_nao_ha_seta_para_o_seguinte(rede):
     ranking = _ranking(_html(logado("gil")))
     assert 'aria-label="Mês seguinte"' not in ranking
     assert 'aria-label="Mês anterior"' in ranking
+
+
+# --- Várias empresas na conta (spec 2026-09-17, E5) --------------------------
+
+@pytest.fixture
+def duas_empresas(rede):
+    """A conta da Sylvia com uma segunda empresa, cada uma com a sua loja e o
+    seu vendedor."""
+    from types import SimpleNamespace
+
+    from plataforma.models import Empresa, Filial
+
+    beta = Empresa.objects.create(razao_social="Beta Ltda", dono=rede.titular)
+    loja_beta = Filial.objects.get(empresa=beta, e_matriz=True)
+    return SimpleNamespace(
+        rede=rede, alfa=rede.empresa, beta=beta,
+        loja_alfa=rede.matriz, loja_beta=loja_beta,
+        elis=pessoa_na_loja("elis", beta, loja_beta))
+
+
+def _venda_em(empresa, pessoa, loja, valor):
+    from fila.models import Atendimento, Presenca
+
+    agora = timezone.now()
+    presenca = Presenca.irrestritos.create(empresa=empresa, filial=loja,
+                                           pessoa=pessoa, entrada=agora,
+                                           saida=agora)
+    return Atendimento.irrestritos.create(
+        empresa=empresa, filial=loja, vendedor=pessoa, presenca=presenca,
+        inicio=agora - timedelta(minutes=5), fim=agora, resultado="vendeu",
+        total=Decimal(valor))
+
+
+def _na_empresa(cliente, empresa):
+    from plataforma.contexto import CHAVE_EMPRESA
+
+    sessao = cliente.session
+    sessao[CHAVE_EMPRESA] = empresa.pk
+    sessao.save()
+    return cliente
+
+
+def test_o_painel_abre_na_empresa_do_cabecalho(duas_empresas):
+    d = duas_empresas
+    _venda_em(d.alfa, d.rede.ana, d.loja_alfa, "300")
+    _venda_em(d.beta, d.elis, d.loja_beta, "700")
+    na_alfa = _html(_na_empresa(logado("sylvia"), d.alfa), periodo="hoje")
+    assert "R$ 300,00" in na_alfa
+    assert "Elis" not in na_alfa and "R$ 700,00" not in na_alfa
+    na_beta = _html(_na_empresa(logado("sylvia"), d.beta), periodo="hoje")
+    assert "R$ 700,00" in na_beta and "Ana" not in na_beta
+
+
+def test_todas_as_empresas_soma_e_separa(duas_empresas):
+    d = duas_empresas
+    _venda_em(d.alfa, d.rede.ana, d.loja_alfa, "300")
+    _venda_em(d.beta, d.elis, d.loja_beta, "700")
+    html = _html(logado("sylvia"), periodo="hoje", empresa="todas", loja="todas")
+    assert "R$ 1.000,00" in html
+    por_empresa = html[html.index('data-ind="por-empresa"'):]
+    assert "Beta" in por_empresa
+    ranking = _ranking(html)
+    assert "Ana" in ranking and "Elis" in ranking
+
+
+def test_o_campo_de_empresa_so_aparece_para_quem_alcanca_mais_de_uma(duas_empresas):
+    d = duas_empresas
+    com_duas = _html(logado("sylvia"), periodo="hoje")
+    assert 'name="empresa"' in com_duas
+    # O gerente do Centro alcança uma empresa só: para ele o campo não existe.
+    assert 'name="empresa"' not in _html(logado("gil"), periodo="hoje")
+
+
+def test_empresa_forjada_nao_amplia_o_recorte(duas_empresas):
+    from plataforma.models import Empresa
+
+    from tests.conftest import abrir_conta
+
+    d = duas_empresas
+    alheia = Empresa.objects.create(razao_social="De Outro Cliente Ltda")
+    abrir_conta(alheia, "outro-dono")
+    html = _html(logado("sylvia"), periodo="hoje", empresa=str(alheia.pk))
+    assert "De Outro Cliente" not in html
