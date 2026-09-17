@@ -28,6 +28,26 @@ from django.utils.translation import gettext_lazy as _
 #: instalação nova sobe com ZERO empresas, e a primeira aparece quando a MW5
 #: cadastra o primeiro titular. É ela quem precisa da tela ligada desde o
 #: primeiro dia para ver o que criou.
+#: "Eu sou a Conta. Meu ícone é o prédio. Eu moro no grupo Cadastro, no topo.
+#: Minha rota é /conta. Eu crio a permissão conta.ver."
+#:
+#: `ativo_por_padrao=True`: é a tela que explica a hierarquia da instalação
+#: (conta → empresas → lojas) desde 17/09/2026, e uma instalação nova não
+#: pode nascer sem ela até a MW5 lembrar de ligar a chavinha — o mesmo motivo
+#: de Empresa e Usuários.
+#:
+#: `ordem=-5`: antes de Empresa (-4), porque a conta contém as empresas.
+MODULO_CONTA = ModuloSpec(
+    chave="conta",
+    rotulo=_("Conta"),
+    icone="building",
+    grupo="Cadastro",
+    ordem=-5,
+    rota="/conta",
+    permissoes=("conta.ver",),
+    ativo_por_padrao=True,
+)
+
 MODULO_EMPRESA = ModuloSpec(
     chave="empresa",
     #: **"Empresa", no singular — e a terceira vez que este rótulo muda.**

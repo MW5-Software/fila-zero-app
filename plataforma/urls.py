@@ -1,11 +1,13 @@
 from django.urls import path
 
 from . import (
-    views, views_aparencia_da_empresa, views_empresa, views_empresa_contexto,
-    views_falhas, views_filial, views_filiais, views_marca, views_parametros,
+    views, views_aparencia_da_empresa, views_conta, views_empresa,
+    views_empresa_contexto, views_falhas, views_filial, views_filiais,
+    views_marca, views_parametros,
 )
 
 urlpatterns = [
+    path("conta", views_conta.conta, name="conta"),
     path("mw5/aparencia", views.aparencia, name="aparencia"),
     path("mw5/aparencia/logos", views_marca.aparencia_logo, name="aparencia_logo"),
     path("mw5/aparencia/previa.css", views.aparencia_previa, name="aparencia_previa"),

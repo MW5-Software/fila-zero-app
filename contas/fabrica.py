@@ -30,7 +30,8 @@ __all__ = ["DE_FABRICA", "aplicar"]
 #: módulo só porque ela nasceu. Quem ganha por omissão é só quem já pode tudo.
 DE_FABRICA: dict[int, tuple[str, ...]] = {
     Nivel.MASTER: (
-        "auditoria.*", "cargos.*", "empresa.*", "filiais.*", "fila.*",
+        "auditoria.*", "cargos.*", "conta.*", "empresa.*", "filiais.*",
+        "fila.*",
         "parametros.*", "usuarios.*",
     ),
     #: O titular cadastra e aloca a gente da conta dele e mexe no cadastro da
@@ -54,7 +55,9 @@ DE_FABRICA: dict[int, tuple[str, ...]] = {
     #: **A fila (Fila Zero):** a Sylvia atende, corrige, mantém os cadastros,
     #: lê os indicadores e define as metas.
     Nivel.TITULAR: (
-        "cargos.editar", "empresa.editar",
+        #: `conta.ver` (17/09/2026): a tela que mostra a conta dele, as
+        #: empresas e as lojas de cada uma. É leitura.
+        "cargos.editar", "conta.ver", "empresa.editar",
         "filiais.editar",
         "fila.cadastros", "fila.gerenciar", "fila.metas", "fila.participar",
         "fila.relatorios", "fila.ver",

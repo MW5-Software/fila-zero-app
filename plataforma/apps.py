@@ -115,10 +115,12 @@ class PlataformaConfig(AppConfig):
         # corpo do módulo dependeria da ordem de import entre os apps.
         from .declaracao import registrar
         from .modulo import (
-            MODULO_APARENCIA, MODULO_EMPRESA, MODULO_FALHAS, MODULO_FILIAIS,
+            MODULO_APARENCIA, MODULO_CONTA, MODULO_EMPRESA, MODULO_FALHAS,
+            MODULO_FILIAIS,
             MODULO_MODULOS, MODULO_PARAMETROS,
         )
 
+        registrar(MODULO_CONTA)
         registrar(MODULO_EMPRESA)
         registrar(MODULO_FILIAIS)
         registrar(MODULO_PARAMETROS)
