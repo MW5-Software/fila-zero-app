@@ -5,6 +5,9 @@ __pycache__/
 .env
 *.log
 .superpowers/
+# Prints tirados pelo navegador durante o desenvolvimento: são rascunho,
+# como as maquetes acima.
+.playwright-mcp/
 staticfiles/
 docker-compose.override.yml
 
