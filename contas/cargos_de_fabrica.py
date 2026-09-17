@@ -25,6 +25,16 @@ from __future__ import annotations
 
 __all__ = ["DE_FABRICA", "garantir_cargos_de_fabrica", "semear_cargos"]
 
+#: Quem cada cargo de fábrica pode conceder numa alocação (17/09/2026, pedido
+#: do cliente): o gerente cria vendedor, e o supervisor é o gerente com
+#: alcance maior — cria vendedor e gerente. Por NOME de cargo de fábrica, que
+#: é o identificador estável; a lista de um cargo criado pelo titular é
+#: marcada por ele em `/cargos`.
+CONCEDE: "dict[str, tuple[str, ...]]" = {
+    "supervisor": ("vendedor", "gerente"),
+    "gerente": ("vendedor",),
+}
+
 #: `(nome, rotulo, alcance, e_cliente, permissoes)`. Alcance em texto e
 #: permissões no vocabulário do núcleo (`modulo.acao`), para esta lista não
 #: depender de model nenhum.
@@ -95,7 +105,25 @@ def semear_cargos(conta, apps=None, using=None) -> int:
             content_type__app_label=app_label, content_type__model=model,
             codename__in=[chave.replace(".", "_") for chave in chaves]))
         criados += 1
+    _ligar_quem_concede_quem(cargos, conta)
     return criados
+
+
+def _ligar_quem_concede_quem(cargos, conta) -> None:
+    """A lista `pode_conceder` dos cargos de fábrica desta conta.
+
+    Só preenche o que está VAZIO, pelo mesmo motivo de a semeadura só criar o
+    que falta: quem apagou a lista de propósito não a vê voltar na próxima
+    `migrate`. Roda depois de criar todos, porque o gerente pode ser criado
+    antes do vendedor que ele concede.
+    """
+    da_conta = {c.nome: c for c in cargos.filter(conta_id=conta.guid)}
+    for nome, concedidos in CONCEDE.items():
+        cargo = da_conta.get(nome)
+        if cargo is None or cargo.pode_conceder.exists():
+            continue
+        cargo.pode_conceder.set([da_conta[n] for n in concedidos
+                                 if n in da_conta])
 
 
 def garantir_cargos_de_fabrica(apps=None, using=None) -> int:

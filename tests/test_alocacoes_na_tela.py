@@ -250,3 +250,27 @@ class TestATela:
         pedido = RequestFactory().get("/")
         pedido.session = {"usuario_id": conta["gil"].pk}
         assert pode(usuario_da_sessao(pedido), "usuarios.editar")
+
+
+class TestOQueCadaCargoPodeConceder:
+    """17/09/2026: a lista do cargo de quem edita é a última trava."""
+
+    def test_gerente_com_a_lista_so_cria_o_que_esta_nela(self, conta):
+        gil, cargos = conta["gil"], conta["cargos"]
+        cargos["gerente"].pode_conceder.set([cargos["vendedor"]])
+        cliente = _entrar("gil@teste.com")
+        recusado = _criar(cliente, "novo-rep@teste.com",
+                          (conta["alfa"], conta["norte"], cargos["representante"]))
+        assert not Usuario.objects.filter(email="novo-rep@teste.com").exists()
+        assert "Você não pode dar o cargo" in recusado.content.decode()
+        _criar(cliente, "novo-vend@teste.com",
+               (conta["alfa"], conta["norte"], cargos["vendedor"]))
+        assert Usuario.objects.filter(email="novo-vend@teste.com").exists()
+
+    def test_sem_lista_o_gerente_continua_como_antes(self, conta):
+        gil, cargos = conta["gil"], conta["cargos"]
+        cargos["gerente"].pode_conceder.clear()
+        cliente = _entrar("gil@teste.com")
+        _criar(cliente, "outro-rep@teste.com",
+               (conta["alfa"], conta["norte"], cargos["representante"]))
+        assert Usuario.objects.filter(email="outro-rep@teste.com").exists()

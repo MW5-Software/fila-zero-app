@@ -285,6 +285,13 @@ mesma Ana é Gerente na Centro e Vendedora na Norte. O cargo carrega:
 Toda conta nasce com **Supervisor, Gerente, Vendedor, Representante e Cliente**
 (`contas/cargos_de_fabrica.py`), e o titular cria outros em `/cargos`.
 
+**Cada cargo diz quais cargos pode conceder** (`Cargo.pode_conceder`,
+17/09/2026): o Gerente de fábrica cria Vendedor, e o Supervisor cria Vendedor
+e Gerente. Lista vazia é a regra de antes (só permissões e alcance), e por
+isso a lista é uma trava A MAIS, nunca a menos — marcar Supervisor na lista
+do Gerente não o faz poder dar Supervisor. A semeadura preenche a lista dos
+cargos de fábrica que estiverem vazios, inclusive nas contas que já existem.
+
 **Titular e MW5 não têm cargo.** As permissões deles são diretas, de
 `contas/fabrica.py`. Um cargo no dono permitiria trancá-lo para fora da própria
 conta.

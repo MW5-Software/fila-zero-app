@@ -204,3 +204,53 @@ def test_a_tabela_ordena_por_coluna(cenario):
     """R46 — `tests/test_regra_tabela.py` cobra; aqui diz o mesmo na tela."""
     assert "ordenar=" in cenario["cliente"].get(reverse("cargos")).content.decode()
 
+
+
+class TestQuemPodeConceder:
+    """17/09/2026: cada cargo diz quais cargos ele pode dar numa alocação."""
+
+    def test_o_modal_oferece_os_outros_cargos_da_conta(self, cenario):
+        gerente = Cargo.objects.get(conta=cenario["dono_alfa"], nome="gerente")
+        vendedor = Cargo.objects.get(conta=cenario["dono_alfa"], nome="vendedor")
+        alheio = Cargo.objects.get(conta=cenario["dono_beta"], nome="so-da-beta")
+        html = cenario["cliente"].get(reverse("cargos")).content.decode()
+        modal = html[html.rindex(f"cargo-{gerente.pk}-editar"):]
+        modal = modal[:modal.index("</form>")]
+        assert f'name="pode_conceder" value="{vendedor.pk}"' in modal
+        assert f'value="{alheio.pk}"' not in modal
+        # O próprio cargo não entra: "o gerente cria gerente" se diz marcando
+        # os outros, e não a si mesmo.
+        assert f'name="pode_conceder" value="{gerente.pk}"' not in modal
+
+    def test_salvar_troca_a_lista_e_audita(self, cenario):
+        from contas.models import RegistroDeAuditoria
+
+        gerente = Cargo.objects.get(conta=cenario["dono_alfa"], nome="gerente")
+        vendedor = Cargo.objects.get(conta=cenario["dono_alfa"], nome="vendedor")
+        representante = Cargo.objects.get(conta=cenario["dono_alfa"],
+                                          nome="representante")
+        _post(cenario, acao="salvar", cargo=str(gerente.pk), rotulo="Gerente",
+              alcance="filial", pode_conceder=[str(representante.pk)])
+        assert list(gerente.pode_conceder.values_list("nome", flat=True)) == [
+            "representante"]
+        _post(cenario, acao="salvar", cargo=str(gerente.pk), rotulo="Gerente",
+              alcance="filial")
+        assert not gerente.pode_conceder.exists()
+        assert RegistroDeAuditoria.objects.filter(acao="cargo_editado").exists()
+        # O supervisor continua concedendo o vendedor: mexer no gerente não
+        # mexe na lista de ninguém mais.
+        assert list(vendedor.concedido_por.values_list("nome", flat=True)) == ["supervisor"]
+
+    def test_cargo_de_outra_conta_no_post_nao_entra_na_lista(self, cenario):
+        gerente = Cargo.objects.get(conta=cenario["dono_alfa"], nome="gerente")
+        alheio = Cargo.objects.get(conta=cenario["dono_beta"], nome="so-da-beta")
+        _post(cenario, acao="salvar", cargo=str(gerente.pk), rotulo="Gerente",
+              alcance="filial", pode_conceder=[str(alheio.pk)])
+        assert not gerente.pode_conceder.exists()
+
+    def test_criar_ja_com_a_lista(self, cenario):
+        vendedor = Cargo.objects.get(conta=cenario["dono_alfa"], nome="vendedor")
+        _post(cenario, acao="criar", rotulo="Coordenador", alcance="filial",
+              pode_conceder=[str(vendedor.pk)])
+        novo = Cargo.objects.get(conta=cenario["dono_alfa"], nome="coordenador")
+        assert list(novo.pode_conceder.values_list("nome", flat=True)) == ["vendedor"]

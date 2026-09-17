@@ -152,3 +152,32 @@ def test_o_migrate_de_verdade_semeia_o_titular_que_ja_existia():
     assert _permissoes(cargos["gerente"]) == {
         "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
         "fila_relatorios", "fila_metas"}
+
+
+def test_quem_cada_cargo_de_fabrica_pode_conceder(titular):
+    """17/09/2026: o gerente cria vendedor; o supervisor é o gerente com
+    alcance maior, e cria vendedor e gerente."""
+    from contas.models import Cargo
+
+    cargos = {c.nome: c for c in Cargo.objects.filter(conta=titular)}
+    concede = {nome: sorted(c.pode_conceder.values_list("nome", flat=True))
+               for nome, c in cargos.items()}
+    assert concede["gerente"] == ["vendedor"]
+    assert concede["supervisor"] == ["gerente", "vendedor"]
+    assert concede["vendedor"] == [] and concede["cliente"] == []
+
+
+def test_a_conta_que_ja_existia_ganha_a_lista_na_semeadura(titular):
+    """Quem já tinha os cargos de fábrica recebe a lista na próxima
+    `migrate` — é o caso do cliente de hoje, que não teria ganhado nada se a
+    lista só valesse para conta nova. O que o titular apagou de propósito
+    (lista vazia marcada à mão) não volta: só preenche quem está vazio E é
+    de fábrica com lista declarada."""
+    from contas.cargos_de_fabrica import garantir_cargos_de_fabrica
+    from contas.models import Cargo
+
+    gerente = Cargo.objects.get(conta=titular, nome="gerente")
+    gerente.pode_conceder.clear()
+    garantir_cargos_de_fabrica()
+    gerente.refresh_from_db()
+    assert list(gerente.pode_conceder.values_list("nome", flat=True)) == ["vendedor"]

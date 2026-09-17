@@ -410,6 +410,18 @@ class Cargo(ComGuid):
     #: negociado, compra na vitrine, orçamento próprio). Existe porque o alcance não diz isso — um Vendedor
     #: pode enxergar "os próprios" e não ser cliente de ninguém.
     e_cliente = models.BooleanField("é cliente", default=False)
+    #: Os cargos que quem tem ESTE cargo pode dar numa alocação
+    #: (17/09/2026). Lista vazia é a regra de antes: valem só as travas de
+    #: `contas.lugar.pode_dar` (ter as permissões do cargo e alcance não
+    #: maior). Marcada, ela é uma trava A MAIS, e nunca a menos — o gerente
+    #: que só pode conceder Vendedor continua sem poder conceder Supervisor,
+    #: porque o alcance maior já recusa.
+    #:
+    #: `symmetrical=False` porque a relação tem lado: o supervisor concede o
+    #: cargo de gerente, e o gerente não concede o de supervisor.
+    pode_conceder = models.ManyToManyField(
+        "self", verbose_name="pode conceder", symmetrical=False, blank=True,
+        related_name="concedido_por")
     #: Veio da semeadura (`contas/cargos_de_fabrica.py`). A tela não oferece
     #: apagar: a próxima semeadura o recriaria em silêncio.
     de_fabrica = models.BooleanField("de fábrica", default=False)
