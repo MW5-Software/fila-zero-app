@@ -36,11 +36,11 @@ from comum.exportacao import ColunaDeExportacao, botoes, preparar_exportacao
 from comum.guardas_de_acesso import exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
 from comum.listagem import ColunaFiltravel, montar_pagina
-from comum.pedido import id_do_post
+from comum.pedido import id_do_post, inteiro_do_texto
 from comum.personificacao import aviso as aviso_de_personificacao
 from nucleo.components import (
     Alert, Box, Button, Card, Checkbox, Column, Form, FormGrid, IconButton,
-    Modal, PageHeader, Raw, Select, Table, TextInput,
+    Modal, PageHeader, Raw, SectionLabel, Select, Table, TextInput,
 )
 from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
@@ -160,19 +160,41 @@ def _campos_do_cargo(rotulo="", alcance=Alcance.PROPRIOS, e_cliente=False):
     ])
 
 
-def _modal_criar(request, oferecidas) -> Modal:
+def _caixas_de_conceder(cargos, marcados=frozenset(), sem=None) -> Box:
+    """As caixas de "Pode conceder" (17/09/2026): quais cargos quem tem este
+    cargo pode dar numa alocação.
+
+    O próprio cargo fica de fora: "o gerente cria gerente" se diz marcando os
+    outros, e a caixa de si mesmo só confundiria. Vazio é a regra de antes —
+    valem só as travas de `contas.lugar.pode_dar`.
+    """
+    caixas = [Checkbox(name="pode_conceder", value=str(c.pk), label=c.rotulo,
+                       checked=c.pk in marcados)
+              for c in cargos if sem is None or c.pk != sem]
+    return Box(body=[
+        SectionLabel(label=_("Pode conceder")),
+        Raw(html=format_html('<p class="muted">{}</p>', _(
+            "Os cargos que quem tem este cargo pode dar ao alocar alguém. "
+            "Nenhum marcado: valem só as travas de permissão e alcance."))),
+        FormGrid(children=caixas) if caixas else Raw(html=""),
+    ])
+
+
+def _modal_criar(request, oferecidas, cargos) -> Modal:
     return Modal(id="cargo-criar", title=_("Novo cargo"), size="lg",
         body=Form(action=reverse("cargos"), children=[
             Raw(html=campo_csrf(request)),
             _campo_oculto("acao", "criar"),
             _campos_do_cargo(),
+            _caixas_de_conceder(cargos),
             *grupos_de_checkboxes(frozenset(), oferecidas),
             Button(label=_("Criar cargo"), variant="primary", type="submit"),
         ]))
 
 
-def _modais_do_cargo(request, cargo: Cargo, oferecidas) -> "list[Modal]":
+def _modais_do_cargo(request, cargo: Cargo, oferecidas, cargos) -> "list[Modal]":
     marcadas = frozenset(cargo.permissoes.values_list("codename", flat=True))
+    concedidos = frozenset(cargo.pode_conceder.values_list("pk", flat=True))
     modais = [
         Modal(id=_id_do_modal("editar", cargo.pk),
               title=f"Editar {cargo.rotulo}", size="lg",
@@ -181,6 +203,7 @@ def _modais_do_cargo(request, cargo: Cargo, oferecidas) -> "list[Modal]":
                   _campo_oculto("acao", "salvar"),
                   _campo_oculto("cargo", str(cargo.pk)),
                   _campos_do_cargo(cargo.rotulo, cargo.alcance, cargo.e_cliente),
+                  _caixas_de_conceder(cargos, concedidos, sem=cargo.pk),
                   *grupos_de_checkboxes(marcadas, oferecidas),
                   Button(label=_("Salvar"), variant="primary", type="submit"),
               ])),
@@ -259,9 +282,12 @@ def _desenhar(request, erro=None) -> HttpResponse:
             ],
         ))
 
-        modais = [_modal_criar(request, oferecidas)]
+        # Os cargos da conta uma vez só, para as caixas de "Pode conceder" de
+        # todos os modais: uma consulta por modal bateria no banco por linha.
+        da_conta = list(_cargos_da_conta(request).order_by("rotulo"))
+        modais = [_modal_criar(request, oferecidas, da_conta)]
         for cargo in listagem.linhas:
-            modais.extend(_modais_do_cargo(request, cargo, oferecidas))
+            modais.extend(_modais_do_cargo(request, cargo, oferecidas, da_conta))
 
         pagina = site.page(
             title=_("Cargos"),
@@ -273,6 +299,15 @@ def _desenhar(request, erro=None) -> HttpResponse:
             overlays=modais,
         )
         return render(pagina)
+
+
+def _salvar_conceder(cargo: Cargo, enviados, conta) -> None:
+    """A lista de "pode conceder", só com cargos DA MESMA CONTA e nunca o
+    próprio cargo: um id de outra conta no POST vira lista vazia, e não uma
+    ligação entre contas."""
+    pedidos = {n for n in (inteiro_do_texto(bruto) for bruto in enviados)
+               if n is not None and n != cargo.pk}
+    cargo.pode_conceder.set(Cargo.objects.filter(conta=conta, pk__in=pedidos))
 
 
 def _salvar_permissoes(cargo: Cargo, enviadas) -> None:
@@ -326,6 +361,7 @@ def _acao_criar(request) -> HttpResponse:
         cargo = Cargo.objects.create(conta=conta, nome=nome, rotulo=rotulo,
                                      alcance=alcance, e_cliente=e_cliente)
         _salvar_permissoes(cargo, request.POST.getlist("permissoes"))
+        _salvar_conceder(cargo, request.POST.getlist("pode_conceder"), conta)
         registrar(ACOES.CARGO_CRIADO, request.usuario, alvo=cargo.rotulo,
                   request=request)
     return HttpResponseRedirect(reverse("cargos"))
@@ -343,6 +379,8 @@ def _acao_salvar(request, cargo: Cargo) -> HttpResponse:
         cargo.e_cliente = e_cliente
         cargo.save(update_fields=["rotulo", "alcance", "e_cliente"])
         _salvar_permissoes(cargo, request.POST.getlist("permissoes"))
+        _salvar_conceder(cargo, request.POST.getlist("pode_conceder"),
+                         cargo.conta)
         registrar(ACOES.CARGO_EDITADO, request.usuario, alvo=cargo.rotulo,
                   request=request)
     return HttpResponseRedirect(reverse("cargos"))

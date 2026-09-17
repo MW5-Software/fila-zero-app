@@ -174,8 +174,17 @@ def pode_dar(editor, empresa, filial, cargo) -> bool:
         return False
     if not all(pode(retrato, p) for p in permissoes_do_cargo(cargo)):
         return False
-    return (_TAMANHO_DO_ALCANCE[cargo.alcance]
-            <= _TAMANHO_DO_ALCANCE[alcance_em(editor, empresa, filial)])
+    if _TAMANHO_DO_ALCANCE[cargo.alcance] > _TAMANHO_DO_ALCANCE[
+            alcance_em(editor, empresa, filial)]:
+        return False
+    # A lista do cargo de quem edita, quando ela existe (17/09/2026): o
+    # gerente cria vendedor, e não outro gerente. Vazia é a regra de antes,
+    # para nenhuma conta que já existe mudar de comportamento sozinha.
+    vigente = alocacao_vigente(editor, empresa, filial)
+    if vigente is None:
+        return False
+    concedidos = vigente.cargo.pode_conceder.all()
+    return not concedidos.exists() or concedidos.filter(pk=cargo.pk).exists()
 
 
 def pode_administrar(editor, alvo) -> bool:

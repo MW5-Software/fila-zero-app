@@ -1479,3 +1479,9 @@ msgstr "cuándo"
 
 msgid "quem corrigiu"
 msgstr "quién corrigió"
+
+msgid "Pode conceder"
+msgstr "Puede conceder"
+
+msgid "Os cargos que quem tem este cargo pode dar ao alocar alguém. Nenhum marcado: valem só as travas de permissão e alcance."
+msgstr "Los cargos que quien tiene este cargo puede dar al asignar a alguien. Ninguno marcado: valen solo las trabas de permiso y alcance."

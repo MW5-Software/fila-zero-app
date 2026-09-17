@@ -188,6 +188,46 @@ class TestEscalada:
         titular, empresa, _n, _s, cargos = conta
         assert pode_dar(titular, empresa, None, cargos["supervisor"])
 
+    def test_a_lista_vazia_de_pode_conceder_e_a_regra_de_hoje(self, conta):
+        """17/09/2026: lista vazia não tranca nada. Conta que já existe não
+        muda de comportamento sem alguém marcar a lista em /cargos."""
+        _t, empresa, norte, _s, cargos = conta
+        gil = self._gerente_na_norte(conta)
+        cargos["gerente"].pode_conceder.clear()
+        assert pode_dar(gil, empresa, norte, cargos["vendedor"])
+        assert pode_dar(gil, empresa, norte, cargos["gerente"])
+
+    def test_com_a_lista_o_gerente_so_da_o_que_esta_nela(self, conta):
+        _t, empresa, norte, _s, cargos = conta
+        gil = self._gerente_na_norte(conta)
+        cargos["gerente"].pode_conceder.set([cargos["vendedor"]])
+        assert pode_dar(gil, empresa, norte, cargos["vendedor"])
+        assert not pode_dar(gil, empresa, norte, cargos["gerente"])
+        assert not pode_dar(gil, empresa, norte, cargos["representante"])
+
+    def test_a_lista_nunca_afrouxa_as_travas_de_antes(self, conta):
+        """Marcar Supervisor na lista do Gerente não o faz poder dar
+        Supervisor: o alcance maior continua recusando (R7)."""
+        _t, empresa, norte, _s, cargos = conta
+        gil = self._gerente_na_norte(conta)
+        cargos["gerente"].pode_conceder.set([cargos["supervisor"]])
+        assert not pode_dar(gil, empresa, norte, cargos["supervisor"])
+
+    def test_o_titular_nao_e_preso_pela_lista(self, conta):
+        titular, empresa, norte, _s, cargos = conta
+        cargos["gerente"].pode_conceder.set([cargos["vendedor"]])
+        assert pode_dar(titular, empresa, norte, cargos["gerente"])
+
+    def test_gerente_alocado_em_duas_lojas_aloca_nas_duas(self, conta):
+        """Alocar em mais de uma loja é uma linha por loja, e sempre foi
+        assim: o teste existe para isso não sumir sem aviso."""
+        _t, empresa, norte, sul, cargos = conta
+        gil = self._gerente_na_norte(conta)
+        Alocacao.objects.create(pessoa=gil, empresa=empresa, filial=sul,
+                                cargo=cargos["gerente"])
+        assert pode_dar(gil, empresa, norte, cargos["vendedor"])
+        assert pode_dar(gil, empresa, sul, cargos["vendedor"])
+
     def test_gerente_nao_administra_supervisor_nem_a_si_mesmo(self, conta):
         titular, empresa, norte, _s, cargos = conta
         gil = self._gerente_na_norte(conta)
