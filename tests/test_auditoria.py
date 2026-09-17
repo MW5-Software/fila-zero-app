@@ -687,7 +687,7 @@ def _cenario_fila_pessoa_tirada():
     from fila.correcoes import tirar_da_loja
 
     dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
-    tirar_da_loja(dona, matriz, zeca.pk)
+    tirar_da_loja(dona, matriz, zeca.pk, observacao="motivo do teste")
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
@@ -698,7 +698,8 @@ def _cenario_fila_atendimento_fechado():
     dona, zeca, matriz, cad = _loja_com_gente_da_fila()
     vou_atender(zeca, matriz)
     fechar_atendimento(dona, matriz, zeca.pk,
-                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
+                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk),
+                       observacao="motivo do teste")
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
@@ -708,7 +709,7 @@ def _cenario_fila_pausa_encerrada():
 
     dona, zeca, matriz, cad = _loja_com_gente_da_fila()
     pausar(zeca, matriz, cad.tipo.pk)
-    tirar_da_pausa(dona, matriz, zeca.pk)
+    tirar_da_pausa(dona, matriz, zeca.pk, observacao="motivo do teste")
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
@@ -722,8 +723,31 @@ def _cenario_fila_lancamento_corrigido():
     finalizar(zeca, matriz, Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
     editar_lancamento(dona, matriz, Atendimento.irrestritos.get().pk,
                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk,
-                                 observacao="voltou depois"))
+                                 observacao="voltou depois"),
+                      observacao="motivo do teste")
     return email_de("dona-fila"), f"Atendimento de Zeca em {matriz}"
+
+
+def _cenario_fila_pausa_iniciada():
+    from fila.correcoes import por_em_pausa
+
+    dona, zeca, matriz, cad = _loja_com_gente_da_fila()
+    por_em_pausa(dona, matriz, zeca.pk, cad.tipo.pk, observacao="foi ao banco")
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
+def _cenario_fila_posicao_movida():
+    from contas.models import Usuario
+    from fila.acoes import bater_ponto
+    from fila.correcoes import mover
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    yara = Usuario.objects.create_user(email=email_de("yara"), password=SENHA,
+                                       nome="Yara")
+    alocar(yara, empresa_do_teste(), "vendedor", filial=matriz)
+    bater_ponto(yara, matriz)
+    mover(dona, matriz, yara.pk, 1, observacao="chegou antes")
+    return email_de("dona-fila"), f"Yara em {matriz}"
 
 
 def _cenario_fila_cadastro_criado():
@@ -816,6 +840,8 @@ _CENARIOS = {
     "FILA_ATENDIMENTO_FECHADO": _cenario_fila_atendimento_fechado,
     "FILA_PAUSA_ENCERRADA": _cenario_fila_pausa_encerrada,
     "FILA_LANCAMENTO_CORRIGIDO": _cenario_fila_lancamento_corrigido,
+    "FILA_POSICAO_MOVIDA": _cenario_fila_posicao_movida,
+    "FILA_PAUSA_INICIADA": _cenario_fila_pausa_iniciada,
     "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
     "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,

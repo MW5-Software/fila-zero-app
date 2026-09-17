@@ -269,23 +269,30 @@ def finalizar(pessoa, filial, lancamento) -> None:
         _voltar_ao_fim(lugar, agora)
 
 
+def _abrir_pausa(lugar, filial, tipo_id, agora):
+    """Abre a pausa e muda o lugar. Um miolo para o "Pausa" do vendedor e o
+    "Pôr em pausa" do gerente (spec 2026-09-17, C4): duas cópias divergiriam
+    no primeiro ajuste."""
+    tipo = (TipoDePausa.objects.da_empresa(filial.empresa)
+            .filter(pk=tipo_id, ativo=True).first()
+            if tipo_id is not None else None)
+    if tipo is None:
+        raise Recusa(_("Escolha o tipo de pausa."))
+    Pausa.irrestritos.create(empresa=filial.empresa, pessoa_id=lugar.pessoa_id,
+                             filial=filial, presenca=lugar.presenca,
+                             tipo=tipo, inicio=agora)
+    lugar.estado = Estado.EM_PAUSA
+    lugar.desde = agora
+    lugar.save(update_fields=["estado", "desde"])
+    return tipo
+
+
 def pausar(pessoa, filial, tipo_id) -> None:
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_na_loja(pessoa.pk, filial)
         _exigir_na_fila(lugar)
-        tipo = (TipoDePausa.objects.da_empresa(filial.empresa)
-                .filter(pk=tipo_id, ativo=True).first()
-                if tipo_id is not None else None)
-        if tipo is None:
-            raise Recusa(_("Escolha o tipo de pausa."))
-        agora = _agora()
-        Pausa.irrestritos.create(empresa=filial.empresa, pessoa=pessoa,
-                                 filial=filial, presenca=lugar.presenca,
-                                 tipo=tipo, inicio=agora)
-        lugar.estado = Estado.EM_PAUSA
-        lugar.desde = agora
-        lugar.save(update_fields=["estado", "desde"])
+        _abrir_pausa(lugar, filial, tipo_id, _agora())
 
 
 def voltar_para_a_fila(pessoa, filial) -> None:

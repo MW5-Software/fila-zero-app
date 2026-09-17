@@ -1,7 +1,7 @@
 # Fila Zero — as correções do gerente, com observação e histórico
 
 **Data:** 17/09/2026
-**Estado:** desenho aprovado na conversa de 17/09/2026; falta o plano.
+**Estado:** implementado (plano `2026-09-17-fila-correcoes-do-gerente.md`).
 **Depende de:** a fila (`2026-09-15-fila-da-vez-design.md`, D7 e o desvio D-3
 do plano), os indicadores (`2026-09-15-fila-indicadores-design.md`, os
 atalhos de período) e a loja do cabeçalho no painel (commit `881ec60`).

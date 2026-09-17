@@ -23,14 +23,17 @@ from django.utils.translation import gettext_lazy
 from comum.auditoria import ACOES, registrar
 
 from . import acoes
-from .acoes import (Recusa, _gravar_lancamento, _fechar_atendimento,
-                    _lugar_na_loja, _sair, _travar, _validar, _voltar_ao_fim)
-from .estado import nome_de
-from .models import Atendimento, Estado, Pausa, Resultado
+from .acoes import (Recusa, _abrir_pausa, _gravar_lancamento,
+                    _fechar_atendimento, _lugar_na_loja, _sair, _travar,
+                    _validar, _voltar_ao_fim)
+from .estado import na_fila, nome_de
+from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
-           "lancamentos_de_hoje", "tirar_da_loja", "tirar_da_pausa"]
+           "lancamentos_de_hoje", "ler_observacao", "mover", "por_em_pausa",
+           "tirar_da_loja",
+           "tirar_da_pausa"]
 
 NAO_CORRIGE_A_SI = gettext_lazy("Você não corrige a si mesmo.")
 
@@ -42,6 +45,34 @@ def _agora():
     quem voltou depois na frente de quem já esperava."""
     return acoes._agora()
 NAO_ENCONTRADO = gettext_lazy("Essa pessoa não está nesta loja.")
+MOTIVO_CURTO = gettext_lazy("Escreva o motivo da correção.")
+MOTIVO_LONGO = gettext_lazy("O motivo cabe em 200 caracteres.")
+NAO_ESTA_NA_FILA = gettext_lazy("Essa pessoa não está na fila.")
+_MICRO = timedelta(microseconds=1)
+
+
+def ler_observacao(texto) -> str:
+    """O motivo da correção, obrigatório (spec 2026-09-17, C1). Três
+    caracteres barram o "." digitado só para passar; duzentos cabem numa
+    linha do histórico. Lido ANTES da trava: recusa barata não segura a fila
+    da loja."""
+    limpo = " ".join(str(texto or "").split())
+    if len(limpo) < 3:
+        raise Recusa(MOTIVO_CURTO)
+    if len(limpo) > 200:
+        raise Recusa(MOTIVO_LONGO)
+    return limpo
+
+
+def _registrar(autor, filial, pessoa_id, acao, observacao, detalhe, agora, *,
+               auditoria, alvo, request=None) -> None:
+    """O histórico e a auditoria juntos, na transação da correção: se um
+    falhar, a correção desfaz inteira."""
+    CorrecaoNaFila.irrestritos.create(
+        empresa=filial.empresa, filial=filial, pessoa_id=pessoa_id, autor=autor,
+        acao=acao, observacao=observacao, detalhe=detalhe[:300], momento=agora)
+    trilha = f"{detalhe} | motivo: {observacao}" if detalhe else f"motivo: {observacao}"
+    registrar(auditoria, autor, alvo=alvo, detalhe=trilha, request=request)
 
 
 def descrever(atendimento) -> str:
@@ -60,7 +91,10 @@ def _lugar_de_outro(autor, filial, pessoa_id):
     if pessoa_id == autor.pk:
         raise Recusa(NAO_CORRIGE_A_SI)
     try:
-        return _lugar_na_loja(pessoa_id, filial)
+        # Pelo MÓDULO, e não pelo nome importado, como `_agora()`: é assim que
+        # o teste de concorrência força a demora entre ler e gravar também na
+        # correção, e prova a trava em vez da sorte.
+        return acoes._lugar_na_loja(pessoa_id, filial)
     except Recusa:
         raise Recusa(NAO_ENCONTRADO) from None
 
@@ -69,7 +103,9 @@ def _alvo(lugar, filial) -> str:
     return f"{nome_de(lugar.pessoa)} em {filial}"
 
 
-def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, request=None):
+def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, observacao,
+                  request=None):
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
@@ -89,11 +125,14 @@ def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, request=None):
             detalhe = f"atendimento fechado: {descrever(atendimento)}"
         alvo = _alvo(lugar, filial)
         _sair(lugar, agora, fechada_por=autor)
-        registrar(ACOES.FILA_PESSOA_TIRADA, autor, alvo=alvo, detalhe=detalhe,
-                  request=request)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR, observacao,
+                   detalhe, agora, auditoria=ACOES.FILA_PESSOA_TIRADA, alvo=alvo,
+                   request=request)
 
 
-def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, request=None):
+def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, observacao,
+                       request=None):
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
@@ -104,12 +143,14 @@ def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, request=None):
         agora = _agora()
         _fechar_atendimento(atendimento, lancamento, agora, fechado_por=autor)
         _voltar_ao_fim(lugar, agora)
-        registrar(ACOES.FILA_ATENDIMENTO_FECHADO, autor,
-                  alvo=_alvo(lugar, filial), detalhe=descrever(atendimento),
-                  request=request)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.FECHAR, observacao,
+                   descrever(atendimento), agora,
+                   auditoria=ACOES.FILA_ATENDIMENTO_FECHADO,
+                   alvo=_alvo(lugar, filial), request=request)
 
 
-def tirar_da_pausa(autor, filial, pessoa_id, *, request=None):
+def tirar_da_pausa(autor, filial, pessoa_id, *, observacao, request=None):
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
@@ -121,16 +162,17 @@ def tirar_da_pausa(autor, filial, pessoa_id, *, request=None):
         pausa.fim = agora
         pausa.save(update_fields=["fim"])
         _voltar_ao_fim(lugar, agora)
-        registrar(ACOES.FILA_PAUSA_ENCERRADA, autor,
-                  alvo=_alvo(lugar, filial), detalhe=pausa.tipo.nome,
-                  request=request)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR_PAUSA, observacao,
+                   pausa.tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_ENCERRADA,
+                   alvo=_alvo(lugar, filial), request=request)
 
 
 def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
-                      request=None):
+                      observacao, request=None):
     """Troca o que foi lançado num atendimento FECHADO. Não reabre, não muda
     o fim nem o resultado: corrigir "vendeu" para "não vendeu" apagaria uma
     venda do ranking com um clique, e isso é outra conversa."""
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         atendimento = (Atendimento.objects.da_empresa(filial.empresa)
@@ -152,9 +194,11 @@ def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
             ja_usado_motivo=atendimento.motivo_id)
         _gravar_lancamento(atendimento, lancamento, grupos, motivo, total)
         depois = descrever(atendimento)
-        registrar(ACOES.FILA_LANCAMENTO_CORRIGIDO, autor,
-                  alvo=f"Atendimento de {nome_de(atendimento.vendedor)} em {filial}",
-                  detalhe=f"antes: {antes}; depois: {depois}", request=request)
+        _registrar(autor, filial, atendimento.vendedor_id, AcaoDeCorrecao.EDITAR,
+                   observacao, f"antes: {antes}; depois: {depois}", _agora(),
+                   auditoria=ACOES.FILA_LANCAMENTO_CORRIGIDO,
+                   alvo=f"Atendimento de {nome_de(atendimento.vendedor)} em {filial}",
+                   request=request)
 
 
 def lancamentos_de_hoje(filial, dia=None):
@@ -169,3 +213,75 @@ def lancamentos_de_hoje(filial, dia=None):
             .annotate(tem_foto=ExpressionWrapper(
                 Q(vendedor__avatar__isnull=False), output_field=BooleanField()))
             .order_by("-fim"))
+
+
+def _instante_entre(outros, posicao):
+    """O `na_fila_desde` que põe alguém na `posicao` (1…N) de uma fila que,
+    sem ele, é `outros`. `None` quando não cabe um instante entre os vizinhos.
+
+    Não há número de posição guardado (entrega 1): um número precisaria ser
+    renumerado a cada saída, e renumerar sob concorrência é onde as filas se
+    perdem. Estritamente entre os vizinhos, e não igual a um deles: no empate
+    quem decide é o `pk`, e aí a pessoa podia cair do lado errado.
+    """
+    if posicao == 1:
+        return outros[0].na_fila_desde - _MICRO
+    if posicao == len(outros) + 1:
+        return outros[-1].na_fila_desde + _MICRO
+    antes, depois = outros[posicao - 2].na_fila_desde, outros[posicao - 1].na_fila_desde
+    if depois - antes < 2 * _MICRO:
+        return None
+    return antes + (depois - antes) / 2
+
+
+def _espacar(outros) -> None:
+    """Dois microssegundos entre cada um, na ordem de agora, a partir do
+    primeiro: abre lugar para encaixar quando os vizinhos estão colados.
+    Só roda sob a trava da loja."""
+    base = outros[0].na_fila_desde
+    for i, lugar in enumerate(outros):
+        lugar.na_fila_desde = base + 2 * i * _MICRO
+        lugar.save(update_fields=["na_fila_desde"])
+
+
+def mover(autor, filial, pessoa_id, posicao, *, observacao, request=None):
+    """Põe quem está na fila na `posicao` escolhida pelo gerente (C3)."""
+    observacao = ler_observacao(observacao)
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_de_outro(autor, filial, pessoa_id)
+        if lugar.estado != Estado.NA_FILA:
+            raise Recusa(NAO_ESTA_NA_FILA)
+        fila = list(na_fila(filial))
+        if posicao is None or not 1 <= posicao <= len(fila):
+            raise Recusa(_("Escolha uma posição da fila."))
+        atual = next(i for i, l in enumerate(fila, 1) if l.pk == lugar.pk)
+        if posicao == atual:
+            raise Recusa(_("Essa pessoa já está nessa posição."))
+        outros = [l for l in fila if l.pk != lugar.pk]
+        instante = _instante_entre(outros, posicao)
+        if instante is None:
+            _espacar(outros)
+            instante = _instante_entre(outros, posicao)
+        lugar.na_fila_desde = instante
+        lugar.save(update_fields=["na_fila_desde"])
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.MOVER, observacao,
+                   f"de {atual}º para {posicao}º", _agora(),
+                   auditoria=ACOES.FILA_POSICAO_MOVIDA, alvo=_alvo(lugar, filial),
+                   request=request)
+
+
+def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None):
+    """O vendedor foi ao banco e não apertou "Pausa" (C4). Só quem está na
+    fila: quem atende tem o atendimento fechado antes, pela mesma folha."""
+    observacao = ler_observacao(observacao)
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_de_outro(autor, filial, pessoa_id)
+        if lugar.estado != Estado.NA_FILA:
+            raise Recusa(NAO_ESTA_NA_FILA)
+        agora = _agora()
+        tipo = _abrir_pausa(lugar, filial, tipo_id, agora)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.PAUSAR, observacao,
+                   tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_INICIADA,
+                   alvo=_alvo(lugar, filial), request=request)

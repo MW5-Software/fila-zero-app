@@ -424,3 +424,7 @@
   .fila-vivo-ponto, .fila-chegou .fila-hero, .fila-chegou .fila-sino .icon,
   .fila-mudou .painel-na-fila .fila-numeral-n { animation: none; }
 }
+
+/* O motivo da correção fecha a folha, logo antes dos botões (spec 2026-09-17). */
+.fila-motivo-correcao { display: grid; gap: 6px; margin-top: 14px; }
+.fila-motivo-correcao textarea { resize: vertical; }

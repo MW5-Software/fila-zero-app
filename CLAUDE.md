@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 134 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 135 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -462,6 +462,11 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   não cabe levanta `Recusa` com a frase da tela.
 - `fila/correcoes.py` — o que o gerente corrige, com auditoria. Confere que a
   pessoa e o atendimento são desta loja e que ninguém corrige a si mesmo.
+  Desde 17/09/2026 ele também **exige o motivo** de toda correção
+  (`ler_observacao`, 3 a 200 caracteres, campo `motivo_da_correcao` no POST),
+  move de posição (`mover`) e põe em pausa (`por_em_pausa`), gravando cada
+  uma em `CorrecaoNaFila` e na auditoria juntas. O histórico sai em
+  `/fila/historico` (`fila/views_historico.py`), para `fila.gerenciar`.
 - `fila/estado.py` — o retrato da loja e a versão que a tela consulta.
 - `fila/views.py`, `fila/tela.py`, `fila/templates/fila/` — a página fora do
   shell, com ambiente Jinja próprio (`fila/ambiente.py`), a consulta
@@ -497,6 +502,14 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   Filiais tranca a linha da loja antes de perguntar, e o ponto relê a loja
   depois da mesma trava: sem as duas pontas, alguém entrava na loja que
   acabava de ser desativada e ficava preso nela.
+- **Mover não guarda número de posição.** Grava em `na_fila_desde` um
+  instante ESTRITAMENTE entre os vizinhos, e reespaça a fila quando eles
+  estão colados. Igual ao de um vizinho não serve: no empate quem decide é o
+  `pk`, e a pessoa cai do lado errado. Por isso a versão da fila conta as
+  correções — o maior `na_fila_desde` não muda quando alguém vai para o meio.
+- **O motivo da correção se chama `motivo_da_correcao`**, e não `observacao`,
+  que é o campo opcional da não venda na mesma folha de fechar: os dois iriam
+  juntos no POST.
 - **Quem só tem `fila.ver` e `fila.participar` entra por `/fila`**, mas a
   raiz é o painel dele. O desvio é do LOGIN, e não da raiz: a base pergunta
   pelo sinal `contas.entrada.destino_depois_de_entrar` e `fila/sinais.py`
@@ -591,7 +604,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 134 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 135 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

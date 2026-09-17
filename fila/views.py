@@ -139,16 +139,32 @@ _DO_VENDEDOR = {
     "sair": lambda r, f, p: acoes.sair_da_loja(p, f),
 }
 
+def _motivo(request) -> str:
+    """O motivo da correção. `motivo_da_correcao`, e não `observacao`: a folha
+    de fechar já tem a observação da não venda, e os dois iriam no POST."""
+    return request.POST.get("motivo_da_correcao", "")
+
+
 _DO_GERENTE = {
     "tirar": lambda r, f, p: correcoes.tirar_da_loja(
         p, f, _pessoa_do_post(r),
-        _lancamento(r) if r.POST.get("resultado") else None, request=r),
+        _lancamento(r) if r.POST.get("resultado") else None,
+        observacao=_motivo(r), request=r),
     "fechar": lambda r, f, p: correcoes.fechar_atendimento(
-        p, f, _pessoa_do_post(r), _lancamento(r), request=r),
+        p, f, _pessoa_do_post(r), _lancamento(r), observacao=_motivo(r), request=r),
     "tirar_pausa": lambda r, f, p: correcoes.tirar_da_pausa(
-        p, f, _pessoa_do_post(r), request=r),
+        p, f, _pessoa_do_post(r), observacao=_motivo(r), request=r),
+    # `id_do_post` transforma "²", vazio e número gigante em `None`, que
+    # `mover` recusa com frase em vez de 500.
+    "mover": lambda r, f, p: correcoes.mover(
+        p, f, _pessoa_do_post(r), id_do_post(r, "posicao"),
+        observacao=_motivo(r), request=r),
+    "por_em_pausa": lambda r, f, p: correcoes.por_em_pausa(
+        p, f, _pessoa_do_post(r), id_do_post(r, "tipo"),
+        observacao=_motivo(r), request=r),
     "editar": lambda r, f, p: correcoes.editar_lancamento(
-        p, f, id_do_post(r, "atendimento"), _lancamento(r), request=r),
+        p, f, id_do_post(r, "atendimento"), _lancamento(r),
+        observacao=_motivo(r), request=r),
 }
 
 

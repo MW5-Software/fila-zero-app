@@ -69,9 +69,19 @@ def versao_da_fila(filial) -> str:
              .filter(filial=filial, mes=timezone.localdate().replace(day=1))
              .aggregate(n=Count("pk"), quando=Max("alterada_em")))
 
+    # Mover grava um instante ENTRE os vizinhos, que não muda o maior
+    # `na_fila_desde` nem o maior `desde`: sem contar as correções, as outras
+    # telas não veriam a ordem nova (spec 2026-09-17).
+    from .models import CorrecaoNaFila
+
+    correcoes = (CorrecaoNaFila.objects.da_empresa(filial.empresa)
+                 .filter(filial=filial)
+                 .aggregate(n=Count("pk"), quando=Max("momento")))
+
     return (f"{dados['linhas']}.{marca(dados['desde'])}.{marca(dados['fila'])}"
             f".{hoje['n']}.{hoje['total'] or 0}.{hoje['motivos'] or 0}"
-            f".{metas['n']}.{marca(metas['quando'])}")
+            f".{metas['n']}.{marca(metas['quando'])}"
+            f".{correcoes['n']}.{marca(correcoes['quando'])}")
 
 
 def _lancamentos_de_hoje(filial):
