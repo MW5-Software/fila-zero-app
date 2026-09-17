@@ -38,7 +38,7 @@ __all__ = ["construir_context_switcher", "montar_site"]
 
 
 def construir_context_switcher(
-    marca: "Brand", niveis: "list[NivelDeContexto]",
+    marca: "Brand", niveis: "list[NivelDeContexto]", *, da_mw5: bool = False,
 ) -> "Renderable":
     """O `ContextSwitcher` do cabeçalho, a partir do nível de
     `plataforma.contexto.niveis_de_contexto`.
@@ -53,6 +53,12 @@ def construir_context_switcher(
     O rótulo vem de `marca.header.context_labels` — nunca de `nivel.rotulo`,
     que só carrega o nome genérico — porque é a marca quem sabe se este
     cliente troca os nomes.
+
+    **Com uma exceção: a MW5** (`da_mw5`). A marca diz como o CLIENTE chama as
+    coisas dele, e a MW5 não está dentro de cliente nenhum: para ela o nível 0
+    não é "em que empresa estou trabalhando", é "qual conta estou olhando", e
+    aí vale o rótulo do nível. Desde 17/09/2026 o seletor existe também para o
+    titular com várias empresas, e para ele a marca continua mandando.
     """
     if not marca.header.show_context:
         # A mesma leitura que `Header.context` já faz de uma string vazia
@@ -60,10 +66,9 @@ def construir_context_switcher(
         # devolver "" é o suficiente para a faixa inteira sumir.
         return ""
 
-    # **Lista vazia é resposta, não erro** (09/09/2026). Desde que uma conta
-    # tem UMA empresa, `niveis_de_contexto` devolve vazio para todo mundo
-    # menos a MW5: não há o que trocar. Sem esta linha era `IndexError` na
-    # primeira página que qualquer pessoa de conta abrisse.
+    # **Lista vazia é resposta, não erro** (09/09/2026). Quem alcança uma
+    # empresa e uma filial não tem o que trocar, e é a maioria. Sem esta linha
+    # era `IndexError` na primeira página que essa pessoa abrisse.
     if not niveis:
         return ""
 
@@ -74,8 +79,9 @@ def construir_context_switcher(
         # cliente chama. O `name` é a mesma constante que a rota de troca lê.
         indice, nome = ((0, CHAVE_EMPRESA) if nivel.nivel == 0
                         else (1, CHAVE))
-        rotulo = (rotulos[indice] if len(rotulos) > indice and rotulos[indice]
-                  else nivel.rotulo)
+        da_marca = rotulos[indice] if len(rotulos) > indice else ""
+        rotulo = nivel.rotulo if (da_mw5 and indice == 0) or not da_marca \
+            else da_marca
         levels.append(ContextLevel(
             label=rotulo, value=nivel.atual, name=nome,
             options=[ContextOption(o.valor, o.rotulo) for o in nivel.opcoes],
@@ -185,7 +191,13 @@ def montar_site(request) -> Site:
     marca = marca_da_requisicao(request)
 
     def context_line(user: Any) -> "Renderable":
-        return construir_context_switcher(marca, niveis_de_contexto(request))
+        from comum.sessao import identidade_da_sessao
+
+        from .contexto import _e_da_mw5
+
+        return construir_context_switcher(
+            marca, niveis_de_contexto(request),
+            da_mw5=_e_da_mw5(identidade_da_sessao(request)))
 
     return SiteDoProduto(
         pedido=request,
