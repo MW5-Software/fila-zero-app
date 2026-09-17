@@ -350,8 +350,10 @@ O que custa quando se esquece:
   - protegida por qualquer tabela de negócio com `PROTECT` — perguntado ao
     próprio Django, porque a base não conhece os módulos;
   - se for a última ativa da empresa.
-- **O módulo de Filiais nasce desligado** (`ativo_por_padrao=False`). Numa
-  instalação, a MW5 liga em Módulos para o titular ver a tela.
+- **O módulo de Filiais nasce ligado** desde 17/09/2026
+  (`ativo_por_padrao=True`): a filial é A LOJA da fila, e a conta tem várias
+  empresas, cada uma com as lojas dela — sem a tela, o titular não cadastra a
+  loja da segunda.
 
 ### O menu de cada empresa (15/09/2026, vindo do Portal)
 
@@ -434,8 +436,8 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    do design system precisa ser feita em cada consumidor.
 3. **A identidade e a R48.** A base assina como KRONOS no rodapé. Se cada SaaS
    mantém essa assinatura é decisão de produto.
-4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
-   continuam por fazer.
+4. **A tela de Conta é só leitura.** Editar os dados do cliente continua na
+   tela de Empresas, e quem cadastra empresa é a MW5.
 
 ---
 
@@ -528,6 +530,19 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   pelo sinal `contas.entrada.destino_depois_de_entrar` e `fila/sinais.py`
   responde. Na raiz ele tornava o Início inalcançável para o vendedor.
 
+
+### As empresas no painel (17/09/2026)
+
+- **O painel abre na empresa do cabeçalho**, e "Todas as empresas"
+  (`?empresa=todas`) é escolha de quem alcança mais de uma. Ela soma, mostra o
+  bloco "Por empresa" e deixa o ranking com as pessoas das duas.
+- **`indicadores.do_recorte(model, recorte)` é a porta das consultas**: com
+  uma empresa é `da_empresa`; com várias, `da_conta` (pelo `conta_guid`)
+  recortado por `empresa__in`. As empresas vêm sempre do alcance da pessoa
+  (`empresas_com_relatorio`), nunca de um id do pedido.
+- **Um ponto por vez, em qualquer empresa**: bater o ponto na loja de outra
+  empresa fecha a presença anterior, e quem está atendendo recebe a recusa
+  dizendo a loja E a empresa.
 
 ### Os indicadores (entrega 2)
 

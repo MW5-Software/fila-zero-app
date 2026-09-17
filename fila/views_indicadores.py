@@ -379,12 +379,13 @@ _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 _FILTRAVEIS_POR_LOJA = {**_FILTRAVEIS, "loja": ColunaFiltravel("loja_nome", "Loja")}
 
 
-def _colunas(pagina, com_meta=False, por_loja=False):
+def _colunas(pagina, com_meta=False, por_loja=False, varias_empresas=False):
     colunas = [
         Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
                render=lambda p: p.nome or p.email),
         *([Column("loja", pagina.cabecalho("loja", str(_("Loja"))),
-                  render=lambda p: str(p.loja))] if por_loja else []),
+                  render=lambda p: _nome_da_loja(p.loja, varias_empresas))]
+          if por_loja else []),
         Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
                render=lambda p: em_reais(p.vendido)),
         Column("atendimentos", pagina.cabecalho("atendimentos", str(_("Atendimentos"))), align="num"),
@@ -436,12 +437,23 @@ def _por_empresa(recorte):
                         [(str(l.empresa), l.numeros) for l in ind.por_empresa(recorte)])
 
 
+def _nome_da_loja(loja, varias_empresas: bool) -> str:
+    """"Matriz" ou "Matriz · Beta Ltda".
+
+    Cada empresa nasce com a SUA Matriz: com várias empresas no recorte, duas
+    linhas "Matriz" não diriam de qual delas são (17/09/2026).
+    """
+    return f"{loja} · {loja.empresa}" if varias_empresas else str(loja)
+
+
 def _por_loja(recorte):
     """As lojas lado a lado, só em "Todas as lojas": é a separação que a soma
     esconde. Lista, e não `<table>`: são poucas linhas, sem filtro nem página
     que façam sentido, e a barra do vendido compara as lojas de relance."""
+    varias = len(recorte.todas) > 1
     return _lado_a_lado(_("Por loja"), "por-loja",
-                        [(str(l.loja), l.numeros) for l in ind.por_loja(recorte)])
+                        [(_nome_da_loja(l.loja, varias), l.numeros)
+                         for l in ind.por_loja(recorte)])
 
 
 def mes_do_ranking(request):
@@ -542,7 +554,8 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                                         "ranking_mes"))
     blocos.append(cartao_do_ranking(request, mes, attrs={"data-ind": "ranking"}, body=[
         listagem.barra,
-        Table(columns=_colunas(listagem, com_meta=True, por_loja=todas),
+        Table(columns=_colunas(listagem, com_meta=True, por_loja=todas,
+                               varias_empresas=len(empresas) > 1),
               rows=listagem.linhas),
         listagem.paginacao,
     ]))

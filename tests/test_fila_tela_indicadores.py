@@ -535,3 +535,16 @@ def test_empresa_forjada_nao_amplia_o_recorte(duas_empresas):
     abrir_conta(alheia, "outro-dono")
     html = _html(logado("sylvia"), periodo="hoje", empresa=str(alheia.pk))
     assert "De Outro Cliente" not in html
+
+
+def test_lojas_de_mesmo_nome_dizem_a_empresa(duas_empresas):
+    """Cada empresa nasce com a SUA Matriz: em "Todas as empresas", duas
+    linhas "Matriz" não diriam de qual delas são."""
+    d = duas_empresas
+    _venda_em(d.alfa, d.rede.ana, d.loja_alfa, "300")
+    _venda_em(d.beta, d.elis, d.loja_beta, "700")
+    html = _html(logado("sylvia"), periodo="hoje", empresa="todas", loja="todas")
+    por_loja = html[html.index('data-ind="por-loja"'):html.index('data-ind="por-empresa"')]
+    assert "Matriz · Beta Ltda" in por_loja
+    ranking = _ranking(html)
+    assert "Matriz · Beta Ltda" in ranking

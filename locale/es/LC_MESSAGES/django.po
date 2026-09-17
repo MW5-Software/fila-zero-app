@@ -1485,3 +1485,53 @@ msgstr "Puede conceder"
 
 msgid "Os cargos que quem tem este cargo pode dar ao alocar alguém. Nenhum marcado: valem só as travas de permissão e alcance."
 msgstr "Los cargos que quien tiene este cargo puede dar al asignar a alguien. Ninguno marcado: valen solo las trabas de permiso y alcance."
+
+#, python-format
+msgid "%(com)s de %(total)s lojas com meta: a meta e o vendido desta faixa são só delas."
+msgstr "%(com)s de %(total)s tiendas con meta: la meta y lo vendido de esta franja son solo de ellas."
+
+msgid "Conta não encontrada."
+msgstr "Cuenta no encontrada."
+
+msgid "Empresas e lojas"
+msgstr "Empresas y tiendas"
+
+msgid "Nova empresa"
+msgstr "Nueva empresa"
+
+msgid "Por empresa"
+msgstr "Por empresa"
+
+msgid "Quem é a conta"
+msgstr "Quién es la cuenta"
+
+msgid "Sem conta (a MW5 liga depois)"
+msgstr "Sin cuenta (la MW5 la vincula después)"
+
+msgid "Suas empresas"
+msgstr "Sus empresas"
+
+msgid "Titular"
+msgstr "Titular"
+
+msgid "Todas as empresas"
+msgstr "Todas las empresas"
+
+msgid "sem CNPJ"
+msgstr "sin CNPJ"
+
+msgid "sem loja cadastrada"
+msgstr "sin tienda registrada"
+
+msgid "O cliente, as empresas dele e as lojas de cada uma."
+msgstr "El cliente, sus empresas y las tiendas de cada una."
+
+msgid "Escolha uma empresa no cabeçalho para ver a conta dela."
+msgstr "Elija una empresa en el encabezado para ver la cuenta de ella."
+
+msgid "As empresas da sua conta, e de onde o cron lê o catálogo de cada uma no Kronos."
+msgstr "Las empresas de su cuenta, y de dónde el cron lee el catálogo de cada una en Kronos."
+
+#, python-format
+msgid "Você está atendendo em %(loja)s (%(empresa)s). Finalize lá antes de entrar aqui."
+msgstr "Está atendiendo en %(loja)s (%(empresa)s). Finalice allá antes de entrar aquí."
