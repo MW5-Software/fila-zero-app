@@ -854,10 +854,13 @@ def _e_master(request) -> bool:
 
 
 def _acao_criar(request) -> HttpResponse:
-    """Cria a empresa. **Só a MW5**, e a trava é aqui: esconder o botão evita
-    o engano, e um POST forjado chegaria igual."""
-    if not _e_master(request):
-        return _desenhar(request, erro=_("Só a MW5 cadastra empresa."))
+    """Cria a empresa.
+
+    **Só a MW5**, e quem barra é o despacho de `empresa()`, que já recusa
+    toda ação sem alvo e o remover para quem não é MW5 — a mesma trava, num
+    lugar só. Repeti-la aqui seria a segunda cópia da regra, e a que alguém
+    esqueceria de mudar junto.
+    """
     dono = None
     pedido = id_do_post(request, "dono")
     if pedido is not None:
