@@ -728,6 +728,14 @@ def _cenario_fila_lancamento_corrigido():
     return email_de("dona-fila"), f"Atendimento de Zeca em {matriz}"
 
 
+def _cenario_fila_pausa_iniciada():
+    from fila.correcoes import por_em_pausa
+
+    dona, zeca, matriz, cad = _loja_com_gente_da_fila()
+    por_em_pausa(dona, matriz, zeca.pk, cad.tipo.pk, observacao="foi ao banco")
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
 def _cenario_fila_posicao_movida():
     from contas.models import Usuario
     from fila.acoes import bater_ponto
@@ -833,6 +841,7 @@ _CENARIOS = {
     "FILA_PAUSA_ENCERRADA": _cenario_fila_pausa_encerrada,
     "FILA_LANCAMENTO_CORRIGIDO": _cenario_fila_lancamento_corrigido,
     "FILA_POSICAO_MOVIDA": _cenario_fila_posicao_movida,
+    "FILA_PAUSA_INICIADA": _cenario_fila_pausa_iniciada,
     "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
     "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,

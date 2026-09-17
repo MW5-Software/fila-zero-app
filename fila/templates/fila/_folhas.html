@@ -103,6 +103,8 @@
   <div data-para="na_fila"{% if alvo and alvo.estado != "na_fila" %} hidden{% endif %}>
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=mover&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="mover" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("arrow-up-down") }}</span><span><strong>{{ traduzir("Mudar de posição") }}</strong><small>{{ traduzir("Escolha o lugar na fila.") }}</small></span></a>
+    <a class="fila-corrigir-item" href="{{ url_fila }}?folha=por_em_pausa&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="por_em_pausa" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
+      <span class="ci">{{ icon("coffee") }}</span><span><strong>{{ traduzir("Pôr em pausa") }}</strong><small>{{ traduzir("Para quem saiu e não apertou Pausa.") }}</small></span></a>
   </div>
   {# Tirar da pausa e tirar da loja abriam direto um POST; com o motivo
      obrigatório (spec 2026-09-17), abrem a folha que pede o campo. #}
@@ -147,6 +149,26 @@
   <div class="mfoot">
     <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
     <button type="submit" class="btn primary">{{ traduzir("Tirar da pausa") }}</button>
+  </div>
+</form>
+{% endcall %}
+
+{% call modal("por_em_pausa", traduzir("Pôr em pausa"), folha == "por_em_pausa" and alvo, alvo.nome if alvo else "") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
+    {{ csrf }}<input type="hidden" name="acao" value="por_em_pausa">
+    <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+    <fieldset class="fila-opcoes">
+      <legend class="msec-title">{{ traduzir("Pausa para quê?") }}</legend>
+      {% for t in tipos %}
+      <label class="fila-opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required><span>{{ t.nome }}</span></label>
+      {% endfor %}
+    </fieldset>
+    {{ motivo_da_correcao() }}
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Pôr em pausa") }}</button>
   </div>
 </form>
 {% endcall %}

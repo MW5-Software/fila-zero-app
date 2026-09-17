@@ -572,3 +572,18 @@ def test_posicao_forjada_no_post_nao_derruba(loja):
                      motivo_da_correcao="teste ok")
     assert resposta.status_code == 302
     assert "Escolha uma posição da fila." in _html(gil)
+
+
+def test_gerente_poe_em_pausa_pela_folha(loja):
+    from fila.models import Estado, LugarNaFila
+
+    _agir(logado("ana"), acao="ponto")
+    gil = logado("gil")
+    folha = _html(gil, f"/fila?folha=por_em_pausa&pessoa={loja.ana.pk}")
+    aberta = folha[folha.index('id="folha-por_em_pausa"'):]
+    aberta = aberta[:aberta.index("</form>")]
+    assert f'name="tipo" value="{loja.cad.tipo.pk}"' in aberta
+    assert 'name="motivo_da_correcao"' in aberta
+    _agir(gil, acao="por_em_pausa", pessoa=str(loja.ana.pk), tipo=str(loja.cad.tipo.pk),
+          motivo_da_correcao="foi ao banco")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_PAUSA

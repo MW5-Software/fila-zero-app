@@ -23,14 +23,16 @@ from django.utils.translation import gettext_lazy
 from comum.auditoria import ACOES, registrar
 
 from . import acoes
-from .acoes import (Recusa, _gravar_lancamento, _fechar_atendimento,
-                    _lugar_na_loja, _sair, _travar, _validar, _voltar_ao_fim)
+from .acoes import (Recusa, _abrir_pausa, _gravar_lancamento,
+                    _fechar_atendimento, _lugar_na_loja, _sair, _travar,
+                    _validar, _voltar_ao_fim)
 from .estado import na_fila, nome_de
 from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
-           "lancamentos_de_hoje", "ler_observacao", "mover", "tirar_da_loja",
+           "lancamentos_de_hoje", "ler_observacao", "mover", "por_em_pausa",
+           "tirar_da_loja",
            "tirar_da_pausa"]
 
 NAO_CORRIGE_A_SI = gettext_lazy("Você não corrige a si mesmo.")
@@ -264,3 +266,19 @@ def mover(autor, filial, pessoa_id, posicao, *, observacao, request=None):
                    f"de {atual}º para {posicao}º", _agora(),
                    auditoria=ACOES.FILA_POSICAO_MOVIDA, alvo=_alvo(lugar, filial),
                    request=request)
+
+
+def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None):
+    """O vendedor foi ao banco e não apertou "Pausa" (C4). Só quem está na
+    fila: quem atende tem o atendimento fechado antes, pela mesma folha."""
+    observacao = ler_observacao(observacao)
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_de_outro(autor, filial, pessoa_id)
+        if lugar.estado != Estado.NA_FILA:
+            raise Recusa(NAO_ESTA_NA_FILA)
+        agora = _agora()
+        tipo = _abrir_pausa(lugar, filial, tipo_id, agora)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.PAUSAR, observacao,
+                   tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_INICIADA,
+                   alvo=_alvo(lugar, filial), request=request)

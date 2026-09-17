@@ -159,6 +159,9 @@ _DO_GERENTE = {
     "mover": lambda r, f, p: correcoes.mover(
         p, f, _pessoa_do_post(r), id_do_post(r, "posicao"),
         observacao=_motivo(r), request=r),
+    "por_em_pausa": lambda r, f, p: correcoes.por_em_pausa(
+        p, f, _pessoa_do_post(r), id_do_post(r, "tipo"),
+        observacao=_motivo(r), request=r),
     "editar": lambda r, f, p: correcoes.editar_lancamento(
         p, f, id_do_post(r, "atendimento"), _lancamento(r),
         observacao=_motivo(r), request=r),

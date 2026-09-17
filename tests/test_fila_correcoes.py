@@ -354,3 +354,41 @@ def test_so_quem_esta_na_fila_se_move(fila_de_quatro):
     with pytest.raises(Recusa) as recusa:
         mover(loja.gerente, loja.matriz, loja.ana.pk, 2, observacao="teste ok")
     assert recusa.value.frase == "Essa pessoa não está na fila."
+
+
+# --- Pôr em pausa (C4) ---------------------------------------------------------
+
+def test_gerente_poe_em_pausa_quem_esta_na_fila(loja):
+    from fila.acoes import bater_ponto
+    from fila.correcoes import por_em_pausa
+    from fila.models import CorrecaoNaFila, Estado, LugarNaFila, Pausa
+
+    bater_ponto(loja.ana, loja.matriz)
+    por_em_pausa(loja.gerente, loja.matriz, loja.ana.pk, loja.cad.tipo.pk,
+                 observacao="foi ao banco")
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_PAUSA
+    pausa = Pausa.irrestritos.get()
+    assert (pausa.pessoa_id, pausa.tipo_id, pausa.fim) == (loja.ana.pk, loja.cad.tipo.pk, None)
+    correcao = CorrecaoNaFila.irrestritos.get()
+    assert (correcao.acao, correcao.detalhe) == ("pausar", "Almoço")
+    assert _ultima_trilha().acao == "fila_pausa_iniciada"
+
+
+def test_por_em_pausa_recusa_quem_atende_e_tipo_que_nao_serve(loja):
+    from fila.acoes import Recusa, bater_ponto, vou_atender
+    from fila.correcoes import por_em_pausa
+
+    bater_ponto(loja.ana, loja.matriz)
+    bater_ponto(loja.bia, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        por_em_pausa(loja.gerente, loja.matriz, loja.ana.pk, loja.cad.tipo.pk,
+                     observacao="teste ok")
+    assert recusa.value.frase == "Essa pessoa não está na fila."
+    loja.cad.tipo.ativo = False
+    loja.cad.tipo.save()
+    for tipo_id in (loja.cad.tipo.pk, None, 999999):
+        with pytest.raises(Recusa) as recusa:
+            por_em_pausa(loja.gerente, loja.matriz, loja.bia.pk, tipo_id,
+                         observacao="teste ok")
+        assert recusa.value.frase == "Escolha o tipo de pausa."
