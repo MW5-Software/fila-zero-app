@@ -91,7 +91,10 @@ def _lugar_de_outro(autor, filial, pessoa_id):
     if pessoa_id == autor.pk:
         raise Recusa(NAO_CORRIGE_A_SI)
     try:
-        return _lugar_na_loja(pessoa_id, filial)
+        # Pelo MÓDULO, e não pelo nome importado, como `_agora()`: é assim que
+        # o teste de concorrência força a demora entre ler e gravar também na
+        # correção, e prova a trava em vez da sorte.
+        return acoes._lugar_na_loja(pessoa_id, filial)
     except Recusa:
         raise Recusa(NAO_ENCONTRADO) from None
 
