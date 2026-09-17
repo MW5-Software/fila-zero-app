@@ -157,3 +157,31 @@ class TestAColunaEmpresa:
             reverse("usuarios"), {"formato": "impressao"}).content.decode()
         assert re.search(r"<th[^>]*>\s*Empresa\s*</th>", html), html[:500]
         assert "Alfa" in html
+
+
+class TestAColunaEmpresaComVarias:
+    """17/09/2026: a conta passou a ter várias empresas, e a subconsulta
+    trazia UMA por pessoa — a segunda sumia da tela."""
+
+    def test_a_coluna_mostra_as_duas_empresas_da_pessoa(self, cenario):
+        from plataforma.models import Empresa, Filial
+
+        from tests.conftest import alocar
+
+        titular = Usuario.objects.get(email="dono@teste.com")
+        beta = Empresa.objects.create(razao_social="Gama Ltda", dono=titular)
+        ana = Usuario.objects.get(email="ana@teste.com")
+        alocar(ana, beta, "vendedor",
+               filial=Filial.objects.get(empresa=beta, e_matriz=True))
+        html = _entrar("mw5@teste.com").get(reverse("usuarios")).content.decode()
+        celulas = " | ".join({l[1]: l for l in _linhas(html) if len(l) > 1}["ana@teste.com"])
+        assert "Alfa" in celulas and "Gama" in celulas
+
+    def test_o_titular_mostra_as_empresas_da_conta_dele(self, cenario):
+        from plataforma.models import Empresa
+
+        titular = Usuario.objects.get(email="dono@teste.com")
+        Empresa.objects.create(razao_social="Gama Ltda", dono=titular)
+        html = _entrar("mw5@teste.com").get(reverse("usuarios")).content.decode()
+        celulas = " | ".join({l[1]: l for l in _linhas(html) if len(l) > 1}["dono@teste.com"])
+        assert "Alfa" in celulas and "Gama" in celulas
