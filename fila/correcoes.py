@@ -26,11 +26,11 @@ from . import acoes
 from .acoes import (Recusa, _gravar_lancamento, _fechar_atendimento,
                     _lugar_na_loja, _sair, _travar, _validar, _voltar_ao_fim)
 from .estado import nome_de
-from .models import Atendimento, Estado, Pausa, Resultado
+from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
-           "lancamentos_de_hoje", "tirar_da_loja", "tirar_da_pausa"]
+           "lancamentos_de_hoje", "ler_observacao", "tirar_da_loja", "tirar_da_pausa"]
 
 NAO_CORRIGE_A_SI = gettext_lazy("Você não corrige a si mesmo.")
 
@@ -42,6 +42,32 @@ def _agora():
     quem voltou depois na frente de quem já esperava."""
     return acoes._agora()
 NAO_ENCONTRADO = gettext_lazy("Essa pessoa não está nesta loja.")
+MOTIVO_CURTO = gettext_lazy("Escreva o motivo da correção.")
+MOTIVO_LONGO = gettext_lazy("O motivo cabe em 200 caracteres.")
+
+
+def ler_observacao(texto) -> str:
+    """O motivo da correção, obrigatório (spec 2026-09-17, C1). Três
+    caracteres barram o "." digitado só para passar; duzentos cabem numa
+    linha do histórico. Lido ANTES da trava: recusa barata não segura a fila
+    da loja."""
+    limpo = " ".join(str(texto or "").split())
+    if len(limpo) < 3:
+        raise Recusa(MOTIVO_CURTO)
+    if len(limpo) > 200:
+        raise Recusa(MOTIVO_LONGO)
+    return limpo
+
+
+def _registrar(autor, filial, pessoa_id, acao, observacao, detalhe, agora, *,
+               auditoria, alvo, request=None) -> None:
+    """O histórico e a auditoria juntos, na transação da correção: se um
+    falhar, a correção desfaz inteira."""
+    CorrecaoNaFila.irrestritos.create(
+        empresa=filial.empresa, filial=filial, pessoa_id=pessoa_id, autor=autor,
+        acao=acao, observacao=observacao, detalhe=detalhe[:300], momento=agora)
+    trilha = f"{detalhe} | motivo: {observacao}" if detalhe else f"motivo: {observacao}"
+    registrar(auditoria, autor, alvo=alvo, detalhe=trilha, request=request)
 
 
 def descrever(atendimento) -> str:
@@ -69,7 +95,9 @@ def _alvo(lugar, filial) -> str:
     return f"{nome_de(lugar.pessoa)} em {filial}"
 
 
-def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, request=None):
+def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, observacao,
+                  request=None):
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
@@ -89,11 +117,14 @@ def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, request=None):
             detalhe = f"atendimento fechado: {descrever(atendimento)}"
         alvo = _alvo(lugar, filial)
         _sair(lugar, agora, fechada_por=autor)
-        registrar(ACOES.FILA_PESSOA_TIRADA, autor, alvo=alvo, detalhe=detalhe,
-                  request=request)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR, observacao,
+                   detalhe, agora, auditoria=ACOES.FILA_PESSOA_TIRADA, alvo=alvo,
+                   request=request)
 
 
-def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, request=None):
+def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, observacao,
+                       request=None):
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
@@ -104,12 +135,14 @@ def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, request=None):
         agora = _agora()
         _fechar_atendimento(atendimento, lancamento, agora, fechado_por=autor)
         _voltar_ao_fim(lugar, agora)
-        registrar(ACOES.FILA_ATENDIMENTO_FECHADO, autor,
-                  alvo=_alvo(lugar, filial), detalhe=descrever(atendimento),
-                  request=request)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.FECHAR, observacao,
+                   descrever(atendimento), agora,
+                   auditoria=ACOES.FILA_ATENDIMENTO_FECHADO,
+                   alvo=_alvo(lugar, filial), request=request)
 
 
-def tirar_da_pausa(autor, filial, pessoa_id, *, request=None):
+def tirar_da_pausa(autor, filial, pessoa_id, *, observacao, request=None):
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         lugar = _lugar_de_outro(autor, filial, pessoa_id)
@@ -121,16 +154,17 @@ def tirar_da_pausa(autor, filial, pessoa_id, *, request=None):
         pausa.fim = agora
         pausa.save(update_fields=["fim"])
         _voltar_ao_fim(lugar, agora)
-        registrar(ACOES.FILA_PAUSA_ENCERRADA, autor,
-                  alvo=_alvo(lugar, filial), detalhe=pausa.tipo.nome,
-                  request=request)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR_PAUSA, observacao,
+                   pausa.tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_ENCERRADA,
+                   alvo=_alvo(lugar, filial), request=request)
 
 
 def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
-                      request=None):
+                      observacao, request=None):
     """Troca o que foi lançado num atendimento FECHADO. Não reabre, não muda
     o fim nem o resultado: corrigir "vendeu" para "não vendeu" apagaria uma
     venda do ranking com um clique, e isso é outra conversa."""
+    observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
         atendimento = (Atendimento.objects.da_empresa(filial.empresa)
@@ -152,9 +186,11 @@ def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
             ja_usado_motivo=atendimento.motivo_id)
         _gravar_lancamento(atendimento, lancamento, grupos, motivo, total)
         depois = descrever(atendimento)
-        registrar(ACOES.FILA_LANCAMENTO_CORRIGIDO, autor,
-                  alvo=f"Atendimento de {nome_de(atendimento.vendedor)} em {filial}",
-                  detalhe=f"antes: {antes}; depois: {depois}", request=request)
+        _registrar(autor, filial, atendimento.vendedor_id, AcaoDeCorrecao.EDITAR,
+                   observacao, f"antes: {antes}; depois: {depois}", _agora(),
+                   auditoria=ACOES.FILA_LANCAMENTO_CORRIGIDO,
+                   alvo=f"Atendimento de {nome_de(atendimento.vendedor)} em {filial}",
+                   request=request)
 
 
 def lancamentos_de_hoje(filial, dia=None):

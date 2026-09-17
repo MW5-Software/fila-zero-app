@@ -687,7 +687,7 @@ def _cenario_fila_pessoa_tirada():
     from fila.correcoes import tirar_da_loja
 
     dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
-    tirar_da_loja(dona, matriz, zeca.pk)
+    tirar_da_loja(dona, matriz, zeca.pk, observacao="motivo do teste")
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
@@ -698,7 +698,8 @@ def _cenario_fila_atendimento_fechado():
     dona, zeca, matriz, cad = _loja_com_gente_da_fila()
     vou_atender(zeca, matriz)
     fechar_atendimento(dona, matriz, zeca.pk,
-                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
+                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk),
+                       observacao="motivo do teste")
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
@@ -708,7 +709,7 @@ def _cenario_fila_pausa_encerrada():
 
     dona, zeca, matriz, cad = _loja_com_gente_da_fila()
     pausar(zeca, matriz, cad.tipo.pk)
-    tirar_da_pausa(dona, matriz, zeca.pk)
+    tirar_da_pausa(dona, matriz, zeca.pk, observacao="motivo do teste")
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
@@ -722,7 +723,8 @@ def _cenario_fila_lancamento_corrigido():
     finalizar(zeca, matriz, Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
     editar_lancamento(dona, matriz, Atendimento.irrestritos.get().pk,
                       Lancamento("nao_vendeu", motivo_id=cad.motivo.pk,
-                                 observacao="voltou depois"))
+                                 observacao="voltou depois"),
+                      observacao="motivo do teste")
     return email_de("dona-fila"), f"Atendimento de Zeca em {matriz}"
 
 

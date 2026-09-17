@@ -12,6 +12,8 @@ from tests.fila_cenario import (  # noqa: F401
 
 pytestmark = pytest.mark.django_db
 
+MOTIVO = "esqueceu de sair"
+
 
 @pytest.fixture
 def loja(relogio):
@@ -59,7 +61,7 @@ def test_tirar_da_loja_quem_esqueceu_de_sair(loja):
     from fila.models import LugarNaFila, Presenca
 
     bater_ponto(loja.ana, loja.matriz)
-    tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk)
+    tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, observacao=MOTIVO)
     assert not LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
     presenca = Presenca.irrestritos.get(pessoa=loja.ana)
     assert presenca.saida is not None
@@ -77,8 +79,8 @@ def test_tirar_da_loja_quem_esta_atendendo_fecha_como_nao_venda(loja):
     bater_ponto(loja.ana, loja.matriz)
     vou_atender(loja.ana, loja.matriz)
     with pytest.raises(Recusa):
-        tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk)   # sem motivo
-    tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, _nao_venda(loja))
+        tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, observacao=MOTIVO)   # sem motivo da não venda
+    tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, _nao_venda(loja), observacao=MOTIVO)
     atendimento = Atendimento.irrestritos.get()
     assert atendimento.resultado == "nao_vendeu"
     assert atendimento.fechado_por == loja.gerente
@@ -94,7 +96,7 @@ def test_fechar_atendimento_manda_o_vendedor_para_o_fim(loja):
     bater_ponto(loja.bia, loja.matriz)
     vou_atender(loja.ana, loja.matriz)
     fechar_atendimento(loja.gerente, loja.matriz, loja.ana.pk,
-                       _venda(loja, (loja.cad.grupo, "250")))
+                       _venda(loja, (loja.cad.grupo, "250")), observacao=MOTIVO)
     assert [l.pessoa_id for l in na_fila(loja.matriz)] == [loja.bia.pk, loja.ana.pk]
     atendimento = Atendimento.irrestritos.get()
     assert atendimento.fechado_por == loja.gerente
@@ -109,10 +111,10 @@ def test_tirar_da_pausa(loja):
 
     bater_ponto(loja.ana, loja.matriz)
     pausar(loja.ana, loja.matriz, loja.cad.tipo.pk)
-    tirar_da_pausa(loja.gerente, loja.matriz, loja.ana.pk)
+    tirar_da_pausa(loja.gerente, loja.matriz, loja.ana.pk, observacao=MOTIVO)
     assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA
     assert Pausa.irrestritos.get().fim is not None
-    assert _ultima_trilha().detalhe == "Almoço"
+    assert _ultima_trilha().detalhe == f"Almoço | motivo: {MOTIVO}"
 
 
 def test_editar_lancamento_troca_grupos_e_valores_e_grava_antes_e_depois(loja):
@@ -126,7 +128,7 @@ def test_editar_lancamento_troca_grupos_e_valores_e_grava_antes_e_depois(loja):
     atendimento = Atendimento.irrestritos.get()
     fim = atendimento.fim
     editar_lancamento(loja.gerente, loja.matriz, atendimento.pk, _venda(
-        loja, (loja.cad.grupo, "80"), (loja.cad.grupo2, "40")))
+        loja, (loja.cad.grupo, "80"), (loja.cad.grupo2, "40")), observacao=MOTIVO)
     atendimento.refresh_from_db()
     assert atendimento.total == Decimal("120")
     assert atendimento.fim == fim                 # não reabre, não re-fecha
@@ -148,7 +150,7 @@ def test_editar_lancamento_nao_troca_o_resultado(loja):
     with pytest.raises(Recusa):
         editar_lancamento(loja.gerente, loja.matriz,
                           Atendimento.irrestritos.get().pk,
-                          _venda(loja, (loja.cad.grupo, "10")))
+                          _venda(loja, (loja.cad.grupo, "10")), observacao=MOTIVO)
 
 
 def test_editar_atendimento_aberto_ou_de_outra_loja_e_recusado(loja):
@@ -165,10 +167,10 @@ def test_editar_atendimento_aberto_ou_de_outra_loja_e_recusado(loja):
     # só editar o que está fechado.
     with pytest.raises(Recusa) as recusa:
         editar_lancamento(loja.gerente, loja.matriz, aberto.pk,
-                          _nao_venda(loja))
+                          _nao_venda(loja), observacao=MOTIVO)
     assert recusa.value.frase == "Lançamento não encontrado."
     with pytest.raises(Recusa) as recusa:
-        editar_lancamento(loja.gerente, centro, aberto.pk, _nao_venda(loja))
+        editar_lancamento(loja.gerente, centro, aberto.pk, _nao_venda(loja), observacao=MOTIVO)
     assert recusa.value.frase == "Lançamento não encontrado."
 
 
@@ -180,7 +182,7 @@ def test_ninguem_corrige_a_si_mesmo(loja):
     bater_ponto(loja.gerente, loja.matriz)
     pausar(loja.gerente, loja.matriz, loja.cad.tipo.pk)
     with pytest.raises(Recusa) as recusa:
-        tirar_da_pausa(loja.gerente, loja.matriz, loja.gerente.pk)
+        tirar_da_pausa(loja.gerente, loja.matriz, loja.gerente.pk, observacao=MOTIVO)
     assert recusa.value.frase == "Você não corrige a si mesmo."
 
 
@@ -191,7 +193,7 @@ def test_correcao_em_quem_esta_em_outra_loja_e_recusada(loja):
     centro = nova_loja(loja.empresa, "Centro")
     bater_ponto(loja.ana, centro)
     with pytest.raises(Recusa):
-        tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk)
+        tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, observacao=MOTIVO)
 
 
 def test_lancamentos_de_hoje_so_os_fechados_da_loja(loja):
@@ -225,3 +227,52 @@ def test_a_versao_da_fila_muda_com_uma_correcao(loja):
         autor=loja.gerente, acao="mover", observacao="chegou antes",
         detalhe="de 2º para 1º", momento=timezone.now())
     assert versao_da_fila(loja.matriz) != antes
+
+
+@pytest.mark.parametrize("texto, frase", [
+    ("", "Escreva o motivo da correção."),
+    ("  a  ", "Escreva o motivo da correção."),
+    ("x" * 201, "O motivo cabe em 200 caracteres."),
+])
+def test_sem_motivo_nenhuma_correcao_acontece(loja, texto, frase):
+    from fila.acoes import Recusa, bater_ponto
+    from fila.correcoes import tirar_da_loja
+    from fila.models import CorrecaoNaFila, LugarNaFila
+
+    bater_ponto(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, observacao=texto)
+    assert recusa.value.frase == frase
+    assert LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+    assert not CorrecaoNaFila.irrestritos.exists()
+
+
+def test_o_motivo_junta_os_espacos():
+    from fila.correcoes import ler_observacao
+
+    assert ler_observacao("  foi   ao\nbanco ") == "foi ao banco"
+
+
+def test_cada_correcao_grava_o_historico_e_a_auditoria(loja):
+    from fila.acoes import bater_ponto, pausar, vou_atender
+    from fila.correcoes import (editar_lancamento, fechar_atendimento,
+                                tirar_da_loja, tirar_da_pausa)
+    from fila.models import Atendimento, CorrecaoNaFila
+
+    bater_ponto(loja.ana, loja.matriz)
+    pausar(loja.ana, loja.matriz, loja.cad.tipo.pk)
+    tirar_da_pausa(loja.gerente, loja.matriz, loja.ana.pk, observacao="voltou do almoço")
+    vou_atender(loja.ana, loja.matriz)
+    fechar_atendimento(loja.gerente, loja.matriz, loja.ana.pk,
+                       _venda(loja, (loja.cad.grupo, "250")), observacao="esqueceu de lançar")
+    editar_lancamento(loja.gerente, loja.matriz, Atendimento.irrestritos.get().pk,
+                      _venda(loja, (loja.cad.grupo, "300")), observacao="valor errado")
+    tirar_da_loja(loja.gerente, loja.matriz, loja.ana.pk, observacao="foi embora")
+    linhas = list(CorrecaoNaFila.irrestritos.order_by("momento")
+                  .values_list("acao", "observacao", "detalhe", "pessoa_id", "autor_id"))
+    assert [l[:2] for l in linhas] == [
+        ("tirar_pausa", "voltou do almoço"), ("fechar", "esqueceu de lançar"),
+        ("editar", "valor errado"), ("tirar", "foi embora")]
+    assert linhas[0][2] == "Almoço"
+    assert all(l[3] == loja.ana.pk and l[4] == loja.gerente.pk for l in linhas)
+    assert _ultima_trilha().detalhe == "motivo: foi embora"

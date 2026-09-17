@@ -144,7 +144,8 @@ def test_gerente_corrige_na_loja_dele(loja):
     from fila.models import LugarNaFila
 
     _agir(logado("ana"), acao="ponto")
-    _agir(logado("gil"), acao="tirar", pessoa=str(loja.ana.pk))
+    _agir(logado("gil"), acao="tirar", pessoa=str(loja.ana.pk),
+          motivo_da_correcao="motivo do teste")
     assert not LugarNaFila.irrestritos.exists()
 
 
@@ -155,7 +156,7 @@ def test_gerente_de_outra_loja_nao_corrige_a_matriz(loja):
     pessoa_na_loja("caio", loja.empresa, centro, cargo="gerente")
     _agir(logado("ana"), acao="ponto")
     caio = logado("caio")
-    _agir(caio, acao="tirar", pessoa=str(loja.ana.pk))
+    _agir(caio, acao="tirar", pessoa=str(loja.ana.pk), motivo_da_correcao="motivo do teste")
     assert LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
     assert "Essa pessoa não está nesta loja." in _html(caio)
 
@@ -165,7 +166,8 @@ def test_supervisor_corrige_na_empresa(loja):
 
     pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")
     _agir(logado("ana"), acao="ponto")
-    _agir(logado("sara"), acao="tirar", pessoa=str(loja.ana.pk))
+    _agir(logado("sara"), acao="tirar", pessoa=str(loja.ana.pk),
+          motivo_da_correcao="motivo do teste")
     assert not LugarNaFila.irrestritos.exists()
 
 
@@ -184,7 +186,7 @@ def test_gerente_edita_lancamento_de_hoje_pela_pagina(loja):
         gil, f"/fila?folha=editar&atendimento={atendimento.pk}")
     _agir(gil, acao="editar", atendimento=str(atendimento.pk),
           resultado="nao_vendeu", motivo=str(loja.cad.motivo.pk),
-          observacao="volta amanhã")
+          observacao="volta amanhã", motivo_da_correcao="motivo do teste")
     atendimento.refresh_from_db()
     assert atendimento.observacao == "volta amanhã"
 
@@ -518,3 +520,28 @@ def test_o_nome_de_quem_esta_logado_fica_no_topo(loja):
     assert topo and 'data-quem' in topo.group(1)
     assert "Ana Souza" in topo.group(1)
     assert "Ana Souza" in _html(logado("ana"), "/fila?folha=pausa")
+
+
+# --- O motivo da correção (spec 2026-09-17) ---------------------------------
+
+def test_correcao_pela_pagina_sem_motivo_volta_com_a_frase(loja):
+    from fila.models import LugarNaFila
+
+    _agir(logado("ana"), acao="ponto")
+    gil = logado("gil")
+    _agir(gil, acao="tirar", pessoa=str(loja.ana.pk))
+    assert LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+    assert "Escreva o motivo da correção." in _html(gil)
+    _agir(gil, acao="tirar", pessoa=str(loja.ana.pk), motivo_da_correcao="foi embora")
+    assert not LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+
+
+def test_as_folhas_de_correcao_pedem_o_motivo(loja):
+    ana = logado("ana")
+    _agir(ana, acao="ponto")
+    gil = logado("gil")
+    for folha in ("sair", "tirar_pausa", "fechar", "tirar"):
+        html = _html(gil, f"/fila?folha={folha}&pessoa={loja.ana.pk}")
+        aberta = html[html.index(f'id="folha-{folha}"'):]
+        aberta = aberta[:aberta.index("</form>")]
+        assert 'name="motivo_da_correcao"' in aberta and "required" in aberta, folha
