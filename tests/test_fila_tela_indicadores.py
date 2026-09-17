@@ -494,10 +494,14 @@ def test_o_painel_abre_na_empresa_do_cabecalho(duas_empresas):
     d = duas_empresas
     _venda_em(d.alfa, d.rede.ana, d.loja_alfa, "300")
     _venda_em(d.beta, d.elis, d.loja_beta, "700")
-    na_alfa = _html(_na_empresa(logado("sylvia"), d.alfa), periodo="hoje")
+    # Com `loja=todas`, quem recorta é a EMPRESA do cabeçalho: sem ela, as
+    # lojas das duas entrariam e o teste passaria pela loja, não pela empresa.
+    na_alfa = _html(_na_empresa(logado("sylvia"), d.alfa), periodo="hoje",
+                    loja="todas")
     assert "R$ 300,00" in na_alfa
     assert "Elis" not in na_alfa and "R$ 700,00" not in na_alfa
-    na_beta = _html(_na_empresa(logado("sylvia"), d.beta), periodo="hoje")
+    na_beta = _html(_na_empresa(logado("sylvia"), d.beta), periodo="hoje",
+                    loja="todas")
     assert "R$ 700,00" in na_beta and "Ana" not in na_beta
 
 
