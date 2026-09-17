@@ -210,6 +210,7 @@ def marca_da_instalacao() -> Brand:
 
     return replace(
         brand,
+        default_theme="light",
         assets=replace(ASSETS_DO_PRODUTO, **assets),
         logo_areas=areas,
         # Aqui, e não em `MARCA_PADRAO`: a instalação que já configurou a

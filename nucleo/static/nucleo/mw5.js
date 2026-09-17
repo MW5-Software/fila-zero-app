@@ -1,7 +1,7 @@
 /* ==========================================================================
    MW5 Admin — comportamento do design system.
 
-   Escrito à mão, sem framework, porque é pouca coisa: alternar tema, abrir e
+   Escrito à mão, sem framework, porque é pouca coisa: abrir e
    fechar sobreposições, posicionar menus. Tudo o que envolve dados passa pelo
    HTMX e é renderizado no servidor.
 
@@ -72,30 +72,20 @@
   });
 
 
-  var THEME_KEY = "mw5-theme";
   var MENU_KEY = "mw5-menu-recolhido";
 
   /* --------------------------------- tema -------------------------------- */
 
   function currentTheme() {
-    return (
-      document.documentElement.getAttribute("data-theme") ||
-      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-    );
+    return "light";
   }
 
-  function setTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (e) {
-      /* modo privativo: o tema vale só para esta aba, e tudo bem */
-    }
-    document.dispatchEvent(new CustomEvent("mw5:themechange", { detail: { theme: theme } }));
+  function setTheme() {
+    document.documentElement.setAttribute("data-theme", "light");
   }
 
   function toggleTheme() {
-    setTheme(currentTheme() === "dark" ? "light" : "dark");
+    setTheme();
   }
 
   /* ------------------------------ sobreposições --------------------------- */
