@@ -393,3 +393,48 @@ def test_tela_de_filiais_recusa_desativar_loja_com_gente(loja):
     loja.matriz.refresh_from_db()
     assert loja.matriz.ativa is True
     assert "Há 1 pessoa presente nesta loja" in resposta.content.decode()
+
+
+# --- Entre empresas (spec 2026-09-17, E5) ------------------------------------
+
+def test_o_ponto_e_um_so_em_qualquer_empresa(loja):
+    """A pessoa alocada em duas EMPRESAS da mesma conta continua com um ponto
+    aberto por vez: chegar na loja da outra empresa fecha a presença da
+    primeira, como já acontecia entre lojas da mesma empresa."""
+    from contas.models import Alocacao, Cargo
+    from fila.acoes import bater_ponto
+    from fila.models import LugarNaFila, Presenca
+    from plataforma.models import Empresa, Filial
+
+    beta = Empresa.objects.create(razao_social="Beta Ltda",
+                                  dono_id=loja.empresa.dono_id)
+    loja_beta = Filial.objects.get(empresa=beta, e_matriz=True)
+    Alocacao.objects.create(pessoa=loja.ana, empresa=beta, filial=loja_beta,
+                            cargo=Cargo.objects.get(conta_id=beta.conta_id,
+                                                    nome="vendedor"))
+    bater_ponto(loja.ana, loja.matriz)
+    bater_ponto(loja.ana, loja_beta)
+
+    aberta = Presenca.irrestritos.get(pessoa=loja.ana, saida__isnull=True)
+    assert aberta.filial == loja_beta and aberta.empresa_id == beta.pk
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).filial == loja_beta
+    assert Presenca.irrestritos.filter(pessoa=loja.ana).count() == 2
+
+
+def test_atendendo_numa_empresa_a_recusa_diz_a_loja_e_a_empresa(loja):
+    from contas.models import Alocacao, Cargo
+    from fila.acoes import Recusa, bater_ponto, vou_atender
+    from plataforma.models import Empresa, Filial
+
+    beta = Empresa.objects.create(razao_social="Beta Ltda",
+                                  dono_id=loja.empresa.dono_id)
+    loja_beta = Filial.objects.get(empresa=beta, e_matriz=True)
+    Alocacao.objects.create(pessoa=loja.ana, empresa=beta, filial=loja_beta,
+                            cargo=Cargo.objects.get(conta_id=beta.conta_id,
+                                                    nome="vendedor"))
+    bater_ponto(loja.ana, loja.matriz)
+    vou_atender(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        bater_ponto(loja.ana, loja_beta)
+    frase = recusa.value.frase
+    assert str(loja.matriz) in frase and str(loja.empresa) in frase

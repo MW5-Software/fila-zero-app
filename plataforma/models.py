@@ -379,11 +379,10 @@ class Empresa(ComGuid):
     #: — ver `plataforma/cifra.py` para o porquê.
     senha = models.CharField("senha (cifrada)", max_length=255, blank=True, default="")
 
-    #: **O Admin dono desta empresa — a CONTA.** Uma conta, uma empresa.
-    #:
-    #: `UNIQUE` na constraint abaixo, e não só combinado: convenção some no
-    #: dia em que uma tela nova esquecer dela, e o que se perde aqui é a
-    #: fronteira entre dois clientes.
+    #: **O Admin dono desta empresa — a CONTA.** Uma conta tem VÁRIAS
+    #: empresas desde 17/09/2026 (spec
+    #: `2026-09-17-varias-empresas-por-conta`): o que separa o dado de negócio
+    #: é a coluna `empresa` de cada linha, e o `conta_guid` diz de QUEM ela é.
     #:
     #: **Nulo é um estado de verdade**, não um buraco: a MW5 cadastra a
     #: empresa antes de existir o Admin dela, e a empresa órfã (a que sobrou
@@ -394,7 +393,7 @@ class Empresa(ComGuid):
     #: catálogo, orçamento e o histórico inteiro daquele cliente.
     dono = models.ForeignKey(
         "contas.Usuario", verbose_name="conta", on_delete=models.PROTECT,
-        null=True, blank=True, related_name="empresa_da_conta",
+        null=True, blank=True, related_name="empresas_da_conta",
         help_text=_("O Admin dono desta empresa."))
 
     #: A mesma relação acima na identidade estável da conta. `dono_id` fica
@@ -426,15 +425,11 @@ class Empresa(ComGuid):
                 name="cnpj_unico_por_instalacao",
                 violation_error_message=(
                     "Já existe uma empresa com este CNPJ.")),
-            #: **Uma conta, uma empresa.** `condition` deixa o nulo de fora
-            #: pelo mesmo motivo do CNPJ acima: sem ela, a SEGUNDA empresa
-            #: sem dono seria recusada — e empresa sem dono é estado normal
-            #: (a que a MW5 acabou de cadastrar, a que ficou órfã).
-            models.UniqueConstraint(
-                fields=("dono",), condition=models.Q(dono__isnull=False),
-                name="uma_empresa_por_conta",
-                violation_error_message=(
-                    "Esta conta já tem uma empresa.")),
+            #: **Não há trava de "uma empresa por conta"** desde 17/09/2026:
+            #: a conta é o cliente, e o cliente pode ter mais de uma pessoa
+            #: jurídica. Quem separa o dado de negócio é a coluna `empresa`
+            #: de cada linha, conferida em `contas.inquilino.ModeloDaEmpresa`;
+            #: o `conta_guid` continua obrigatório e derivado da empresa.
         ]
 
     def __str__(self) -> str:

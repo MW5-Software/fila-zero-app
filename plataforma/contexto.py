@@ -73,8 +73,9 @@ def empresa_atual(request) -> "Empresa | None":
     resposta. Sessão remendada e id forjado deixam de ser caminhos quando o
     valor não vem do pedido.
 
-    A sessão sobrevive para a MW5, e só: ela é a única que alcança mais de
-    uma, e para ela a pergunta é outra — "qual CONTA estou olhando".
+    A sessão vale para quem alcança MAIS DE UMA empresa: a MW5, e desde
+    17/09/2026 também o titular com várias empresas na conta. Quem alcança uma
+    só não passa pela sessão, e para ele id forjado não é caminho.
 
     Mesma regra da filial para o id guardado: um id de uma empresa que a
     pessoa **deixou** de alcançar é descartado aqui, e é o que faz tirar o
@@ -238,12 +239,24 @@ def escolher(request, filial_id) -> "Filial | None":
     return escolhida
 
 
+def _e_da_mw5(user) -> bool:
+    """Quem enxerga a instalação inteira, pelos dois nomes do mesmo atributo
+    (ver `contas.alcance._ve_tudo`)."""
+    from contas.identidade import usuario_de
+
+    if getattr(user, "is_superuser", False) or getattr(user, "superuser", False):
+        return True
+    pessoa = usuario_de(user)
+    return bool(pessoa and (pessoa.is_superuser or pessoa.e_master))
+
+
 def niveis_de_contexto(request) -> "list[NivelDeContexto]":
     """O contexto do cabeçalho: **a empresa e a filial, cada uma só quando há o
     que escolher**.
 
-    A empresa aparece para quem alcança mais de uma — hoje, só a MW5, e para ela
-    a pergunta é "qual CONTA estou olhando". A filial aparece para quem alcança
+    A empresa aparece para quem alcança mais de uma: a MW5 (e aí a pergunta é
+    "qual CONTA estou olhando") e, desde 17/09/2026, o titular cuja conta tem
+    várias empresas. A filial aparece para quem alcança
     mais de uma DENTRO da empresa atual (14/09/2026): desde a virada dos cargos,
     o que a pessoa pode depende da filial em que está, e o cabeçalho é onde ela
     escolhe.
@@ -265,12 +278,17 @@ def niveis_de_contexto(request) -> "list[NivelDeContexto]":
     # porque quem o mostra é a marca, não este seletor.
     empresas = list(empresas_de(user))
     if len(empresas) > 1:
+        # Para a MW5 a pergunta não é "em que empresa estou trabalhando" — ela
+        # não trabalha dentro de nenhuma —, é "qual cliente estou olhando".
+        # Para quem é de uma conta com várias empresas (17/09/2026), é "em
+        # qual das minhas empresas estou".
+        # A mesma pergunta de `contas.alcance._ve_tudo`, e pelo mesmo motivo
+        # dela: o retrato do design system diz `superuser`, e o usuário do ORM
+        # diz `is_superuser`.
+        da_mw5 = _e_da_mw5(user)
         niveis.append(NivelDeContexto(
             nivel=0,
-            # Para a MW5 a pergunta não é "em que empresa estou trabalhando"
-            # — ela não trabalha dentro de nenhuma —, é "qual cliente estou
-            # olhando". O rótulo diz isso.
-            rotulo=_("Conta"),
+            rotulo=_("Conta") if da_mw5 else _("Empresa"),
             atual=str(atual.pk) if atual else "",
             opcoes=[OpcaoDeContexto(str(e.pk), str(e)) for e in empresas],
         ))

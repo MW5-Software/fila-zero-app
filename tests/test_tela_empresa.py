@@ -112,15 +112,15 @@ class TestALista:
         assert RegistroDeAuditoria.objects.filter(acao="empresa_editada").exists()
 
     def test_criar_cria_uma_nova(self, cliente_admin, db):
-        """O oposto do que esta tela provava antes.
+        """Esta tela já criou, parou de criar e voltou a criar — e as três
+        razões estão certas.
 
-        Enquanto a empresa era dado da instalação, o teste daqui garantia que
-        um segundo POST NÃO criava uma segunda linha. Depois passou a criar,
-        porque são os clientes do portal. Em 09/09/2026 **parou de criar de
-        novo**, e por um motivo diferente dos dois anteriores: a empresa nasce
-        no cadastro do TITULAR, junto com a conta. Uma criada aqui nasceria
-        sem dono — ninguém a abre, e ela fica na lista sem nada explicando o
-        que falta nela.
+        Enquanto a empresa era dado da instalação, o teste garantia que um
+        segundo POST NÃO criava uma segunda linha. Depois passou a criar,
+        porque são os clientes do portal. Em 09/09/2026 parou: a conta tinha
+        UMA empresa, que nascia no cadastro do titular. Em 17/09/2026 a conta
+        passou a ter várias, e a segunda precisa nascer em algum lugar — aqui,
+        e só para a MW5 (`TestAMW5CriaEmpresaDeNovo`).
         """
         from plataforma.models import Empresa
 
@@ -128,9 +128,8 @@ class TestALista:
         cliente_admin.post(reverse("empresa"),
                            {"acao": "criar", "razao_social": "Cliente Novo Ltda"})
 
-        assert Empresa.objects.count() == antes
-        assert not Empresa.objects.filter(
-            razao_social="Cliente Novo Ltda").exists()
+        assert Empresa.objects.count() == antes + 1
+        assert Empresa.objects.filter(razao_social="Cliente Novo Ltda").exists()
 
     def test_razao_social_vazia_e_recusada_com_frase_na_tela(self, cliente_admin, db):
         from plataforma.models import Empresa
@@ -568,7 +567,7 @@ class TestOOlhoDaSenhaDoBanco:
 
 @pytest.mark.django_db
 class TestOTitularVeAEmpresaDele:
-    """Uma conta, uma empresa — e o titular vê a TABELA, como em toda outra
+    """O titular vê a TABELA das empresas da conta dele, como em toda outra
     tela de cadastro desta casa.
 
     **É a segunda vez que esta tela troca de forma, e as duas razões estão
@@ -579,8 +578,9 @@ class TestOTitularVeAEmpresaDele:
     tabela com filtro, ordenação e paginação (R46), e uma que foge disso
     obriga quem já aprendeu o padrão a aprender uma exceção.
 
-    O que NÃO mudou nas duas idas: ele não cria e não remove. A empresa nasce
-    no cadastro dele e morre com a conta, e as duas ações são da MW5.
+    O que NÃO mudou nas duas idas: ele não cria e não remove. A primeira
+    empresa nasce no cadastro dele, as outras a MW5 cadastra (17/09/2026), e
+    remover é da MW5.
     """
 
     @pytest.fixture
@@ -739,3 +739,72 @@ class TestOTitularVeAEmpresaDele:
         html = cliente_admin.get(reverse("empresa")).content.decode()
 
         assert "<table" in html
+
+
+@pytest.mark.django_db
+class TestAMW5CriaEmpresaDeNovo:
+    """17/09/2026: com várias empresas por conta, "Nova empresa" volta — para
+    a MW5, que é quem cadastra inquilino. A PRIMEIRA empresa continua nascendo
+    no cadastro do titular; as outras se cadastram aqui."""
+
+    @pytest.fixture
+    def cenario(self, db):
+        from contas.fabrica import aplicar
+        from contas.models import Nivel
+        from plataforma.models import Empresa
+
+        mw5 = Usuario.objects.create_user(email="mw5-emp@teste.com", password=SENHA)
+        mw5.user_permissions.add(
+            Permission.objects.get(codename="empresa_editar"))
+        mw5.nivel = Nivel.MASTER
+        mw5.save(update_fields=["nivel"])
+        titular = Usuario.objects.create_user(
+            email="dono-emp@teste.com", password=SENHA, nivel=Nivel.TITULAR)
+        aplicar(titular, Nivel.TITULAR)
+        alfa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
+        c = Client()
+        c.post(reverse("entrar"), {"usuario": "mw5-emp@teste.com", "senha": SENHA})
+        dele = Client()
+        dele.post(reverse("entrar"), {"usuario": "dono-emp@teste.com", "senha": SENHA})
+        return {"mw5": c, "titular": titular, "alfa": alfa, "dele": dele}
+
+    def test_a_mw5_ve_o_botao(self, cenario):
+        html = cenario["mw5"].get(reverse("empresa")).content.decode()
+        assert "Nova empresa" in html
+
+    def test_a_mw5_cria_e_a_empresa_nasce_com_a_matriz(self, cenario):
+        from plataforma.models import Empresa, Filial
+
+        cenario["mw5"].post(reverse("empresa"), {
+            "acao": "criar", "razao_social": "Segunda Ltda",
+            "dono": str(cenario["titular"].pk)})
+        nova = Empresa.objects.get(razao_social="Segunda Ltda")
+        assert nova.dono_id == cenario["titular"].pk
+        assert nova.conta_id == cenario["titular"].guid
+        assert Filial.objects.filter(empresa=nova, e_matriz=True).exists()
+
+    def test_a_empresa_pode_nascer_sem_dono_e_a_mw5_liga_depois(self, cenario):
+        """Estado normal: a MW5 cadastra a empresa antes de existir a conta
+        dela (o comentário de `Empresa.dono` diz isso desde sempre)."""
+        from plataforma.models import Empresa
+
+        cenario["mw5"].post(reverse("empresa"), {
+            "acao": "criar", "razao_social": "Sem Dono Ltda"})
+        assert Empresa.objects.get(razao_social="Sem Dono Ltda").dono_id is None
+
+    def test_o_titular_continua_sem_criar(self, cenario):
+        from plataforma.models import Empresa
+
+        cenario["dele"].post(reverse("empresa"), {
+            "acao": "criar", "razao_social": "Nao Deve Existir Ltda"})
+        assert not Empresa.objects.filter(razao_social="Nao Deve Existir Ltda").exists()
+        assert "Nova empresa" not in cenario["dele"].get(
+            reverse("empresa")).content.decode()
+
+    def test_a_tabela_do_titular_mostra_as_duas_empresas(self, cenario):
+        from plataforma.models import Empresa
+
+        Empresa.objects.create(razao_social="Beta Ltda", dono=cenario["titular"])
+        html = cenario["dele"].get(reverse("empresa")).content.decode()
+        assert "Alfa Ltda" in html and "Beta Ltda" in html
+        assert "Empresas" in html

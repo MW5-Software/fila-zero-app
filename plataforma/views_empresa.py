@@ -36,11 +36,14 @@ from comum.listagem import ColunaFiltravel, montar_pagina
 from comum.personificacao import aviso as aviso_de_personificacao
 from nucleo.components import (
     Alert, Badge, Box, Button, Card, Column, FileInput, Form, FormGrid,
-    IconButton, Modal, PageHeader, Raw, SectionLabel, Table, TextInput,
+    IconButton, Modal, Option, PageHeader, Raw, SectionLabel, Select, Table,
+    TextInput,
 )
 from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
+
+from comum.pedido import id_do_post
 
 from .models import Empresa
 from .site import montar_site
@@ -433,6 +436,38 @@ def _modal_do_menu(request, e: Empresa) -> Modal:
                  body=corpo)
 
 
+def _modal_criar(request) -> Modal:
+    """"Nova empresa", só para a MW5 (17/09/2026).
+
+    Saiu daqui em 09/09/2026, quando a conta tinha UMA empresa e a empresa
+    nascia no cadastro do titular. A conta passou a ter várias (spec
+    `2026-09-17-varias-empresas-por-conta`), e a segunda precisa nascer em
+    algum lugar: é aqui, e é da MW5, porque criar empresa é criar inquilino.
+
+    A PRIMEIRA continua nascendo junto com o titular: são os mesmos campos
+    (`campos_do_cadastro`) e o mesmo `criar_do_post`.
+
+    O dono é opcional de propósito: a MW5 cadastra a empresa antes de existir
+    a conta dela, e é o que o comentário de `Empresa.dono` diz desde sempre.
+    """
+    from contas.models import Nivel, Usuario
+
+    titulares = Usuario.objects.filter(
+        nivel=Nivel.TITULAR, is_active=True).order_by("email")
+    return Modal(
+        id="empresa-criar", title=_("Nova empresa"), size="lg",
+        body=Form(action=reverse("empresa"), children=[
+            Raw(html=campo_csrf(request)),
+            Raw(html=_campo_oculto("acao", "criar")),
+            *_campos(_valores_de(None), alvo=None, exigir=False),
+            FormGrid(children=[Select(
+                name="dono", label=_("Conta"), span=6, value="",
+                options=[Option("", _("Sem conta (a MW5 liga depois)")),
+                         *(Option(str(t.pk), t.email) for t in titulares)])]),
+            Raw(html=_rodape("Criar empresa")),
+        ]))
+
+
 def _modais_da_empresa(request, e: Empresa,
                        mestre: bool) -> list[Modal]:
     modais = [
@@ -503,19 +538,22 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
 
         conteudo = [
             aviso_de_personificacao(request),
-            PageHeader(title=_("Empresas") if mestre else _("Empresa"),
+            PageHeader(title=_("Empresas"),
                        subtitle=(
                            _("Os clientes deste portal, e de onde o cron lê "
                              "os dados de cada um.") if mestre else
-                           _("Os dados da sua empresa, e de onde o cron lê o "
-                             "catálogo dela no Kronos.")),
-                       # **Sem "Nova empresa"** (09/09/2026). A empresa
-                       # nasce no cadastro do TITULAR, junto com a conta:
-                       # uma conta tem uma empresa, e criar uma aqui daria
-                       # uma empresa sem dono — que ninguém abre, e que fica
-                       # na lista sem nada explicando o que falta nela. Esta
-                       # tela lista e edita; quem cria é `contas.usuarios`.
-                       actions=[*botoes(request)]),
+                           _("As empresas da sua conta, e de onde o cron lê o "
+                             "catálogo de cada uma no Kronos.")),
+                       # **"Nova empresa" só para a MW5** (17/09/2026): a
+                       # conta passou a ter várias empresas, e a segunda
+                       # nasce aqui. A primeira continua nascendo no
+                       # cadastro do titular (`contas.views_usuarios`), onde
+                       # conta e empresa são o mesmo ato.
+                       actions=[
+                           *([Button(label=_("Nova empresa"), variant="primary",
+                                     attrs={"data-open-modal": "empresa-criar"})]
+                             if mestre else []),
+                           *botoes(request)]),
         ]
         if erro:
             conteudo.append(Alert(message=erro, tone="danger"))
@@ -540,7 +578,7 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             # Perfis, Filiais, e a de registros da auditoria). Esta dizia
             # "cadastradas" e era a única fora do vocabulário — palavra
             # diferente para a mesma coisa faz procurar a diferença.
-            title=_("Empresas existentes") if mestre else _("Sua empresa"),
+            title=_("Empresas existentes") if mestre else _("Suas empresas"),
             padded=False,
             body=[
                 listagem.barra,
@@ -551,12 +589,12 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             ],
         ))
 
-        modais: list = []
+        modais: list = [_modal_criar(request)] if mestre else []
         for linha in listagem.linhas:
             modais.extend(_modais_da_empresa(request, linha, mestre))
 
         pagina = site.page(
-            title=_("Empresas") if mestre else _("Empresa"),
+            title=_("Empresas"),
             width="full",
             stylesheets=["/static/plataforma/listagem.css",
                          "/static/plataforma/empresa.css"],
@@ -815,12 +853,33 @@ def _e_master(request) -> bool:
     return pessoa is not None and pessoa.nivel == Nivel.MASTER
 
 
-#: **Vazio, e não uma linha esquecida.** Criar empresa saiu daqui em
-#: 09/09/2026 e passou para o cadastro do titular (`contas.views_usuarios`):
-#: a conta e a empresa dela nascem no mesmo ato. O dicionário fica porque o
-#: despacho o consulta, e porque o dia em que existir uma ação sem alvo nesta
-#: tela ela tem onde entrar.
-ACOES_SEM_ALVO: dict = {}
+def _acao_criar(request) -> HttpResponse:
+    """Cria a empresa.
+
+    **Só a MW5**, e quem barra é o despacho de `empresa()`, que já recusa
+    toda ação sem alvo e o remover para quem não é MW5 — a mesma trava, num
+    lugar só. Repeti-la aqui seria a segunda cópia da regra, e a que alguém
+    esqueceria de mudar junto.
+    """
+    dono = None
+    pedido = id_do_post(request, "dono")
+    if pedido is not None:
+        from contas.models import Nivel, Usuario
+
+        dono = Usuario.objects.filter(pk=pedido, nivel=Nivel.TITULAR,
+                                      is_active=True).first()
+        if dono is None:
+            return _desenhar(request, erro=_("Conta não encontrada."))
+    with transaction.atomic():
+        nova, erro = criar_do_post(request, dono=dono)
+        if erro:
+            return _desenhar(request, erro=erro)
+        registrar(ACOES.EMPRESA_EDITADA, request.usuario, alvo=str(nova),
+                  detalhe="empresa criada", request=request)
+    return HttpResponseRedirect(reverse("empresa"))
+
+
+ACOES_SEM_ALVO = {"criar": _acao_criar}
 ACOES_COM_ALVO = {
     "salvar": _acao_salvar,
     "remover": _acao_remover,

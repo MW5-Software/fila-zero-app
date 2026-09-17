@@ -1,19 +1,15 @@
-"""O módulo Filiais nasce DESLIGADO neste produto.
+"""O módulo Filiais nasce LIGADO (17/09/2026).
 
-O arquivo dizia o contrário, e estava certo enquanto este código era o
-KRONOS.net: lá a filial é o que se escolhe no cabeçalho, e uma instalação sem
-a tela dela sobe manca — a "Matriz" semeada e nenhum jeito de cadastrar a
-segunda.
+Ele nasceu ligado no KRONOS.net, foi desligado aqui quando filial não tinha
+papel neste produto — a empresa era o que se escolhia no cabeçalho — e voltou
+a nascer ligado quando as duas coisas mudaram: a filial virou A LOJA da fila
+(spec de 15/09/2026), e a conta passou a ter várias empresas, cada uma com as
+lojas dela (spec de 17/09/2026). Sem esta tela, o titular não cadastra a loja
+da segunda empresa, e esperar a MW5 ligar a chavinha em cada instalação é um
+dia de loja sem fila.
 
-Aqui a empresa é o cadastro de clientes e é ela que se escolhe; filial não
-tem papel por enquanto (ver o roadmap). A decisão foi **desligar, não
-apagar**: o model, a FK `Filial.empresa` e as telas continuam de pé, e a
-Matriz continua sendo semeada — no dia em que filial fizer sentido é uma
-chavinha na tela de Módulos, não uma migração para trazer de volta uma tabela
-apagada com o dado de quem já usava perdido no caminho.
-
-Estes testes travam as duas metades dessa decisão: nasce desligada, e o que
-faz dela algo religável continua existindo.
+Estes testes travam as duas metades da decisão: nasce ligada, e a tela
+continua respondendo 404 quando alguém a desliga de propósito.
 """
 
 import pytest
@@ -21,30 +17,33 @@ from tests.conftest import matriz_do_teste
 
 
 @pytest.mark.django_db
-def test_o_modulo_filiais_nasce_desligado():
+def test_o_modulo_filiais_nasce_ligado():
     from plataforma.declaracao import declarados
 
     spec = next(m for m in declarados() if m.chave == "filiais")
-    assert spec.ativo_por_padrao is False
+    assert spec.ativo_por_padrao is True
 
 
 @pytest.mark.django_db
-def test_a_semeadura_real_deixou_o_modulo_desligado():
+def test_a_semeadura_real_deixou_o_modulo_ligado():
     """A prova de verdade: a linha que o `post_migrate` desta suíte criou
     para o módulo de `plataforma/modulo.py` — não um `ModuloSpec` de teste."""
     from plataforma.models import Modulo
 
-    assert Modulo.objects.get(chave="filiais").ativo is False
+    assert Modulo.objects.get(chave="filiais").ativo is True
 
 
 @pytest.mark.django_db
 def test_a_tela_de_filiais_responde_404_com_o_modulo_desligado():
     """Desligado é desligado também na rota, não só no menu: quem decorar o
-    endereço bate na mesma porta."""
+    endereço bate na mesma porta. Nasce ligado, então este teste desliga."""
     from contas.models import Usuario
     from django.test import Client
     from django.urls import reverse
 
+    from plataforma.models import Modulo
+
+    Modulo.objects.filter(chave="filiais").update(ativo=False)
     Usuario.objects.create_superuser(email="raiz@teste.com", password="x")
     c = Client()
     c.post(reverse("entrar"), {"usuario": "raiz@teste.com", "senha": "x"})

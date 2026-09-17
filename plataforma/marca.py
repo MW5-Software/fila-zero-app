@@ -236,20 +236,33 @@ TOKENS_DO_MENU = (
 
 
 def empresa_da_marca(request):
-    """A empresa cujo menu esta tela veste.
+    """A empresa cujo menu veste esta requisição: a ESCOLHIDA no cabeçalho.
 
-    `identidade_da_sessao`, e não `usuario_da_sessao`: a marca não depende das
-    permissões do lugar, e é quem é VISTO que decide — a MW5 em "ver como"
-    vê o menu do cliente, que é para isso que o "ver como" existe.
-    `empresa_de` devolve `None` para a MW5, e a MW5 vê a instalação.
+    Era "a primeira empresa que a pessoa alcança" (`contas.alcance.empresa_de`)
+    — com uma empresa por conta, a mesma coisa. Desde 17/09/2026 a conta tem
+    várias, e a primeira podia não ser a que ela está olhando: o titular
+    trocava de empresa no cabeçalho e o menu continuava com o logo da outra.
 
-    Import tardio: `contas` é a camada de fora, e `contas.alcance` importa
-    `plataforma.models` — o mesmo motivo de `plataforma/contexto.py`.
+    `empresa_atual` lê a identidade da SESSÃO, e por isso o "ver como"
+    continua valendo: a MW5 personificando o cliente vê o menu do cliente. Sem
+    empresa escolhida (a MW5 por si mesma), devolve `None`, e a marca é a da
+    instalação.
+
+    Import tardio: `plataforma.contexto` importa `contas`, que importa
+    `plataforma.models` — o mesmo motivo do import tardio que estava aqui.
     """
     from comum.sessao import identidade_da_sessao
-    from contas.alcance import empresa_de
 
-    return empresa_de(identidade_da_sessao(request))
+    from .contexto import _e_da_mw5, empresa_atual
+
+    # **A MW5 por si mesma continua vendo a INSTALAÇÃO**, e não a primeira
+    # conta da lista: ela alcança todas as empresas, e `empresa_atual`
+    # devolveria uma delas. Em "ver como", a identidade da sessão já é a do
+    # cliente, e aí a marca é a dele — que é para isso que o "ver como"
+    # existe.
+    if _e_da_mw5(identidade_da_sessao(request)):
+        return None
+    return empresa_atual(request)
 
 
 def aparencia_da_requisicao(request):

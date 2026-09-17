@@ -102,25 +102,26 @@ class TestEmpresasAlcancadas:
     def test_cada_admin_alcanca_a_dele_e_so(self, cenario):
         """Era `test_admin_de_duas_alcanca_as_duas`, e provava o contrário.
 
-        Até 09/09/2026 um Admin alcançava várias empresas, e esse era o caso
-        que justificava o M2M. A regra virou: uma conta, uma empresa. Dois
-        clientes são duas contas, e nunca um Admin com duas gavetas.
+        Até 09/09/2026 um Admin alcançava empresas de contas diferentes, e
+        esse era o caso que justificava o M2M. Desde então a fronteira é a
+        CONTA: dois clientes são duas contas, e o Admin de uma nunca alcança
+        a empresa da outra — nem depois de 17/09/2026, quando a conta passou
+        a poder ter várias empresas SUAS.
         """
         assert list(empresas_alcancadas(cenario["admin_alfa"])) == [
             cenario["alfa"]]
         assert list(empresas_alcancadas(cenario["admin_dois"])) == [
             cenario["beta"]]
 
-    def test_o_banco_recusa_a_segunda_empresa_da_mesma_conta(self, cenario):
-        """A recusa é do BANCO, e não de uma tela: existem outros caminhos —
-        importação, shell, migração de dado —, e a fronteira entre dois
-        clientes não pode depender de qual deles alguém lembrou."""
-        from django.db import IntegrityError, transaction
-
-        beta = cenario["beta"]
-        with pytest.raises(IntegrityError), transaction.atomic():
-            Empresa.objects.filter(pk=beta.pk).update(
-                dono=cenario["admin_alfa"])
+    def test_a_conta_pode_ter_a_segunda_empresa(self, cenario):
+        """17/09/2026: a trava `uma_empresa_por_conta` caiu (spec
+        `2026-09-17-varias-empresas-por-conta`). A conta é o CLIENTE, e o
+        cliente pode ter mais de uma pessoa jurídica. O que separa o dado de
+        negócio continua sendo a coluna `empresa` de cada linha."""
+        alfa, admin = cenario["alfa"], cenario["admin_alfa"]
+        segunda = Empresa.objects.create(razao_social="Alfa Dois Ltda", dono=admin)
+        assert set(empresas_alcancadas(admin)) == {alfa, segunda}
+        assert segunda.conta_id == admin.guid
 
     def test_membro_da_conta_sem_alocacao_nao_alcanca_a_empresa(self, cenario):
         """Ser da conta não basta: o membro alcança só onde tem alocação."""

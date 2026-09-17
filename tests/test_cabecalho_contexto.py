@@ -105,13 +105,12 @@ class TestNoCabecalhoDeVerdade:
 
     @pytest.fixture
     def cliente_logado(self, db):
-        """Ana é a MW5 — a única que alcança mais de uma.
+        """Ana é a MW5, e escolhe entre as CONTAS da instalação.
 
-        Era uma ADMIN com duas empresas, e esse cenário deixou de existir em
-        09/09/2026: uma conta tem uma empresa. Quem ainda tem o que escolher
-        no cabeçalho é só a MW5, e a pergunta dela é outra — qual CONTA está
-        olhando. Sem essa troca, estes testes fim a fim passariam a exercitar
-        um seletor que a tela não desenha mais para ninguém.
+        Era uma ADMIN com duas empresas; desde 09/09/2026 a fronteira entre
+        clientes é a conta, e desde 17/09/2026 a conta pode ter várias
+        empresas — mas a pergunta da MW5 continua sendo "qual cliente estou
+        olhando", e é isso que o rótulo dela diz.
         """
         from contas.models import Nivel
         from plataforma.models import Empresa
@@ -126,12 +125,12 @@ class TestNoCabecalhoDeVerdade:
         c.post(reverse("entrar"), {"usuario": "ana@teste.com", "senha": SENHA})
         return c
 
-    def test_a_home_mostra_a_empresa_como_seletor(self, cliente_logado):
+    def test_a_home_mostra_a_conta_como_seletor_para_a_mw5(self, cliente_logado):
         html = cliente_logado.get(reverse("home")).content.decode()
 
-        # `Empresa` sem dois-pontos: o `:` é do modo TEXTO. Com opções, o
+        # `Conta` sem dois-pontos: o `:` é do modo TEXTO. Com opções, o
         # rótulo vira `<label>` do seletor — ver `ContextLevel`.
-        assert ">Empresa</label>" in html
+        assert ">Conta</label>" in html
         assert "<select" in html and 'name="empresa_id"' in html
         assert "Alfa Ltda" in html and "Beta Ltda" in html
 
@@ -162,14 +161,21 @@ class TestNoCabecalhoDeVerdade:
             "um botão que não faz nada")
 
     def test_marca_com_rotulos_proprios_aparece_no_cabecalho_de_verdade(
-        self, cliente_logado, monkeypatch,
+        self, db, monkeypatch,
     ):
-        """O mesmo cenário acima, mas com a marca da tela
+        """Um TITULAR com duas empresas (17/09/2026), e a marca da tela
         (`plataforma.marca.marca_da_requisicao`, o único lugar que
         `plataforma.site.montar_site` consulta desde 15/09/2026 — antes era
         `marca_da_instalacao`) devolvendo rótulos trocados — como uma rede que
         chama de bandeira e loja faria."""
         import plataforma.site as site_mod
+        from contas.models import Nivel
+        from plataforma.models import Empresa
+
+        titular = Usuario.objects.create_user(
+            email="dono-rede@teste.com", password=SENHA, nivel=Nivel.TITULAR)
+        Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
+        Empresa.objects.create(razao_social="Beta Ltda", dono=titular)
 
         marca_custom = Brand(client_name="Rede X", header=HeaderBrand(
             context_labels=("Bandeira", "Loja"),
@@ -177,15 +183,20 @@ class TestNoCabecalhoDeVerdade:
         monkeypatch.setattr(site_mod, "marca_da_requisicao",
                             lambda request: marca_custom)
 
-        html = cliente_logado.get(reverse("home")).content.decode()
+        cliente = Client()
+        cliente.post(reverse("entrar"), {"usuario": "dono-rede@teste.com",
+                                         "senha": SENHA})
+        html = cliente.get(reverse("home")).content.decode()
 
-        # Ana alcança duas empresas, então o nível vira SELETOR — e o
+        # O titular alcança duas empresas, então o nível vira SELETOR — e o
         # seletor põe o rótulo num `<label>`, sem os dois-pontos do modo
         # texto (ver `nucleo/templates/layout/context_switcher.html`).
+        # A marca manda no rótulo dele: é o cliente que diz como chama as
+        # coisas dele. Para a MW5 é que vale "Conta" (ver a classe abaixo).
         assert ">Bandeira</label>" in html
         assert ">Empresa</label>" not in html
-        # O segundo rótulo da marca ("Loja") não aparece: as empresas deste
-        # cenário só têm a Matriz, e não há filial para escolher.
+        # O segundo rótulo da marca ("Loja") não aparece: cada empresa deste
+        # cenário só tem a Matriz, e não há filial para escolher.
         assert ">Loja</label>" not in html
 
     def test_o_seletor_do_cabecalho_chega_na_rota_que_troca(self, cliente_logado):
@@ -271,3 +282,68 @@ class TestOSeletorDeFilial:
         assert 'name="filial_id"' in html
         assert ">Matriz</option>" in html and ">Norte</option>" in html
         assert 'name="empresa_id"' not in html
+
+
+class TestOTitularComDuasEmpresas:
+    """17/09/2026: o seletor de empresa deixou de ser só da MW5 — a conta
+    passou a poder ter várias empresas, e o titular escolhe entre as dele."""
+
+    def _conta_com_duas(self):
+        from contas.models import Nivel
+        from plataforma.models import Empresa
+
+        titular = Usuario.objects.create_user(
+            email="dono-duas-cab@teste.com", password=SENHA, nivel=Nivel.TITULAR)
+        alfa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
+        beta = Empresa.objects.create(razao_social="Beta Ltda", dono=titular)
+        return titular, alfa, beta
+
+    def _logado(self, email="dono-duas-cab@teste.com"):
+        c = Client()
+        c.post(reverse("entrar"), {"usuario": email, "senha": SENHA})
+        return c
+
+    def test_o_titular_ve_o_seletor_e_o_rotulo_diz_empresa(self, db):
+        self._conta_com_duas()
+        html = self._logado().get(reverse("home")).content.decode()
+        assert ">Empresa</label>" in html
+        assert "<select" in html and 'name="empresa_id"' in html
+        assert "Alfa Ltda" in html and "Beta Ltda" in html
+
+    def test_para_a_mw5_o_rotulo_continua_conta(self, db):
+        from contas.models import Nivel
+        from plataforma.models import Empresa
+
+        Empresa.objects.create(razao_social="Alfa Ltda")
+        Empresa.objects.create(razao_social="Beta Ltda")
+        mw5 = Usuario.objects.create_user(email="mw5-cab@teste.com", password=SENHA)
+        mw5.nivel = Nivel.MASTER
+        mw5.save(update_fields=["nivel"])
+        html = self._logado("mw5-cab@teste.com").get(reverse("home")).content.decode()
+        assert ">Conta</label>" in html and ">Empresa</label>" not in html
+
+    def test_a_empresa_escolhida_na_sessao_vale_para_o_titular(self, db):
+        from plataforma.contexto import CHAVE_EMPRESA
+
+        _t, _alfa, beta = self._conta_com_duas()
+        cliente = self._logado()
+        sessao = cliente.session
+        sessao[CHAVE_EMPRESA] = beta.pk
+        sessao.save()
+        html = cliente.get(reverse("home")).content.decode()
+        assert f'value="{beta.pk}" selected' in html
+
+    def test_id_de_empresa_que_ele_nao_alcanca_e_descartado(self, db):
+        from plataforma.contexto import CHAVE_EMPRESA
+        from plataforma.models import Empresa
+
+        _t, alfa, beta = self._conta_com_duas()
+        alheia = Empresa.objects.create(razao_social="De Outro Cliente Ltda")
+        cliente = self._logado()
+        sessao = cliente.session
+        sessao[CHAVE_EMPRESA] = alheia.pk
+        sessao.save()
+        html = cliente.get(reverse("home")).content.decode()
+        assert "De Outro Cliente Ltda" not in html
+        assert (f'value="{alfa.pk}" selected' in html
+                or f'value="{beta.pk}" selected' in html)

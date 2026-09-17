@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 135 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 138 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -220,7 +220,7 @@ e `"ADMIN"` ao mesmo tempo. **Só a MW5 escolhe nível** na tela de Usuários. O
 titular cadastra membros, e um titular criado por ele seria um cliente novo do
 SaaS.
 
-### Uma conta, uma empresa
+### Uma conta, várias empresas
 
 A empresa aponta para o titular dono (`Empresa.dono`, `UNIQUE` no banco — trava,
 não convenção), e a pessoa aponta para a conta a que pertence (`Usuario.dono`,
@@ -233,10 +233,16 @@ da conta, para o titular, e das alocações, para o membro
   vazamento silencioso no dia em que a MW5 abrisse a tela.
 - **`Usuario.dono` é nulo em dois casos**, os dois de propósito: o MASTER (não é
   de conta nenhuma) e o próprio titular (ele É a conta).
-- **Várias empresas por conta ainda não existem.** A trava
-  `uma_empresa_por_conta` continua, e "Nova empresa" e o seletor de empresa para
-  o titular são o próximo passo (plano 3 do spec de cargos). O cabeçalho só
-  mostra seletor de empresa para a MW5.
+- **Várias empresas por conta existem desde 17/09/2026** (spec
+  `2026-09-17-varias-empresas-por-conta`). A trava `uma_empresa_por_conta`
+  caiu: a conta é o CLIENTE, e ele pode ter mais de uma pessoa jurídica. O
+  que separa o dado de negócio continua sendo a coluna `empresa` de cada
+  linha; o `conta_guid` continua obrigatório e derivado dela, e diz de QUEM
+  é a linha. O cabeçalho mostra o seletor para quem alcança mais de uma — a
+  MW5 (rótulo "Conta") e o titular com várias (rótulo da marca, "Empresa").
+  A marca do menu segue a empresa escolhida
+  (`plataforma.marca.empresa_da_marca`), e a MW5 por si mesma continua vendo
+  a da instalação.
 
 ### A conta em cada linha: `conta_guid`
 
@@ -344,8 +350,10 @@ O que custa quando se esquece:
   - protegida por qualquer tabela de negócio com `PROTECT` — perguntado ao
     próprio Django, porque a base não conhece os módulos;
   - se for a última ativa da empresa.
-- **O módulo de Filiais nasce desligado** (`ativo_por_padrao=False`). Numa
-  instalação, a MW5 liga em Módulos para o titular ver a tela.
+- **O módulo de Filiais nasce ligado** desde 17/09/2026
+  (`ativo_por_padrao=True`): a filial é A LOJA da fila, e a conta tem várias
+  empresas, cada uma com as lojas dela — sem a tela, o titular não cadastra a
+  loja da segunda.
 
 ### O menu de cada empresa (15/09/2026, vindo do Portal)
 
@@ -428,8 +436,8 @@ do design system. **Dado cadastrado não**: traduzir dado seria inventar nome.
    do design system precisa ser feita em cada consumidor.
 3. **A identidade e a R48.** A base assina como KRONOS no rodapé. Se cada SaaS
    mantém essa assinatura é decisão de produto.
-4. **Várias empresas por conta** (§7) e **o módulo de Filiais nascendo ligado**
-   continuam por fazer.
+4. **A tela de Conta é só leitura.** Editar os dados do cliente continua na
+   tela de Empresas, e quem cadastra empresa é a MW5.
 
 ---
 
@@ -523,6 +531,19 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   responde. Na raiz ele tornava o Início inalcançável para o vendedor.
 
 
+### As empresas no painel (17/09/2026)
+
+- **O painel abre na empresa do cabeçalho**, e "Todas as empresas"
+  (`?empresa=todas`) é escolha de quem alcança mais de uma. Ela soma, mostra o
+  bloco "Por empresa" e deixa o ranking com as pessoas das duas.
+- **`indicadores.do_recorte(model, recorte)` é a porta das consultas**: com
+  uma empresa é `da_empresa`; com várias, `da_conta` (pelo `conta_guid`)
+  recortado por `empresa__in`. As empresas vêm sempre do alcance da pessoa
+  (`empresas_com_relatorio`), nunca de um id do pedido.
+- **Um ponto por vez, em qualquer empresa**: bater o ponto na loja de outra
+  empresa fecha a presença anterior, e quem está atendendo recebe a recusa
+  dizendo a loja E a empresa.
+
 ### Os indicadores (entrega 2)
 
 Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
@@ -611,7 +632,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 135 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 138 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

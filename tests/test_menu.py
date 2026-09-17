@@ -456,12 +456,12 @@ def test_o_cadastro_reune_empresa_usuarios_e_produtos(db):
                permissions=["*"])
     grupos = {g.label: [f.label for f in (g.children or [])]
               for g in montar(mw5)}
-    # "Empresa" no SINGULAR desde 09/09/2026: uma conta tem uma empresa, e
-    # para o titular — que é quase todo mundo que abre este menu — a tela é o
-    # cadastro da empresa dele, não uma lista.
-    assert {"Empresa", "Usuários", "Filiais", "Cargos"} <= \
+    # "Empresas" no PLURAL desde 17/09/2026: a conta tem várias, e a tela é
+    # a lista delas. "Conta" é o topo da hierarquia (conta -> empresas ->
+    # lojas), e por isso vem antes.
+    assert {"Conta", "Empresas", "Usuários", "Filiais", "Cargos"} <= \
         set(grupos["Cadastro"])
-    for cadastro in ("Usuários", "Empresa", "Filiais", "Cargos"):
+    for cadastro in ("Usuários", "Empresas", "Filiais", "Cargos"):
         assert cadastro not in grupos.get("Administração", []), cadastro
     # O que sobra na Administração é o que configura a instalação.
     assert {"Aparência", "Módulos", "Falhas"} <= set(grupos["Administração"])
@@ -589,12 +589,14 @@ class TestOMenuMarcaOndeAPessoaEsta:
 
 @pytest.mark.django_db
 def test_o_cadastro_segue_a_ordem_do_trabalho(db):
-    """Empresa, Filiais, Usuários, Cargos — e os cadastros de negócio depois.
+    """Conta, Empresas, Filiais, Usuários, Cargos — e os cadastros de negócio
+    depois.
 
     É a ordem em que o titular trabalha (14/09/2026, pedido do João): recebe a
     empresa no cadastro inicial, cadastra as filiais (que já vêm com a Matriz),
-    e depois as pessoas que pertencem a ela. Alfabética, a barra poria Filiais
-    antes de Empresa e Cargos antes de Usuários por acaso de letra.
+    e depois as pessoas que pertencem a ela. A Conta entrou no topo em
+    17/09/2026, porque é ela que contém as empresas. Alfabética, a barra poria
+    Filiais antes de Empresas e Cargos antes de Usuários por acaso de letra.
     """
     from plataforma.catalogo import semear
     from plataforma.menu import montar
@@ -609,7 +611,7 @@ def test_o_cadastro_segue_a_ordem_do_trabalho(db):
 
     cadastro = grupos["Cadastro"]
     ordem = [cadastro.index(nome) for nome in
-             ("Empresa", "Filiais", "Usuários", "Cargos")]
+             ("Conta", "Empresas", "Filiais", "Usuários", "Cargos")]
     assert ordem == sorted(ordem), cadastro
     # E o grupo continua no lugar: Administração primeiro.
     rotulos = [g.label for g in montar(mw5)]

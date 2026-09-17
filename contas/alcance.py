@@ -83,6 +83,10 @@ def empresa_de(usuario) -> "Empresa | None":
     pessoa = usuario_de(usuario)
     if pessoa is None or _ve_tudo(usuario, pessoa):
         return None
+    # **É a PRIMEIRA que a pessoa alcança, e não "a empresa dela"**: desde
+    # 17/09/2026 a conta pode ter várias (spec
+    # `2026-09-17-varias-empresas-por-conta`). Dentro de uma requisição, quem
+    # responde "em qual ela está" é `plataforma.contexto.empresa_atual`.
     return empresas_da_pessoa(pessoa).first()
 
 

@@ -32,7 +32,8 @@ from .periodo import Periodo, inicio_do_dia
 __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
            "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
-           "por_dia", "por_grupo", "por_loja", "posicao_no_mes", "posicoes_por_vendido", "ranking",
+           "do_recorte", "empresas_com_relatorio", "por_dia", "por_grupo",
+           "por_empresa", "por_loja", "posicao_no_mes", "posicoes_por_vendido", "ranking",
            "ranking_por_loja", "recorte_do_mes", "variacao"]
 
 ZERO = Decimal("0")
@@ -41,9 +42,39 @@ _DINHEIRO = DecimalField(max_digits=14, decimal_places=2)
 
 @dataclass(frozen=True)
 class Recorte:
+    """O que o painel está olhando: a empresa (ou VÁRIAS, desde 17/09/2026), as
+    lojas dentro delas e o período.
+
+    `empresa` continua sendo a do cabeçalho, e é ela que vale quando o recorte
+    é de uma só. `empresas` preenchido é o "Todas as empresas" do titular, e
+    as duas pontas vêm sempre do ALCANCE da pessoa, nunca do pedido.
+    """
+
     empresa: object
     lojas: tuple
     periodo: Periodo
+    empresas: tuple = ()
+
+    @property
+    def todas(self) -> tuple:
+        return self.empresas or (self.empresa,)
+
+
+def do_recorte(model, recorte):
+    """As linhas de `model` dentro do recorte, pelo inquilino.
+
+    Com uma empresa, é `da_empresa`, a porta de sempre. Com várias, é
+    `da_conta` (que filtra pelo `conta_guid`) recortado por `empresa__in`: as
+    empresas do recorte são todas da MESMA conta, porque saem do alcance da
+    pessoa (`empresas_com_relatorio`), e nunca de um id do pedido. Sem o
+    `da_conta` por baixo, o filtro seria só uma lista de ids — e lista de ids
+    é o que um pedido forjado sabe imitar.
+    """
+    empresas = recorte.todas
+    if len(empresas) == 1:
+        return model.objects.da_empresa(empresas[0])
+    return (model.objects.da_conta(empresas[0].conta_id)
+            .filter(empresa__in=empresas))
 
 
 @dataclass(frozen=True)
@@ -92,18 +123,19 @@ def variacao(atual, anterior, *, pontos: bool = False) -> "Variacao | None":
     return Variacao(round((float(atual) - float(anterior)) * 100 / float(anterior), 1), "%")
 
 
-def recorte_do_mes(empresa, lojas, mes: date) -> Recorte:
+def recorte_do_mes(empresa, lojas, mes: date, empresas=()) -> Recorte:
     """O mês inteiro de `mes` (dia 1), para o ranking. O fim é o dia 1 do mês
     seguinte: no mês em andamento, o que ainda não aconteceu não conta."""
     from .metas import mes_seguinte
 
     return Recorte(empresa, tuple(lojas),
                    Periodo(inicio_do_dia(mes), inicio_do_dia(mes_seguinte(mes)),
-                           "ranking", f"{mes:%m/%Y}"))
+                           "ranking", f"{mes:%m/%Y}"),
+                   tuple(empresas))
 
 
 def _atendimentos(recorte: Recorte, vendedor=None):
-    consulta = (Atendimento.objects.da_empresa(recorte.empresa)
+    consulta = (do_recorte(Atendimento, recorte)
                 .filter(filial__in=recorte.lojas, fim__gte=recorte.periodo.de,
                         fim__lt=recorte.periodo.ate))
     return consulta if vendedor is None else consulta.filter(vendedor=vendedor)
@@ -122,7 +154,7 @@ def numeros(recorte: Recorte, vendedor=None) -> Numeros:
 
 
 def por_grupo(recorte: Recorte, vendedor=None) -> "list[tuple[str, Decimal]]":
-    itens = (ItemVendido.objects.da_empresa(recorte.empresa)
+    itens = (do_recorte(ItemVendido, recorte)
              .filter(atendimento__filial__in=recorte.lojas,
                      atendimento__fim__gte=recorte.periodo.de,
                      atendimento__fim__lt=recorte.periodo.ate))
@@ -149,7 +181,7 @@ def pausa_por_tipo(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
         Least("fim", Value(ate, output_field=DateTimeField()))
         - Greatest("inicio", Value(de, output_field=DateTimeField())),
         output_field=DurationField())
-    pausas = (Pausa.objects.da_empresa(recorte.empresa)
+    pausas = (do_recorte(Pausa, recorte)
               .filter(filial__in=recorte.lojas, fim__isnull=False,
                       inicio__lt=ate, fim__gt=de))
     if vendedor is not None:
@@ -243,6 +275,33 @@ def lojas_com_permissao(pessoa, empresa, permissao: str) -> list:
             or {permissao, "fila.*"} & permissoes_em(pessoa, empresa, loja)]
 
 
+def empresas_com_relatorio(pessoa) -> list:
+    """As empresas em que a pessoa lê indicadores em ALGUMA loja (17/09/2026).
+
+    É a lista que o campo "Empresa" do painel oferece, e a que "Todas as
+    empresas" soma. Sai do alcance (`contas.lugar.empresas_da_pessoa`) e da
+    permissão em cada loja — as duas perguntas que o resto do painel já faz,
+    uma por empresa.
+    """
+    from contas.lugar import empresas_da_pessoa
+
+    if pessoa is None:
+        return []
+    return [empresa for empresa in empresas_da_pessoa(pessoa).order_by("razao_social")
+            if lojas_com_relatorio(pessoa, empresa)]
+
+
+def por_empresa(recorte: Recorte) -> "list[DaEmpresa]":
+    """Os números de cada empresa do recorte, lado a lado — o "Por loja" um
+    nível acima."""
+    return [DaEmpresa(empresa,
+                      numeros(Recorte(empresa,
+                                      tuple(l for l in recorte.lojas
+                                            if l.empresa_id == empresa.pk),
+                                      recorte.periodo)))
+            for empresa in recorte.todas]
+
+
 def lojas_com_relatorio(pessoa, empresa) -> list:
     return lojas_com_permissao(pessoa, empresa, "fila.relatorios")
 
@@ -289,7 +348,7 @@ def ranking(recorte: Recorte, mes: "date | None" = None):
     base = _atendimentos(recorte)
     venda = Q(resultado=Resultado.VENDEU)
     de, ate = recorte.periodo.de, recorte.periodo.ate
-    pausas = (Pausa.objects.da_empresa(recorte.empresa)
+    pausas = (do_recorte(Pausa, recorte)
               .filter(filial__in=recorte.lojas, fim__isnull=False,
                       inicio__lt=ate, fim__gt=de)
               .annotate(dentro=ExpressionWrapper(
@@ -323,7 +382,7 @@ def ranking(recorte: Recorte, mes: "date | None" = None):
     # Coalesce: sem meta é "—", e não meta zero.
     from .models import MetaDeVenda
 
-    metas = (MetaDeVenda.objects.da_empresa(recorte.empresa)
+    metas = (do_recorte(MetaDeVenda, recorte)
              .filter(filial__in=recorte.lojas, mes=mes, pessoa__isnull=False))
     real = FloatField()
     return (consulta
@@ -388,7 +447,7 @@ def ranking_por_loja(recorte: Recorte, mes: "date | None" = None):
     """
     venda = Q(resultado=Resultado.VENDEU)
     de, ate = recorte.periodo.de, recorte.periodo.ate
-    pausas = (Pausa.objects.da_empresa(recorte.empresa)
+    pausas = (do_recorte(Pausa, recorte)
               .filter(pessoa=OuterRef("vendedor"), filial=OuterRef("filial"),
                       fim__isnull=False, inicio__lt=ate, fim__gt=de)
               .order_by().values("pessoa")
@@ -424,7 +483,7 @@ def ranking_por_loja(recorte: Recorte, mes: "date | None" = None):
         from .models import MetaDeVenda
 
         real = FloatField()
-        meta = (MetaDeVenda.objects.da_empresa(recorte.empresa)
+        meta = (do_recorte(MetaDeVenda, recorte)
                 .filter(pessoa=OuterRef("vendedor"), filial=OuterRef("filial"), mes=mes)
                 .values("valor")[:1])
         consulta = (consulta
@@ -444,11 +503,17 @@ class DaLoja:
     numeros: Numeros
 
 
+@dataclass(frozen=True)
+class DaEmpresa:
+    empresa: object
+    numeros: Numeros
+
+
 def por_loja(recorte: Recorte) -> "list[DaLoja]":
     """Os números de cada loja do recorte, lado a lado, na ordem do recorte
     (a do seletor). Uma consulta por loja: são poucas, e `numeros` já é a
     conta que o painel usa, então as duas telas não divergem."""
-    return [DaLoja(loja, numeros(Recorte(recorte.empresa, (loja,), recorte.periodo)))
+    return [DaLoja(loja, numeros(Recorte(loja.empresa, (loja,), recorte.periodo)))
             for loja in recorte.lojas]
 
 

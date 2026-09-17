@@ -111,26 +111,38 @@ def _pessoas_desta_pessoa(request):
 
 
 def _com_empresa(pessoas):
-    """A empresa de cada pessoa, anotada numa subconsulta — `empresa_nome`.
+    """As empresas de cada pessoa, anotadas numa string — `empresa_nome`.
+
+    **São VÁRIAS desde 17/09/2026** (spec
+    `2026-09-17-varias-empresas-por-conta`): a conta pode ter mais de uma
+    empresa, e a pessoa pode estar alocada em duas. Era uma subconsulta com
+    `[:1]`, que mostrava a primeira e escondia o resto sem erro nenhum.
 
     **Pela CONTA**, que é de onde a empresa se deriva (CLAUDE.md §7): o titular
-    é o dono da empresa, e o usuário pertence à conta desse dono. Uma conta,
-    uma empresa, então a subconsulta devolve uma linha. MW5 não é de conta
-    nenhuma, e fica `None` (a tela escreve "—").
+    é o dono das empresas, e o usuário pertence à conta desse dono. MW5 não é
+    de conta nenhuma, e fica vazio (a tela escreve "—").
 
-    Anotação, e não leitura na linha: a coluna, o filtro, a ordenação e a
-    exportação leem o mesmo valor, e ler `pessoa.dono.empresa_da_conta` na
-    renderização seria uma consulta por pessoa.
+    `StringAgg`, e não subconsulta: a coluna, o filtro (`icontains` sobre o
+    texto agregado), a ordenação e a exportação leem o mesmo valor, e ler as
+    empresas na renderização seria uma consulta por pessoa.
     """
+    from django.contrib.postgres.aggregates import StringAgg
     from django.db.models import OuterRef, Q, Subquery, Value
     from django.db.models.functions import Coalesce, NullIf
 
     from plataforma.models import Empresa
 
     nome = Coalesce(NullIf("nome_fantasia", Value("")), "razao_social")
+    # As empresas da CONTA da pessoa (o dono dela, ou ela mesma quando é o
+    # titular), juntas em texto, em ordem alfabética para a lista não trocar
+    # de ordem entre duas leituras.
     da_conta = (Empresa.objects
                 .filter(Q(dono=OuterRef("pk")) | Q(dono=OuterRef("dono")))
-                .annotate(nome=nome).order_by("pk").values("nome")[:1])
+                .annotate(nome=nome).order_by()
+                .values("dono")
+                .annotate(nomes=StringAgg("nome", delimiter=", ",
+                                          distinct=True, ordering="nome"))
+                .values("nomes")[:1])
     return pessoas.annotate(empresa_nome=Subquery(da_conta))
 
 
@@ -372,8 +384,11 @@ def _seletor_de_conta(request, atual=None) -> "Select | None":
     if not _e_master(request):
         return None
 
-    empresas = {e.dono_id: str(e)
-                for e in Empresa.objects.filter(dono__isnull=False)}
+    # Uma LISTA por dono, e não uma empresa: a conta pode ter várias desde
+    # 17/09/2026, e um dicionário `{dono: empresa}` deixava só a última.
+    empresas: dict = {}
+    for e in Empresa.objects.filter(dono__isnull=False).order_by("razao_social"):
+        empresas.setdefault(e.dono_id, []).append(str(e))
     contas = Usuario.objects.filter(
         nivel=Nivel.TITULAR, is_active=True).order_by("email")
     if not contas:
@@ -385,8 +400,8 @@ def _seletor_de_conta(request, atual=None) -> "Select | None":
         empty_label="—",
         help="De qual conta esta pessoa faz parte.",
         options=[Option(str(c.pk),
-                        f"{empresas[c.pk]} — {c.email}" if c.pk in empresas
-                        else f"{c.email} (sem empresa)")
+                        f"{', '.join(empresas[c.pk])} — {c.email}"
+                        if c.pk in empresas else f"{c.email} (sem empresa)")
                  for c in contas])
 
 
@@ -1479,7 +1494,7 @@ def _acao_remover(request, alvo) -> HttpResponse:
             f"{alvo.email} é a conta de {presos} "
             f"{'pessoa' if presos == 1 else 'pessoas'}. Mova ou remova essas "
             f"pessoas antes."))
-    if alvo.empresa_da_conta.exists():
+    if alvo.empresas_da_conta.exists():
         return _desenhar(request, erro=(
             f"{alvo.email} é a conta de uma empresa. Passe a empresa para "
             f"outra conta antes de remover."))

@@ -139,8 +139,12 @@ def bater_ponto(pessoa, filial) -> None:
         if lugar is not None and lugar.filial_id == filial.pk:
             raise Recusa(_("Você já está nesta loja."))
         if lugar is not None and lugar.estado == Estado.ATENDENDO:
-            raise Recusa(_("Você está atendendo em %(loja)s. Finalize lá antes "
-                           "de entrar aqui.") % {"loja": lugar.filial})
+            # A loja E a empresa: a conta pode ter várias empresas
+            # (17/09/2026), e "Matriz" sozinho não diz de qual delas é a loja
+            # em que a pessoa está presa.
+            raise Recusa(_("Você está atendendo em %(loja)s (%(empresa)s). "
+                           "Finalize lá antes de entrar aqui.")
+                         % {"loja": lugar.filial, "empresa": lugar.filial.empresa})
         agora = _agora()
         if lugar is not None:
             # Uma presença aberta por pessoa: chegar numa loja fecha a outra.

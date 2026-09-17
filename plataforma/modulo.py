@@ -28,23 +28,39 @@ from django.utils.translation import gettext_lazy as _
 #: instalação nova sobe com ZERO empresas, e a primeira aparece quando a MW5
 #: cadastra o primeiro titular. É ela quem precisa da tela ligada desde o
 #: primeiro dia para ver o que criou.
+#: "Eu sou a Conta. Meu ícone é o prédio. Eu moro no grupo Cadastro, no topo.
+#: Minha rota é /conta. Eu crio a permissão conta.ver."
+#:
+#: `ativo_por_padrao=True`: é a tela que explica a hierarquia da instalação
+#: (conta → empresas → lojas) desde 17/09/2026, e uma instalação nova não
+#: pode nascer sem ela até a MW5 lembrar de ligar a chavinha — o mesmo motivo
+#: de Empresa e Usuários.
+#:
+#: `ordem=-5`: antes de Empresa (-4), porque a conta contém as empresas.
+MODULO_CONTA = ModuloSpec(
+    chave="conta",
+    rotulo=_("Conta"),
+    icone="building",
+    grupo="Cadastro",
+    ordem=-5,
+    rota="/conta",
+    permissoes=("conta.ver",),
+    ativo_por_padrao=True,
+)
+
 MODULO_EMPRESA = ModuloSpec(
     chave="empresa",
-    #: **"Empresa", no singular — e a terceira vez que este rótulo muda.**
+    #: **"Empresas", no plural — e a quarta vez que este rótulo muda.**
     #:
-    #: Ele era singular quando a instalação era de UM cliente e a tela editava
-    #: uma linha só. Virou plural quando o portal passou a atender várias e a
-    #: tela virou lista, porque era o único item da barra que discordava da
-    #: tela para onde aponta.
+    #: Singular quando a instalação era de UM cliente e a tela editava uma
+    #: linha só; plural quando o portal passou a atender várias; singular de
+    #: novo em 09/09/2026, porque a conta tinha UMA empresa e, para o titular
+    #: — quase todo mundo que abre este menu —, a tela era o cadastro dela.
     #:
-    #: Agora volta ao singular por um motivo diferente dos dois: **uma conta
-    #: tem UMA empresa**. Para o titular — que é quase todo mundo que abre
-    #: este menu — a tela é o cadastro da empresa dele, e não uma lista.
-    #:
-    #: A MW5 continua vendo várias, e para ela o plural continuaria certo.
-    #: Um rótulo por nível seria mecanismo novo no menu para resolver uma
-    #: palavra, e o singular é o que vale para quem mais lê.
-    rotulo=_("Empresa"),
+    #: Plural de novo desde 17/09/2026: a conta tem várias empresas, e a tela
+    #: é a lista delas para os dois níveis que a abrem. O rótulo acompanha a
+    #: tela para onde aponta, que é a regra que valeu nas quatro vezes.
+    rotulo=_("Empresas"),
     icone="card",
     #: **Cadastro, e não Administração** — o par de `usuarios`, e pelo mesmo
 #: motivo: o cadastro da empresa é dado do cliente, como o produto e a
@@ -74,21 +90,17 @@ MODULO_EMPRESA = ModuloSpec(
 #: filiais da empresa antes das pessoas. Com `-100` o grupo inteiro subiria
 #: para antes da Administração.
 #:
-#: `ativo_por_padrao=False` — e a "Matriz" deixou de ser semeada junto com a
-#: empresa em 09/09/2026, então o comentário abaixo descreve um mundo que não
-#: existe mais. Fica registrado porque explica por que a chave já esteve
-#: ligada: a "Matriz"
-#: já nasce semeada (`plataforma.empresa.garantir_matriz`), e sem esta tela
-#: ligada desde o primeiro dia ninguém teria como cadastrar uma segunda
-#: filial nem escolher quem trabalha em cada uma.
-#: `ativo_por_padrao=False` NESTE PRODUTO — no KRONOS.net é `True`.
+#: **`ativo_por_padrao=True` desde 17/09/2026**, e a chave já esteve nos dois
+#: estados por motivos que valiam no dia: ligada no KRONOS.net (lá a filial é
+#: o que se escolhe no cabeçalho), desligada aqui enquanto filial não tinha
+#: papel neste produto, e ligada de novo agora que duas coisas mudaram — a
+#: filial virou A LOJA da fila (spec de 15/09/2026), e a conta passou a ter
+#: várias empresas, cada uma com as lojas dela (spec de 17/09/2026).
 #:
-#: Aqui a empresa é o cadastro de clientes e é ela que se escolhe no
-#: cabeçalho. O model
-#: e a FK `Filial.empresa` continuam de pé, e a Matriz continua sendo
-#: semeada: no dia em que filial fizer sentido, é uma chavinha na tela de
-#: Módulos — não uma migração para trazer de volta uma tabela apagada, com o
-#: dado de quem já usava perdido no caminho.
+#: O motivo é o mesmo da fila e da Empresa: sem esta tela o titular não
+#: cadastra a loja da segunda empresa, e esperar a MW5 ligar a chavinha em
+#: cada instalação é um dia de loja sem fila. A R47 pede o motivo escrito ao
+#: lado de todo `ativo_por_padrao=True`, e este é ele.
 MODULO_FILIAIS = ModuloSpec(
     chave="filiais",
     rotulo=_("Filiais"),
@@ -97,7 +109,7 @@ MODULO_FILIAIS = ModuloSpec(
     ordem=-3,
     rota="/filiais",
     permissoes=("filiais.editar",),
-    ativo_por_padrao=False,
+    ativo_por_padrao=True,
 )
 
 #: "Eu sou os Parâmetros. Meu ícone é a engrenagem. Eu moro no grupo

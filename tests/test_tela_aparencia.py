@@ -323,27 +323,31 @@ class TestOsRotulosDoContexto:
         O seletor, que tem opções, desenha o rótulo sem dois-pontos — ver
         `nucleo/templates/layout/context_switcher.html`.
         """
-        from contas.models import Nivel
-        from contas.models import Usuario
+        from django.test import Client
+
+        from contas.models import Nivel, Usuario
         from plataforma.models import Empresa
 
-        # **DUAS empresas, e as duas criadas aqui.** A segunda vinha do
-        # `post_migrate`, que semeava uma em toda instalação — e a semeadura
-        # acabou em 09/09/2026. Com uma empresa só o cabeçalho não desenha
-        # seletor nenhum (`plataforma.contexto.niveis_de_contexto`), e o
-        # rótulo que este teste procura não existiria.
-        raiz = Usuario.objects.get(email="raiz@teste.com")
-        raiz.nivel = Nivel.TITULAR
-        raiz.save(update_fields=["nivel"])
-        Empresa.objects.create(razao_social="Beta Ltda")
-        por_na_conta(raiz, Empresa.objects.create(razao_social="Alfa Ltda"))
+        # **Quem OLHA o cabeçalho é um titular com DUAS empresas**
+        # (17/09/2026): com uma empresa só não há seletor, e para a MW5 o
+        # rótulo é sempre "Conta" — a marca diz como o CLIENTE chama as
+        # coisas dele, e a MW5 não está dentro de cliente nenhum
+        # (`plataforma.site.construir_context_switcher`).
+        titular = Usuario.objects.create_user(
+            email="dono-bandeira@teste.com", password="segredo-de-teste",
+            nivel=Nivel.TITULAR)
+        Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
+        Empresa.objects.create(razao_social="Beta Ltda", dono=titular)
 
         cliente_mw5.post(reverse("aparencia"), {
             "client_name": "Rede X", "primary": "#1e40af",
             "accent": "#872d00", "radius": "8px", "density": "normal",
             "sidebar_width": "256px", "rotulo_da_empresa": "Bandeira",
         })
-        html = cliente_mw5.get(reverse("aparencia")).content.decode()
+        dele = Client()
+        dele.post(reverse("entrar"), {"usuario": "dono-bandeira@teste.com",
+                                      "senha": "segredo-de-teste"})
+        html = dele.get(reverse("home")).content.decode()
         assert ">Bandeira</label>" in html
 
 

@@ -10,8 +10,7 @@ A semeadura fazia sentido enquanto a instalação era de UM cliente e a empresa
 era dado dela, como a marca: a tela de Empresa precisava de uma linha para
 editar desde o primeiro `migrate`.
 
-Com **uma conta, uma empresa**, o que aquele `post_migrate` criava era uma
-empresa SEM DONO — ninguém a abre, ela fica na lista da MW5 sem nada
+O que aquele `post_migrate` criava era uma empresa SEM DONO — ninguém a abre, ela fica na lista da MW5 sem nada
 explicando o que falta nela, e é exatamente o estado cujo caminho de criação
 foi fechado quando "Nova empresa" saiu da tela de Empresas.
 
@@ -67,12 +66,13 @@ class TestATelaContinuaAlcancavel:
         semear()
         assert Modulo.objects.get(chave="empresa").ativo
 
-    def test_o_modulo_filiais_continua_desligado(self):
-        """Ele nasceu ligado enquanto a Matriz era semeada — sem filial
-        nenhuma, uma tela de filiais no menu de toda instalação é um item que
-        ninguém usa."""
+    def test_o_modulo_filiais_nasce_ligado(self):
+        """Esteve desligado enquanto filial não tinha papel neste produto.
+        Voltou a nascer ligado em 17/09/2026: a filial é A LOJA da fila, e a
+        conta tem várias empresas, cada uma com as lojas dela — sem a tela, o
+        titular não cadastra a loja da segunda."""
         from plataforma.catalogo import semear
         from plataforma.models import Modulo
 
         semear()
-        assert not Modulo.objects.get(chave="filiais").ativo
+        assert Modulo.objects.get(chave="filiais").ativo

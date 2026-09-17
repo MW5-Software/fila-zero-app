@@ -226,11 +226,13 @@ class TestNiveisDeContexto:
 
     Foi para dois níveis (empresa em texto, filial em seletor), depois para
     um (a empresa, escolhível) e em 09/09/2026 para **zero na maior parte das
-    sessões**: uma conta tem UMA empresa, e um seletor de uma opção é um
-    botão que não faz nada ocupando o lugar em que a pessoa procura o que
-    faz.
+    sessões**: a conta da maioria tem uma empresa só, e um seletor de uma
+    opção é um botão que não faz nada ocupando o lugar em que a pessoa
+    procura o que faz.
 
-    Sobra para a MW5, e lá a pergunta é outra — "qual CONTA estou olhando".
+    Ele volta para quem alcança mais de uma: a MW5, onde a pergunta é "qual
+    CONTA estou olhando", e o titular cuja conta tem várias empresas
+    (17/09/2026).
     Os testes do arranjo antigo foram reescritos, não removidos: a pergunta é
     a mesma, mudou a resposta certa.
     """
