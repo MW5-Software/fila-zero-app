@@ -239,3 +239,24 @@ class TestAWeb:
 
         html = _entrar(email_de("tita")).get("/").content.decode()
         assert f'src="{CAMINHO_DO_LOGO_DA_EMPRESA}' in html
+
+
+class TestComDuasEmpresasNaConta:
+    """17/09/2026: a marca vinha de "a primeira empresa que a pessoa
+    alcança"; com duas na conta, o menu podia ficar com o da outra."""
+
+    def test_a_marca_segue_a_empresa_escolhida_no_cabecalho(self, alfa):
+        from plataforma.contexto import CHAVE_EMPRESA
+
+        empresa, titular = alfa
+        beta = Empresa.objects.create(razao_social="Beta", dono=titular)
+        AparenciaDaEmpresa.objects.create(
+            empresa=beta, sidebar_bg="#445566", sidebar_text="#ffffff")
+
+        na_beta = _pedido(titular)
+        na_beta.session[CHAVE_EMPRESA] = beta.pk
+        assert _menu(marca_da_requisicao(na_beta)) == "#445566"
+
+        na_alfa = _pedido(titular)
+        na_alfa.session[CHAVE_EMPRESA] = empresa.pk
+        assert _menu(marca_da_requisicao(na_alfa)) == "#112233"
