@@ -259,3 +259,39 @@ class MetaDeVenda(ModeloDaEmpresa):
             models.CheckConstraint(condition=Q(valor__gt=0),
                                    name="fila_meta_positiva"),
         ]
+
+
+class AcaoDeCorrecao(models.TextChoices):
+    MOVER = "mover", _("Mudou de posição")
+    PAUSAR = "pausar", _("Pôs em pausa")
+    TIRAR_PAUSA = "tirar_pausa", _("Tirou da pausa")
+    FECHAR = "fechar", _("Fechou o atendimento")
+    TIRAR = "tirar", _("Tirou da loja")
+    EDITAR = "editar", _("Corrigiu o lançamento")
+
+
+class CorrecaoNaFila(ModeloDaEmpresa):
+    """Uma correção do gerente, com o motivo (spec 2026-09-17, C2).
+
+    Tabela própria, e não só a auditoria: o histórico é lido por loja,
+    vendedor e período, e a auditoria não tem essas colunas; filtrar por elas
+    viraria busca em texto. A auditoria continua recebendo a mesma correção.
+    """
+
+    filial = _loja()
+    pessoa = _pessoa(_("vendedor"))
+    #: Quem corrigiu como a ação o recebe: em "ver como", a pessoa vista. Quem
+    #: agiu de verdade está na auditoria, que anota a personificação.
+    autor = _pessoa(_("quem corrigiu"))
+    acao = models.CharField(_("ação"), max_length=12, choices=AcaoDeCorrecao.choices)
+    observacao = models.CharField(_("motivo"), max_length=200)
+    #: O que mudou, escrito pelo sistema ("de 5º para 1º", "Almoço").
+    detalhe = models.CharField(_("detalhe"), max_length=300, blank=True)
+    momento = models.DateTimeField(_("quando"))
+
+    class Meta(ModeloDaEmpresa.Meta):
+        verbose_name = _("correção na fila")
+        verbose_name_plural = _("correções na fila")
+        # A tela de histórico filtra por loja e período.
+        indexes = [models.Index(fields=["filial", "momento"],
+                                name="fila_correcao_periodo")]

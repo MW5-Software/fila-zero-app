@@ -207,3 +207,21 @@ def test_lancamentos_de_hoje_so_os_fechados_da_loja(loja):
         finalizar(pessoa, filial, _nao_venda(loja))
     assert [a.vendedor_id for a in lancamentos_de_hoje(
         loja.matriz, dia=date(2026, 9, 15))] == [loja.ana.pk]
+
+
+# --- O histórico das correções (spec 2026-09-17) -----------------------------
+
+def test_a_versao_da_fila_muda_com_uma_correcao(loja):
+    """Mover grava um instante ENTRE os vizinhos: sem contar as correções, a
+    versão não mudaria e as outras telas não veriam a ordem nova."""
+    from django.utils import timezone
+
+    from fila.estado import versao_da_fila
+    from fila.models import CorrecaoNaFila
+
+    antes = versao_da_fila(loja.matriz)
+    CorrecaoNaFila.irrestritos.create(
+        empresa=loja.empresa, filial=loja.matriz, pessoa=loja.ana,
+        autor=loja.gerente, acao="mover", observacao="chegou antes",
+        detalhe="de 2º para 1º", momento=timezone.now())
+    assert versao_da_fila(loja.matriz) != antes
