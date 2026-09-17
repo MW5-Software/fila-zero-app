@@ -51,7 +51,14 @@ class GerenteDaEmpresa(models.Manager):
             empresa=empresa, conta_id=empresa.conta_id)
 
     def da_conta(self, conta):
-        """As linhas de UMA conta, relacionadas pelo GUID dela."""
+        """As linhas de UMA conta, relacionadas pelo GUID dela — de TODAS as
+        empresas dela.
+
+        Desde 17/09/2026 a conta pode ter várias empresas, e isto soma as
+        linhas de todas, de propósito: é a visão do dono da conta. **Quem
+        quer uma empresa usa `da_empresa`**, que é a porta de toda tela, e
+        `do_contexto` para a empresa do cabeçalho.
+        """
         if conta is None:
             return super().get_queryset().none()
         return super().get_queryset().filter(conta=conta)

@@ -71,3 +71,30 @@ def test_uma_pessoa_alocada_nas_duas_alcanca_as_duas(duas_empresas):
     alocar(ana, d.beta, "vendedor", filial=d.loja_beta)
     assert set(empresas_da_pessoa(ana)) == {d.alfa, d.beta}
     assert list(filiais_da_pessoa(ana, d.beta)) == [d.loja_beta]
+
+
+def test_o_cliente_de_uma_empresa_nao_aparece_na_irma(duas_empresas):
+    """`clientes_alcancados` filtra as alocações pela EMPRESA; este teste
+    existe para isso não mudar sem alguém ver (spec E2)."""
+    from django.test import RequestFactory
+
+    from comum.sessao import CHAVE
+    from contas.lugar import clientes_alcancados
+    from contas.models import Nivel, Usuario
+    from plataforma.contexto import CHAVE_EMPRESA
+
+    d = duas_empresas
+    de_alfa = Usuario.objects.create_user(email=email_de("cli-alfa"), password=SENHA,
+                                          nivel=Nivel.MEMBRO, dono=d.titular)
+    de_beta = Usuario.objects.create_user(email=email_de("cli-beta"), password=SENHA,
+                                          nivel=Nivel.MEMBRO, dono=d.titular)
+    alocar(de_alfa, d.alfa, "cliente")
+    alocar(de_beta, d.beta, "cliente")
+
+    def _na(empresa):
+        pedido = RequestFactory().get("/")
+        pedido.session = {CHAVE: str(d.titular.pk), CHAVE_EMPRESA: empresa.pk}
+        return list(clientes_alcancados(pedido))
+
+    assert _na(d.alfa) == [de_alfa]
+    assert _na(d.beta) == [de_beta]

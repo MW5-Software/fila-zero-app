@@ -273,7 +273,9 @@ def clientes_alcancados(request) -> "QuerySet[Usuario]":
 
     `dono_id=empresa.dono_id`: uma alocação que apontasse para esta empresa a
     partir de outra conta (gravada por fora do `save`, que a recusaria) não
-    abre a pessoa de outro cliente.
+    abre a pessoa de outro cliente. Ele é a SEGUNDA tranca: quem separa é o
+    `empresa=empresa` das alocações, e é por isso que o cliente de uma
+    empresa não aparece na irmã da mesma conta (17/09/2026).
     """
     from django.db.models import Q
 
@@ -297,7 +299,8 @@ def tem_cargo_de_cliente(usuario) -> bool:
     """Se a pessoa é cliente em algum lugar da conta dela.
 
     Existe ao lado de `e_cliente(request)` para a pergunta feita FORA de
-    requisição, onde não há lugar atual. No Portal de Vendas, de onde a base
+    requisição, onde não há lugar atual — e por isso a resposta é da CONTA:
+    com várias empresas nela (17/09/2026), "algum lugar" inclui todas. No Portal de Vendas, de onde a base
     saiu, é o preço negociado: o orçamento calcula o total pelo comprador dele,
     e a vitrine usa a mesma pergunta para o rótulo "Seu preço" não discordar do
     número que mostra.
