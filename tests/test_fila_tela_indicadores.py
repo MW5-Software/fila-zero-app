@@ -190,7 +190,7 @@ def test_sem_atendimento_mostra_traco_e_nao_zero_por_cento(rede):
 
 
 def test_periodo_invalido_nao_estoura(rede):
-    assert "Este mês" in _html(logado("sylvia"), de="2026-99-99", ate="x")
+    assert "Este mês" in _html(logado("sylvia"), de="2026-99-99", ate="x", periodo="x")
 
 
 def test_o_menu_nao_tem_mais_o_atalho_dos_indicadores(rede):
@@ -324,10 +324,12 @@ def test_periodo_terminado_nao_tem_coluna_em_andamento(rede):
     # Por hora (um dia só) e por dia (intervalo que acabou ontem): nenhum dos
     # dois caminhos pode listrar a última coluna.
     assert "ind-col agora" not in _html(logado("sylvia"), periodo="ontem", loja=str(rede.centro.pk))
-    ontem_local = timezone.localdate() - timedelta(days=1)
-    intervalo = _html(logado("sylvia"), de=str(ontem_local - timedelta(days=3)),
-                      ate=str(ontem_local), loja=str(rede.centro.pk))
-    assert "ind-serie" in intervalo and "ind-col agora" not in intervalo
+    passado = _venda_hoje(rede, rede.caio, rede.centro, "100")
+    fim_do_mes_passado = timezone.localtime().replace(day=1, hour=12) - timedelta(days=1)
+    Atendimento.irrestritos.filter(pk=passado.pk).update(
+        inicio=fim_do_mes_passado - timedelta(minutes=5), fim=fim_do_mes_passado)
+    mes_passado = _html(logado("sylvia"), periodo="mes_passado", loja=str(rede.centro.pk))
+    assert "ind-serie" in mes_passado and "ind-col agora" not in mes_passado
 
 
 def test_as_listas_dizem_o_total_no_subtitulo(rede):
@@ -371,3 +373,12 @@ def test_ranking_ganha_meta_e_porcentagem_ordenaveis(rede):
     html = _html(logado("gil"), periodo="mes", ordenar="-pct_meta")
     assert "% da meta" in html and "50,0%" in html
     assert "% da meta" not in _html(logado("gil"), periodo="hoje")
+
+
+def test_os_filtros_tem_os_atalhos_e_nao_tem_mais_de_e_ate(rede):
+    """17/09/2026: o período é só por atalho (hoje a 90 dias e os dois meses);
+    os campos De/Até saíram."""
+    html = _html(logado("sylvia"), periodo="90dias")
+    assert 'name="de"' not in html and 'name="ate"' not in html
+    assert '<option value="90dias" selected>90 dias</option>' in html
+    assert "90 dias, Matriz" in html

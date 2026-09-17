@@ -17,18 +17,21 @@ from datetime import date, datetime, time, timedelta
 
 from django.utils import timezone
 
-__all__ = ["ATALHOS", "PADRAO", "Periodo", "inicio_do_dia",
+__all__ = ["ANOS_ACEITOS", "ATALHOS", "PADRAO", "Periodo", "inicio_do_dia",
            "periodo_anterior", "periodo_do_pedido"]
 
+#: Os últimos N dias terminam hoje, e hoje conta como um deles.
+DIAS_DOS_ATALHOS = (7, 15, 30, 60, 90)
+
+#: Desde 17/09/2026 o período é só por atalho: o intervalo livre (De/Até)
+#: saiu da tela a pedido do cliente. Os dois meses ficam porque a meta é
+#: mensal, e é neles que a faixa da meta aparece.
 ATALHOS: "tuple[tuple[str, str], ...]" = (
-    ("hoje", "Hoje"), ("ontem", "Ontem"), ("7dias", "7 dias"),
+    ("hoje", "Hoje"), ("ontem", "Ontem"),
+    *((f"{n}dias", f"{n} dias") for n in DIAS_DOS_ATALHOS),
     ("mes", "Este mês"), ("mes_passado", "Mês passado"),
 )
 PADRAO = "mes"
-
-#: Decisão P-4 do plano: as contas são feitas na hora, e um intervalo de anos
-#: numa rede grande é o pedido que derruba a tela.
-MAIOR_INTERVALO_EM_DIAS = 366
 
 
 @dataclass(frozen=True)
@@ -47,18 +50,10 @@ def inicio_do_dia(dia: date) -> datetime:
     return timezone.make_aware(datetime.combine(dia, time.min))
 
 
-#: Os anos que um período pode tocar. `date.fromisoformat` aceita do ano 1 ao
-#: 9999, e as contas de um dia a mais ou do período anterior estouravam nas
-#: pontas com 500 (revisão final, 15/09/2026).
+#: Os anos que um mês pedido pela URL pode tocar (`metas.mes_do_texto`).
+#: `date` aceita do ano 1 ao 9999, e as contas de um dia a mais ou do mês
+#: anterior estouravam nas pontas com 500 (revisão final, 15/09/2026).
 ANOS_ACEITOS = range(2000, 2101)
-
-
-def _data(texto: "str | None") -> "date | None":
-    try:
-        dia = date.fromisoformat((texto or "").strip())
-    except ValueError:
-        return None
-    return dia if dia.year in ANOS_ACEITOS else None
 
 
 def _mesmo_dia_no_mes_anterior(momento: datetime) -> datetime:
@@ -80,22 +75,16 @@ def periodo_do_pedido(get: Mapping, agora: "datetime | None" = None) -> Periodo:
 
     chave = get.get("periodo", "")
     rotulos = dict(ATALHOS)
-    # O atalho escolhido ganha do intervalo: os campos De/Até continuam
-    # preenchidos na tela depois de um intervalo, e trocar o Período para
-    # "Hoje" não fazia nada (revisão final, 15/09/2026).
-    if chave not in rotulos and (get.get("de") or get.get("ate")):
-        de, ate = _data(get.get("de")), _data(get.get("ate"))
-        if de and ate and de <= ate and (ate - de).days <= MAIOR_INTERVALO_EM_DIAS:
-            return Periodo(inicio_do_dia(de), inicio_do_dia(ate + timedelta(days=1)),
-                           "intervalo", f"{de:%d/%m/%Y} a {ate:%d/%m/%Y}")
-
+    # Um link salvo com `de`/`ate` do intervalo antigo cai aqui também: abre
+    # no padrão, e não num intervalo que a tela já não mostra.
     if chave not in rotulos:
         chave = PADRAO
     amanha = inicio_do_dia(hoje + timedelta(days=1))
     limites = {
         "hoje": (inicio_do_dia(hoje), amanha),
         "ontem": (inicio_do_dia(hoje - timedelta(days=1)), inicio_do_dia(hoje)),
-        "7dias": (inicio_do_dia(hoje - timedelta(days=6)), amanha),
+        **{f"{n}dias": (inicio_do_dia(hoje - timedelta(days=n - 1)), amanha)
+           for n in DIAS_DOS_ATALHOS},
         "mes": (inicio_do_dia(hoje.replace(day=1)), amanha),
         "mes_passado": (inicio_do_dia(_primeiro_do_mes_anterior(hoje)),
                         inicio_do_dia(hoje.replace(day=1))),

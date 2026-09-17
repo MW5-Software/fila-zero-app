@@ -84,7 +84,7 @@ def _blocos(request, empresa, loja, pessoa) -> list:
                              ordenaveis=ORDENAVEIS_COM_META if mes else ORDENAVEIS,
                              padrao=ind.PADRAO_DO_RANKING,
                              filtraveis=_FILTRAVEIS,
-                             preservar=("periodo", "de", "ate"))
+                             preservar=("periodo",))
     return [
         # Uma loja só nas "permitidas": `_filtros` não desenha o campo de loja.
         _filtros(request, periodo, [loja], None),

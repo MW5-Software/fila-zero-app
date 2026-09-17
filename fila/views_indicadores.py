@@ -32,7 +32,7 @@ from comum.listagem import ColunaFiltravel, montar_pagina
 from comum.personificacao import aviso as aviso_de_personificacao
 from nucleo.components import (Alert, Button, Card, Cell, Column, Form,
                                FormGrid, Option, PageHeader, Raw, Select,
-                               Table, TextInput)
+                               Table)
 from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
@@ -292,18 +292,13 @@ def _lojas_do_pedido(request, permitidas):
 
 def _filtros(request, periodo, permitidas, loja):
     campos = [
-        # As opções neutras ("Intervalo", "Todas as lojas") são opções comuns,
-        # e não `empty_label`: o do design system nasce `disabled`, e quem
-        # escolhia uma loja não voltava a "Todas" (revisão final, 15/09/2026;
-        # o mesmo motivo escrito em `comum/listagem.py`).
-        Select(name="periodo", label=_("Período"), span=3,
-               value=periodo.chave if periodo.chave != "intervalo" else "",
-               options=[Option("", _("Intervalo")),
-                        *(Option(chave, rotulo) for chave, rotulo in ATALHOS)]),
-        TextInput(name="de", label=_("De"), type="date", span=2,
-                  value=request.GET.get("de", "")),
-        TextInput(name="ate", label=_("Até"), type="date", span=2,
-                  value=request.GET.get("ate", "")),
+        # Só atalhos desde 17/09/2026: De/Até saíram a pedido do cliente.
+        # "Todas as lojas" é opção comum, e não `empty_label`: o do design
+        # system nasce `disabled`, e quem escolhia uma loja não voltava a
+        # "Todas" (revisão final, 15/09/2026; o mesmo motivo escrito em
+        # `comum/listagem.py`).
+        Select(name="periodo", label=_("Período"), span=3, value=periodo.chave,
+               options=[Option(chave, rotulo) for chave, rotulo in ATALHOS]),
     ]
     if len(permitidas) > 1:
         campos.append(Select(
@@ -315,7 +310,7 @@ def _filtros(request, periodo, permitidas, loja):
     # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
     # troca a querystring inteira, e aplicar o período apagava os dois.
     for chave, valor in request.GET.items():
-        if chave not in ("periodo", "de", "ate", "loja", "pagina") and valor:
+        if chave not in ("periodo", "loja", "pagina") and valor:
             campos.append(Raw(html=format_html(
                 '<input type="hidden" name="{}" value="{}">', chave, valor)))
     # Sem título: o período e a loja escolhidos já estão nos campos, e o
@@ -435,7 +430,7 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                              ordenaveis=ordenaveis,
                              padrao=ind.PADRAO_DO_RANKING,
                              filtraveis=_FILTRAVEIS_POR_LOJA if todas else _FILTRAVEIS,
-                             preservar=("periodo", "de", "ate", "loja"))
+                             preservar=("periodo", "loja"))
     blocos.append(Card(title=_("Ranking de vendedores"), padded=False, body=[
         listagem.barra,
         Table(columns=_colunas(listagem, com_meta=mes_da_meta is not None, por_loja=todas),

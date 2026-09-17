@@ -21,6 +21,10 @@ AGORA = local(2026, 9, 15, 14, 30)
     ("hoje", local(2026, 9, 15), local(2026, 9, 16)),
     ("ontem", local(2026, 9, 14), local(2026, 9, 15)),
     ("7dias", local(2026, 9, 9), local(2026, 9, 16)),
+    ("15dias", local(2026, 9, 1), local(2026, 9, 16)),
+    ("30dias", local(2026, 8, 17), local(2026, 9, 16)),
+    ("60dias", local(2026, 7, 18), local(2026, 9, 16)),
+    ("90dias", local(2026, 6, 18), local(2026, 9, 16)),
     ("mes", local(2026, 9, 1), local(2026, 9, 16)),
     ("mes_passado", local(2026, 8, 1), local(2026, 9, 1)),
 ])
@@ -33,21 +37,17 @@ def test_sem_nada_e_este_mes():
     assert periodo_do_pedido({}, AGORA).chave == "mes"
 
 
-def test_intervalo_livre_inclui_o_ultimo_dia():
-    p = periodo_do_pedido({"de": "2026-09-01", "ate": "2026-09-10"}, AGORA)
-    assert (p.de, p.ate, p.chave) == (local(2026, 9, 1), local(2026, 9, 11),
-                                      "intervalo")
-    assert p.rotulo == "01/09/2026 a 10/09/2026"
+def test_os_atalhos_na_ordem_da_tela():
+    from fila.periodo import ATALHOS
+
+    assert [c for c, _r in ATALHOS] == ["hoje", "ontem", "7dias", "15dias", "30dias",
+                                        "60dias", "90dias", "mes", "mes_passado"]
 
 
-@pytest.mark.parametrize("de, ate", [
-    ("2026-09-10", "2026-09-01"),        # invertido
-    ("ontem", "2026-09-01"),             # não é data
-    ("2024-01-01", "2026-09-01"),        # mais de 366 dias (P-4)
-    ("2026-09-01", ""),                  # meio intervalo
-])
-def test_intervalo_ruim_cai_no_padrao(de, ate):
-    assert periodo_do_pedido({"de": de, "ate": ate}, AGORA).chave == "mes"
+def test_o_intervalo_livre_saiu_e_o_link_antigo_cai_no_padrao():
+    """17/09/2026: De/Até saíram da tela. Um link salvo com eles abre no
+    padrão, e não num intervalo que a tela já não mostra."""
+    assert periodo_do_pedido({"de": "2026-09-01", "ate": "2026-09-10"}, AGORA).chave == "mes"
 
 
 def test_atalho_desconhecido_cai_no_padrao():
@@ -83,19 +83,6 @@ def test_sete_dias_em_andamento():
     assert (anterior.de, anterior.ate) == (local(2026, 9, 2), local(2026, 9, 8, 14, 30))
 
 
-@pytest.mark.parametrize("de, ate", [("9999-12-31", "9999-12-31"),
-                                     ("0001-01-01", "0001-01-01")])
-def test_data_extrema_cai_no_padrao(de, ate):
-    """B3: o ano 9999 estourava na soma de um dia, e o ano 1 na conta do
-    período anterior."""
-    p = periodo_do_pedido({"de": de, "ate": ate}, AGORA)
-    assert p.chave == "mes"
-    periodo_anterior(p, AGORA)
-
-
-def test_atalho_escolhido_ganha_do_intervalo_que_ficou_na_url():
-    """M5: com De/Até preenchidos, trocar o Período para "Hoje" não fazia
-    nada, porque o intervalo vencia sempre."""
-    p = periodo_do_pedido({"periodo": "hoje", "de": "2026-09-01",
-                           "ate": "2026-09-10"}, AGORA)
-    assert p.chave == "hoje"
+def test_trinta_dias_em_andamento_compara_com_os_trinta_antes():
+    anterior = periodo_anterior(periodo_do_pedido({"periodo": "30dias"}, AGORA), AGORA)
+    assert (anterior.de, anterior.ate) == (local(2026, 7, 18), local(2026, 8, 16, 14, 30))
