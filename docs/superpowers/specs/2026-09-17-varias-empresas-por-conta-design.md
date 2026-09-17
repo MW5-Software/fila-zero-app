@@ -28,10 +28,19 @@ Hoje o vocabulário da interface também mistura as duas ideias: o menu diz
 Cai a trava `uma_empresa_por_conta`. `Empresa.dono` continua apontando para o
 titular, e `Empresa.conta` (a coluna `conta_guid`) continua derivada dele.
 
+**O `conta_guid` continua em toda tabela, e não muda nada nele**: coluna
+obrigatória (`NOT NULL` nas tabelas de negócio), derivada da empresa no `save`
+(`contas.inquilino.ModeloDaEmpresa`, `plataforma.models._conta_da_empresa`),
+nunca escrita à mão, e a identidade estável do cliente para fora — é ela que
+toda integração usa. `test_toda_linha_da_conta_leva_o_guid.py` e
+`test_regra_do_inquilino.py` continuam cobrando isso de TODA tabela, sem
+isenção nova.
+
 **A fronteira do dado de negócio continua sendo a EMPRESA**, e não a conta:
-toda consulta passa por `objects.da_empresa(...)`, como hoje. O `conta_guid`
-continua sendo a identidade estável do cliente para fora, e deixa de
-identificar uma empresa sozinho — é isso que muda de significado.
+toda consulta passa por `objects.da_empresa(...)`, como hoje. O que muda é só
+o que o `conta_guid` responde sozinho: com duas empresas na mesma conta, ele
+diz de quem é a linha, e não de qual empresa — quem diz a empresa é a coluna
+`empresa`, que já existe ao lado dele em toda tabela.
 
 ### E2 — `da_conta` passa a ser uma escolha, e não um acidente
 
@@ -169,6 +178,9 @@ aberto (várias empresas e o módulo de Filiais desligado).
   de Usuários mostra as empresas de cada pessoa; Lojas nasce ligada.
 - **Fila:** a fila de uma empresa não enxerga a outra; um ponto por vez entre
   empresas; "Todas as empresas" no painel soma e separa.
+- **`conta_guid`:** a linha de negócio criada em qualquer uma das duas
+  empresas nasce com o `conta_guid` da conta, derivado da empresa, e o `save`
+  continua recusando conta divergente.
 - **Varreduras:** inquilino, `conta_guid`, guarda, tabela e personificação
   continuam passando sem isenção nova.
 - **`conftest`:** `dar_acesso` com duas empresas dá as duas.
