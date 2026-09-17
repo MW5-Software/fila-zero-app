@@ -49,14 +49,17 @@ Com duas empresas, ele devolve as linhas das duas. **Isso continua valendo, e
 passa a ser dito em voz alta**: o docstring explica que ele soma as empresas
 da conta, e um teste prova a soma. Quem quer uma empresa usa `da_empresa`.
 
-**Dois lugares hoje usam a conta onde queriam a empresa**, e mudam:
+**Dois lugares olham a conta, e cada um por um motivo** (relido no código em
+17/09/2026, depois do desenho):
 
-- `contas.lugar.clientes_alcancados` filtra `dono_id=empresa.dono_id`;
-- `contas.lugar.tem_cargo_de_cliente` filtra `empresa__dono_id=pessoa.dono_id`.
-
-Com uma empresa por conta os dois davam o mesmo resultado. Com duas, o
-cliente de uma empresa apareceria na lista da irmã. Passam a filtrar pela
-empresa.
+- `contas.lugar.clientes_alcancados` já filtra as alocações **pela empresa**;
+  o `dono_id=empresa.dono_id` que vem depois é só a segunda tranca contra
+  alocação gravada por fora. **Não muda**, e ganha teste provando que o
+  cliente de uma empresa não aparece na irmã.
+- `contas.lugar.tem_cargo_de_cliente` responde "é cliente em algum lugar da
+  CONTA", de propósito: é a pergunta feita fora de requisição, onde não há
+  empresa atual. **Não muda**, e o docstring passa a dizer que, com várias
+  empresas, "algum lugar" inclui todas elas.
 
 ### E3 — O cabeçalho mostra a empresa para quem alcança mais de uma
 
