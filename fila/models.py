@@ -119,6 +119,10 @@ class Presenca(ModeloDaEmpresa):
 
     class Meta(ModeloDaEmpresa.Meta):
         constraints = [
+            # **Uma presença aberta por pessoa, em toda a instalação.** Vale
+            # entre lojas e, desde 17/09/2026, entre EMPRESAS da mesma conta:
+            # a pessoa está numa loja de cada vez, e bater o ponto na loja de
+            # outra empresa fecha a presença anterior (`acoes.bater_ponto`).
             models.UniqueConstraint(
                 fields=["pessoa"], condition=Q(saida__isnull=True),
                 name="fila_uma_presenca_aberta_por_pessoa"),
