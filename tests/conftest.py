@@ -169,13 +169,9 @@ def dar_acesso(pessoa, nivel=_NAO_INFORMADO, empresas=None):
     pessoa.nivel = pedido
     pessoa.save(update_fields=["nivel"])
 
-    # **`empresas` continua sendo uma LISTA na assinatura, e só a primeira
-    # conta** (09/09/2026). Uma conta tem uma empresa; a lista sobreviveu
-    # porque cinquenta chamadas na suíte passam `empresas=[alfa]`, e trocar
-    # todas por `empresa=alfa` seria cinquenta oportunidades de errar num
-    # trabalho que não prova nada. Quem passa duas recebe a primeira, em
-    # silêncio: o cenário de "pessoa em duas empresas" deixou de existir, e
-    # um teste que ainda o monte está descrevendo um mundo que não há.
+    # **`empresas` é uma LISTA, e todas valem** (17/09/2026). Até aqui só a
+    # primeira contava, porque uma conta tinha uma empresa; agora ela tem
+    # várias, e um teste que monte duas precisa receber as duas.
     # **Sem `empresas`, cria uma.** Antes ela vinha da empresa que o
     # `post_migrate` semeava em toda instalação — e essa semeadura acabou em
     # 09/09/2026, porque produzia empresa SEM DONO (ver `plataforma/apps.py`).
@@ -184,18 +180,19 @@ def dar_acesso(pessoa, nivel=_NAO_INFORMADO, empresas=None):
     # empresa para pendurar gente, e isso é necessidade do teste, não do
     # produto. Semear para servir a suíte seria deixar o defeito em pé nas
     # sessenta instalações para não mexer em cinquenta chamadas.
-    if empresas is not None:
-        alvo = list(empresas)[:1]
-    else:
-        alvo = [empresa_do_teste()]
+    # **Todas as empresas pedidas** (17/09/2026): a conta passou a ter várias
+    # (spec `2026-09-17-varias-empresas-por-conta`), e cortar em `[:1]` fazia
+    # um teste de duas empresas passar provando uma.
+    alvo = list(empresas) if empresas is not None else [empresa_do_teste()]
     por_na_conta(pessoa, alvo[0] if alvo else None)
     # Desde a virada dos cargos, o que o membro pode mora no cargo da
     # alocação. Sem esta linha, os testes que pedem "um membro" criariam
     # alguém sem permissão nenhuma, e o vermelho pareceria defeito da tela.
     # Cliente é o cargo de quem só vê o catálogo e os próprios orçamentos — o
     # que o nível COMPRADOR, que o membro substituiu, dava.
-    if alvo and pedido == Nivel.MEMBRO:
-        alocar(pessoa, alvo[0], "cliente")
+    if pedido == Nivel.MEMBRO:
+        for empresa in alvo:
+            alocar(pessoa, empresa, "cliente")
     return pessoa
 
 

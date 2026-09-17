@@ -119,7 +119,7 @@ def _com_empresa(pessoas):
     nenhuma, e fica `None` (a tela escreve "—").
 
     Anotação, e não leitura na linha: a coluna, o filtro, a ordenação e a
-    exportação leem o mesmo valor, e ler `pessoa.dono.empresa_da_conta` na
+    exportação leem o mesmo valor, e ler `pessoa.dono.empresas_da_conta` na
     renderização seria uma consulta por pessoa.
     """
     from django.db.models import OuterRef, Q, Subquery, Value
@@ -1479,7 +1479,7 @@ def _acao_remover(request, alvo) -> HttpResponse:
             f"{alvo.email} é a conta de {presos} "
             f"{'pessoa' if presos == 1 else 'pessoas'}. Mova ou remova essas "
             f"pessoas antes."))
-    if alvo.empresa_da_conta.exists():
+    if alvo.empresas_da_conta.exists():
         return _desenhar(request, erro=(
             f"{alvo.email} é a conta de uma empresa. Passe a empresa para "
             f"outra conta antes de remover."))
