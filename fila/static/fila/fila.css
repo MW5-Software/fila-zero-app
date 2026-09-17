@@ -117,6 +117,7 @@
 .fila-numeral-sufixo { font-size: 24px; letter-spacing: -.01em; margin: 4px 0 0 3px; color: var(--on-surface-2); }
 .painel-atendendo .fila-numeral { color: var(--ok); align-items: baseline; }
 .painel-pausa .fila-numeral { color: var(--warn); align-items: baseline; }
+.painel-espera .fila-estado-icone { background: var(--surface-3); color: var(--accent); }
 .painel-atendendo .fila-numeral-sufixo, .painel-pausa .fila-numeral-sufixo { font-size: 20px; margin: 0 0 0 4px; }
 
 .fila-estado-icone {
@@ -172,6 +173,10 @@
 }
 .fila-marca-estado { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .fila-lado-pausa .fila-marca-estado { background: var(--warn); }
+/* A espera é estado de quem está na loja e fora da fila (spec 2026-09-17):
+   marca na cor de apoio, entre o verde de quem espera a vez e o âmbar da
+   pausa. */
+.fila-lado-espera .fila-marca-estado { background: var(--accent); }
 
 .fila-linhas { list-style: none; margin: 0; padding: 0; }
 .fila-linha {

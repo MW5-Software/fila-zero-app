@@ -136,6 +136,7 @@ _DO_VENDEDOR = {
     "finalizar": lambda r, f, p: acoes.finalizar(p, f, _lancamento(r)),
     "pausar": lambda r, f, p: acoes.pausar(p, f, id_do_post(r, "tipo")),
     "voltar": lambda r, f, p: acoes.voltar_para_a_fila(p, f),
+    "entrar_na_fila": lambda r, f, p: acoes.entrar_na_fila(p, f),
     "sair": lambda r, f, p: acoes.sair_da_loja(p, f),
 }
 
