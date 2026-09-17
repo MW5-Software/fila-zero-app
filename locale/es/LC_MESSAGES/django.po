@@ -1535,3 +1535,60 @@ msgstr "Las empresas de su cuenta, y de dónde el cron lee el catálogo de cada 
 #, python-format
 msgid "Você está atendendo em %(loja)s (%(empresa)s). Finalize lá antes de entrar aqui."
 msgstr "Está atendiendo en %(loja)s (%(empresa)s). Finalice allá antes de entrar aquí."
+
+msgid "Depois de lançar o atendimento"
+msgstr "Después de registrar la atención"
+
+msgid "Em espera"
+msgstr "En espera"
+
+msgid "Encerre a pausa primeiro."
+msgstr "Cierre la pausa primero."
+
+msgid "Entra no fim da fila."
+msgstr "Entra al final de la fila."
+
+msgid "Entrar na fila"
+msgstr "Entrar en la fila"
+
+msgid "Entre na fila quando estiver pronto."
+msgstr "Entre en la fila cuando esté listo."
+
+msgid "Essa pessoa já está na fila."
+msgstr "Esa persona ya está en la fila."
+
+msgid "Essa pessoa não está em espera."
+msgstr "Esa persona no está en espera."
+
+msgid "Fica em espera e entra na fila quando quiser"
+msgstr "Queda en espera y entra en la fila cuando quiera"
+
+msgid "Finalize o atendimento primeiro."
+msgstr "Finalice la atención primero."
+
+msgid "Fora da fila"
+msgstr "Fuera de la fila"
+
+msgid "Pôr na fila"
+msgstr "Poner en la fila"
+
+msgid "Pôs na fila"
+msgstr "Puso en la fila"
+
+msgid "Vale para todas as lojas desta empresa."
+msgstr "Vale para todas las tiendas de esta empresa."
+
+msgid "Você está em espera"
+msgstr "Está en espera"
+
+msgid "Você já está na fila."
+msgstr "Usted ya está en la fila."
+
+msgid "Volta para o fim da fila"
+msgstr "Vuelve al final de la fila"
+
+msgid "fluxo da fila"
+msgstr "flujo de la fila"
+
+msgid "O que acontece com o vendedor depois de lançar o atendimento."
+msgstr "Qué pasa con el vendedor después de registrar la atención."

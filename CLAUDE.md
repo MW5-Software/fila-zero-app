@@ -531,6 +531,26 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   responde. Na raiz ele tornava o Início inalcançável para o vendedor.
 
 
+### O fluxo da fila é da empresa (17/09/2026)
+
+Spec `docs/superpowers/specs/2026-09-17-fluxo-da-fila-por-empresa-design.md`.
+
+- **`Empresa.fluxo_da_fila`** decide o que acontece depois de lançar o
+  atendimento: *volta para o fim da fila* (o padrão, o fluxo da Sylvia) ou
+  *fica em espera*. Na empresa, e não na loja: a rede trabalha do mesmo jeito
+  nas lojas dela.
+- **`Estado.EM_ESPERA` não é pausa.** Não existe linha de `Pausa`, e o tempo
+  em espera não entra em indicador de pausa nenhum — uma pausa com tipo
+  "Espera" somaria o trabalho normal da loja ao almoço no relatório.
+- **`acoes._depois_do_atendimento` é o único lugar que decide** para onde a
+  pessoa vai quando o atendimento ou a pausa termina. Quem finaliza, quem
+  encerra a pausa e o gerente que fecha no lugar do vendedor leem a mesma
+  resposta.
+- **Bater o ponto continua entrando na fila** nos dois fluxos, e
+  `entrar_na_fila` põe no FIM, com a hora de agora.
+- **Tirar da pausa pela mão do gerente manda para a FILA nos dois fluxos**: a
+  ação é dele, e ele está decidindo que a pessoa atende agora.
+
 ### As empresas no painel (17/09/2026)
 
 - **O painel abre na empresa do cabeçalho**, e "Todas as empresas"
