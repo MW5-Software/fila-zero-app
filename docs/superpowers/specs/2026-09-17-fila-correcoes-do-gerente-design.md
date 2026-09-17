@@ -49,7 +49,7 @@ por correção.
 |---|---|
 | `filial` | a loja (`PROTECT`, como as outras tabelas da fila) |
 | `pessoa` | quem foi corrigido |
-| `autor` | quem corrigiu (a pessoa de verdade: em "ver como", quem agiu) |
+| `autor` | quem corrigiu, como a ação o recebe (em "ver como", a pessoa vista; quem agiu de verdade fica na auditoria, que já anota a personificação) |
 | `acao` | `mover`, `pausar`, `tirar_pausa`, `fechar`, `tirar`, `editar` |
 | `observacao` | o motivo, até 200 caracteres |
 | `detalhe` | o que mudou, escrito pelo sistema ("de 5º para 1º", "Almoço", "Vendeu R$ 1.500,00") |
@@ -132,14 +132,23 @@ auditoria.
 
 - `ler_observacao(texto) -> str`: tira as pontas e recusa (`Recusa`) fora de
   3…200.
-- `mover(autor, filial, pessoa_id, posicao, observacao, *, request=None)`.
-- `pausar(autor, filial, pessoa_id, tipo_id, observacao, *, request=None)`.
+- `mover(autor, filial, pessoa_id, posicao, *, observacao, request=None)`.
+- `por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None)`
+  (não `pausar`, para não confundir com `acoes.pausar`; as duas usam o mesmo
+  miolo, `acoes._abrir_pausa`).
 - `tirar_da_loja`, `fechar_atendimento`, `tirar_da_pausa` e
-  `editar_lancamento` ganham `observacao` obrigatória.
+  `editar_lancamento` ganham `observacao` obrigatória, só por nome.
 - `_registrar(autor, lugar_ou_atendimento, acao, observacao, detalhe,
   request)`: grava `CorrecaoNaFila` e a auditoria juntas.
 - A observação é lida e validada **antes** da trava: recusa barata não
   segura a fila da loja.
+
+### `fila/estado.py`
+
+`versao_da_fila` passa a contar as correções da loja (quantas e a última):
+mover grava um instante ENTRE os vizinhos, que não muda o maior
+`na_fila_desde` nem o maior `desde`, e as outras telas não veriam a nova
+ordem.
 
 ### `comum/auditoria.py`
 
@@ -147,15 +156,20 @@ Duas ações novas: `FILA_POSICAO_MOVIDA` e `FILA_PAUSA_INICIADA`, com rótulo.
 
 ### `fila/views.py` (`POST /fila/agir`)
 
-`acao=mover` (lê `pessoa`, `posicao`, `observacao`) e `acao=pausar_outro`
-(lê `pessoa`, `tipo`, `observacao`), com `id_do_post` para os ids, como as
-outras. As ações de correção existentes passam a ler `observacao`.
+`acao=mover` (lê `pessoa`, `posicao`, `motivo_da_correcao`) e
+`acao=por_em_pausa` (lê `pessoa`, `tipo`, `motivo_da_correcao`), com
+`id_do_post` para os ids, como as outras. As ações de correção existentes
+passam a ler `motivo_da_correcao`.
+
+O campo se chama `motivo_da_correcao`, e não `observacao`: `observacao` já é
+o campo opcional da não venda na mesma folha de fechar, e os dois iriam
+juntos no POST.
 
 ### `fila/templates/fila/_folhas.html` e `fila/tela.py`
 
 - Na folha **Corrigir**, para quem está na fila: **Mover de posição** e
   **Pôr em pausa**, cada um abrindo a própria folha (`?folha=mover`,
-  `?folha=pausar_outro`), que funciona sem JavaScript como as de hoje.
+  `?folha=por_em_pausa`), que funciona sem JavaScript como as de hoje.
 - Um macro `observacao()` com o campo obrigatório (`required`,
   `maxlength=200`), usado em toda folha de correção.
 - A folha de mover recebe a fila (`r.fila`) e a posição atual do alvo.
