@@ -154,6 +154,11 @@ _DO_GERENTE = {
         p, f, _pessoa_do_post(r), _lancamento(r), observacao=_motivo(r), request=r),
     "tirar_pausa": lambda r, f, p: correcoes.tirar_da_pausa(
         p, f, _pessoa_do_post(r), observacao=_motivo(r), request=r),
+    # `id_do_post` transforma "²", vazio e número gigante em `None`, que
+    # `mover` recusa com frase em vez de 500.
+    "mover": lambda r, f, p: correcoes.mover(
+        p, f, _pessoa_do_post(r), id_do_post(r, "posicao"),
+        observacao=_motivo(r), request=r),
     "editar": lambda r, f, p: correcoes.editar_lancamento(
         p, f, id_do_post(r, "atendimento"), _lancamento(r),
         observacao=_motivo(r), request=r),

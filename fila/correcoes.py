@@ -25,12 +25,13 @@ from comum.auditoria import ACOES, registrar
 from . import acoes
 from .acoes import (Recusa, _gravar_lancamento, _fechar_atendimento,
                     _lugar_na_loja, _sair, _travar, _validar, _voltar_ao_fim)
-from .estado import nome_de
+from .estado import na_fila, nome_de
 from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
-           "lancamentos_de_hoje", "ler_observacao", "tirar_da_loja", "tirar_da_pausa"]
+           "lancamentos_de_hoje", "ler_observacao", "mover", "tirar_da_loja",
+           "tirar_da_pausa"]
 
 NAO_CORRIGE_A_SI = gettext_lazy("Você não corrige a si mesmo.")
 
@@ -44,6 +45,8 @@ def _agora():
 NAO_ENCONTRADO = gettext_lazy("Essa pessoa não está nesta loja.")
 MOTIVO_CURTO = gettext_lazy("Escreva o motivo da correção.")
 MOTIVO_LONGO = gettext_lazy("O motivo cabe em 200 caracteres.")
+NAO_ESTA_NA_FILA = gettext_lazy("Essa pessoa não está na fila.")
+_MICRO = timedelta(microseconds=1)
 
 
 def ler_observacao(texto) -> str:
@@ -205,3 +208,59 @@ def lancamentos_de_hoje(filial, dia=None):
             .annotate(tem_foto=ExpressionWrapper(
                 Q(vendedor__avatar__isnull=False), output_field=BooleanField()))
             .order_by("-fim"))
+
+
+def _instante_entre(outros, posicao):
+    """O `na_fila_desde` que põe alguém na `posicao` (1…N) de uma fila que,
+    sem ele, é `outros`. `None` quando não cabe um instante entre os vizinhos.
+
+    Não há número de posição guardado (entrega 1): um número precisaria ser
+    renumerado a cada saída, e renumerar sob concorrência é onde as filas se
+    perdem. Estritamente entre os vizinhos, e não igual a um deles: no empate
+    quem decide é o `pk`, e aí a pessoa podia cair do lado errado.
+    """
+    if posicao == 1:
+        return outros[0].na_fila_desde - _MICRO
+    if posicao == len(outros) + 1:
+        return outros[-1].na_fila_desde + _MICRO
+    antes, depois = outros[posicao - 2].na_fila_desde, outros[posicao - 1].na_fila_desde
+    if depois - antes < 2 * _MICRO:
+        return None
+    return antes + (depois - antes) / 2
+
+
+def _espacar(outros) -> None:
+    """Dois microssegundos entre cada um, na ordem de agora, a partir do
+    primeiro: abre lugar para encaixar quando os vizinhos estão colados.
+    Só roda sob a trava da loja."""
+    base = outros[0].na_fila_desde
+    for i, lugar in enumerate(outros):
+        lugar.na_fila_desde = base + 2 * i * _MICRO
+        lugar.save(update_fields=["na_fila_desde"])
+
+
+def mover(autor, filial, pessoa_id, posicao, *, observacao, request=None):
+    """Põe quem está na fila na `posicao` escolhida pelo gerente (C3)."""
+    observacao = ler_observacao(observacao)
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_de_outro(autor, filial, pessoa_id)
+        if lugar.estado != Estado.NA_FILA:
+            raise Recusa(NAO_ESTA_NA_FILA)
+        fila = list(na_fila(filial))
+        if posicao is None or not 1 <= posicao <= len(fila):
+            raise Recusa(_("Escolha uma posição da fila."))
+        atual = next(i for i, l in enumerate(fila, 1) if l.pk == lugar.pk)
+        if posicao == atual:
+            raise Recusa(_("Essa pessoa já está nessa posição."))
+        outros = [l for l in fila if l.pk != lugar.pk]
+        instante = _instante_entre(outros, posicao)
+        if instante is None:
+            _espacar(outros)
+            instante = _instante_entre(outros, posicao)
+        lugar.na_fila_desde = instante
+        lugar.save(update_fields=["na_fila_desde"])
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.MOVER, observacao,
+                   f"de {atual}º para {posicao}º", _agora(),
+                   auditoria=ACOES.FILA_POSICAO_MOVIDA, alvo=_alvo(lugar, filial),
+                   request=request)

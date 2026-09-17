@@ -276,3 +276,81 @@ def test_cada_correcao_grava_o_historico_e_a_auditoria(loja):
     assert linhas[0][2] == "Almoço"
     assert all(l[3] == loja.ana.pk and l[4] == loja.gerente.pk for l in linhas)
     assert _ultima_trilha().detalhe == "motivo: foi embora"
+
+
+# --- Mudar de posição (C3) -----------------------------------------------------
+
+def _ordem(loja):
+    from fila.estado import na_fila
+
+    return [l.pessoa_id for l in na_fila(loja.matriz)]
+
+
+@pytest.fixture
+def fila_de_quatro(loja):
+    from fila.acoes import bater_ponto
+
+    loja.caio = pessoa_na_loja("caio", loja.empresa, loja.matriz)
+    loja.dora = pessoa_na_loja("dora", loja.empresa, loja.matriz)
+    for p in (loja.ana, loja.bia, loja.caio, loja.dora):
+        bater_ponto(p, loja.matriz)
+    return loja
+
+
+@pytest.mark.parametrize("quem, posicao, esperada", [
+    ("dora", 1, ["dora", "ana", "bia", "caio"]),
+    ("ana", 4, ["bia", "caio", "dora", "ana"]),
+    ("dora", 2, ["ana", "dora", "bia", "caio"]),
+    ("ana", 3, ["bia", "caio", "ana", "dora"]),
+])
+def test_mover_para_a_posicao_escolhida(fila_de_quatro, quem, posicao, esperada):
+    from fila.correcoes import mover
+    from fila.models import CorrecaoNaFila
+
+    loja = fila_de_quatro
+    pessoa = getattr(loja, quem)
+    antes = _ordem(loja).index(pessoa.pk) + 1
+    mover(loja.gerente, loja.matriz, pessoa.pk, posicao, observacao="chegou antes")
+    assert _ordem(loja) == [getattr(loja, n).pk for n in esperada]
+    correcao = CorrecaoNaFila.irrestritos.get()
+    assert (correcao.acao, correcao.detalhe) == ("mover", f"de {antes}º para {posicao}º")
+    assert _ultima_trilha().acao == "fila_posicao_movida"
+
+
+def test_mover_com_vizinhos_no_mesmo_instante_reespaca_a_fila(fila_de_quatro):
+    from fila.correcoes import mover
+    from fila.models import LugarNaFila
+
+    loja = fila_de_quatro
+    instante = LugarNaFila.irrestritos.order_by("na_fila_desde").first().na_fila_desde
+    LugarNaFila.irrestritos.update(na_fila_desde=instante)   # empate: o pk desempata
+    ordem = _ordem(loja)
+    mover(loja.gerente, loja.matriz, ordem[3], 2, observacao="chegou antes")
+    assert _ordem(loja) == [ordem[0], ordem[3], ordem[1], ordem[2]]
+
+
+@pytest.mark.parametrize("posicao, frase", [
+    (None, "Escolha uma posição da fila."),
+    (0, "Escolha uma posição da fila."),
+    (5, "Escolha uma posição da fila."),
+    (1, "Essa pessoa já está nessa posição."),
+])
+def test_mover_para_posicao_que_nao_serve(fila_de_quatro, posicao, frase):
+    from fila.acoes import Recusa
+    from fila.correcoes import mover
+
+    loja = fila_de_quatro
+    with pytest.raises(Recusa) as recusa:
+        mover(loja.gerente, loja.matriz, loja.ana.pk, posicao, observacao="teste ok")
+    assert recusa.value.frase == frase
+
+
+def test_so_quem_esta_na_fila_se_move(fila_de_quatro):
+    from fila.acoes import Recusa, vou_atender
+    from fila.correcoes import mover
+
+    loja = fila_de_quatro
+    vou_atender(loja.ana, loja.matriz)
+    with pytest.raises(Recusa) as recusa:
+        mover(loja.gerente, loja.matriz, loja.ana.pk, 2, observacao="teste ok")
+    assert recusa.value.frase == "Essa pessoa não está na fila."

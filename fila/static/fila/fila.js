@@ -157,6 +157,10 @@
         a.dataset.nome = dados.nome || "";
       });
     }
+    // Mudar de posição: a posição em que a pessoa já está não se escolhe.
+    folha.querySelectorAll("[data-posicao-de]").forEach(function (opcao) {
+      opcao.disabled = opcao.dataset.posicaoDe === dados.pessoa;
+    });
     folha.querySelectorAll("[data-nome]").forEach(function (n) {
       if (n.tagName !== "A") n.textContent = dados.nome || "";
     });

@@ -100,6 +100,10 @@
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Fecha o atendimento como não venda e encerra o ponto.") }}</small></span></a>
   </div>
+  <div data-para="na_fila"{% if alvo and alvo.estado != "na_fila" %} hidden{% endif %}>
+    <a class="fila-corrigir-item" href="{{ url_fila }}?folha=mover&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="mover" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
+      <span class="ci">{{ icon("arrow-up-down") }}</span><span><strong>{{ traduzir("Mudar de posição") }}</strong><small>{{ traduzir("Escolha o lugar na fila.") }}</small></span></a>
+  </div>
   {# Tirar da pausa e tirar da loja abriam direto um POST; com o motivo
      obrigatório (spec 2026-09-17), abrem a folha que pede o campo. #}
   <div data-para="em_pausa"{% if alvo and alvo.estado != "em_pausa" %} hidden{% endif %}>
@@ -143,6 +147,28 @@
   <div class="mfoot">
     <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
     <button type="submit" class="btn primary">{{ traduzir("Tirar da pausa") }}</button>
+  </div>
+</form>
+{% endcall %}
+
+{% call modal("mover", traduzir("Mudar de posição"), folha == "mover" and alvo, alvo.nome if alvo else "") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
+    {{ csrf }}<input type="hidden" name="acao" value="mover">
+    <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+    <fieldset class="fila-opcoes">
+      <legend class="msec-title">{{ traduzir("Para qual posição?") }}</legend>
+      {% for l in r.fila %}
+      {# A posição de quem está sendo movido vem desabilitada: o servidor
+         desenha para o alvo da URL, e o script acerta para o alvo do toque. #}
+      <label class="fila-opcao"><input type="radio" name="posicao" value="{{ l.posicao }}" required data-posicao-de="{{ l.pessoa_id }}"{% if alvo and l.pessoa_id == alvo.pessoa_id %} disabled{% endif %}><span>{{ l.posicao }}º · {{ l.nome }}</span></label>
+      {% endfor %}
+    </fieldset>
+    {{ motivo_da_correcao() }}
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Mudar de posição") }}</button>
   </div>
 </form>
 {% endcall %}

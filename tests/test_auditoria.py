@@ -728,6 +728,20 @@ def _cenario_fila_lancamento_corrigido():
     return email_de("dona-fila"), f"Atendimento de Zeca em {matriz}"
 
 
+def _cenario_fila_posicao_movida():
+    from contas.models import Usuario
+    from fila.acoes import bater_ponto
+    from fila.correcoes import mover
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    yara = Usuario.objects.create_user(email=email_de("yara"), password=SENHA,
+                                       nome="Yara")
+    alocar(yara, empresa_do_teste(), "vendedor", filial=matriz)
+    bater_ponto(yara, matriz)
+    mover(dona, matriz, yara.pk, 1, observacao="chegou antes")
+    return email_de("dona-fila"), f"Yara em {matriz}"
+
+
 def _cenario_fila_cadastro_criado():
     cliente = _cliente_logado("dona-cad", permissoes=("fila_ver", "fila_cadastros"))
     cliente.post(reverse("fila_grupos"), {"acao": "criar", "nome": "Sofás",
@@ -818,6 +832,7 @@ _CENARIOS = {
     "FILA_ATENDIMENTO_FECHADO": _cenario_fila_atendimento_fechado,
     "FILA_PAUSA_ENCERRADA": _cenario_fila_pausa_encerrada,
     "FILA_LANCAMENTO_CORRIGIDO": _cenario_fila_lancamento_corrigido,
+    "FILA_POSICAO_MOVIDA": _cenario_fila_posicao_movida,
     "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
     "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,

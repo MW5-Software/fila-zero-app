@@ -545,3 +545,30 @@ def test_as_folhas_de_correcao_pedem_o_motivo(loja):
         aberta = html[html.index(f'id="folha-{folha}"'):]
         aberta = aberta[:aberta.index("</form>")]
         assert 'name="motivo_da_correcao"' in aberta and "required" in aberta, folha
+
+
+def test_gerente_move_pela_folha_sem_javascript(loja):
+    from fila.estado import na_fila
+
+    ana, bia = logado("ana"), logado("bia")
+    _agir(ana, acao="ponto")
+    _agir(bia, acao="ponto")
+    gil = logado("gil")
+    corrigir = _html(gil, f"/fila?folha=corrigir&pessoa={loja.bia.pk}")
+    assert "?folha=mover&amp;pessoa=" in corrigir or "?folha=mover&pessoa=" in corrigir
+    folha = _html(gil, f"/fila?folha=mover&pessoa={loja.bia.pk}")
+    aberta = folha[folha.index('id="folha-mover"'):]
+    aberta = aberta[:aberta.index("</form>")]
+    assert 'name="posicao" value="1"' in aberta and 'name="motivo_da_correcao"' in aberta
+    _agir(gil, acao="mover", pessoa=str(loja.bia.pk), posicao="1",
+          motivo_da_correcao="chegou antes")
+    assert [l.pessoa_id for l in na_fila(loja.matriz)] == [loja.bia.pk, loja.ana.pk]
+
+
+def test_posicao_forjada_no_post_nao_derruba(loja):
+    _agir(logado("ana"), acao="ponto")
+    gil = logado("gil")
+    resposta = _agir(gil, acao="mover", pessoa=str(loja.ana.pk), posicao="²",
+                     motivo_da_correcao="teste ok")
+    assert resposta.status_code == 302
+    assert "Escolha uma posição da fila." in _html(gil)
