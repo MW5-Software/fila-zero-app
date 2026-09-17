@@ -194,35 +194,43 @@ class TestSoAMW5AbreConta:
         assert Usuario.objects.get(email="outro@teste.com").nivel != Nivel.TITULAR
 
 
-class TestCriarSaiuDaTelaDeEmpresas:
-    """**Um caminho só para criar empresa**, e ele passa pelo titular.
+class TestOsDoisCaminhosDeCriarEmpresa:
+    """**A PRIMEIRA empresa nasce com a conta; as outras, na tela de
+    Empresas** (17/09/2026).
 
-    A tela de Empresas tinha o próprio "Nova empresa". Com uma conta por
-    empresa, o que ela criava era uma empresa SEM DONO — ninguém a abre, ela
-    fica na lista sem nada explicando o que falta nela, e o titular que
-    deveria ser o dono nunca soube que ela existe.
+    A tela de Empresas já teve o próprio "Nova empresa", e ele saiu em
+    09/09/2026: com uma empresa por conta, o que ela criava era uma empresa
+    SEM DONO, e o titular que deveria ser o dono nunca soube que ela existe.
 
-    Dois caminhos para o mesmo cadastro também divergem: o campo que entrasse
-    num apareceria no outro semanas depois, ou nunca.
+    Com várias empresas por conta, a segunda precisa nascer em algum lugar, e
+    o botão voltou — só para a MW5, e escolhendo a conta. Os dois caminhos
+    são o MESMO cadastro (`plataforma.views_empresa.campos_do_cadastro` e
+    `criar_do_post`), e por isso não divergem: o campo que entrar num aparece
+    no outro.
     """
 
-    def test_a_tela_de_empresas_nao_oferece_criar(self, mw5):
+    def test_a_tela_de_empresas_oferece_criar_para_a_mw5(self, mw5):
         html = logado(mw5).get(reverse("empresa")).content.decode()
 
-        assert "Nova empresa" not in html
-        assert 'data-open-modal="empresa-criar"' not in html
+        assert "Nova empresa" in html
+        assert 'data-open-modal="empresa-criar"' in html
 
-    def test_o_post_de_criar_na_tela_de_empresas_nao_cria(self, mw5):
-        """Esconder o botão não é fechar o caminho — o POST vem do cliente, e
-        a rota continua de pé para editar e remover."""
-        antes = Empresa.objects.count()
+    def test_a_empresa_criada_la_pode_ja_nascer_com_a_conta(self, mw5):
+        """O que faltava no caminho antigo: dizer de quem ela é."""
+        from contas.models import Nivel, Usuario
 
+        titular = Usuario.objects.filter(nivel=Nivel.TITULAR).first()
+        if titular is None:
+            titular = Usuario.objects.create_user(
+                email="dono-caminho@teste.com", password=SENHA,
+                nivel=Nivel.TITULAR)
         logado(mw5).post(reverse("empresa"), {
-            "acao": "criar", "razao_social": "Pela Porta dos Fundos Ltda"})
+            "acao": "criar", "razao_social": "Segunda Da Conta Ltda",
+            "dono": str(titular.pk)})
 
-        assert Empresa.objects.count() == antes
-        assert not Empresa.objects.filter(
-            razao_social="Pela Porta dos Fundos Ltda").exists()
+        nova = Empresa.objects.get(razao_social="Segunda Da Conta Ltda")
+        assert nova.dono_id == titular.pk
+        assert nova.conta_id == titular.guid
 
 
 class TestOModalJaAbreEmTitular:
