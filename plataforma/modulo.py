@@ -50,21 +50,17 @@ MODULO_CONTA = ModuloSpec(
 
 MODULO_EMPRESA = ModuloSpec(
     chave="empresa",
-    #: **"Empresa", no singular — e a terceira vez que este rótulo muda.**
+    #: **"Empresas", no plural — e a quarta vez que este rótulo muda.**
     #:
-    #: Ele era singular quando a instalação era de UM cliente e a tela editava
-    #: uma linha só. Virou plural quando o portal passou a atender várias e a
-    #: tela virou lista, porque era o único item da barra que discordava da
-    #: tela para onde aponta.
+    #: Singular quando a instalação era de UM cliente e a tela editava uma
+    #: linha só; plural quando o portal passou a atender várias; singular de
+    #: novo em 09/09/2026, porque a conta tinha UMA empresa e, para o titular
+    #: — quase todo mundo que abre este menu —, a tela era o cadastro dela.
     #:
-    #: Agora volta ao singular por um motivo diferente dos dois: **uma conta
-    #: tem UMA empresa**. Para o titular — que é quase todo mundo que abre
-    #: este menu — a tela é o cadastro da empresa dele, e não uma lista.
-    #:
-    #: A MW5 continua vendo várias, e para ela o plural continuaria certo.
-    #: Um rótulo por nível seria mecanismo novo no menu para resolver uma
-    #: palavra, e o singular é o que vale para quem mais lê.
-    rotulo=_("Empresa"),
+    #: Plural de novo desde 17/09/2026: a conta tem várias empresas, e a tela
+    #: é a lista delas para os dois níveis que a abrem. O rótulo acompanha a
+    #: tela para onde aponta, que é a regra que valeu nas quatro vezes.
+    rotulo=_("Empresas"),
     icone="card",
     #: **Cadastro, e não Administração** — o par de `usuarios`, e pelo mesmo
 #: motivo: o cadastro da empresa é dado do cliente, como o produto e a

@@ -73,3 +73,44 @@ def test_a_tela_nao_cadastra_empresa(conta_com_duas):
     mesmo cadastro divergem no primeiro campo novo."""
     html = conta_com_duas["dele"].get(reverse("conta")).content.decode()
     assert "Nova empresa" not in html
+
+
+@pytest.mark.django_db
+def test_o_titular_que_ja_existia_ganha_a_permissao():
+    """A permissão do titular é DIRETA, e vem de `contas.fabrica.aplicar` no
+    momento em que o nível é gravado: quem já era titular não passa por lá de
+    novo, e a tela nasceria inalcançável justamente para quem ela existe.
+
+    A função da migração é exercitada direto, com os modelos de verdade: o
+    que ela precisa provar é a REGRA (acrescenta a quem é titular, não toca
+    em mais ninguém, e não reescreve o resto das permissões).
+    """
+    from django.apps import apps as apps_reais
+    from django.db import connection
+
+    migracao = __import__("contas.migrations.0006_titular_ganha_conta_ver",
+                          fromlist=["_dar_conta_ver"])
+
+    titular = Usuario.objects.create_user(
+        email="titular-antigo@teste.com", password=SENHA, nivel=Nivel.TITULAR)
+    aplicar(titular, Nivel.TITULAR)
+    titular.user_permissions.remove(*titular.user_permissions.filter(
+        codename="conta_ver"))
+    membro = Usuario.objects.create_user(
+        email="membro-antigo@teste.com", password=SENHA, nivel=Nivel.MEMBRO,
+        dono=titular)
+    antes = set(titular.user_permissions.values_list("codename", flat=True))
+    assert "conta_ver" not in antes
+
+    class _Editor:
+        """O mínimo que a migração lê do `schema_editor`: o banco em que ela
+        está rodando."""
+
+        def __init__(self, conexao):
+            self.connection = conexao
+
+    migracao._dar_conta_ver(apps_reais, _Editor(connection))
+
+    depois = set(titular.user_permissions.values_list("codename", flat=True))
+    assert depois == antes | {"conta_ver"}
+    assert not membro.user_permissions.exists()
