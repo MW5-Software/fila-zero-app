@@ -659,11 +659,11 @@ def _dados_do_post(request) -> dict[str, str]:
         campo for campo in CAMPOS if campo not in CONEXAO)
     dados = {nome: request.POST.get(nome, "").strip()
              for nome, _resto, _resto in editaveis}
-    # Escolha fechada: valor fora das opções vira o PADRÃO, e não erro nem
-    # coluna com lixo. É o mesmo cuidado do `id_do_post` com id forjado.
-    bruto = request.POST.get("fluxo_da_fila", "")
-    dados["fluxo_da_fila"] = (bruto if bruto in FluxoDaFila.values
-                              else FluxoDaFila.VOLTA)
+    # Escolha fechada, conferida pelo MODEL: `Empresa.save` chama
+    # `full_clean`, que recusa valor fora das opções, e a tela mostra a frase
+    # (`_frase_da_recusa`). Normalizar aqui também seria a segunda cópia da
+    # mesma regra — e a cópia que alguém esqueceria de mudar junto.
+    dados["fluxo_da_fila"] = request.POST.get("fluxo_da_fila", "").strip()
     return dados
 
 

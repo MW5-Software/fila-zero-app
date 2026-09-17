@@ -846,15 +846,18 @@ class TestOFluxoDaFilaDaEmpresa:
         alvo.refresh_from_db()
         assert alvo.fluxo_da_fila == FluxoDaFila.ESPERA
 
-    def test_valor_forjado_nao_troca_o_fluxo(self, titular):
+    def test_valor_forjado_e_recusado_pelo_model(self, titular):
+        """Quem recusa é o `full_clean` do `Empresa.save`, e não a tela: o
+        POST vem do cliente, e a tela nunca é a única porta."""
         from plataforma.models import Empresa, FluxoDaFila
 
         alvo = Empresa.objects.get(razao_social="Normadin Ltda")
-        titular.post(reverse("empresa"), {
+        resposta = titular.post(reverse("empresa"), {
             "acao": "salvar", "empresa": str(alvo.pk),
             "razao_social": "Normadin Ltda", "fluxo_da_fila": "voar"})
         alvo.refresh_from_db()
         assert alvo.fluxo_da_fila == FluxoDaFila.VOLTA
+        assert "fluxo" in resposta.content.decode().lower()
 
     def test_a_tela_oferece_as_duas_opcoes(self, titular):
         html = titular.get(reverse("empresa")).content.decode()
