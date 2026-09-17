@@ -36,6 +36,10 @@ MODULO = ModuloSpec(
         Atalho(rotulo=_("Tipos de pausa"), rota="/fila/pausas",
                permissao="fila.cadastros", grupo="Cadastro",
                pai="Fila da vez"),
+        # Solto no grupo Vendas, ao lado da fila, e não como submenu: um
+        # `pai` "Fila da vez" criaria um segundo item com o nome do módulo.
+        Atalho(rotulo=_("Histórico da fila"), rota="/fila/historico",
+               permissao="fila.gerenciar", grupo="Vendas"),
         Atalho(rotulo=_("Metas"), rota="/fila/metas",
                permissao="fila.metas", grupo="Cadastro",
                pai="Fila da vez"),
