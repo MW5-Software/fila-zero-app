@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 140 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 141 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -388,6 +388,15 @@ O que custa quando se esquece:
   `logout_href=None` no cabeçalho). A pergunta é um diálogo POR CIMA da
   página (`plataforma/sair.py`, em `overlays` de toda tela do shell), aberto
   pelo `plataforma/static/plataforma/sair.js`.
+- **Trocar de empresa ou de loja pergunta no mesmo diálogo** desde
+  18/09/2026 (`plataforma/trocar.py`, `plataforma/static/plataforma/
+  contexto.js`): o servidor desenha os DOIS formulários, e o script mostra o
+  que vale, escreve o nome escolhido como TEXTO e põe o id no campo. O
+  `change` é ouvido na fase de CAPTURA, senão o `data-auto-enviar` do design
+  system navega antes. O campo volta na hora ao valor de agora — cancelar não
+  pode deixar o cabeçalho mostrando um lugar onde a pessoa não está. O
+  diálogo só existe para quem tem o que trocar, e quem age continua sendo o
+  POST de `empresa_trocar`/`filial_trocar`.
 - **A página `/sair` continua sendo a única que age**, e o item do menu é um
   `<a href="/sair">` de verdade: sem JavaScript cai na confirmação de sempre
   (`comum/confirmacao.py`), e o POST continua sendo o único jeito de sair.
@@ -675,7 +684,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 140 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 141 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

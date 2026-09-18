@@ -1601,3 +1601,9 @@ msgstr "Estás conectado como %(nome)s y vas a tener que entrar de nuevo."
 
 msgid "Você vai precisar entrar de novo."
 msgstr "Vas a tener que entrar de nuevo."
+
+msgid "Trocar de lugar?"
+msgstr "¿Cambiar de lugar?"
+
+msgid "Você vai passar a trabalhar em"
+msgstr "Vas a pasar a trabajar en"

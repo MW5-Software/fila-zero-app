@@ -568,3 +568,16 @@
     color: var(--primary);
   }
 }
+
+/* O rodapé do diálogo de trocar de lugar (`plataforma/trocar.py`).
+
+   São DOIS formulários (o da empresa e o da loja) e um "Cancelar" solto, e o
+   `<form>` é bloco: sem isto o "Confirmar" caía numa linha abaixo do
+   "Cancelar". O `.form` do design system ainda dá ritmo vertical entre
+   irmãos, e campo oculto conta como irmão — o mesmo tropeço do `.itemrow`
+   acima. */
+#trocar-dialogo .mfoot form { display: inline-flex; margin: 0; }
+#trocar-dialogo .mfoot form > * + * { margin-top: 0; }
+/* O `hidden` do formulário que não vale tem de vencer o `display` acima —
+   senão os dois "Confirmar" aparecem juntos. */
+#trocar-dialogo .mfoot form[hidden] { display: none; }

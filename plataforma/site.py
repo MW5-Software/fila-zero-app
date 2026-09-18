@@ -200,30 +200,60 @@ class SiteDoProduto(Site):
         if "path" not in argumentos and self.pedido is not None:
             argumentos["path"] = self.pedido.path
 
-        # **O diálogo de sair vai junto, em toda tela do shell** (18/09/2026):
-        # o gatilho dele é o menu do avatar, que está em todas — e um gatilho
-        # sem destino é um botão que não faz nada. Aqui, e não em cada view,
-        # pelo mesmo motivo de `montar_site` existir: eram dezenove cópias.
-        if (argumentos.get("user") is not None and argumentos.get("chrome", True)
+        pagina = super().page(**argumentos)
+
+        # **Os dois diálogos do cabeçalho vão junto, em toda tela do shell**
+        # (18/09/2026): o de sair e o de trocar de lugar. Os gatilhos deles
+        # (o menu do avatar e os seletores de contexto) estão em todas as
+        # telas, e gatilho sem destino é botão que não faz nada. Aqui, e não
+        # em cada view, pelo mesmo motivo de `montar_site` existir: eram
+        # dezenove cópias.
+        #
+        # **Depois de a página existir**, e não antes: é o cabeçalho que
+        # resolve quais níveis de contexto essa pessoa tem, e resolvê-los de
+        # novo aqui seria a mesma consulta duas vezes.
+        if (argumentos.get("user") is not None and pagina.header is not None
                 and self.logout_href and self.pedido is not None):
             from .sair import modal_de_sair
 
-            atual = argumentos.get("overlays") or []
-            # `overlays` chega como lista (as telas com modais), como
-            # componente só (uma folha) ou vazio. Acrescentar, nunca
-            # substituir: a folha da tela é dela.
-            anteriores = list(atual) if isinstance(atual, (list, tuple)) \
-                else [atual]
-            # O nome de quem está logado é o mesmo que o cabeçalho mostra —
-            # o retrato do design system (`display_name`/`name`), e não o
+            # O nome de quem está logado é o mesmo que o cabeçalho mostra — o
+            # retrato do design system (`display_name`/`name`), e não o
             # `Usuario` do banco: quem monta a página passa o retrato.
             quem = argumentos["user"]
-            argumentos["overlays"] = [*anteriores, modal_de_sair(
+            extras = [modal_de_sair(
                 self.pedido, action=self.logout_href,
                 nome=(getattr(quem, "display_name", "")
                       or getattr(quem, "name", "") or ""))]
+            extras += self._dialogo_da_troca(pagina.header)
 
-        return super().page(**argumentos)
+            # `overlays` já pode trazer as folhas da tela. Acrescentar, nunca
+            # substituir: a folha da tela é dela.
+            atual = pagina.overlays or []
+            anteriores = list(atual) if isinstance(atual, (list, tuple)) \
+                else [atual]
+            pagina.overlays = [*anteriores, *extras]
+        return pagina
+
+    def _dialogo_da_troca(self, cabecalho) -> list:
+        """O diálogo de trocar de lugar, com UM formulário por nível que a
+        pessoa realmente pode trocar — nenhum, e ele não existe.
+
+        Quem alcança uma empresa e uma loja não tem faixa de contexto no
+        cabeçalho, e um diálogo sem gatilho seria peso morto em toda página.
+        Quem alcança várias lojas de UMA empresa não recebe o formulário da
+        empresa: um campo `empresa_id` numa página de quem não troca de
+        empresa é um campo que ninguém esperava ali.
+        """
+        from .contexto import CHAVE, CHAVE_EMPRESA
+        from .trocar import modal_de_troca
+
+        niveis = getattr(cabecalho.context, "levels", ())
+        tem = {nivel.name for nivel in niveis if nivel.options}
+        if not tem:
+            return []
+        return [modal_de_troca(self.pedido,
+                               com_empresa=CHAVE_EMPRESA in tem,
+                               com_filial=CHAVE in tem)]
 
 
 def montar_site(request) -> Site:
@@ -252,6 +282,7 @@ def montar_site(request) -> Site:
         stylesheets=[versionado(FOLHA_DA_CASA), "/tema-da-empresa.css"],
         # Do site, e não de uma tela: o menu do avatar está em todas, e é ele
         # que abre o diálogo de sair.
-        scripts=[versionado("/static/plataforma/sair.js")],
+        scripts=[versionado("/static/plataforma/sair.js"),
+                 versionado("/static/plataforma/contexto.js")],
         context_line=context_line,
     )
