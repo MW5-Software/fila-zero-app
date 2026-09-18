@@ -179,8 +179,35 @@ def test_aviso_de_esquecidos(rede):
                                 pessoa=rede.caio,
                                 entrada=timezone.now() - timedelta(days=2))
     html = _html(logado("gil"), periodo="hoje")
-    assert "Presença aberta" in html
+    # "Presença", e não "Presença aberta": o título do aviso já diz que ficou
+    # aberto, e a frase inteira se repetia em cada linha.
+    assert "Presença" in html
     assert "Caio" in html
+
+
+def test_o_aviso_agrupa_por_loja_e_por_pessoa(rede):
+    """Cinco pendências davam cinco linhas com o mesmo nome de loja e cinco
+    vezes o mesmo link. Agora a loja aparece uma vez, com um link só, e a
+    pessoa uma vez, com o que ficou aberto ao lado."""
+    from fila.models import Atendimento, Presenca
+
+    anteontem = timezone.now() - timedelta(days=2)
+    do_caio = Presenca.irrestritos.create(
+        empresa=rede.empresa, filial=rede.centro, pessoa=rede.caio,
+        entrada=anteontem)
+    Presenca.irrestritos.create(empresa=rede.empresa, filial=rede.centro,
+                                pessoa=rede.gil, entrada=anteontem)
+    Atendimento.irrestritos.create(empresa=rede.empresa, filial=rede.centro,
+                                   vendedor=rede.caio, presenca=do_caio,
+                                   inicio=anteontem)
+    # O aviso é o único lugar da página com esses dois textos, então contar no
+    # HTML inteiro conta dentro dele.
+    html = _html(logado("sara"), periodo="hoje", loja="todas")
+
+    assert html.count("Abrir a fila desta loja") == 1, "um link por loja"
+    assert html.count("<b>Caio</b>") == 1, "uma linha por pessoa"
+    assert "Presença, Atendimento" in html
+    assert "2 pessoas com pendência em 1 loja" in html
 
 
 def test_sem_atendimento_mostra_traco_e_nao_zero_por_cento(rede):
