@@ -46,3 +46,23 @@ def test_a_pilula_so_vale_onde_o_has_vale(css):
     bloco = css.split(regra)[1].split("}")[0]
     assert "padding: 0 28px 0 34px" in bloco
     assert "border-radius: 999px" in bloco
+
+
+def test_a_lista_desenhada_por_nos_vive_dentro_do_supports(css):
+    """`appearance: base-select` é melhoria progressiva: onde o navegador não
+    a entende (Firefox e Safari, hoje), a lista tem de continuar sendo a
+    NATIVA — feia, mas funcionando. Fora do `@supports`, o `appearance` cairia
+    para `none` nesses navegadores e o seletor viraria um retângulo sem seta e
+    sem lista."""
+    assert "@supports (appearance: base-select) {" in css
+
+    bloco = css.split("@supports (appearance: base-select) {")[1]
+    for peça in ("::picker(select)", "::picker-icon", "option::checkmark"):
+        assert peça in bloco, f"{peça} escapou do @supports"
+
+
+def test_o_realce_do_teclado_acompanha_o_do_rato(css):
+    """A seta do teclado move o `:checked` dentro da lista aberta. Sem o mesmo
+    fundo do `:hover`, quem não usa rato não vê onde está."""
+    regra = ".ctx .ctx-sel option:hover,\n  .ctx .ctx-sel option:focus {"
+    assert regra in css

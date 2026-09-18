@@ -487,3 +487,84 @@
 .ctx .ctx-nivel:has(> #ctx-filial_id) {
   --ctx-icone: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5M4 9h16v11H4zM9 20v-6h6v6"/></svg>');
 }
+
+/* A lista que abre nas pílulas do contexto (18/09/2026).
+
+   A pílula ficou com a cara da casa, mas a LISTA que ela abre era a do
+   sistema operacional — fonte do Windows, cantos retos, azul do Windows — e
+   por isso parecia de outro programa. Até pouco tempo atrás não havia como
+   trocar isso sem substituir o `<select>` por um menu de `<div>`, que só
+   funciona com JavaScript: a fila é a tela de quem trabalha em pé, e ela
+   funciona sem.
+
+   `appearance: base-select` é a saída: o mesmo `<select>`, o mesmo POST, o
+   mesmo teclado — desenhado por nós. Tudo dentro do `@supports`: onde ele não
+   existe (Firefox e Safari, hoje), a lista continua sendo a nativa, que é
+   feia mas funciona. É melhoria progressiva, e não um requisito novo. */
+@supports (appearance: base-select) {
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel,
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel::picker(select) {
+    appearance: base-select;
+  }
+  /* O botão. A seta vira `::picker-icon` de verdade, então os dois gradientes
+     que a desenhavam no `background-image` saem — senão aparecem as duas. */
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 11px 0 34px;
+    background-image: none;
+  }
+  /* O triângulo cheio do navegador vira o mesmo chevron dos outros campos
+     da casa: `content: ""` apaga o desenho dele, e a máscara põe o nosso. */
+  .ctx .ctx-sel::picker-icon {
+    content: "";
+    width: 13px;
+    height: 13px;
+    background: var(--on-surface-2);
+    -webkit-mask: var(--ctx-chevron) center / contain no-repeat;
+    mask: var(--ctx-chevron) center / contain no-repeat;
+    transition: transform .15s ease;
+  }
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+    --ctx-chevron: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+  }
+  .ctx .ctx-sel:open::picker-icon { transform: rotate(180deg); }
+
+  .ctx .ctx-sel::picker(select) {
+    border: 1px solid var(--outline);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 12px 32px rgba(16, 22, 48, .18);
+    padding: 6px;
+    margin-top: 6px;
+    min-width: anchor-size(width);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .ctx .ctx-sel option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-control);
+    font-size: 13px;
+    /* O peso do BOTÃO é 600 (é um rótulo), e a lista herdava isso: as duas
+       opções saíam em negrito, e a escolhida não se distinguia. */
+    font-weight: 500;
+    color: var(--on-surface);
+  }
+  /* O `:hover` do rato e o `:checked` do teclado desenham o MESMO realce: a
+     seta do teclado move o `:checked`, e sem isto quem não usa rato não vê
+     onde está. */
+  .ctx .ctx-sel option:hover,
+  .ctx .ctx-sel option:focus { background: var(--surface-2); }
+  .ctx .ctx-sel option:checked { font-weight: 700; }
+  /* O visto do escolhido: some da esquerda (onde empurrava o texto de todas
+     as linhas) e vira a cor da marca. */
+  .ctx .ctx-sel option::checkmark {
+    order: 1;
+    margin-left: auto;
+    color: var(--primary);
+  }
+}
