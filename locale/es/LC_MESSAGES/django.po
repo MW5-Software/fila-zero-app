@@ -1592,3 +1592,40 @@ msgstr "flujo de la fila"
 
 msgid "O que acontece com o vendedor depois de lançar o atendimento."
 msgstr "Qué pasa con el vendedor después de registrar la atención."
+
+msgid "Sair do sistema?"
+msgstr "¿Salir del sistema?"
+
+msgid "Você está conectado como %(nome)s e vai precisar entrar de novo."
+msgstr "Estás conectado como %(nome)s y vas a tener que entrar de nuevo."
+
+msgid "Você vai precisar entrar de novo."
+msgstr "Vas a tener que entrar de nuevo."
+
+msgid "Trocar de lugar?"
+msgstr "¿Cambiar de lugar?"
+
+msgid "Você vai passar a trabalhar em"
+msgstr "Vas a pasar a trabajar en"
+
+msgid "ontem, %(hora)s"
+msgstr "ayer, %(hora)s"
+
+msgid "Presença"
+msgstr "Presencia"
+
+msgid "Atendimento"
+msgstr "Atención"
+
+msgid "%(quantas)d pessoa com pendência"
+msgid_plural "%(quantas)d pessoas com pendência"
+msgstr[0] "%(quantas)d persona con pendiente"
+msgstr[1] "%(quantas)d personas con pendientes"
+
+msgid "em %(quantas)d loja"
+msgid_plural "em %(quantas)d lojas"
+msgstr[0] "en %(quantas)d tienda"
+msgstr[1] "en %(quantas)d tiendas"
+
+msgid "Encerre pela fila de cada loja."
+msgstr "Cierre por la fila de cada tienda."

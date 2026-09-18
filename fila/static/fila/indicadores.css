@@ -193,3 +193,33 @@ tr.ind-eu td { background: var(--surface-2); font-weight: 700; }
   .ind-lojas > li { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ind-loja-nome { grid-column: 1 / -1; }
 }
+
+/* --- "Ficou aberto de um dia para o outro" -------------------------------
+
+   Era uma lista de bolinhas com a frase inteira repetida em cada linha
+   ("Presença aberta: Bia em Matriz, desde 17/09 14:01.") e o MESMO link em
+   todas — cinco vezes na mesma loja. Agrupado por loja e por pessoa, o que
+   sobrou em cada linha é o que muda: quem, o que ficou aberto e desde
+   quando, em colunas. */
+.ind-esq-resumo { margin: 0 0 10px; }
+.ind-esq { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ind-esq-loja {
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--outline-2);
+}
+/* O link empurrado para a ponta: ele é a AÇÃO da loja, e no meio do texto
+   parecia parte da frase. */
+.ind-esq-loja .btn { margin-left: auto; }
+.ind-esq-linhas { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.ind-esq-linhas > li {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 1.4fr) auto;
+  gap: 4px 16px; align-items: baseline;
+}
+.ind-esq-linhas time { color: var(--on-surface-2); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  /* No celular a linha vira duas: o nome em cima, o resto embaixo — três
+     colunas nessa largura cortam o nome no meio. */
+  .ind-esq-linhas > li { grid-template-columns: 1fr auto; }
+  .ind-esq-linhas > li b { grid-column: 1 / -1; }
+}

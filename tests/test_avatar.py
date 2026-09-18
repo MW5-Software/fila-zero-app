@@ -182,12 +182,14 @@ class TestATela:
         """Cada formulário da tela precisa do SEU token. Sem o da foto, o
         envio morre em 403.
 
-        São QUATRO desde 09/09/2026: foto, senha, o seletor de idioma desta
-        tela e o do CABEÇALHO, que aparece em toda página (ver
-        `tests/test_idioma.py`). O número exato é de propósito — um
-        formulário novo sem token passaria despercebido num `>= 1`."""
+        São CINCO desde 18/09/2026: foto, senha, o seletor de idioma desta
+        tela, o do CABEÇALHO (que aparece em toda página, ver
+        `tests/test_idioma.py`) e o diálogo de sair, que desde então também
+        vem em toda página do shell (`plataforma/sair.py`). O número exato é
+        de propósito — um formulário novo sem token passaria despercebido num
+        `>= 1`."""
         html = logada.get(reverse("perfil")).content.decode()
-        assert html.count("csrfmiddlewaretoken") == 4
+        assert html.count("csrfmiddlewaretoken") == 5
 
     def test_o_backend_publica_a_url_da_foto(self, logada, ana):
         from contas.backend import BackendDjango

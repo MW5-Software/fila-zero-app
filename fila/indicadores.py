@@ -237,7 +237,11 @@ def _numa_fatia(achado):
 
 @dataclass(frozen=True)
 class Esquecido:
-    o_que: str
+    #: O que ficou aberto, como CHAVE (`presenca`, `atendimento`, `pausa`) e
+    #: não como frase pronta: quem mostra é a tela, que junta os tipos da
+    #: mesma pessoa numa linha só e precisa traduzi-los no idioma de quem
+    #: olha. Frase pronta aqui sairia sempre em português.
+    tipo: str
     nome: str
     loja: object
     desde: datetime
@@ -248,9 +252,9 @@ def esquecidos(empresa, lojas, agora: "datetime | None" = None) -> "list[Esqueci
     hoje = inicio_do_dia(timezone.localdate(agora or timezone.now()))
     achados = []
     fontes = (
-        ("Presença aberta", Presenca, "pessoa", "entrada", Q(saida__isnull=True)),
-        ("Atendimento aberto", Atendimento, "vendedor", "inicio", Q(fim__isnull=True)),
-        ("Pausa aberta", Pausa, "pessoa", "inicio", Q(fim__isnull=True)),
+        ("presenca", Presenca, "pessoa", "entrada", Q(saida__isnull=True)),
+        ("atendimento", Atendimento, "vendedor", "inicio", Q(fim__isnull=True)),
+        ("pausa", Pausa, "pessoa", "inicio", Q(fim__isnull=True)),
     )
     for rotulo, model, quem, comeco, aberto in fontes:
         for linha in (model.objects.da_empresa(empresa)

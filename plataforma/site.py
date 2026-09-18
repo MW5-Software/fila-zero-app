@@ -131,7 +131,14 @@ class SiteDoProduto(Site):
         base = super().header(**argumentos)
         return HeaderDaCasa(
             breadcrumb=base.breadcrumb, context=base.context, user=base.user,
-            notifications=base.notifications, logout_href=base.logout_href,
+            notifications=base.notifications,
+            # **Sem o ícone solto de sair** (18/09/2026): ele era o quarto
+            # ícone do canto, o único sem rótulo escrito e o único que
+            # derruba a sessão de quem clica sem querer. O "Sair" desceu para
+            # o menu do avatar (`_user_info`), onde tem nome, cor de perigo e
+            # um clique a mais na frente. `Site.logout_href` continua sendo o
+            # endereço, e é de lá que o item do menu o lê.
+            logout_href=None,
             idioma=seletor(self.pedido))
 
     def _user_info(self, user):
@@ -150,8 +157,19 @@ class SiteDoProduto(Site):
         info = super()._user_info(user)
         if info is None:
             return None
-        return replace(info, menu=[DropdownItem(
-            label=_("Meu Perfil"), icon="user", href=self.account_href)])
+        itens = [DropdownItem(label=_("Meu Perfil"), icon="user",
+                              href=self.account_href)]
+        if self.logout_href:
+            # Link, e não botão: sem JavaScript ele leva à confirmação de
+            # `/sair`, que é o caminho que sobra (ver `plataforma/sair.py`).
+            # `data-sair` é o que o `sair.js` procura para abrir o diálogo em
+            # vez de trocar de página.
+            itens += [
+                DropdownItem(divider=True),
+                DropdownItem(label=_("Sair"), icon="logout", danger=True,
+                             href=self.logout_href, attrs={"data-sair": ""}),
+            ]
+        return replace(info, menu=itens)
 
     def footer(self):
         return replace(super().footer(), logo_alt=NOME_DO_PRODUTO)
@@ -181,7 +199,61 @@ class SiteDoProduto(Site):
         # pessoa está.
         if "path" not in argumentos and self.pedido is not None:
             argumentos["path"] = self.pedido.path
-        return super().page(**argumentos)
+
+        pagina = super().page(**argumentos)
+
+        # **Os dois diálogos do cabeçalho vão junto, em toda tela do shell**
+        # (18/09/2026): o de sair e o de trocar de lugar. Os gatilhos deles
+        # (o menu do avatar e os seletores de contexto) estão em todas as
+        # telas, e gatilho sem destino é botão que não faz nada. Aqui, e não
+        # em cada view, pelo mesmo motivo de `montar_site` existir: eram
+        # dezenove cópias.
+        #
+        # **Depois de a página existir**, e não antes: é o cabeçalho que
+        # resolve quais níveis de contexto essa pessoa tem, e resolvê-los de
+        # novo aqui seria a mesma consulta duas vezes.
+        if (argumentos.get("user") is not None and pagina.header is not None
+                and self.logout_href and self.pedido is not None):
+            from .sair import modal_de_sair
+
+            # O nome de quem está logado é o mesmo que o cabeçalho mostra — o
+            # retrato do design system (`display_name`/`name`), e não o
+            # `Usuario` do banco: quem monta a página passa o retrato.
+            quem = argumentos["user"]
+            extras = [modal_de_sair(
+                self.pedido, action=self.logout_href,
+                nome=(getattr(quem, "display_name", "")
+                      or getattr(quem, "name", "") or ""))]
+            extras += self._dialogo_da_troca(pagina.header)
+
+            # `overlays` já pode trazer as folhas da tela. Acrescentar, nunca
+            # substituir: a folha da tela é dela.
+            atual = pagina.overlays or []
+            anteriores = list(atual) if isinstance(atual, (list, tuple)) \
+                else [atual]
+            pagina.overlays = [*anteriores, *extras]
+        return pagina
+
+    def _dialogo_da_troca(self, cabecalho) -> list:
+        """O diálogo de trocar de lugar, com UM formulário por nível que a
+        pessoa realmente pode trocar — nenhum, e ele não existe.
+
+        Quem alcança uma empresa e uma loja não tem faixa de contexto no
+        cabeçalho, e um diálogo sem gatilho seria peso morto em toda página.
+        Quem alcança várias lojas de UMA empresa não recebe o formulário da
+        empresa: um campo `empresa_id` numa página de quem não troca de
+        empresa é um campo que ninguém esperava ali.
+        """
+        from .contexto import CHAVE, CHAVE_EMPRESA
+        from .trocar import modal_de_troca
+
+        niveis = getattr(cabecalho.context, "levels", ())
+        tem = {nivel.name for nivel in niveis if nivel.options}
+        if not tem:
+            return []
+        return [modal_de_troca(self.pedido,
+                               com_empresa=CHAVE_EMPRESA in tem,
+                               com_filial=CHAVE in tem)]
 
 
 def montar_site(request) -> Site:
@@ -208,5 +280,9 @@ def montar_site(request) -> Site:
         # `:root`, e quem vem por último ganha. Só as do menu, e vazia para
         # quem não tem aparência própria.
         stylesheets=[versionado(FOLHA_DA_CASA), "/tema-da-empresa.css"],
+        # Do site, e não de uma tela: o menu do avatar está em todas, e é ele
+        # que abre o diálogo de sair.
+        scripts=[versionado("/static/plataforma/sair.js"),
+                 versionado("/static/plataforma/contexto.js")],
         context_line=context_line,
     )

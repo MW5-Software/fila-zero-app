@@ -205,8 +205,10 @@ def test_esquecidos_so_o_que_virou_o_dia(loja):
                                 pessoa=loja.bia, entrada=local(2026, 9, 15, 9))
     atendimento(loja, loja.titular, local(2026, 9, 14, 17), None)
     lista = esquecidos(loja.empresa, [loja.matriz], agora)
-    assert sorted((e.o_que, e.nome) for e in lista) == [
-        ("Atendimento aberto", "sylvia@teste.com"), ("Presença aberta", "Ana")]
+    # Chave, e não frase: quem escreve "Presença" na tela é a view, que junta
+    # os tipos da mesma pessoa numa linha só e traduz no idioma de quem olha.
+    assert sorted((e.tipo, e.nome) for e in lista) == [
+        ("atendimento", "sylvia@teste.com"), ("presenca", "Ana")]
 
 
 def test_lojas_com_relatorio_pelo_alcance(loja):
@@ -300,7 +302,22 @@ def test_esquecido_mostra_a_hora_local(loja):
         empresa=loja.empresa, filial=loja.matriz, pessoa=loja.ana,
         entrada=local(2026, 9, 14, 21, 30))
     presenca.refresh_from_db()
-    assert _desde(presenca.entrada) == "14/09 21:30"
+    assert _desde(presenca.entrada) == "14/09, 21:30"
+
+
+def test_o_esquecido_de_ontem_diz_ontem(loja):
+    """Quase todo esquecido é de ontem, e uma data obriga quem lê a contar
+    quantos dias faz. Mais antigo que isso, a data volta a ser a informação."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from fila.views_indicadores import _desde
+
+    ontem = timezone.localtime() - timedelta(days=1)
+    assert _desde(ontem).startswith("ontem, ")
+    assert _desde(ontem - timedelta(days=1)).startswith(
+        (ontem - timedelta(days=1)).strftime("%d/%m,"))
 
 
 def test_versao_muda_quando_um_lancamento_de_hoje_e_corrigido(loja):

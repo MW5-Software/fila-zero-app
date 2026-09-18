@@ -428,3 +428,156 @@
 /* O idioma em uso: a view marca com `pri`, que o design system não conhece, e
    os dois botões saíam iguais — sem dizer qual está valendo. */
 .perfil-idioma .btn.pri { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+/* ---------------------------------------------------------------------------
+   O contexto do cabeçalho em pílulas (18/09/2026).
+
+   O meio do cabeçalho era "Empresa [    ] Filial [    ]": dois rótulos
+   escritos e duas caixas cinzas de canto reto, quatro peças para dizer uma
+   coisa só — onde a pessoa está. Com a conta tendo várias empresas (spec de
+   17/09/2026) isso passou a aparecer para quase todo titular, e não só para
+   a MW5.
+
+   Aqui os rótulos saem da TELA (não do HTML: continuam sendo o `<label>` que
+   o leitor de tela lê antes do nome) e viram ícone dentro do campo, e o
+   campo vira pílula. Continuam sendo os dois `<select>` do design system —
+   **a troca continua funcionando sem JavaScript**, que é o motivo de não ter
+   virado um menu desenhado por nós.
+
+   Correção na folha desta casa, e não no `nucleo`, que é porte verbatim. */
+.ctx { gap: 8px; }
+
+/* O rótulo sai de vista sem sair do documento — a mesma receita da
+   `.visually-hidden` do design system. `label` só: sem opção para trocar, o
+   rótulo é o próprio texto da tela ("Filial: Matriz") e some por engano. */
+.ctx .ctx-nivel > label.ctx-rotulo {
+  position: absolute;
+  width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* O ícone no lugar do rótulo. `:has` é a trava: num navegador que não o
+   entende, nada disto vale — nem o ícone, nem o espaço reservado para ele —
+   e o seletor continua o de antes, inteiro. */
+.ctx .ctx-nivel:has(> .ctx-sel) { position: relative; }
+.ctx .ctx-nivel:has(> .ctx-sel)::before {
+  content: "";
+  position: absolute; left: 12px; top: 50%;
+  width: 14px; height: 14px;
+  transform: translateY(-50%);
+  background: var(--on-surface-2);
+  pointer-events: none;
+  -webkit-mask: var(--ctx-icone) center / contain no-repeat;
+  mask: var(--ctx-icone) center / contain no-repeat;
+}
+.ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+  height: 34px;
+  max-width: 230px;
+  padding: 0 28px 0 34px;
+  border-radius: 999px;
+  font-size: 13px;
+  background-position: right 13px center, right 8px center;
+}
+/* Pelo id do seletor, e não pela ordem dos níveis: quem alcança uma empresa
+   só e várias filiais tem UM nível na faixa, e ele é o da filial. Pela ordem,
+   essa pessoa veria o ícone de empresa na loja dela. */
+.ctx .ctx-nivel:has(> #ctx-empresa_id) {
+  --ctx-icone: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V6l7-3 7 3v15M9 21v-4h6v4"/></svg>');
+}
+.ctx .ctx-nivel:has(> #ctx-filial_id) {
+  --ctx-icone: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5M4 9h16v11H4zM9 20v-6h6v6"/></svg>');
+}
+
+/* A lista que abre nas pílulas do contexto (18/09/2026).
+
+   A pílula ficou com a cara da casa, mas a LISTA que ela abre era a do
+   sistema operacional — fonte do Windows, cantos retos, azul do Windows — e
+   por isso parecia de outro programa. Até pouco tempo atrás não havia como
+   trocar isso sem substituir o `<select>` por um menu de `<div>`, que só
+   funciona com JavaScript: a fila é a tela de quem trabalha em pé, e ela
+   funciona sem.
+
+   `appearance: base-select` é a saída: o mesmo `<select>`, o mesmo POST, o
+   mesmo teclado — desenhado por nós. Tudo dentro do `@supports`: onde ele não
+   existe (Firefox e Safari, hoje), a lista continua sendo a nativa, que é
+   feia mas funciona. É melhoria progressiva, e não um requisito novo. */
+@supports (appearance: base-select) {
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel,
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel::picker(select) {
+    appearance: base-select;
+  }
+  /* O botão. A seta vira `::picker-icon` de verdade, então os dois gradientes
+     que a desenhavam no `background-image` saem — senão aparecem as duas. */
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 11px 0 34px;
+    background-image: none;
+  }
+  /* O triângulo cheio do navegador vira o mesmo chevron dos outros campos
+     da casa: `content: ""` apaga o desenho dele, e a máscara põe o nosso. */
+  .ctx .ctx-sel::picker-icon {
+    content: "";
+    width: 13px;
+    height: 13px;
+    background: var(--on-surface-2);
+    -webkit-mask: var(--ctx-chevron) center / contain no-repeat;
+    mask: var(--ctx-chevron) center / contain no-repeat;
+    transition: transform .15s ease;
+  }
+  .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+    --ctx-chevron: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+  }
+  .ctx .ctx-sel:open::picker-icon { transform: rotate(180deg); }
+
+  .ctx .ctx-sel::picker(select) {
+    border: 1px solid var(--outline);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 12px 32px rgba(16, 22, 48, .18);
+    padding: 6px;
+    margin-top: 6px;
+    min-width: anchor-size(width);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .ctx .ctx-sel option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-control);
+    font-size: 13px;
+    /* O peso do BOTÃO é 600 (é um rótulo), e a lista herdava isso: as duas
+       opções saíam em negrito, e a escolhida não se distinguia. */
+    font-weight: 500;
+    color: var(--on-surface);
+  }
+  /* O `:hover` do rato e o `:checked` do teclado desenham o MESMO realce: a
+     seta do teclado move o `:checked`, e sem isto quem não usa rato não vê
+     onde está. */
+  .ctx .ctx-sel option:hover,
+  .ctx .ctx-sel option:focus { background: var(--surface-2); }
+  .ctx .ctx-sel option:checked { font-weight: 700; }
+  /* O visto do escolhido: some da esquerda (onde empurrava o texto de todas
+     as linhas) e vira a cor da marca. */
+  .ctx .ctx-sel option::checkmark {
+    order: 1;
+    margin-left: auto;
+    color: var(--primary);
+  }
+}
+
+/* O rodapé do diálogo de trocar de lugar (`plataforma/trocar.py`).
+
+   São DOIS formulários (o da empresa e o da loja) e um "Cancelar" solto, e o
+   `<form>` é bloco: sem isto o "Confirmar" caía numa linha abaixo do
+   "Cancelar". O `.form` do design system ainda dá ritmo vertical entre
+   irmãos, e campo oculto conta como irmão — o mesmo tropeço do `.itemrow`
+   acima. */
+#trocar-dialogo .mfoot form { display: inline-flex; margin: 0; }
+#trocar-dialogo .mfoot form > * + * { margin-top: 0; }
+/* O `hidden` do formulário que não vale tem de vencer o `display` acima —
+   senão os dois "Confirmar" aparecem juntos. */
+#trocar-dialogo .mfoot form[hidden] { display: none; }

@@ -16,12 +16,14 @@ via o vendedor do Centro no ranking, sem coluna que dissesse a loja.
 from __future__ import annotations
 
 import math
+from datetime import timedelta
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext
 
@@ -355,24 +357,84 @@ def _filtros(request, periodo, permitidas, loja, empresas=(), empresa=None):
 
 def _desde(instante) -> str:
     """A hora no fuso da loja: o banco devolve em UTC, e 21:30 de São Paulo
-    aparecia como 00:30 do dia seguinte (revisão final, 15/09/2026)."""
+    aparecia como 00:30 do dia seguinte (revisão final, 15/09/2026).
+
+    "Ontem, 14:01" quando foi ontem: é o caso da imensa maioria dos
+    esquecidos, e uma data escrita obriga quem lê a calcular quantos dias
+    faz. Mais antigo que isso, a data — aí o número é a informação.
+    """
     from django.utils import timezone
 
-    return timezone.localtime(instante).strftime("%d/%m %H:%M")
+    local = timezone.localtime(instante)
+    ontem = timezone.localdate() - timedelta(days=1)
+    if local.date() == ontem:
+        return _("ontem, %(hora)s") % {"hora": local.strftime("%H:%M")}
+    return local.strftime("%d/%m, %H:%M")
+
+
+#: O que ficou aberto, em uma palavra. A frase inteira ("Presença aberta")
+#: era repetida linha a linha embaixo de um título que já diz "ficou aberto".
+_ETIQUETAS = {
+    "presenca": gettext_lazy("Presença"),
+    "atendimento": gettext_lazy("Atendimento"),
+    "pausa": gettext_lazy("Pausa"),
+}
+
+
+def _por_loja_e_pessoa(lista):
+    """As pendências agrupadas: uma linha por PESSOA, dentro da loja dela.
+
+    Bia com a presença e o atendimento abertos eram duas linhas iguais, com o
+    mesmo nome, a mesma loja e o mesmo link — e o link se repetia em todas,
+    cinco vezes na mesma loja. Agrupado, a loja aparece uma vez, com um link
+    só, e a pessoa uma vez, com o que ficou aberto ao lado.
+    """
+    lojas: dict = {}
+    for esquecido in lista:
+        pessoas = lojas.setdefault(esquecido.loja, {})
+        tipos, desde = pessoas.get(esquecido.nome, ([], esquecido.desde))
+        tipos.append(esquecido.tipo)
+        # O mais antigo manda: é ele que diz há quanto tempo aquilo está lá.
+        pessoas[esquecido.nome] = (tipos, min(desde, esquecido.desde))
+    return lojas
+
+
+def _linha_do_esquecido(nome, tipos, desde) -> str:
+    etiquetas = ", ".join(str(_ETIQUETAS.get(t, t)) for t in tipos)
+    return format_html(
+        '<li><b>{}</b><span>{}</span><time>{}</time></li>',
+        nome, etiquetas, _desde(desde))
 
 
 def _esquecidos(lista):
     if not lista:
         return ""
+    lojas = _por_loja_e_pessoa(lista)
+    pendencias = sum(len(pessoas) for pessoas in lojas.values())
     # O link troca para a loja DO ITEM e volta para a fila: apontar para
     # `/fila` abria a loja da sessão, onde a pessoa esquecida não está
-    # (revisão final, 15/09/2026).
-    itens = format_html_join("", '<li>{}: {} em {}, desde {}. <a href="{}">{}</a></li>', (
-        (e.o_que, e.nome, e.loja, _desde(e.desde),
-         trocar_e_abrir_a_fila(e.loja), _("Abrir a fila desta loja")) for e in lista))
+    # (revisão final, 15/09/2026). Um por LOJA, e não por linha.
+    blocos = format_html_join("", '<li><div class="ind-esq-loja"><strong>{}</strong>'
+                              '<a class="btn sm" href="{}">{}</a></div>'
+                              '<ul class="ind-esq-linhas">{}</ul></li>', (
+        (str(loja), trocar_e_abrir_a_fila(loja), _("Abrir a fila desta loja"),
+         format_html_join("", "{}", (
+             (_linha_do_esquecido(nome, tipos, desde),)
+             for nome, (tipos, desde) in sorted(
+                 pessoas.items(), key=lambda p: p[1][1]))))
+        for loja in sorted(lojas, key=str) for pessoas in [lojas[loja]]))
+    resumo = ngettext("%(quantas)d pessoa com pendência",
+                      "%(quantas)d pessoas com pendência",
+                      pendencias) % {"quantas": pendencias}
+    lojas_texto = ngettext("em %(quantas)d loja", "em %(quantas)d lojas",
+                           len(lojas)) % {"quantas": len(lojas)}
     return Alert(tone="warn", title=_("Ficou aberto de um dia para o outro"),
                  attrs={"data-esquecidos": ""},
-                 message=Raw(html=format_html("<ul>{}</ul>", itens)))
+                 message=Raw(html=format_html(
+                     '<p class="ind-esq-resumo">{} {}. {}</p>'
+                     '<ul class="ind-esq">{}</ul>',
+                     resumo, lojas_texto,
+                     _("Encerre pela fila de cada loja."), blocos)))
 
 
 _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
