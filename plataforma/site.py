@@ -131,7 +131,14 @@ class SiteDoProduto(Site):
         base = super().header(**argumentos)
         return HeaderDaCasa(
             breadcrumb=base.breadcrumb, context=base.context, user=base.user,
-            notifications=base.notifications, logout_href=base.logout_href,
+            notifications=base.notifications,
+            # **Sem o ícone solto de sair** (18/09/2026): ele era o quarto
+            # ícone do canto, o único sem rótulo escrito e o único que
+            # derruba a sessão de quem clica sem querer. O "Sair" desceu para
+            # o menu do avatar (`_user_info`), onde tem nome, cor de perigo e
+            # um clique a mais na frente. `Site.logout_href` continua sendo o
+            # endereço, e é de lá que o item do menu o lê.
+            logout_href=None,
             idioma=seletor(self.pedido))
 
     def _user_info(self, user):
@@ -150,8 +157,19 @@ class SiteDoProduto(Site):
         info = super()._user_info(user)
         if info is None:
             return None
-        return replace(info, menu=[DropdownItem(
-            label=_("Meu Perfil"), icon="user", href=self.account_href)])
+        itens = [DropdownItem(label=_("Meu Perfil"), icon="user",
+                              href=self.account_href)]
+        if self.logout_href:
+            # Link, e não botão: sem JavaScript ele leva à confirmação de
+            # `/sair`, que é o caminho que sobra (ver `plataforma/sair.py`).
+            # `data-sair` é o que o `sair.js` procura para abrir o diálogo em
+            # vez de trocar de página.
+            itens += [
+                DropdownItem(divider=True),
+                DropdownItem(label=_("Sair"), icon="logout", danger=True,
+                             href=self.logout_href, attrs={"data-sair": ""}),
+            ]
+        return replace(info, menu=itens)
 
     def footer(self):
         return replace(super().footer(), logo_alt=NOME_DO_PRODUTO)
@@ -181,6 +199,30 @@ class SiteDoProduto(Site):
         # pessoa está.
         if "path" not in argumentos and self.pedido is not None:
             argumentos["path"] = self.pedido.path
+
+        # **O diálogo de sair vai junto, em toda tela do shell** (18/09/2026):
+        # o gatilho dele é o menu do avatar, que está em todas — e um gatilho
+        # sem destino é um botão que não faz nada. Aqui, e não em cada view,
+        # pelo mesmo motivo de `montar_site` existir: eram dezenove cópias.
+        if (argumentos.get("user") is not None and argumentos.get("chrome", True)
+                and self.logout_href and self.pedido is not None):
+            from .sair import modal_de_sair
+
+            atual = argumentos.get("overlays") or []
+            # `overlays` chega como lista (as telas com modais), como
+            # componente só (uma folha) ou vazio. Acrescentar, nunca
+            # substituir: a folha da tela é dela.
+            anteriores = list(atual) if isinstance(atual, (list, tuple)) \
+                else [atual]
+            # O nome de quem está logado é o mesmo que o cabeçalho mostra —
+            # o retrato do design system (`display_name`/`name`), e não o
+            # `Usuario` do banco: quem monta a página passa o retrato.
+            quem = argumentos["user"]
+            argumentos["overlays"] = [*anteriores, modal_de_sair(
+                self.pedido, action=self.logout_href,
+                nome=(getattr(quem, "display_name", "")
+                      or getattr(quem, "name", "") or ""))]
+
         return super().page(**argumentos)
 
 
@@ -208,5 +250,8 @@ def montar_site(request) -> Site:
         # `:root`, e quem vem por último ganha. Só as do menu, e vazia para
         # quem não tem aparência própria.
         stylesheets=[versionado(FOLHA_DA_CASA), "/tema-da-empresa.css"],
+        # Do site, e não de uma tela: o menu do avatar está em todas, e é ele
+        # que abre o diálogo de sair.
+        scripts=[versionado("/static/plataforma/sair.js")],
         context_line=context_line,
     )

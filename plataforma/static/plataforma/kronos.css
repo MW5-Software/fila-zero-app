@@ -428,3 +428,62 @@
 /* O idioma em uso: a view marca com `pri`, que o design system não conhece, e
    os dois botões saíam iguais — sem dizer qual está valendo. */
 .perfil-idioma .btn.pri { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+/* ---------------------------------------------------------------------------
+   O contexto do cabeçalho em pílulas (18/09/2026).
+
+   O meio do cabeçalho era "Empresa [    ] Filial [    ]": dois rótulos
+   escritos e duas caixas cinzas de canto reto, quatro peças para dizer uma
+   coisa só — onde a pessoa está. Com a conta tendo várias empresas (spec de
+   17/09/2026) isso passou a aparecer para quase todo titular, e não só para
+   a MW5.
+
+   Aqui os rótulos saem da TELA (não do HTML: continuam sendo o `<label>` que
+   o leitor de tela lê antes do nome) e viram ícone dentro do campo, e o
+   campo vira pílula. Continuam sendo os dois `<select>` do design system —
+   **a troca continua funcionando sem JavaScript**, que é o motivo de não ter
+   virado um menu desenhado por nós.
+
+   Correção na folha desta casa, e não no `nucleo`, que é porte verbatim. */
+.ctx { gap: 8px; }
+
+/* O rótulo sai de vista sem sair do documento — a mesma receita da
+   `.visually-hidden` do design system. `label` só: sem opção para trocar, o
+   rótulo é o próprio texto da tela ("Filial: Matriz") e some por engano. */
+.ctx .ctx-nivel > label.ctx-rotulo {
+  position: absolute;
+  width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* O ícone no lugar do rótulo. `:has` é a trava: num navegador que não o
+   entende, nada disto vale — nem o ícone, nem o espaço reservado para ele —
+   e o seletor continua o de antes, inteiro. */
+.ctx .ctx-nivel:has(> .ctx-sel) { position: relative; }
+.ctx .ctx-nivel:has(> .ctx-sel)::before {
+  content: "";
+  position: absolute; left: 12px; top: 50%;
+  width: 14px; height: 14px;
+  transform: translateY(-50%);
+  background: var(--on-surface-2);
+  pointer-events: none;
+  -webkit-mask: var(--ctx-icone) center / contain no-repeat;
+  mask: var(--ctx-icone) center / contain no-repeat;
+}
+.ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+  height: 34px;
+  max-width: 230px;
+  padding: 0 28px 0 34px;
+  border-radius: 999px;
+  font-size: 13px;
+  background-position: right 13px center, right 8px center;
+}
+/* Pelo id do seletor, e não pela ordem dos níveis: quem alcança uma empresa
+   só e várias filiais tem UM nível na faixa, e ele é o da filial. Pela ordem,
+   essa pessoa veria o ícone de empresa na loja dela. */
+.ctx .ctx-nivel:has(> #ctx-empresa_id) {
+  --ctx-icone: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V6l7-3 7 3v15M9 21v-4h6v4"/></svg>');
+}
+.ctx .ctx-nivel:has(> #ctx-filial_id) {
+  --ctx-icone: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5M4 9h16v11H4zM9 20v-6h6v6"/></svg>');
+}

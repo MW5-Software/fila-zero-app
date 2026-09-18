@@ -1592,3 +1592,12 @@ msgstr "flujo de la fila"
 
 msgid "O que acontece com o vendedor depois de lançar o atendimento."
 msgstr "Qué pasa con el vendedor después de registrar la atención."
+
+msgid "Sair do sistema?"
+msgstr "¿Salir del sistema?"
+
+msgid "Você está conectado como %(nome)s e vai precisar entrar de novo."
+msgstr "Estás conectado como %(nome)s y vas a tener que entrar de nuevo."
+
+msgid "Você vai precisar entrar de novo."
+msgstr "Vas a tener que entrar de nuevo."

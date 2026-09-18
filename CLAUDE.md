@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 138 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 140 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -372,6 +372,29 @@ O que custa quando se esquece:
 - **O logo perde a margem na gravação** (`plataforma/logo.py`): a barra ajusta o
   arquivo inteiro à caixa, e borda branca no arquivo é desenho menor no menu.
   É por isso que o Pillow é dependência de PRODUÇÃO desta base.
+
+### O cabeçalho: o lugar e o sair (18/09/2026)
+
+- **O contexto é duas pílulas com ícone**, e não "Empresa [ ] Filial [ ]": os
+  rótulos saem da TELA, não do HTML (continuam sendo o `<label>` que o leitor
+  de tela lê). São os mesmos dois `<select>` do design system, e a troca
+  continua funcionando sem JavaScript. Tudo em
+  `plataforma/static/plataforma/kronos.css`, com `:has` como trava — num
+  navegador que não o entende, o seletor fica o de antes, inteiro. O ícone é
+  escolhido pelo id (`#ctx-empresa_id`, `#ctx-filial_id`), nunca pela ordem:
+  quem alcança uma empresa só tem UM nível na faixa, e ele é o da filial.
+- **Sair saiu do canto e foi para o menu do avatar**, em vermelho, junto de
+  "Meu Perfil" (`plataforma/site.py::_user_info`; o ícone solto morreu com
+  `logout_href=None` no cabeçalho). A pergunta é um diálogo POR CIMA da
+  página (`plataforma/sair.py`, em `overlays` de toda tela do shell), aberto
+  pelo `plataforma/static/plataforma/sair.js`.
+- **A página `/sair` continua sendo a única que age**, e o item do menu é um
+  `<a href="/sair">` de verdade: sem JavaScript cai na confirmação de sempre
+  (`comum/confirmacao.py`), e o POST continua sendo o único jeito de sair.
+  `tests/test_sair_sem_sair_da_pagina.py` cobra as duas pontas.
+- Abaixo de 1000px o design system esconde a faixa de contexto inteira
+  (`.ctx-mid { display: none }`): no celular ninguém troca de empresa nem de
+  loja pelo cabeçalho. É de lá, e continua como estava.
 
 ### O que sustenta a permissão
 
@@ -652,7 +675,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 138 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 140 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O
