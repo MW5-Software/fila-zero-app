@@ -429,6 +429,13 @@ O que custa quando se esquece:
     caixa flex (`justify-content: center`), com o `::picker-icon` FORA do fluxo
     (absoluto): como item flex ele entraria na conta e centraria o grupo
     [texto + ícone], deixando o texto fora do centro.
+  - **O `position` vai no `.ctx-nivel`, NUNCA no campo.** O ícone da esquerda é
+    um `::before` do contêiner desenhado por baixo do campo, e um elemento
+    posicionado pinta DEPOIS dos pseudo-elementos dele: pôr `position:
+    relative` no `<select>` (foi o que eu fiz, para ancorar o chevron) faz o
+    campo cobrir o ícone. Ele continua no documento, e a tela mostra a pílula
+    sem ícone — foi assim que o cliente viu, e
+    `test_o_campo_da_pilula_nao_e_posicionado` é o que impede a volta.
 
   As duas medidas saíram do navegador (Chrome headless, print lido por
   script): o par com +0px do centro do cabeçalho e a letra com +0px do centro

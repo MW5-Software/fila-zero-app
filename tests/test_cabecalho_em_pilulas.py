@@ -63,6 +63,22 @@ def test_a_pilula_so_vale_onde_o_has_vale(css):
     assert "border-radius: 999px" in bloco
 
 
+def test_o_campo_da_pilula_nao_e_posicionado(css):
+    """O ícone da esquerda é um `::before` do `.ctx-nivel`, e o campo é
+    desenhado POR BAIXO dele.
+
+    **Custou um ícone sumido** (18/09/2026). Para ancorar o chevron absoluto eu
+    pus `position: relative` no CAMPO, e aí a ordem de pintura mudou: um
+    elemento posicionado pinta DEPOIS dos pseudo-elementos do contêiner, então o
+    campo passou a cobrir o ícone. O ícone continuava no documento — o cliente
+    viu a pílula sem ele e reclamou, com razão. Quem ancora o chevron é o
+    `.ctx-nivel`, que já é posicionado.
+    """
+    bloco = _bloco(css, "min-width: 240px")
+    assert "position: relative" not in bloco
+    assert "position: absolute" not in bloco
+
+
 def test_o_texto_fica_no_meio_da_pilula(css):
     """18/09/2026, pedido do cliente: o nome no MEIO da pílula.
 

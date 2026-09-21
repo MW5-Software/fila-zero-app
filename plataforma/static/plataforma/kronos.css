@@ -460,7 +460,11 @@
    entende, nada disto vale — nem o ícone, nem o espaço reservado para ele —
    e o seletor continua o de antes, inteiro. */
 .ctx .ctx-nivel:has(> .ctx-sel) { position: relative; }
-.ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel { position: relative; }
+/* O seletor NÃO é posicionado de propósito: quem ancora o chevron absoluto é o
+   `.ctx-nivel` (a linha acima), e pôr `position: relative` no campo o faria
+   pintar DEPOIS do ícone — que é um `::before` deste contêiner e mora embaixo
+   dele. O ícone continuava no documento, coberto pelo campo: foi assim que ele
+   "sumiu" em 18/09/2026, e é por isso que a regra fica escrita aqui. */
 .ctx .ctx-nivel:has(> .ctx-sel)::before {
   content: "";
   position: absolute; left: 12px; top: 50%;
