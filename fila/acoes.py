@@ -206,6 +206,8 @@ def _exigir_na_fila(lugar) -> None:
         raise Recusa(_("Você já está atendendo."))
     if lugar.estado == Estado.EM_PAUSA:
         raise Recusa(_("Você está em pausa. Volte para a fila primeiro."))
+    if lugar.estado == Estado.EM_ESPERA:
+        raise Recusa(_("Você está em espera. Entre na fila primeiro."))
 
 
 def vou_atender(pessoa, filial) -> None:

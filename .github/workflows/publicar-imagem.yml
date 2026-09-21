@@ -24,8 +24,16 @@ concurrency:
 
 jobs:
   publicar:
-    # Só publica se a suíte de testes tiver terminado com sucesso.
-    if: github.event.workflow_run.conclusion == 'success'
+    # Só publica se a suíte de testes tiver terminado com sucesso
+    # — e só o que veio de PUSH neste repositório. `branches: main` lá em
+    # cima filtra o NOME do branch, e a suíte roda também em `pull_request`:
+    # um PR de fork com um branch chamado "main" passaria por ele e subiria
+    # para a GHCR e para a homologação com os segredos daqui (auditoria de
+    # 21/09/2026).
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_repository.full_name == github.repository
 
     runs-on: ubuntu-latest
 

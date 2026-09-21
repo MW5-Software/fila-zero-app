@@ -18,8 +18,11 @@ def conta():
     """Titular, empresa com Matriz + Norte + Sul, e os cargos de fábrica."""
     from plataforma.models import Empresa, Filial
 
+    from contas.fabrica import aplicar
+
     titular = Usuario.objects.create_user(
         email="dono-lugar@teste.com", password="x", nivel=Nivel.TITULAR)
+    aplicar(titular, Nivel.TITULAR)
     empresa = Empresa.objects.create(razao_social="Alfa Ltda", dono=titular)
     norte = Filial.objects.create(empresa=empresa, nome="Norte", apelido="Norte")
     sul = Filial.objects.create(empresa=empresa, nome="Sul", apelido="Sul")
@@ -227,6 +230,17 @@ class TestEscalada:
                                 cargo=cargos["gerente"])
         assert pode_dar(gil, empresa, norte, cargos["vendedor"])
         assert pode_dar(gil, empresa, sul, cargos["vendedor"])
+
+    def test_titular_nao_da_cargo_com_permissao_que_ele_nao_tem(self, conta):
+        """A trava 2 vale para o titular também: um cargo que carregue o que
+        ele não tem (um cargo gravado antes desta trava, por exemplo) não sai
+        das mãos dele."""
+        from django.contrib.auth.models import Permission
+
+        titular, empresa, _n, _s, cargos = conta
+        cargos["supervisor"].permissoes.add(
+            Permission.objects.get(codename="parametros_editar"))
+        assert not pode_dar(titular, empresa, None, cargos["supervisor"])
 
     def test_gerente_nao_administra_supervisor_nem_a_si_mesmo(self, conta):
         titular, empresa, norte, _s, cargos = conta

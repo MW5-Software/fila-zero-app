@@ -169,6 +169,22 @@ class TestNinguemSePromove:
             "usuarios_editar"}
 
 
+    def test_as_caixas_nao_oferecem_o_que_o_titular_nao_tem(self, cenario):
+        """`parametros.editar` é da MW5 (`contas/fabrica.py`). Oferecido ao
+        titular num cargo, bastava criar o cargo e dá-lo a um membro para a
+        configuração da instalação inteira sair das mãos da MW5."""
+        html = cenario["cliente"].get(reverse("cargos")).content.decode()
+        assert 'value="parametros_editar"' not in html
+
+    def test_permissao_que_o_titular_nao_tem_forjada_no_post_nao_entra(
+            self, cenario):
+        _post(cenario, acao="criar", rotulo="Configurador", alcance="empresa",
+              permissoes=["parametros_editar", "usuarios_editar"])
+        cargo = Cargo.objects.get(conta=cenario["dono_alfa"],
+                                  nome="configurador")
+        assert set(cargo.permissoes.values_list("codename", flat=True)) == {
+            "usuarios_editar"}
+
 class TestRemover:
     def test_cargo_de_fabrica_nao_se_remove(self, cenario):
         gerente = Cargo.objects.get(conta=cenario["dono_alfa"], nome="gerente")
