@@ -26,7 +26,18 @@ sobre QUAL algoritmo está em uso (não há um só `assert` sobre
 troca não tira força de teste nenhum, só tempo de parede.
 """
 
-from .settings import *  # noqa: F401,F403
+import os
+
+# **A suíte é desenvolvimento**, e sem dizer nada ela roda em DEBUG. Sem esta
+# linha, `pytest` sem `DJANGO_DEBUG=1` exportado dava cerca de 540 falhas, todas
+# 301 para HTTPS: fora de DEBUG, `config.settings` liga o redirecionamento e
+# os cookies seguros, e o `Client` de teste fala HTTP. `setdefault`, e não
+# atribuição: quem exporta `DJANGO_DEBUG=0` para provar o caminho de produção
+# continua podendo. Antes do `import` abaixo, porque é lá que a variável é
+# lida.
+os.environ.setdefault("DJANGO_DEBUG", "1")
+
+from .settings import *  # noqa: E402,F401,F403
 
 #: `MD5PasswordHasher`, não `PBKDF2PasswordHasher` (o de produção, o
 #: `AUTH_PASSWORD_HASHERS[0]` padrão do Django): é o hasher rápido que a
