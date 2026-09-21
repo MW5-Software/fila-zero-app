@@ -11,14 +11,16 @@ services:
     # até o banco — antes não havia nenhum, e quem precisava olhar os dados
     # (ou apontar um cliente de banco) tinha que inventar o seu.
     #
-    # 5436: a 5432 é de outro projeto desta máquina, a 5433 é do KRONOS.net,
-    # a 5434 é do Portal de Vendas e a 5435 é da KRONOS base. Apontar para a
-    # porta errada abre o banco de outro produto sem nenhum aviso — e todos têm as MESMAS tabelas da
-    # base, o que torna o engano invisível até alguém gravar no lugar errado.
+    # 5440: a tabela das portas desta máquina está no README ("Como rodar").
+    # Era a 5436 até 21/09/2026, e o kronos-api2 tinha tomado a 5435 e a
+    # 5436 em `0.0.0.0`: o `compose up` falhava, ou o `KRONOS_BANCO` abria o
+    # banco dele. Apontar para a porta errada abre o banco de outro produto
+    # sem nenhum aviso — e todos têm as MESMAS tabelas da base, o que torna o
+    # engano invisível até alguém gravar no lugar errado.
     #
     # Preso a `127.0.0.1`: o banco atende quem está na máquina, e não a rede.
     ports:
-      - "127.0.0.1:5436:5432"
+      - "127.0.0.1:5440:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kronos -d kronos"]
       interval: 5s

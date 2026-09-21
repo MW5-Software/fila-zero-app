@@ -14,7 +14,8 @@ O que veio da base continua descrito nas seções 1 a 9 do `CLAUDE.md`.
 ## O que o Fila Zero pôs por cima (entrega 1, 15/09/2026)
 
 - A identidade: marca "Fila Zero", `pyproject` `fila-zero`, imagem
-  `ghcr.io/mw5-software/fila-zero`, portas 5436/8005.
+  `ghcr.io/mw5-software/fila-zero`, portas 5436/8005 (o banco foi para a
+  5440 em 21/09/2026: o kronos-api2 tinha tomado a 5436).
 - O app `fila/`, com as permissões `fila.ver`, `fila.participar`,
   `fila.gerenciar` e `fila.cadastros` nos cargos de fábrica e no titular.
 - A raiz `/` passa por `fila.views.inicio`, que manda para `/fila` quem só tem a
