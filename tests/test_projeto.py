@@ -9,6 +9,8 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 from django.conf import settings
 
 
@@ -20,6 +22,18 @@ def test_o_projeto_passa_no_check_do_django():
     from django.core.management import call_command
 
     call_command("check")
+
+
+@pytest.mark.django_db
+def test_nenhuma_migracao_esquecida():
+    """Model mudado sem a migração passa em todo o resto da suíte — o banco
+    de teste nasce das migrações, e uma troca de `choices` nem muda o
+    esquema — e só aparece no `migrate` de alguém. O Fila Zero ficou assim
+    com a `fila/0006` (auditoria de 21/09/2026). O CI confere o mesmo antes
+    da suíte; aqui é para quem roda na máquina saber antes do push."""
+    from django.core.management import call_command
+
+    call_command("makemigrations", "--check", "--dry-run", verbosity=0)
 
 
 def test_sem_secret_key_e_sem_debug_o_settings_recusa_subir():
@@ -51,6 +65,28 @@ def test_sem_secret_key_e_sem_debug_o_settings_recusa_subir():
     assert "ImproperlyConfigured" in resultado.stderr
     assert "DJANGO_SECRET_KEY" in resultado.stderr
 
+
+
+def test_a_suite_roda_sem_exportar_django_debug():
+    """`pytest` sem `DJANGO_DEBUG=1` dava cerca de 540 falhas, todas 301 para
+    HTTPS: fora de DEBUG, `config.settings` liga o redirecionamento e os
+    cookies seguros, e o `Client` de teste fala HTTP. Só o CI e o CLAUDE.md
+    sabiam da variável (auditoria de 21/09/2026). `config.settings_test`
+    assume DEBUG quando ninguém disse nada — e respeita quem disse."""
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("DJANGO_DEBUG", "DJANGO_SECRET_KEY", "DJANGO_ALLOWED_HOSTS")
+    }
+    env["DJANGO_SETTINGS_MODULE"] = "config.settings_test"
+    resultado = subprocess.run(
+        [sys.executable, "-c",
+         "import django; django.setup(); from django.conf import settings; "
+         "print(settings.DEBUG, settings.SECURE_SSL_REDIRECT)"],
+        cwd=str(settings.BASE_DIR), env=env, capture_output=True, text=True,
+    )
+    assert resultado.returncode == 0, resultado.stderr
+    assert resultado.stdout.split() == ["True", "False"]
 
 class TestOBancoESempreOMesmo:
     """Postgres em toda instalação, inclusive em desenvolvimento e na suíte.
