@@ -57,8 +57,8 @@ def test_a_pilula_tem_largura_para_o_nome_da_empresa(css):
     regra = ".ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {"
     bloco = css.split(regra)[1].split("}")[0]
 
-    assert "min-width: 200px" in bloco
-    assert "max-width: 340px" in bloco
+    assert "min-width: 240px" in bloco
+    assert "max-width: 420px" in bloco
     assert "max-width: 230px" not in bloco
 
 

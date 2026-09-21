@@ -97,10 +97,14 @@ class TestOMembroSeChamaUsuario:
         assert Nivel.MEMBRO.label == "Usuário"
         assert int(Nivel.MEMBRO) == 2, "o número é o que o banco guarda"
 
-    def test_a_tabela_escreve_usuario(self, cenario):
+    def test_a_tela_escreve_usuario_e_nao_membro(self, cenario):
+        """O rótulo continua onde o NÍVEL é escrito — no seletor da ficha, de
+        onde a MW5 escolhe —, e não na tabela: a coluna dela virou CARGO em
+        18/09/2026 (pedido do cliente), porque "Usuário" para quase todo mundo
+        não respondia "quem é o gerente aqui?"."""
         html = _entrar("mw5@teste.com").get(reverse("usuarios")).content.decode()
-        ana = [l for l in _linhas(html) if "ana@teste.com" in l]
-        assert ana and "Usuário" in ana[0]
+
+        assert ">Usuário</option>" in html
         assert "Membro" not in html
 
 
