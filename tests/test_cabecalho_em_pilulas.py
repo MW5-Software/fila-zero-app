@@ -37,15 +37,44 @@ def test_o_icone_e_escolhido_pelo_id_do_seletor(css):
     assert ".ctx .ctx-nivel:first-child" not in css
 
 
+def _bloco(css: str, marcador: str) -> str:
+    """O bloco da regra que contém `marcador`: do `{` anterior ao `}` seguinte.
+
+    Ler o bloco pelo marcador, e não pela posição da regra no arquivo, é o que
+    deixa estas asserções apontarem para a regra certa mesmo com a folha
+    reordenada — e há três regras com o MESMO seletor do seletor do contexto
+    (a de fora, a do `@supports` e a do chevron por variável).
+    """
+    i = css.index(marcador)
+    return css[css.rindex("{", 0, i) + 1:css.index("}", i)]
+
+
 def test_a_pilula_so_vale_onde_o_has_vale(css):
     """O espaço do ícone (`padding-left`) mora na MESMA regra que desenha o
     ícone. Num navegador sem `:has` as duas somem juntas, e o seletor fica o
     de antes — e não um campo com um buraco à esquerda."""
-    regra = ".ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {"
-    assert regra in css
-    bloco = css.split(regra)[1].split("}")[0]
-    assert "padding: 0 28px 0 34px" in bloco
+    # Pelo marcador de dentro do bloco, e não pela posição do seletor: há mais
+    # de uma regra com este seletor (o chevron por variável, o `position` do
+    # chevron absoluto), e a primeira do arquivo deixou de ser a da pílula.
+    bloco = _bloco(css, "min-width: 240px")
+    # O vão dos dois lados é o mesmo desde 18/09/2026 (`0 34px`): o ícone mora à
+    # esquerda e o chevron à direita, e é ele que deixa o texto no meio.
+    assert "padding: 0 34px" in bloco
     assert "border-radius: 999px" in bloco
+
+
+def test_o_texto_fica_no_meio_da_pilula(css):
+    """18/09/2026, pedido do cliente: o nome no MEIO da pílula.
+
+    São DOIS caminhos, e os dois precisam disto: o seletor nativo é uma caixa
+    de texto (`text-align`), e o desenhado por nós (`appearance: base-select`)
+    é uma caixa flex (`justify-content`). E o chevron sai do fluxo: como item
+    flex, ele entraria na conta e centraria o grupo [texto + ícone] — deixando
+    o TEXTO fora do centro, que foi exatamente o defeito relatado.
+    """
+    assert "text-align: center" in _bloco(css, "min-width: 240px")
+    assert "justify-content: center" in _bloco(css, "display: inline-flex")
+    assert "position: absolute" in _bloco(css, "right: 13px")
 
 
 def test_a_pilula_tem_largura_para_o_nome_da_empresa(css):
@@ -54,8 +83,7 @@ def test_a_pilula_tem_largura_para_o_nome_da_empresa(css):
     e um nome curto encolhia a pílula até virar um selo com um vão do lado. O
     `max-width` continua: nome de sessenta caracteres não pode empurrar o
     avatar e o idioma para fora da tela."""
-    regra = ".ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {"
-    bloco = css.split(regra)[1].split("}")[0]
+    bloco = _bloco(css, "min-width: 240px")
 
     assert "min-width: 240px" in bloco
     assert "max-width: 420px" in bloco

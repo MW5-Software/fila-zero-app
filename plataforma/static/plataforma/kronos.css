@@ -460,6 +460,7 @@
    entende, nada disto vale — nem o ícone, nem o espaço reservado para ele —
    e o seletor continua o de antes, inteiro. */
 .ctx .ctx-nivel:has(> .ctx-sel) { position: relative; }
+.ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel { position: relative; }
 .ctx .ctx-nivel:has(> .ctx-sel)::before {
   content: "";
   position: absolute; left: 12px; top: 50%;
@@ -476,11 +477,23 @@
    até virar um selo, e sobrava um vão no meio do cabeçalho. O `max-width`
    continua, porque um nome de 60 caracteres não pode empurrar o avatar e o
    idioma para fora da tela. */
+/* O texto no MEIO da pílula (18/09/2026, pedido do cliente).
+
+   O ícone fica colado à esquerda e o chevron à direita, e o vão dos dois passa
+   a ser o MESMO (34px): com o vão de 28px à direita e 34px à esquerda, o nome
+   da empresa encostava no ícone e sobrava espaço do outro lado — a pílula
+   parecia torta mesmo com o par no centro do cabeçalho.
+
+   `text-align` resolve o seletor NATIVO, que é uma caixa de texto; o
+   `justify-content` do bloco do `@supports` resolve o desenhado por nós
+   (`appearance: base-select`), que é uma caixa FLEX — nos dois caminhos o que
+   se vê é o nome no meio da pílula. */
 .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
   height: 34px;
   min-width: 240px;
   max-width: 420px;
-  padding: 0 28px 0 34px;
+  padding: 0 34px;
+  text-align: center;
   border-radius: 999px;
   font-size: 13px;
   background-position: right 13px center, right 8px center;
@@ -551,9 +564,17 @@ header .wrap > .h-actions { grid-area: 1 / 3; justify-self: end; }
   .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
     display: inline-flex;
     align-items: center;
+    /* O chevron é o `::picker-icon`, e ele sai do fluxo: dentro de um flex ele
+       seria um item a mais, e centrar o grupo [texto + ícone] deixaria o
+       TEXTO fora do centro — que é justamente o que o cliente viu. */
+    justify-content: center;
     gap: 8px;
-    padding: 0 11px 0 34px;
+    padding: 0 34px;
     background-image: none;
+  }
+  .ctx .ctx-sel::picker-icon {
+    position: absolute;
+    right: 13px;
   }
   /* O triângulo cheio do navegador vira o mesmo chevron dos outros campos
      da casa: `content: ""` apaga o desenho dele, e a máscara põe o nosso. */

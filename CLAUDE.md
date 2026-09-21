@@ -410,15 +410,29 @@ O que custa quando se esquece:
   `<a href="/sair">` de verdade: sem JavaScript cai na confirmação de sempre
   (`comum/confirmacao.py`), e o POST continua sendo o único jeito de sair.
   `tests/test_sair_sem_sair_da_pagina.py` cobra as duas pontas.
-- **As pílulas ficam no CENTRO do cabeçalho, e mais largas** (18/09/2026,
-  pedido do cliente). O `.ctx` do design system já centra o par DENTRO da
-  faixa do meio, e o problema era a faixa: numa linha flex, com a migalha de um
-  tamanho e as ações de outro, o centro dela não é o do cabeçalho. O
-  `header .wrap` virou uma grade de três colunas (1fr, 2fr, 1fr) na folha desta
-  casa, com o botão do menu e a migalha dividindo a primeira — e os
-  `minmax(0, …)` estão lá porque o `1fr` do CSS nunca encolhe abaixo do
-  conteúdo, e o `.crumb` do design system se recusa a esticar. Sem os dois, o
-  par sai do centro (medido no navegador: 35px à direita).
+- **As pílulas ficam no CENTRO do cabeçalho, mais largas, e com o nome no meio
+  da pílula** (18/09/2026, pedido do cliente — foram três pedidos, e o terceiro
+  só ficou claro depois de o cliente ver o segundo: "não centralizou dentro da
+  pílula").
+  - **O par no centro:** o `.ctx` do design system já centra o par DENTRO da
+    faixa do meio, e o problema era a faixa — numa linha flex, com a migalha de
+    um tamanho e as ações de outro, o centro dela não é o do cabeçalho. O
+    `header .wrap` virou uma grade de três colunas (1fr, 2fr, 1fr) na folha
+    desta casa, com o botão do menu e a migalha dividindo a primeira. Os
+    `minmax(0, …)` estão lá porque o `1fr` do CSS nunca encolhe abaixo do
+    conteúdo, e o `.crumb` do design system se recusa a esticar: sem os dois, o
+    par sai 35px à direita do centro.
+  - **O nome no meio da pílula:** o ícone fica à esquerda e o chevron à
+    direita, com o MESMO vão dos dois lados (`padding: 0 34px`). São dois
+    caminhos e os dois precisam disto — o seletor nativo é caixa de texto
+    (`text-align: center`) e o desenhado por nós (`appearance: base-select`) é
+    caixa flex (`justify-content: center`), com o `::picker-icon` FORA do fluxo
+    (absoluto): como item flex ele entraria na conta e centraria o grupo
+    [texto + ícone], deixando o texto fora do centro.
+
+  As duas medidas saíram do navegador (Chrome headless, print lido por
+  script): o par com +0px do centro do cabeçalho e a letra com +0px do centro
+  da pílula.
 - Abaixo de 1000px o design system esconde a faixa de contexto inteira
   (`.ctx-mid { display: none }`): no celular ninguém troca de empresa nem de
   loja pelo cabeçalho. É de lá, e continua como estava.
