@@ -81,7 +81,7 @@
       </div>
       <ol class="metas-lista">
         {% for l in linhas %}
-        <li class="metas-grade metas-linha{% if l.travado %} travada{% endif %}" data-pessoa="{{ l.pk }}" data-vendido="{{ l.vendido_centavos }}" data-esperado="{{ l.ritmo.esperado if l.ritmo.esperado is not none else '' }}" data-mes="{{ estado_do_mes }}">
+        <li class="metas-grade metas-linha{% if l.travado %} travada{% endif %}" data-pessoa="{{ l.pk }}" data-vendido="{{ l.vendido_centavos }}" data-esperado="{{ l.ritmo.esperado if l.ritmo.esperado is not none else '' }}" data-mes="{{ estado_do_mes }}" data-na-loja="{{ '1' if l.na_loja else '0' }}">
           <span class="metas-quem">
             {{ avatar(l.pk, l.nome, l.tem_foto) }}
             <span class="metas-quem-txt"><label for="metas-valor-{{ l.pk }}">{{ l.nome }}</label><small>{{ l.ajuda }}</small></span>

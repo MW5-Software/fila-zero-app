@@ -3,10 +3,30 @@
    montado. As frases vêm do servidor, no idioma de quem abriu a tela, em
    `data-*` do `[data-metas]`: o script troca o valor, e não escreve frase.
 
-   Sem este script a tela funciona igual: salvar e copiar são POST,
-   e a régua e as barras são as da última gravação. */
+   Sem este script a tela funciona igual: salvar e copiar são POST, e a régua e
+   as barras são as da última gravação — inclusive a distribuição da meta da
+   loja, que o SERVIDOR faz ao salvar (`fila/metas._distribuir`). O que o
+   script adianta é o número aparecer enquanto se digita (18/09/2026, pedido do
+   cliente: "só atualiza depois que eu clico em salvar"). */
 (function () {
   "use strict";
+
+  /* `total` em `partes` que somam exatamente `total`, em centavos: o centavo
+     que sobra da divisão vai para as primeiras. É a MESMA conta do servidor
+     (`fila/metas.repartir`), e `tests/test_fila_metas_ao_vivo.py` confere as
+     duas lado a lado — duas contas que divergem dariam um número na tela e
+     outro no banco.
+
+     Fica ANTES do `[data-metas]` de propósito, e pendurada no `window`: é a
+     parte pura, e é ela que o teste roda no node sem DOM nenhum — o mesmo
+     caminho da máscara (`fila/static/fila/valor.js`). */
+  function repartir(total, partes) {
+    var base = Math.floor(total / partes), sobra = total % partes, saida = [];
+    for (var i = 0; i < partes; i++) saida.push(base + (i < sobra ? 1 : 0));
+    return saida;
+  }
+
+  window.repartirMetas = repartir;
 
   var raiz = document.querySelector("[data-metas]");
   if (!raiz) return;
@@ -26,6 +46,10 @@
     return (raiz.dataset[chave] || "").replace(/%\((\w+)\)s/g, function (_t, nome) {
       return valores[nome];
     });
+  }
+
+  function semMoeda(c) {
+    return reais(c).replace("R$ ", "");
   }
 
   var trocarLoja = raiz.querySelector("[data-trocar-loja]");
@@ -53,6 +77,37 @@
     barra.firstElementChild.style.width = Math.min(pct, 100).toFixed(1) + "%";
     var rotulo = { bateu: raiz.dataset.bateu, no_ritmo: raiz.dataset.noRitmo, atras: raiz.dataset.atras }[tipo];
     estado.textContent = rotulo ? rotulo + " · " + Math.round(pct) + "%" : "—";
+  }
+
+  /* A meta da loja distribui sozinha enquanto se digita.
+
+     Quem está NA loja e ficou sem valor recebe a parte igual — `meta da loja ÷
+     nº de vendedores ativos`. Quem tem valor digitado fica com o dele, e o que
+     a PRÓPRIA distribuição escreveu é reconhecido pelo `data-auto`: mudar a
+     meta da loja de novo redistribui aquilo, e nunca o que a pessoa escreveu.
+
+     Só o campo da LOJA dispara isto. Se rodasse a cada digitação em qualquer
+     campo, apagar a meta de uma pessoa a preencheria de volta na hora, e não
+     haveria mais como tirar a meta de ninguém — o mesmo cuidado que o servidor
+     tem ao só distribuir quando a meta da loja é definida ou muda. */
+  function distribuir() {
+    var campoLoja = form.querySelector("[data-campo-loja]");
+    if (!campoLoja) return;
+    var loja = centavos(campoLoja.value);
+    var campos = [];
+    form.querySelectorAll(".metas-linha").forEach(function (linha) {
+      var campo = linha.querySelector("input[data-valor]");
+      if (!campo || campo.disabled || linha.dataset.naLoja !== "1") return;
+      campos.push(campo);
+    });
+    if (!loja || !campos.length) return;
+    var partes = repartir(loja, campos.length);
+    campos.forEach(function (campo, i) {
+      if (campo.value.trim() !== "" && !campo.hasAttribute("data-auto")) return;
+      if (!partes[i]) return;      // centavo que não coube: fica em branco
+      campo.value = semMoeda(partes[i]);
+      campo.setAttribute("data-auto", "");
+    });
   }
 
   function atualizar() {
@@ -100,7 +155,13 @@
   }
 
   form.addEventListener("input", function (e) {
-    if (e.target.matches("input[data-valor]")) atualizar();
+    if (e.target.matches("input[data-valor]")) {
+      // Quem digita no campo assume o valor: o que veio da distribuição deixa
+      // de ser dela, e não é mais reescrito quando a meta da loja mudar.
+      if (!e.target.matches("[data-campo-loja]")) e.target.removeAttribute("data-auto");
+      if (e.target.matches("[data-campo-loja]")) distribuir();
+      atualizar();
+    }
   });
   // Voltou de um POST com valores que não estão salvos (erro ou cópia): a
   // barra de salvar aparece, porque há o que gravar.

@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 142 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 143 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -131,9 +131,6 @@ inteiro:
 
 - **R46 — toda tabela tem filtro por coluna, ordenação e paginação.**
   `test_regra_tabela.py` fica vermelho se uma tela nova esquecer.
-  **Emenda R49 (18/09/2026):** as tabelas do app da fila perderam o cabeçalho
-  clicável, a pedido do cliente (o ranking já tem a ordem que interessa);
-  filtro e paginação continuam exigidos em todas.
 - **R47 — módulos fixos.** O código declara o que um módulo é; o banco diz
   quais estão ligados. Módulo novo aparece sozinho em todas as instalações,
   desligado (salvo `ativo_por_padrao=True`, escrito com o motivo).
@@ -151,7 +148,7 @@ falham na suíte, e não em produção:
 | `test_guarda.py` | rota ou operação de API sem guarda de acesso |
 | `test_guarda_modulo.py` | rota de módulo sem `@exigir_modulo_ligado`; operação de API sem módulo nem motivo em `SEM_MODULO_NA_API` |
 | `test_personificacao.py` | tela sem o aviso de "você está vendo como"; resposta de API sem `X-Vendo-Como` |
-| `test_regra_tabela.py` | tabela sem filtro ou paginação (a ordenação por coluna é dispensada onde a R49 diz), ou lista da API sem o trio |
+| `test_regra_tabela.py` | tabela ou lista da API sem filtro/ordenação/paginação |
 | `test_api_ignora_cookie.py` | `/api/` aceitando sessão por cookie, ou gravando cookie |
 | `test_api_nao_expoe_id.py` | esquema da API com `id`, `pk` ou `*_id` sequencial |
 | `test_api_nao_importa_view.py` | `api.py` importando `views*` (ou o contrário), ou adiando anotações com `__future__` |
@@ -301,6 +298,15 @@ isso a lista é uma trava A MAIS, nunca a menos — marcar Supervisor na lista
 do Gerente não o faz poder dar Supervisor. A semeadura preenche a lista dos
 cargos de fábrica que estiverem vazios, inclusive nas contas que já existem.
 
+**A tela de Usuários procura por CARGO, e não por nível** (18/09/2026, pedido
+do cliente): a coluna e o filtro eram NÍVEL, e como quase todo mundo é MEMBRO,
+a lista inteira escrevia "Usuário" e não respondia "quem é o gerente aqui?". A
+coluna mostra os cargos da pessoa (dois, se ela tem dois, e "—" para o titular
+e a MW5, que não são alocados), e a ordenação usa a anotação
+`cargo_ordem = Min("alocacoes__cargo__rotulo")`: ordenar pelo caminho da
+relação devolveria a pessoa DUAS vezes, que é a linha repetida que a coluna
+existe para evitar.
+
 **Titular e MW5 não têm cargo.** As permissões deles são diretas, de
 `contas/fabrica.py`. Um cargo no dono permitiria trancá-lo para fora da própria
 conta.
@@ -404,6 +410,15 @@ O que custa quando se esquece:
   `<a href="/sair">` de verdade: sem JavaScript cai na confirmação de sempre
   (`comum/confirmacao.py`), e o POST continua sendo o único jeito de sair.
   `tests/test_sair_sem_sair_da_pagina.py` cobra as duas pontas.
+- **As pílulas ficam no CENTRO do cabeçalho, e mais largas** (18/09/2026,
+  pedido do cliente). O `.ctx` do design system já centra o par DENTRO da
+  faixa do meio, e o problema era a faixa: numa linha flex, com a migalha de um
+  tamanho e as ações de outro, o centro dela não é o do cabeçalho. O
+  `header .wrap` virou uma grade de três colunas (1fr, 2fr, 1fr) na folha desta
+  casa, com o botão do menu e a migalha dividindo a primeira — e os
+  `minmax(0, …)` estão lá porque o `1fr` do CSS nunca encolhe abaixo do
+  conteúdo, e o `.crumb` do design system se recusa a esticar. Sem os dois, o
+  par sai do centro (medido no navegador: 35px à direita).
 - Abaixo de 1000px o design system esconde a faixa de contexto inteira
   (`.ctx-mid { display: none }`): no celular ninguém troca de empresa nem de
   loja pelo cabeçalho. É de lá, e continua como estava.
@@ -531,6 +546,11 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   shell, com ambiente Jinja próprio (`fila/ambiente.py`), a consulta
   `GET /fila/estado` e as ações em `POST /fila/agir`.
 - `fila/views_cadastros.py` — as três telas de cadastro, uma view para as três.
+  **A coluna "Ordem" saiu da tabela** (18/09/2026, pedido do cliente): o campo
+  continua no cadastro, e a lista continua saindo por ele (`padrao="ordem"`).
+  E o NOME de cada item sai em CAIXA ALTA pela folha `fila/static/fila/
+  cadastros.css` — pela folha, e não pelo dado: o cadastro continua gravado
+  como a pessoa escreveu, e é assim que ele aparece na folha de venda da fila.
 
 ### O que custa esquecer
 
@@ -671,6 +691,14 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   distribuição só acontece quando a meta da loja é DEFINIDA ou MUDA: com ela
   igual, campo em branco continua querendo dizer apagar, senão não haveria mais
   como tirar a meta de uma pessoa.
+- **E o número aparece ENQUANTO se digita** (18/09/2026, pedido do cliente:
+  "só atualiza depois que eu clico em salvar"). Quem adianta é `metas.js`, com
+  a mesma conta do servidor — `tests/test_fila_metas_ao_vivo.py` roda as duas
+  lado a lado no node, e é isso que impede um número na tela e outro no banco.
+  Só o campo da LOJA dispara a distribuição (se qualquer digitação disparasse,
+  apagar a meta de alguém a preencheria de volta), e o que a própria
+  distribuição escreveu é reconhecido pelo `data-auto`; quem está fora da loja
+  (`data-na-loja="0"`) não recebe parte.
 - **O ranking do Início é sempre de um mês** (`?ranking_mes=`, escolhido numa
   lista desde 18/09/2026), e não do período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
@@ -706,7 +734,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 142 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 143 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O

@@ -164,6 +164,10 @@ def _desenhar(request, loja, mes, permitidas, editor, *, digitados=None,
             "pk": l.pessoa.pk, "nome": nome_de(l.pessoa), "tem_foto": l.pessoa.pk in com_foto,
             "campo": texto, "valor": valor, "erro": erros.get(str(l.pessoa.pk)),
             "travado": encerrado or l.propria, "ajuda": ajuda,
+            # O script da tela distribui a meta da loja entre quem está NA
+            # loja (`metas.js`); sem esta marca ele não sabe quem ficou de
+            # fora, e daria parte a quem já saiu.
+            "na_loja": l.na_loja,
             "saiu_sem_meta": not l.na_loja and valor is None,
             "vendido": do_mes, "vendido_centavos": int(do_mes * 100),
             "ritmo": r, "estado": _estado(r)})
