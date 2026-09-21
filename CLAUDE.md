@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 141 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 142 arquivos. Rodam em ~2 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -131,6 +131,9 @@ inteiro:
 
 - **R46 — toda tabela tem filtro por coluna, ordenação e paginação.**
   `test_regra_tabela.py` fica vermelho se uma tela nova esquecer.
+  **Emenda R49 (18/09/2026):** as tabelas do app da fila perderam o cabeçalho
+  clicável, a pedido do cliente (o ranking já tem a ordem que interessa);
+  filtro e paginação continuam exigidos em todas.
 - **R47 — módulos fixos.** O código declara o que um módulo é; o banco diz
   quais estão ligados. Módulo novo aparece sozinho em todas as instalações,
   desligado (salvo `ativo_por_padrao=True`, escrito com o motivo).
@@ -148,7 +151,7 @@ falham na suíte, e não em produção:
 | `test_guarda.py` | rota ou operação de API sem guarda de acesso |
 | `test_guarda_modulo.py` | rota de módulo sem `@exigir_modulo_ligado`; operação de API sem módulo nem motivo em `SEM_MODULO_NA_API` |
 | `test_personificacao.py` | tela sem o aviso de "você está vendo como"; resposta de API sem `X-Vendo-Como` |
-| `test_regra_tabela.py` | tabela ou lista da API sem filtro/ordenação/paginação |
+| `test_regra_tabela.py` | tabela sem filtro ou paginação (a ordenação por coluna é dispensada onde a R49 diz), ou lista da API sem o trio |
 | `test_api_ignora_cookie.py` | `/api/` aceitando sessão por cookie, ou gravando cookie |
 | `test_api_nao_expoe_id.py` | esquema da API com `id`, `pk` ou `*_id` sequencial |
 | `test_api_nao_importa_view.py` | `api.py` importando `views*` (ou o contrário), ou adiando anotações com `__future__` |
@@ -495,6 +498,15 @@ Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
 no `ModuloSpec`** porque o menu entra pela primeira permissão do módulo e some
 com os atalhos de quem não a tem.
 
+**Bater o ponto é só de quem atende** (18/09/2026, pedido do cliente): o
+supervisor, o gerente e o dono da conta gerenciam a loja e não atendem. A regra
+mora em `fila/quem_atende.py`, e **não** na ausência de `fila.participar` —
+essa permissão continua no cargo do Gerente e nas do titular de propósito:
+`contas.lugar.pode_dar` exige que quem aloca tenha as permissões do cargo, e
+sem ela o gerente deixaria de poder conceder o cargo de Vendedor. Quem já está
+na loja continua podendo fechar o atendimento que começou (`fila/tela.py` soma
+`r.meu` à regra).
+
 **A loja é a filial em que a sessão está** (`filial_atual`), e a permissão é a
 do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 
@@ -645,12 +657,22 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   dia 1 projetaria o mês com uma venda.
 - **A tela foi refeita em 17/09/2026** (`fila/templates/fila/metas.html`):
   o mês com setas, a régua de cobertura da loja e uma linha por vendedor
-  com vendido e ritmo. "Dividir" reparte o que falta SÓ entre quem está
-  sem meta, pelo que está digitado, e não grava (`metas.dividir_o_que_falta`).
-  O script (`metas.js`) só recalcula o que o servidor desenhou; sem ele a
-  tela funciona igual.
-- **O ranking do Início é sempre de um mês** (`?ranking_mes=`), e não do
-  período dos números de cima.
+  com vendido e ritmo. O script (`metas.js`) só recalcula o que o servidor
+  desenhou; sem ele a tela funciona igual.
+- **A meta é de quem atende** (18/09/2026): a lista sai de
+  `fila/quem_atende.py`, e quem gerencia a loja fica de fora — o gerente e o
+  supervisor. O parâmetro `meta_para_gestor` (`fila/parametro.py`, padrão NÃO)
+  devolve a meta a quem gerencia, para a loja em que o gerente também vende: é
+  decisão de operação, e por isso é parâmetro, e não código.
+- **A meta da loja distribui sozinha, sem botão** (18/09/2026): ao salvar, quem
+  ficou com o campo em branco recebe a parte igual (`meta da loja ÷ nº de
+  vendedores ativos`, com o centavo da sobra indo para os primeiros), e quem
+  tem valor digitado fica com o dele — dá para acertar um por um depois. A
+  distribuição só acontece quando a meta da loja é DEFINIDA ou MUDA: com ela
+  igual, campo em branco continua querendo dizer apagar, senão não haveria mais
+  como tirar a meta de uma pessoa.
+- **O ranking do Início é sempre de um mês** (`?ranking_mes=`, escolhido numa
+  lista desde 18/09/2026), e não do período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
   lojas", uma loja sem meta não faz a meta das outras parecer batida.
 
@@ -684,7 +706,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5436
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 141 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~2 min, 142 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5436** e app na **8005**. O
