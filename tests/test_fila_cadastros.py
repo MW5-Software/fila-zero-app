@@ -111,10 +111,14 @@ def test_a_lista_mostra_so_a_empresa_do_contexto():
 
 
 @pytest.mark.parametrize("rota, model, rotulo", TELAS)
-def test_a_tabela_tem_filtro_ordenacao_e_paginacao(rota, model, rotulo):
-    """R46 conferida aqui, com uma linha na tela: a varredura de
-    `tests/test_regra_tabela.py` visita como superusuário sem empresa, e a
-    lista vazia não desenha `<table>` nenhuma — ela passaria sem olhar."""
+def test_a_tabela_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(rota, model, rotulo):
+    """R46 com a emenda de 18/09/2026, conferida com uma linha na tela: a
+    varredura de `tests/test_regra_tabela.py` visita como superusuário sem
+    empresa, e a lista vazia não desenha `<table>` nenhuma — ela passaria sem
+    olhar.
+
+    O cadastro sai na ordem dele, que é o campo "Ordem", e a coluna clicável
+    só afastava a tela disso. O filtro e a paginação continuam."""
     from tests.test_regra_tabela import (
         _MARCADOR_FILTRO, _MARCADOR_PAGINACAO, _PADRAO_CABECALHO_ORDENAVEL)
 
@@ -124,7 +128,7 @@ def test_a_tabela_tem_filtro_ordenacao_e_paginacao(rota, model, rotulo):
     assert "<table" in html
     assert _MARCADOR_FILTRO in html
     assert _MARCADOR_PAGINACAO in html
-    assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
+    assert not _PADRAO_CABECALHO_ORDENAVEL.search(html)
 
 
 def test_filtrar_por_situacao_mostra_so_os_inativos():

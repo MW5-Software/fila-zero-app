@@ -341,11 +341,14 @@ def _filtros(request, periodo, permitidas, loja, empresas=(), empresa=None):
                      Option(TODAS, _("Todas as lojas"))]))
     campos.append(Cell(span=2, children=Button(label=_("Aplicar"), variant="primary",
                                                 type="submit")))
-    # A ordenação e o filtro do ranking viajam junto: o `<form method="get">`
+    # O filtro do ranking e o MÊS dele viajam junto: o `<form method="get">`
     # troca a querystring inteira, e aplicar o período apagava os dois.
+    # `ranking_mes` NÃO é campo desta barra (o seletor do mês mora no cartão do
+    # ranking), e por isso ele viaja como campo oculto: sem isto, trocar o
+    # período devolvia o ranking para o mês atual sem ninguém pedir
+    # (18/09/2026, quando o mês passou a ser escolhido numa lista).
     for chave, valor in request.GET.items():
-        if chave not in ("periodo", "empresa", "loja", "pagina",
-                         "ranking_mes") and valor:
+        if chave not in ("periodo", "empresa", "loja", "pagina") and valor:
             campos.append(Raw(html=format_html(
                 '<input type="hidden" name="{}" value="{}">', chave, valor)))
     # Sem título: o período e a loja escolhidos já estão nos campos, e o
@@ -441,31 +444,43 @@ _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 _FILTRAVEIS_POR_LOJA = {**_FILTRAVEIS, "loja": ColunaFiltravel("loja_nome", "Loja")}
 
 
-def _colunas(pagina, com_meta=False, por_loja=False, varias_empresas=False):
+def _colunas(com_meta=False, por_loja=False, varias_empresas=False):
+    """As colunas do ranking, com o cabeçalho em TEXTO.
+
+    Sem link de ordenar desde 18/09/2026, a pedido do cliente: o ranking já
+    tem a ordem que interessa (vendido, do maior para o menor, ver
+    `indicadores.PADRAO_DO_RANKING`), e o cabeçalho clicável convidava a
+    ordenar por "Pausa" e a ler a tabela como se ela fosse outra coisa.
+
+    O filtro por coluna e a paginação continuam — a R46 vira emenda com o
+    motivo escrito (`docs/superpowers/decisoes-2026-08-20-fatia-fina.md`).
+    Uma `?ordenar=` forjada continua valendo, porque `montar_pagina` precisa
+    da chave do padrão: o que saiu foi a OFERTA de ordenar, não a leitura.
+    """
     colunas = [
-        Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
+        Column("nome", str(_("Vendedor")), strong=True,
                render=lambda p: p.nome or p.email),
-        *([Column("loja", pagina.cabecalho("loja", str(_("Loja"))),
+        *([Column("loja", str(_("Loja")),
                   render=lambda p: _nome_da_loja(p.loja, varias_empresas))]
           if por_loja else []),
-        Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
+        Column("vendido", str(_("Vendido")), align="num",
                render=lambda p: em_reais(p.vendido)),
-        Column("atendimentos", pagina.cabecalho("atendimentos", str(_("Atendimentos"))), align="num"),
-        Column("vendas", pagina.cabecalho("vendas", str(_("Vendas"))), align="num"),
-        Column("conversao", pagina.cabecalho("conversao", str(_("Conversão"))), align="num",
+        Column("atendimentos", str(_("Atendimentos")), align="num"),
+        Column("vendas", str(_("Vendas")), align="num"),
+        Column("conversao", str(_("Conversão")), align="num",
                render=lambda p: _pct(p.conversao)),
-        Column("ticket", pagina.cabecalho("ticket", str(_("Ticket médio"))), align="num",
+        Column("ticket", str(_("Ticket médio")), align="num",
                render=lambda p: _dinheiro(p.ticket)),
-        Column("pediu", pagina.cabecalho("pediu", str(_("Cliente pediu"))), align="num"),
-        Column("pausa", pagina.cabecalho("pausa", str(_("Pausa"))), align="num",
+        Column("pediu", str(_("Cliente pediu")), align="num"),
+        Column("pausa", str(_("Pausa")), align="num",
                render=lambda p: f"{int(p.pausa.total_seconds() // 60)} min"),
     ]
     if com_meta:
         colunas += [
-            Column("meta", pagina.cabecalho("meta", str(_("Meta"))), align="num",
+            Column("meta", str(_("Meta")), align="num",
                    render=lambda p: _dinheiro(p.meta)),
-            Column("pct_meta", pagina.cabecalho("pct_meta", str(_("% da meta"))),
-                   align="num", render=lambda p: _pct(p.pct_meta)),
+            Column("pct_meta", str(_("% da meta")), align="num",
+                   render=lambda p: _pct(p.pct_meta)),
         ]
     return colunas
 
@@ -525,38 +540,81 @@ def mes_do_ranking(request):
     return min(regras_de_meta.mes_do_texto(request.GET.get("ranking_mes")), atual)
 
 
-def _endereco_do_mes(request, mes) -> str:
-    """A URL de agora com outro mês no ranking. O resto da URL (período,
-    loja, filtro e ordem) viaja junto; a página volta para a primeira, porque
-    a de outro mês pode nem existir."""
-    consulta = request.GET.copy()
-    consulta["ranking_mes"] = f"{mes:%Y-%m}"
-    consulta.pop("pagina", None)
-    return f"{request.path}?{consulta.urlencode()}"
+def meses_do_ranking(recorte, escolhido, agora: "datetime | None" = None) -> list:
+    """Os meses que o seletor do ranking oferece, do mais novo para o mais
+    antigo.
+
+    Do mês atual até o primeiro mês com atendimento no recorte: a lista é o que
+    existe NAQUELAS lojas, e não um intervalo de anos inventado. O mês pedido
+    pela URL entra mesmo sem atendimento nenhum — link salvo abre com o mês
+    dele marcado —, e mês FUTURO não entra: mês que não começou não tem
+    posição.
+
+    Só o alcance do `recorte` importa (`do_recorte`); o período dele não é
+    lido. Custa uma consulta `MIN` por página, e é ela que evita um seletor de
+    trezentos meses numa loja que abriu ontem.
+    """
+    from django.db.models import Min
+
+    from .models import Atendimento
+
+    agora = agora or timezone.now()
+    atual = regras_de_meta.primeiro_do_mes(timezone.localdate(agora))
+    primeiro = ind.do_recorte(Atendimento, recorte).aggregate(m=Min("inicio"))["m"]
+    inicio = atual if primeiro is None else min(
+        atual, timezone.localtime(primeiro).date().replace(day=1))
+    inicio = min(inicio, escolhido)
+    meses, mes = [], atual
+    while mes >= inicio:
+        meses.append(mes)
+        mes = regras_de_meta.mes_anterior(mes)
+    return meses
 
 
-def cartao_do_ranking(request, mes, *, subtitulo=None, attrs=None, body=None):
-    """O cartão do ranking com o mês no título e as setas no cabeçalho.
+def _seletor_do_mes(request, mes, meses):
+    """O mês do ranking num `<select>`, no lugar das setas (18/09/2026).
 
-    Desde 17/09/2026 o ranking tem o próprio mês, e não o período do painel:
-    em "7 dias", ninguém sabia de quando era a posição. O título diz o mês por
-    extenso, e a seta do mês seguinte some no mês atual.
+    Um `<select>` de verdade dentro de um `<form method="get">`: sem JavaScript
+    a pessoa escolhe e aperta "Abrir"; com ele, o `mw5.js` envia no `change`
+    (`data-auto-enviar`, o mesmo do seletor de loja do cabeçalho). Os outros
+    filtros viajam em campos ocultos, menos `pagina` — a página de outro mês
+    pode nem existir.
     """
     from nucleo.views import _MESES
 
-    atual = regras_de_meta.primeiro_do_mes(timezone.localdate())
-    setas = [Button(label="", icon="chevron-left", variant="ghost", size="sm",
-                    href=_endereco_do_mes(request, regras_de_meta.mes_anterior(mes)),
-                    title=str(_("Mês anterior")),
-                    attrs={"aria-label": _("Mês anterior")})]
-    if mes < atual:
-        setas.append(Button(label="", icon="chevron-right", variant="ghost", size="sm",
-                            href=_endereco_do_mes(request, regras_de_meta.mes_seguinte(mes)),
-                            title=str(_("Mês seguinte")),
-                            attrs={"aria-label": _("Mês seguinte")}))
+    ocultos = [Raw(html=format_html('<input type="hidden" name="{}" value="{}">',
+                                    chave, valor))
+               for chave, valor in request.GET.items()
+               if chave not in ("ranking_mes", "pagina") and valor]
+    return Form(method="get", action=request.path,
+                attrs={"data-ind": "mes-do-ranking"}, children=[
+                    *ocultos,
+                    Select(name="ranking_mes", value=f"{mes:%Y-%m}",
+                           attrs={"data-auto-enviar": "",
+                                  "aria-label": str(_("Mês do ranking"))},
+                           options=[Option(
+                               f"{m:%Y-%m}",
+                               f"{_MESES[m.month - 1].capitalize()} de {m.year}")
+                               for m in meses]),
+                    Button(label=_("Abrir"), type="submit", size="sm"),
+                ])
+
+
+def cartao_do_ranking(request, mes, *, subtitulo=None, attrs=None, body=None,
+                      meses=()):
+    """O cartão do ranking com o mês no título e o seletor no cabeçalho.
+
+    Desde 17/09/2026 o ranking tem o próprio mês, e não o período do painel:
+    em "7 dias", ninguém sabia de quando era a posição. Desde 18/09/2026 o mês
+    se escolhe numa LISTA, e não em setas: quem abria um mês distante clicava
+    uma vez por mês, e o mês futuro aparecia como uma seta que sumia em vez de
+    uma opção que não existe (`meses_do_ranking`).
+    """
+    from nucleo.views import _MESES
+
     titulo = _("Ranking de %(mes)s") % {"mes": f"{_MESES[mes.month - 1]} de {mes.year}"}
     return Card(title=titulo, subtitle=subtitulo, padded=False, attrs=attrs or {},
-                header_actions=setas, body=body)
+                header_actions=_seletor_do_mes(request, mes, meses), body=body)
 
 
 def blocos_dos_indicadores(request, empresa, permitidas) -> list:
@@ -586,10 +644,15 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                            tuple(empresas))
     n, a = ind.numeros(recorte), ind.numeros(anterior)
     mes_da_meta = regras_de_meta.mes_do_periodo(periodo)
+    # O aviso de quem ficou aberto vem ANTES dos filtros (18/09/2026, pedido do
+    # cliente). Entre o filtro e os resultados ele ficava no meio do caminho de
+    # quem só queria trocar o período, e parecia mais um bloco do painel de
+    # números; em cima, é a primeira coisa que a gestão lê ao abrir o Início —
+    # e é uma pendência, não um filtro.
     blocos = [
+        _esquecidos(ind.esquecidos(empresa, lojas)),
         _filtros(request, periodo, permitidas, loja,
                  empresas=ind.empresas_com_relatorio(pessoa), empresa=escolhida),
-        _esquecidos(ind.esquecidos(empresa, lojas)),
         _painel(periodo, loja, n, a, anterior, ind.por_dia(recorte),
                 meta=regras_de_meta.meta_do_recorte(recorte)),
         _listas(recorte, n),
@@ -614,9 +677,10 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
                              filtraveis=_FILTRAVEIS_POR_LOJA if todas else _FILTRAVEIS,
                              preservar=("periodo", "empresa", "loja",
                                         "ranking_mes"))
-    blocos.append(cartao_do_ranking(request, mes, attrs={"data-ind": "ranking"}, body=[
+    blocos.append(cartao_do_ranking(request, mes, meses=meses_do_ranking(recorte, mes),
+                                    attrs={"data-ind": "ranking"}, body=[
         listagem.barra,
-        Table(columns=_colunas(listagem, com_meta=True, por_loja=todas,
+        Table(columns=_colunas(com_meta=True, por_loja=todas,
                                varias_empresas=len(empresas) > 1),
               rows=listagem.linhas),
         listagem.paginacao,

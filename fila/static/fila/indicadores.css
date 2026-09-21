@@ -223,3 +223,21 @@ tr.ind-eu td { background: var(--surface-2); font-weight: 700; }
   .ind-esq-linhas > li { grid-template-columns: 1fr auto; }
   .ind-esq-linhas > li b { grid-column: 1 / -1; }
 }
+
+/* ---------------------------------------------------------------------------
+   O mês do ranking no cabeçalho do cartão (18/09/2026).
+
+   Era um par de setas ‹ › e virou uma lista: quem abria um mês distante
+   clicava uma vez por mês. O `<form>` é de verdade — sem JavaScript a pessoa
+   escolhe e aperta "Abrir", e o `mw5.js` aproveita o `data-auto-enviar` para
+   enviar no `change`, o mesmo mecanismo do seletor de loja do cabeçalho.
+
+   O `.form` do design system espaça os filhos em coluna (`.form > * + *`
+   põe 20px em cima de cada um), e aqui os dois entram na LINHA do cabeçalho:
+   por isso o `flex` e o `margin-top` zerado em TODOS os filhos — zerar só o
+   `.f` deixava o "Abrir" 20px abaixo do campo. */
+[data-ind="mes-do-ranking"] {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+}
+[data-ind="mes-do-ranking"] > * { margin-top: 0; }
+[data-ind="mes-do-ranking"] .ctl { height: 32px; font-size: 13px; }

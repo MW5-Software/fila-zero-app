@@ -10,6 +10,16 @@ resposta que contiver uma `<table>`, exige na mesma página o campo de
 filtro, os controles de paginação e pelo menos um cabeçalho ordenável. Tela
 nova que esqueça um dos três vira teste vermelho aqui, antes de virar
 reclamação de cliente.
+
+**O cabeçalho ordenável saiu das tabelas do app da fila** em 18/09/2026, a
+pedido do cliente: o ranking já tem a ordem que interessa (vendido, do maior
+para o menor) e as listas de cadastro saem na ordem delas. Filtro e paginação
+continuam obrigatórios para todo mundo, e quem cobra os três nas telas da fila
+são os testes de cada tela (`test_fila_tela_indicadores.py`,
+`test_fila_historico.py`, `test_fila_cadastros.py`,
+`test_fila_painel_do_vendedor.py`) — esta varredura não as alcança, porque
+visita como superusuário sem empresa, e as telas da fila só desenham tabela
+com uma loja no contexto.
 """
 
 import re
@@ -105,6 +115,30 @@ class TestTodaTabelaTemFiltroOrdenacaoEPaginacao:
         "demonstracao",
     })
 
+    #: Rotas cujo cabeçalho NÃO é clicável, e o motivo (emenda à R46,
+    #: 18/09/2026): a pedido do cliente, a ordem das colunas saiu das tabelas
+    #: do app da fila. Filtro e paginação continuam exigidos para elas como
+    #: para qualquer outra — o que a lista abaixo dispensa é SÓ a ordenação.
+    #:
+    #: A varredura hoje não alcança estas rotas (o superusuário dela não tem
+    #: empresa, e as telas da fila só montam tabela com uma loja no contexto);
+    #: a lista fica aqui porque é ela que diz o que fazer no dia em que
+    #: alcançar, e `test_a_lista_so_tem_rota_que_existe` impede que um nome
+    #: velho apodreça em silêncio.
+    SEM_ORDENACAO = frozenset({
+        "inicio", "fila_historico", "fila_grupos", "fila_motivos",
+        "fila_pausas",
+    })
+
+    def test_a_lista_so_tem_rota_que_existe(self):
+        """Uma isenção com nome de rota que mudou não isenta nada, e ainda
+        esconde que a regra deixou de ser cobrada — o mesmo motivo de
+        `test_toda_varredura_da_tabela_existe` no `CLAUDE.md`."""
+        nomes = {nome for nome, _caminho in _rotas_com_caminho()}
+        assert self.SEM_ORDENACAO <= nomes, (
+            f"a lista de isenção cita rotas que não existem: "
+            f"{sorted(self.SEM_ORDENACAO - nomes)}")
+
     def test_toda_tabela_tem_filtro_ordenacao_e_paginacao(self, raiz_logado):
         problemas = []
         for nome, caminho in _rotas_com_caminho():
@@ -124,7 +158,8 @@ class TestTodaTabelaTemFiltroOrdenacaoEPaginacao:
                 faltando.append("filtro")
             if _MARCADOR_PAGINACAO not in html:
                 faltando.append("paginação")
-            if not _PADRAO_CABECALHO_ORDENAVEL.search(html):
+            if (nome not in self.SEM_ORDENACAO
+                    and not _PADRAO_CABECALHO_ORDENAVEL.search(html)):
                 faltando.append("cabeçalho ordenável")
             if faltando:
                 problemas.append(f"{nome or caminho}: falta {', '.join(faltando)}")

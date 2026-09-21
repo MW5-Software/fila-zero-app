@@ -129,7 +129,7 @@ def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
     _venda_hoje(rede, rede.caio, rede.matriz, "200")
     html = _html(logado("sylvia"), periodo="hoje", loja="todas")
     ranking = html[html.index('data-ind="ranking"'):]
-    assert re.search(r"<th[^>]*>\s*<a[^>]*>Loja", ranking)
+    assert re.search(r"<th[^>]*>\s*Loja", ranking)
     linhas = re.findall(r"<tr[^>]*>(.*?)</tr>", ranking, re.S)
     do_caio = [l for l in linhas if "Caio" in l]
     assert len(do_caio) == 2
@@ -150,7 +150,7 @@ def test_uma_loja_nao_tem_coluna_de_loja(rede):
 
     _venda_hoje(rede, rede.ana, rede.matriz, "300")
     html = _html(logado("sylvia"), periodo="hoje")
-    assert not re.search(r"<th[^>]*>\s*<a[^>]*>Loja", html)
+    assert not re.search(r"<th[^>]*>\s*Loja", html)
 
 
 def test_gerente_de_uma_loja_nao_ganha_todas_as_lojas(rede):
@@ -161,7 +161,10 @@ def test_gerente_de_uma_loja_nao_ganha_todas_as_lojas(rede):
     assert 'data-ind="por-loja"' not in html
 
 
-def test_ranking_tem_filtro_ordenacao_e_paginacao(rede):
+def test_ranking_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(rede):
+    """R46 com a emenda de 18/09/2026: o cliente pediu as tabelas sem a
+    ordenação por coluna, e o ranking é a primeira delas. O filtro por coluna e
+    a paginação continuam — e é isso que este teste cobra."""
     from tests.test_regra_tabela import (
         _MARCADOR_FILTRO, _MARCADOR_PAGINACAO, _PADRAO_CABECALHO_ORDENAVEL)
 
@@ -169,7 +172,7 @@ def test_ranking_tem_filtro_ordenacao_e_paginacao(rede):
     html = _html(logado("sylvia"), periodo="hoje", loja=str(rede.centro.pk))
     assert "<table" in html
     assert _MARCADOR_FILTRO in html and _MARCADOR_PAGINACAO in html
-    assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
+    assert not _PADRAO_CABECALHO_ORDENAVEL.search(html)
 
 
 def test_aviso_de_esquecidos(rede):
@@ -183,6 +186,23 @@ def test_aviso_de_esquecidos(rede):
     # aberto, e a frase inteira se repetia em cada linha.
     assert "Presença" in html
     assert "Caio" in html
+
+
+def test_o_aviso_de_esquecidos_vem_antes_dos_filtros(rede):
+    """18/09/2026, pedido do cliente: o aviso é a PRIMEIRA coisa da tela.
+
+    Ele estava entre os filtros e os resultados, e ali ficava no caminho de
+    quem só queria trocar o período — além de parecer mais um bloco do painel
+    de números. Em cima, ele é a pendência que a gestão lê ao abrir o Início.
+    """
+    from fila.models import Presenca
+
+    Presenca.irrestritos.create(empresa=rede.empresa, filial=rede.centro,
+                                pessoa=rede.caio,
+                                entrada=timezone.now() - timedelta(days=2))
+    html = _html(logado("gil"), periodo="hoje")
+    assert (html.index("data-esquecidos") < html.index('data-ind="filtros"')
+            < html.index('data-ind="painel"'))
 
 
 def test_o_aviso_agrupa_por_loja_e_por_pessoa(rede):
@@ -244,11 +264,31 @@ def test_buscar_no_ranking_mantem_periodo_e_loja(rede):
     assert f'<input type="hidden" name="loja" value="{rede.centro.pk}">' in html
 
 
-def test_aplicar_os_filtros_mantem_a_ordenacao_do_ranking(rede):
-    html = _html(logado("sara"), periodo="hoje", ordenar="-atendimentos")
-    # Duas vezes: a barra do ranking já levava a ordenação; o que faltava era
-    # o formulário do período e da loja levar também.
-    assert html.count('<input type="hidden" name="ordenar" value="-atendimentos">') == 2
+def test_o_seletor_do_mes_entra_na_linha_do_cabecalho(rede):
+    """O `.form` do design system espaça os filhos em coluna (`.form > * + *`
+    põe 20px em cima de cada um), e o seletor do mês entra na LINHA do
+    cabeçalho do cartão: sem zerar a margem de TODOS os filhos, o "Abrir" cai
+    20px abaixo do campo. Zerar só o `.f` foi o primeiro jeito, e era o
+    defeito — este teste lê a folha da tela e cobra o `> *`."""
+    from pathlib import Path
+
+    folha = Path("fila/static/fila/indicadores.css").read_text(encoding="utf-8")
+    assert '[data-ind="mes-do-ranking"] > * { margin-top: 0; }' in folha
+
+
+def test_os_dois_formularios_do_ranking_levam_um_o_filtro_do_outro(rede):
+    """M6 para o par que o seletor de mês criou (18/09/2026): a barra de
+    filtros leva o mês do ranking, e o formulário do mês leva período e loja.
+    Sem os dois, aplicar um filtro devolvia o outro ao padrão."""
+    mes = f"{_mes_passado():%Y-%m}"
+    html = _html(logado("sara"), periodo="mes_passado",
+                 loja=str(rede.centro.pk), ranking_mes=mes)
+    assert f'<input type="hidden" name="ranking_mes" value="{mes}">' in html
+
+    formulario = html[html.index('data-ind="mes-do-ranking"'):]
+    formulario = formulario[:formulario.index("</form>")]
+    assert '<input type="hidden" name="periodo" value="mes_passado">' in formulario
+    assert f'<input type="hidden" name="loja" value="{rede.centro.pk}">' in formulario
 
 
 def test_esquecido_leva_a_fila_da_loja_do_item(rede):
@@ -408,8 +448,10 @@ def test_os_filtros_tem_os_atalhos_e_nao_tem_mais_de_e_ate(rede):
     os campos De/Até saíram."""
     html = _html(logado("sylvia"), periodo="90dias")
     assert 'name="de"' not in html and 'name="ate"' not in html
-    assert '<option value="90dias" selected>90 dias</option>' in html
-    assert "90 dias, Matriz" in html
+    # "Últimos 90 dias" desde 18/09/2026: "90 dias" sozinho não dizia se eram
+    # os que passaram ou os que vêm.
+    assert '<option value="90dias" selected>Últimos 90 dias</option>' in html
+    assert "Últimos 90 dias, Matriz" in html
 
 
 # --- O ranking é do mês (17/09/2026) ----------------------------------------
@@ -448,20 +490,26 @@ def test_o_ranking_e_do_mes_e_nao_do_periodo(rede):
     assert "Caio" not in ranking and "Gil" in ranking
 
 
-def test_as_setas_levam_ao_mes_passado_sem_perder_os_filtros(rede):
-    import re
-
+def test_o_seletor_do_mes_leva_ao_mes_passado_sem_perder_os_filtros(rede):
+    """As setas viraram lista (18/09/2026): o mês passado é uma OPÇÃO, e o
+    formulário dela leva o período e a loja de agora — e não a página, porque a
+    página de outro mês pode nem existir."""
     _para_o_mes_passado(_venda_hoje(rede, rede.caio, rede.centro, "500"))
     mes = f"{_mes_passado():%Y-%m}"
-    atual = _ranking(_html(logado("sara"), periodo="7dias", loja=str(rede.centro.pk), pagina="2"))
-    anterior = re.search(r'href="([^"]*ranking_mes=%s[^"]*)"' % mes, atual)
-    assert anterior, "a seta do mês anterior não apareceu"
-    link = anterior.group(1).replace("&amp;", "&")
-    assert "periodo=7dias" in link and f"loja={rede.centro.pk}" in link
-    assert "pagina=" not in link
-    passado = _ranking(_html(logado("sara"), periodo="7dias", loja=str(rede.centro.pk),
-                             ranking_mes=mes))
+    atual = _ranking(_html(logado("sara"), periodo="7dias",
+                           loja=str(rede.centro.pk), pagina="2"))
+    assert f'<option value="{mes}"' in atual, "o mês passado não está na lista"
+
+    formulario = atual[atual.index('data-ind="mes-do-ranking"'):]
+    formulario = formulario[:formulario.index("</form>")]
+    assert '<input type="hidden" name="periodo" value="7dias">' in formulario
+    assert f'<input type="hidden" name="loja" value="{rede.centro.pk}">' in formulario
+    assert "pagina=" not in formulario
+
+    passado = _ranking(_html(logado("sara"), periodo="7dias",
+                             loja=str(rede.centro.pk), ranking_mes=mes))
     assert f"Ranking de {_nome_do_mes(_mes_passado())}" in passado
+    assert f'<option value="{mes}" selected>' in passado
     assert "Caio" in passado and "R$ 500,00" in passado
 
 
@@ -471,10 +519,14 @@ def test_mes_futuro_ou_invalido_cai_no_mes_atual(rede):
         assert atual in _html(logado("gil"), ranking_mes=mes)
 
 
-def test_no_mes_atual_nao_ha_seta_para_o_seguinte(rede):
+def test_o_seletor_do_mes_nao_oferece_mes_futuro(rede):
+    """Mês que não começou não tem posição — e na lista ele nem aparece como
+    opção, em vez de ser uma seta que some."""
+    futuro = (timezone.localdate().replace(day=1) + timedelta(days=32))
     ranking = _ranking(_html(logado("gil")))
-    assert 'aria-label="Mês seguinte"' not in ranking
-    assert 'aria-label="Mês anterior"' in ranking
+    assert 'aria-label="Mês do ranking"' in ranking
+    assert f'<option value="{timezone.localdate():%Y-%m}" selected>' in ranking
+    assert f'value="{futuro:%Y-%m}"' not in ranking
 
 
 # --- Várias empresas na conta (spec 2026-09-17, E5) --------------------------

@@ -26,9 +26,14 @@ DIAS_DOS_ATALHOS = (7, 15, 30, 60, 90)
 #: Desde 17/09/2026 o período é só por atalho: o intervalo livre (De/Até)
 #: saiu da tela a pedido do cliente. Os dois meses ficam porque a meta é
 #: mensal, e é neles que a faixa da meta aparece.
+#:
+#: **"Últimos", e não só o número** (18/09/2026, pedido do cliente): "30 dias"
+#: sozinho não dizia se eram os trinta que passaram ou os trinta que vêm, e o
+#: campo convive com "Este mês" e "Mês passado" na mesma lista. A CHAVE não
+#: mudou (`30dias`), então link salvo continua abrindo o mesmo período.
 ATALHOS: "tuple[tuple[str, str], ...]" = (
     ("hoje", "Hoje"), ("ontem", "Ontem"),
-    *((f"{n}dias", f"{n} dias") for n in DIAS_DOS_ATALHOS),
+    *((f"{n}dias", f"Últimos {n} dias") for n in DIAS_DOS_ATALHOS),
     ("mes", "Este mês"), ("mes_passado", "Mês passado"),
 )
 PADRAO = "mes"

@@ -70,21 +70,24 @@ def _filtros(request, periodo, permitidas, loja):
 
 
 def _colunas(listagem):
+    """As colunas do histórico, com o cabeçalho em TEXTO.
+
+    Sem link de ordenar desde 18/09/2026 (pedido do cliente), como as outras
+    tabelas do app: a correção mais recente em cima é a pergunta que o
+    gerente faz no fim do dia (`padrao="-momento"`), e o filtro por coluna
+    continua sendo o que ele usa para procurar.
+    """
     return [
-        Column("momento", listagem.cabecalho("momento", str(_("Quando"))),
+        Column("momento", str(_("Quando")),
                render=lambda c: timezone.localtime(c.momento).strftime("%d/%m %H:%M")),
-        Column("loja", listagem.cabecalho("loja", str(_("Loja"))),
-               render=lambda c: str(c.filial)),
-        Column("vendedor", listagem.cabecalho("vendedor", str(_("Vendedor"))),
+        Column("loja", str(_("Loja")), render=lambda c: str(c.filial)),
+        Column("vendedor", str(_("Vendedor")),
                strong=True, render=lambda c: nome_de(c.pessoa)),
-        Column("acao", listagem.cabecalho("acao", str(_("Ação"))),
+        Column("acao", str(_("Ação")),
                render=lambda c: format_html("{}<br><small>{}</small>",
                                             c.get_acao_display(), c.detalhe)),
-        # Sem cabeçalho ordenável: ordenar por texto de motivo não é pergunta
-        # que alguém faça; filtrar por ele é, e a barra faz isso.
         Column("observacao", str(_("Motivo")), render=lambda c: c.observacao),
-        Column("autor", listagem.cabecalho("autor", str(_("Quem corrigiu"))),
-               render=lambda c: nome_de(c.autor)),
+        Column("autor", str(_("Quem corrigiu")), render=lambda c: nome_de(c.autor)),
     ]
 
 

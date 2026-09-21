@@ -159,11 +159,14 @@ def _desenhar(request, cadastro, erro=None) -> HttpResponse:
             conteudo.append(Alert(message=erro, tone="danger"))
         conteudo.append(Card(title=cadastro.titulo, padded=False, body=[
             listagem.barra,
+            # Cabeçalho em texto, e não clicável (18/09/2026, pedido do
+            # cliente): a lista de um cadastro já sai na ordem dela, que é o
+            # campo "Ordem" — ordenar por "Situação" só afastava a tela do que
+            # ela mostra por padrão.
             Table(columns=[
-                Column("nome", listagem.cabecalho("nome", "Nome"), strong=True),
-                Column("ordem", listagem.cabecalho("ordem", "Ordem"),
-                       align="center"),
-                Column("ativo", listagem.cabecalho("ativo", "Situação"),
+                Column("nome", "Nome", strong=True),
+                Column("ordem", "Ordem", align="center"),
+                Column("ativo", "Situação",
                        render=lambda l: "Ativo" if l.ativo else "Inativo"),
             ], rows=listagem.linhas, row_actions=_acoes_da_linha),
             listagem.paginacao,

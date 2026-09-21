@@ -26,7 +26,7 @@ from . import metas as regras_de_meta
 from .periodo import periodo_anterior, periodo_do_pedido
 from .valores import em_reais
 from .views_indicadores import (_filtros, _listas, _painel, _pct, cartao_do_ranking,
-                                mes_do_ranking)
+                                mes_do_ranking, meses_do_ranking)
 
 __all__ = ["inicio_do_vendedor"]
 
@@ -40,22 +40,26 @@ ORDENAVEIS_COM_META = {**ORDENAVEIS,
 _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 
 
-def _colunas(pagina, posicoes, com_meta):
+def _colunas(posicoes, com_meta):
+    """As colunas do ranking do vendedor, com o cabeçalho em TEXTO.
+
+    Sem link de ordenar desde 18/09/2026, como o ranking da gestão: a posição
+    é sempre pelo vendido (`indicadores.posicoes_por_vendido`), e "ordenar por
+    posição" seria ordenar pelo vendido com outro nome.
+    """
     colunas = [
-        # Sem cabeçalho ordenável: a posição é sempre pelo vendido, e "ordenar
-        # por posição" seria ordenar pelo vendido com outro nome.
         Column("posicao", str(_("Posição")), align="num",
                render=lambda p: f"{posicoes[p.pk]}º"),
-        Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
+        Column("nome", str(_("Vendedor")), strong=True,
                render=lambda p: p.nome or p.email),
-        Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
+        Column("vendido", str(_("Vendido")), align="num",
                render=lambda p: em_reais(p.vendido)),
-        Column("vendas", pagina.cabecalho("vendas", str(_("Vendas"))), align="num"),
-        Column("conversao", pagina.cabecalho("conversao", str(_("Conversão"))),
+        Column("vendas", str(_("Vendas")), align="num"),
+        Column("conversao", str(_("Conversão")),
                align="num", render=lambda p: _pct(p.conversao)),
     ]
     if com_meta:
-        colunas.append(Column("pct_meta", pagina.cabecalho("pct_meta", str(_("% da meta"))),
+        colunas.append(Column("pct_meta", str(_("% da meta")),
                               align="num", render=lambda p: _pct(p.pct_meta)))
     return colunas
 
@@ -95,10 +99,11 @@ def _blocos(request, empresa, loja, pessoa) -> list:
                 meta=regras_de_meta.meta_da_pessoa(recorte, pessoa)),
         _listas(recorte, n, vendedor=pessoa),
         cartao_do_ranking(
-             request, mes, subtitulo=_onde_estou(posicoes, pessoa),
+             request, mes, meses=meses_do_ranking(recorte, mes),
+             subtitulo=_onde_estou(posicoes, pessoa),
              attrs={"data-ind": "ranking-da-loja"}, body=[
                  listagem.barra,
-                 Table(columns=_colunas(listagem, posicoes, com_meta=True),
+                 Table(columns=_colunas(posicoes, com_meta=True),
                        rows=listagem.linhas,
                        row_attrs=lambda p: ({"class": "ind-eu", "aria-current": "true"}
                                             if p.pk == pessoa.pk else {})),
