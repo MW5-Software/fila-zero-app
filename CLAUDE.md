@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 144 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 145 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -620,10 +620,20 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 
 Spec `docs/superpowers/specs/2026-09-17-fluxo-da-fila-por-empresa-design.md`.
 
-- **`Empresa.fluxo_da_fila`** decide o que acontece depois de lançar o
+- **O fluxo da empresa** decide o que acontece depois de lançar o
   atendimento: *volta para o fim da fila* (o padrão, o fluxo da Sylvia) ou
   *fica em espera*. Na empresa, e não na loja: a rede trabalha do mesmo jeito
   nas lojas dela.
+- **Ele mora na fila, e não na base** (21/09/2026): era a coluna
+  `Empresa.fluxo_da_fila`, e virou a tabela `fila.FluxoDaEmpresa`, uma linha por
+  empresa e só quando ela sai do padrão (`fila/0007` copiou o que havia, e
+  `plataforma/0006` tirou a coluna). Quem lê e grava é `fila/fluxo.py`
+  (`fluxo_de`, `definir_fluxo`). A caixa "Fila da vez" continua na tela de
+  Empresas, registrada pela fila em `plataforma.caixas_da_empresa`, o ponto de
+  extensão da base para módulo de negócio pôr uma escolha no cadastro da
+  empresa. Da mesma forma, as ações da fila na trilha moram em
+  `fila/auditoria.py` e são declaradas por `comum.auditoria.declarar_acoes`: a
+  base não conhece a fila, e é isso que a deixa voltar limpa para cá.
 - **`Estado.EM_ESPERA` não é pausa.** Não existe linha de `Pausa`, e o tempo
   em espera não entra em indicador de pausa nenhum — uma pausa com tipo
   "Espera" somaria o trabalho normal da loja ao almoço no relatório.
@@ -755,7 +765,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 144 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 145 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

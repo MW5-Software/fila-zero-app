@@ -113,9 +113,9 @@ def _depois_do_atendimento(lugar, filial, agora) -> None:
     decide isso, porque quem termina o atendimento, quem encerra a pausa e o
     gerente que fecha no lugar do vendedor precisam da MESMA resposta.
     """
-    from plataforma.models import FluxoDaFila
+    from .fluxo import FluxoDaFila, fluxo_de
 
-    if filial.empresa.fluxo_da_fila != FluxoDaFila.ESPERA:
+    if fluxo_de(filial.empresa) != FluxoDaFila.ESPERA:
         _voltar_ao_fim(lugar, agora)
         return
     lugar.estado = Estado.EM_ESPERA

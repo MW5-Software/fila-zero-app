@@ -58,6 +58,14 @@ msgstr ""
 msgid "O cargo é de quem compra da empresa, e não de quem trabalha nela."
 msgstr ""
 
+msgid "Pode conceder"
+msgstr ""
+
+msgid ""
+"Os cargos que quem tem este cargo pode dar ao alocar alguém. Nenhum "
+"marcado: valem só as travas de permissão e alcance."
+msgstr ""
+
 msgid "Novo cargo"
 msgstr ""
 
@@ -193,6 +201,11 @@ msgstr ""
 msgid "Algo inesperado aconteceu. O problema foi registrado."
 msgstr ""
 
+msgid "Empresa"
+msgid_plural "Empresas"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Filial"
 msgstr ""
 
@@ -266,7 +279,7 @@ msgstr ""
 msgid "O GUID da conta titular da empresa desta linha."
 msgstr ""
 
-msgid "Empresa"
+msgid "Empresas"
 msgstr ""
 
 msgid "Filiais"
@@ -288,6 +301,28 @@ msgid "Itens por página"
 msgstr ""
 
 msgid "Nova filial nasce ativa"
+msgstr ""
+
+#, python-format
+msgid "Você está conectado como %(nome)s e vai precisar entrar de novo."
+msgstr ""
+
+msgid "Você vai precisar entrar de novo."
+msgstr ""
+
+msgid "Sair do sistema?"
+msgstr ""
+
+msgid "Cancelar"
+msgstr ""
+
+msgid "Confirmar"
+msgstr ""
+
+msgid "Você vai passar a trabalhar em"
+msgstr ""
+
+msgid "Trocar de lugar?"
 msgstr ""
 
 msgid "Densidade"
@@ -312,6 +347,32 @@ msgid "Módulos declarados"
 msgstr ""
 
 msgid "Escolha um arquivo antes de enviar."
+msgstr ""
+
+msgid "sem CNPJ"
+msgstr ""
+
+msgid "sem loja cadastrada"
+msgstr ""
+
+msgid "O cliente, as empresas dele e as lojas de cada uma."
+msgstr ""
+
+msgid "Escolha uma empresa no cabeçalho para ver a conta dela."
+msgstr ""
+
+msgid "Quem é a conta"
+msgstr ""
+
+msgid "Titular"
+msgstr ""
+
+msgid "Pessoa"
+msgid_plural "Pessoas"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Empresas e lojas"
 msgstr ""
 
 msgid "Conexão com o Kronos"
@@ -347,16 +408,21 @@ msgstr ""
 msgid "Remover logo"
 msgstr ""
 
-msgid "Remover empresa"
+msgid "Nova empresa"
 msgstr ""
 
-msgid "Empresas"
+msgid "Sem conta (a MW5 liga depois)"
+msgstr ""
+
+msgid "Remover empresa"
 msgstr ""
 
 msgid "Os clientes deste portal, e de onde o cron lê os dados de cada um."
 msgstr ""
 
-msgid "Os dados da sua empresa, e de onde o cron lê o catálogo dela no Kronos."
+msgid ""
+"As empresas da sua conta, e de onde o cron lê o catálogo de cada uma no "
+"Kronos."
 msgstr ""
 
 msgid ""
@@ -367,7 +433,10 @@ msgstr ""
 msgid "Empresas existentes"
 msgstr ""
 
-msgid "Sua empresa"
+msgid "Suas empresas"
+msgstr ""
+
+msgid "Conta não encontrada."
 msgstr ""
 
 msgid "Ação desconhecida."
@@ -469,9 +538,6 @@ msgstr ""
 msgid "Recolher"
 msgstr ""
 
-msgid "Cancelar"
-msgstr ""
-
 msgid "Sem filial"
 msgstr ""
 
@@ -511,6 +577,15 @@ msgstr ""
 msgid "Você não está nesta loja. Bata o ponto primeiro."
 msgstr ""
 
+msgid "Você já está na fila."
+msgstr ""
+
+msgid "Finalize o atendimento primeiro."
+msgstr ""
+
+msgid "Encerre a pausa primeiro."
+msgstr ""
+
 msgid "Esta loja está desativada."
 msgstr ""
 
@@ -518,13 +593,18 @@ msgid "Você já está nesta loja."
 msgstr ""
 
 #, python-format
-msgid "Você está atendendo em %(loja)s. Finalize lá antes de entrar aqui."
+msgid ""
+"Você está atendendo em %(loja)s (%(empresa)s). Finalize lá antes de "
+"entrar aqui."
 msgstr ""
 
 msgid "Você já está atendendo."
 msgstr ""
 
 msgid "Você está em pausa. Volte para a fila primeiro."
+msgstr ""
+
+msgid "Você está em espera. Entre na fila primeiro."
 msgstr ""
 
 #, python-format
@@ -573,6 +653,18 @@ msgstr ""
 msgid "Essa pessoa não está nesta loja."
 msgstr ""
 
+msgid "Escreva o motivo da correção."
+msgstr ""
+
+msgid "O motivo cabe em 200 caracteres."
+msgstr ""
+
+msgid "Essa pessoa não está na fila."
+msgstr ""
+
+msgid "Essa pessoa não está em espera."
+msgstr ""
+
 msgid ""
 "Ela está atendendo. Escolha o motivo da não venda para fechar o "
 "atendimento."
@@ -588,6 +680,27 @@ msgid "Lançamento não encontrado."
 msgstr ""
 
 msgid "O resultado não muda na correção."
+msgstr ""
+
+msgid "Escolha uma posição da fila."
+msgstr ""
+
+msgid "Essa pessoa já está nessa posição."
+msgstr ""
+
+msgid "Essa pessoa já está na fila."
+msgstr ""
+
+msgid "Fila da vez"
+msgstr ""
+
+msgid "Depois de lançar o atendimento"
+msgstr ""
+
+msgid "Vale para todas as lojas desta empresa."
+msgstr ""
+
+msgid "Escolha um fluxo da fila válido."
 msgstr ""
 
 msgid "Mês encerrado: as metas não se editam mais."
@@ -611,10 +724,28 @@ msgstr ""
 msgid "Em pausa"
 msgstr ""
 
+msgid "Em espera"
+msgstr ""
+
 msgid "Vendeu"
 msgstr ""
 
 msgid "Não vendeu"
+msgstr ""
+
+msgid "Volta para o fim da fila"
+msgstr ""
+
+msgid "Fica em espera e entra na fila quando quiser"
+msgstr ""
+
+msgid "fluxo da fila"
+msgstr ""
+
+msgid "fluxo da fila da empresa"
+msgstr ""
+
+msgid "fluxos da fila das empresas"
 msgstr ""
 
 msgid "nome"
@@ -722,7 +853,43 @@ msgstr ""
 msgid "metas de venda"
 msgstr ""
 
-msgid "Fila da vez"
+msgid "Mudou de posição"
+msgstr ""
+
+msgid "Pôs em pausa"
+msgstr ""
+
+msgid "Tirou da pausa"
+msgstr ""
+
+msgid "Fechou o atendimento"
+msgstr ""
+
+msgid "Tirou da loja"
+msgstr ""
+
+msgid "Corrigiu o lançamento"
+msgstr ""
+
+msgid "Pôs na fila"
+msgstr ""
+
+msgid "quem corrigiu"
+msgstr ""
+
+msgid "ação"
+msgstr ""
+
+msgid "detalhe"
+msgstr ""
+
+msgid "quando"
+msgstr ""
+
+msgid "correção na fila"
+msgstr ""
+
+msgid "correções na fila"
 msgstr ""
 
 msgid "Grupos de item"
@@ -734,7 +901,13 @@ msgstr ""
 msgid "Tipos de pausa"
 msgstr ""
 
+msgid "Histórico da fila"
+msgstr ""
+
 msgid "Metas"
+msgstr ""
+
+msgid "Meta para quem gerencia a loja"
 msgstr ""
 
 #, python-format
@@ -822,7 +995,34 @@ msgstr ""
 msgid "Você está em %(posicao)sº de %(total)s."
 msgstr ""
 
-msgid "Ranking da loja"
+msgid "Período"
+msgstr ""
+
+msgid "Loja"
+msgstr ""
+
+msgid "Todas as lojas"
+msgstr ""
+
+msgid "Aplicar"
+msgstr ""
+
+msgid "Quando"
+msgstr ""
+
+msgid "Ação"
+msgstr ""
+
+msgid "Motivo"
+msgstr ""
+
+msgid "Quem corrigiu"
+msgstr ""
+
+msgid "As correções do gerente, com o motivo de cada uma."
+msgstr ""
+
+msgid "todas as lojas"
 msgstr ""
 
 msgid "Sem base para comparar"
@@ -916,9 +1116,6 @@ msgstr ""
 msgid "Ticket médio por dia"
 msgstr ""
 
-msgid "todas as lojas"
-msgstr ""
-
 msgid "Número mostrado no gráfico"
 msgstr ""
 
@@ -947,62 +1144,103 @@ msgstr ""
 msgid "%(total)s no total"
 msgstr ""
 
-msgid "Período"
+msgid "Todas as empresas"
 msgstr ""
 
-msgid "Intervalo"
+#, python-format
+msgid "ontem, %(hora)s"
 msgstr ""
 
-msgid "De"
+msgid "Presença"
 msgstr ""
 
-msgid "Até"
-msgstr ""
-
-msgid "Loja"
-msgstr ""
-
-msgid "Todas as lojas"
-msgstr ""
-
-msgid "Aplicar"
-msgstr ""
-
-msgid "Abrir a fila desta loja"
-msgstr ""
-
-msgid "Ficou aberto de um dia para o outro"
-msgstr ""
-
-msgid "Cliente pediu"
+msgid "Atendimento"
 msgstr ""
 
 msgid "Pausa"
 msgstr ""
 
+msgid "Abrir a fila desta loja"
+msgstr ""
+
+#, python-format
+msgid "%(quantas)d pessoa com pendência"
+msgid_plural "%(quantas)d pessoas com pendência"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "em %(quantas)d loja"
+msgid_plural "em %(quantas)d lojas"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Ficou aberto de um dia para o outro"
+msgstr ""
+
+msgid "Encerre pela fila de cada loja."
+msgstr ""
+
+msgid "Cliente pediu"
+msgstr ""
+
 msgid "Meta"
 msgstr ""
 
-msgid "Ranking de vendedores"
+msgid "Por empresa"
 msgstr ""
 
-msgid "Mês"
+msgid "Por loja"
+msgstr ""
+
+msgid "Mês do ranking"
 msgstr ""
 
 msgid "Abrir"
 msgstr ""
 
-msgid "Mês anterior"
+#, python-format
+msgid "Ranking de %(mes)s"
 msgstr ""
 
-msgid "Mês seguinte"
+msgid "Mês encerrado"
 msgstr ""
 
-msgid "Sem meta"
+msgid "O mês ainda não começou"
 msgstr ""
 
 #, python-format
-msgid "Vendedores somam %(soma)s de %(loja)s"
+msgid "Dia %(dia)s de %(total)s"
+msgstr ""
+
+msgid "Bateu"
+msgstr ""
+
+msgid "No ritmo"
+msgstr ""
+
+msgid "Atrás"
+msgstr ""
+
+msgid "Não bateu"
+msgstr ""
+
+msgid "Sem meta da loja neste mês."
+msgstr ""
+
+#, python-format
+msgid "Faltam %(valor)s para cobrir a loja"
+msgstr ""
+
+msgid "Cobre exatamente a meta da loja"
+msgstr ""
+
+#, python-format
+msgid "Cobre a loja, com %(valor)s de folga"
+msgstr ""
+
+#, python-format
+msgid "meta da loja %(valor)s"
 msgstr ""
 
 msgid "A sua meta é definida por outra pessoa."
@@ -1011,19 +1249,23 @@ msgstr ""
 msgid "Não está mais nesta loja."
 msgstr ""
 
-msgid "Meta da loja"
+#, python-format
+msgid "Sem meta em %(mes)s"
 msgstr ""
 
-msgid "Metas dos vendedores"
+#, python-format
+msgid "Vendido no mês: %(valor)s"
 msgstr ""
 
-msgid "Ninguém participa da fila nesta loja."
+#, python-format
+msgid "Copiar metas de %(mes)s"
 msgstr ""
 
-msgid "Salvar metas"
+msgid "1 meta alterada"
 msgstr ""
 
-msgid "Copiar metas do mês anterior"
+#, python-format
+msgid "%(n)s metas alteradas"
 msgstr ""
 
 msgid "Metas de venda"
@@ -1056,6 +1298,9 @@ msgstr ""
 msgid "Vou atender"
 msgstr ""
 
+msgid "Entrar na fila"
+msgstr ""
+
 msgid "Finalizar atendimento"
 msgstr ""
 
@@ -1078,6 +1323,12 @@ msgid "Total da venda"
 msgstr ""
 
 msgid "Por que não comprou?"
+msgstr ""
+
+msgid "Motivo da correção"
+msgstr ""
+
+msgid "Ex.: foi ao banco e esqueceu de pausar"
 msgstr ""
 
 msgid "Observação (opcional)"
@@ -1113,6 +1364,24 @@ msgstr ""
 msgid "Fecha o atendimento como não venda e encerra o ponto."
 msgstr ""
 
+msgid "Pôr na fila"
+msgstr ""
+
+msgid "Entra no fim da fila."
+msgstr ""
+
+msgid "Mudar de posição"
+msgstr ""
+
+msgid "Escolha o lugar na fila."
+msgstr ""
+
+msgid "Pôr em pausa"
+msgstr ""
+
+msgid "Para quem saiu e não apertou Pausa."
+msgstr ""
+
 msgid "Tirar da pausa"
 msgstr ""
 
@@ -1126,6 +1395,9 @@ msgid "Fechar o atendimento"
 msgstr ""
 
 msgid "Está atendendo. O atendimento fecha como não venda."
+msgstr ""
+
+msgid "Para qual posição?"
 msgstr ""
 
 msgid "Corrigir o lançamento"
@@ -1156,6 +1428,9 @@ msgid "Quem bater o ponto entra aqui, na ordem de chegada."
 msgstr ""
 
 msgid "Ninguém atendendo agora."
+msgstr ""
+
+msgid "Fora da fila"
 msgstr ""
 
 msgid "Ninguém em pausa."
@@ -1233,10 +1508,64 @@ msgstr ""
 msgid "Ao terminar, lance se vendeu."
 msgstr ""
 
+msgid "Você está em espera"
+msgstr ""
+
 msgid "Desde"
 msgstr ""
 
+msgid "Entre na fila quando estiver pronto."
+msgstr ""
+
+msgid "Mês"
+msgstr ""
+
+msgid "Mês anterior"
+msgstr ""
+
+msgid "Mês seguinte"
+msgstr ""
+
+msgid "Meta da loja"
+msgstr ""
+
+msgid "Sem meta"
+msgstr ""
+
+msgid "As metas dos vendedores somam"
+msgstr ""
+
+msgid "Soma das metas dos vendedores contra a meta da loja"
+msgstr ""
+
+msgid "Vendedores"
+msgstr ""
+
+msgid "Ritmo"
+msgstr ""
+
+msgid "no mês"
+msgstr ""
+
+msgid "O traço é onde a barra deveria estar hoje para bater a meta."
+msgstr ""
+
+msgid "Ninguém participa da fila nesta loja."
+msgstr ""
+
+msgid "Confira os valores e salve."
+msgstr ""
+
+msgid "Descartar"
+msgstr ""
+
+msgid "Salvar metas"
+msgstr ""
+
 msgid "Trocar de loja"
+msgstr ""
+
+msgid "Histórico"
 msgstr ""
 
 msgid "Meu painel"

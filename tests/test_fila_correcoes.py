@@ -397,10 +397,9 @@ def test_por_em_pausa_recusa_quem_atende_e_tipo_que_nao_serve(loja):
 # --- O fluxo de espera (spec 2026-09-17-fluxo-da-fila-por-empresa) ----------
 
 def _empresa_com_espera(loja):
-    from plataforma.models import FluxoDaFila
+    from fila.fluxo import FluxoDaFila, definir_fluxo
 
-    loja.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
-    loja.empresa.save(update_fields=["fluxo_da_fila"])
+    definir_fluxo(loja.empresa, FluxoDaFila.ESPERA)
 
 
 def _ana_em_espera(loja):

@@ -831,33 +831,58 @@ class TestOFluxoDaFilaDaEmpresa:
         return c
 
     def test_o_padrao_e_o_fluxo_de_hoje(self, db):
-        from plataforma.models import Empresa, FluxoDaFila
+        from fila.fluxo import FluxoDaFila, fluxo_de
+        from plataforma.models import Empresa
 
         nova = Empresa.objects.create(razao_social="Padrao Ltda")
-        assert nova.fluxo_da_fila == FluxoDaFila.VOLTA
+        assert fluxo_de(nova) == FluxoDaFila.VOLTA
 
     def test_o_titular_troca_o_fluxo_pela_tela(self, titular):
-        from plataforma.models import Empresa, FluxoDaFila
+        from fila.fluxo import FluxoDaFila, fluxo_de
+        from plataforma.models import Empresa
 
         alvo = Empresa.objects.get(razao_social="Normadin Ltda")
         titular.post(reverse("empresa"), {
             "acao": "salvar", "empresa": str(alvo.pk),
             "razao_social": "Normadin Ltda", "fluxo_da_fila": "espera"})
-        alvo.refresh_from_db()
-        assert alvo.fluxo_da_fila == FluxoDaFila.ESPERA
+        assert fluxo_de(alvo) == FluxoDaFila.ESPERA
 
     def test_valor_forjado_e_recusado_pelo_model(self, titular):
-        """Quem recusa é o `full_clean` do `Empresa.save`, e não a tela: o
-        POST vem do cliente, e a tela nunca é a única porta."""
-        from plataforma.models import Empresa, FluxoDaFila
+        """Quem recusa é o `full_clean` do model da fila, e não a tela: o
+        POST vem do cliente, e a tela nunca é a única porta. E a recusa
+        desfaz o resto do formulário: a razão social nova não fica."""
+        from fila.fluxo import FluxoDaFila, fluxo_de
+        from plataforma.models import Empresa
 
         alvo = Empresa.objects.get(razao_social="Normadin Ltda")
         resposta = titular.post(reverse("empresa"), {
             "acao": "salvar", "empresa": str(alvo.pk),
-            "razao_social": "Normadin Ltda", "fluxo_da_fila": "voar"})
+            "razao_social": "Normadin Renomeada Ltda", "fluxo_da_fila": "voar"})
         alvo.refresh_from_db()
-        assert alvo.fluxo_da_fila == FluxoDaFila.VOLTA
+        assert fluxo_de(alvo) == FluxoDaFila.VOLTA
+        assert alvo.razao_social == "Normadin Ltda"
         assert "fluxo" in resposta.content.decode().lower()
+
+    def test_campo_ausente_nao_mexe(self, titular):
+        """Um POST sem o fluxo (de uma tela que não o desenha, ou de um
+        cliente antigo) deixa o valor gravado onde está."""
+        from fila.fluxo import FluxoDaFila, definir_fluxo, fluxo_de
+        from plataforma.models import Empresa
+
+        alvo = Empresa.objects.get(razao_social="Normadin Ltda")
+        definir_fluxo(alvo, FluxoDaFila.ESPERA)
+        titular.post(reverse("empresa"), {
+            "acao": "salvar", "empresa": str(alvo.pk),
+            "razao_social": "Normadin Ltda"})
+        assert fluxo_de(alvo) == FluxoDaFila.ESPERA
+
+    def test_a_empresa_nao_guarda_mais_o_fluxo(self, db):
+        """O fluxo é da fila, e mora no app dela (`fila.FluxoDaEmpresa`): a
+        base não pode carregar uma coluna de um módulo de negócio, senão o
+        Fila Zero nunca mais recebe a base limpa (auditoria de 21/09/2026)."""
+        from plataforma.models import Empresa
+
+        assert "fluxo_da_fila" not in {c.name for c in Empresa._meta.get_fields()}
 
     def test_a_tela_oferece_as_duas_opcoes(self, titular):
         html = titular.get(reverse("empresa")).content.decode()
