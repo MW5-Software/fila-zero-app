@@ -478,8 +478,8 @@
    idioma para fora da tela. */
 .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
   height: 34px;
-  min-width: 200px;
-  max-width: 340px;
+  min-width: 240px;
+  max-width: 420px;
   padding: 0 28px 0 34px;
   border-radius: 999px;
   font-size: 13px;
@@ -494,6 +494,39 @@
 .ctx .ctx-nivel:has(> #ctx-filial_id) {
   --ctx-icone: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5M4 9h16v11H4zM9 20v-6h6v6"/></svg>');
 }
+
+/* O par de pílulas no CENTRO do cabeçalho (18/09/2026, pedido do cliente).
+
+   O `.ctx` do design system já centra o par DENTRO da faixa do meio — o
+   problema é a faixa. Numa linha flex, com a migalha de um tamanho e as ações
+   de outro, o centro dela não é o centro do cabeçalho; e igualar as pontas
+   erra por meia largura do botão do menu, que é uma quarta peça antes da
+   migalha.
+
+   Aqui o cabeçalho vira uma grade de três colunas — 1fr nas pontas e 2fr no
+   meio —, e o centro da coluna do meio É o centro do cabeçalho, com ou sem
+   migalha, e sem `position: absolute` (que numa tela estreita faria o par
+   passar por cima das ações). O botão do menu e a migalha dividem a PRIMEIRA
+   coluna: o `padding-left` da migalha é o vão do botão.
+
+   Os `minmax(0, …)` e o `width`/`margin` explícitos da migalha são a mesma
+   briga: o `1fr` do CSS é `minmax(auto, 1fr)` e uma coluna nunca encolhe abaixo
+   do conteúdo, e o `.crumb` do design system se recusa a esticar (margem
+   automática à direita). Sem os dois, a primeira coluna fica mais estreita que
+   a terceira e o par sai do centro — medido no navegador: 35px à direita. */
+header .wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  align-items: center;
+}
+header .wrap > .menu-btn { grid-area: 1 / 1; justify-self: start; }
+header .wrap > .crumb,
+header .wrap > span:empty {
+  grid-area: 1 / 1; justify-self: stretch;
+  width: auto; margin: 0; min-width: 0; padding-left: 48px;
+}
+header .wrap > .ctx-mid { grid-area: 1 / 2; }
+header .wrap > .h-actions { grid-area: 1 / 3; justify-self: end; }
 
 /* A lista que abre nas pílulas do contexto (18/09/2026).
 
