@@ -444,43 +444,33 @@ _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 _FILTRAVEIS_POR_LOJA = {**_FILTRAVEIS, "loja": ColunaFiltravel("loja_nome", "Loja")}
 
 
-def _colunas(com_meta=False, por_loja=False, varias_empresas=False):
-    """As colunas do ranking, com o cabeçalho em TEXTO.
-
-    Sem link de ordenar desde 18/09/2026, a pedido do cliente: o ranking já
-    tem a ordem que interessa (vendido, do maior para o menor, ver
-    `indicadores.PADRAO_DO_RANKING`), e o cabeçalho clicável convidava a
-    ordenar por "Pausa" e a ler a tabela como se ela fosse outra coisa.
-
-    O filtro por coluna e a paginação continuam — a R46 vira emenda com o
-    motivo escrito (`docs/superpowers/decisoes-2026-08-20-fatia-fina.md`).
-    Uma `?ordenar=` forjada continua valendo, porque `montar_pagina` precisa
-    da chave do padrão: o que saiu foi a OFERTA de ordenar, não a leitura.
-    """
+def _colunas(pagina, com_meta=False, por_loja=False, varias_empresas=False):
+    """As colunas do ranking. `pagina.cabecalho` transforma o rótulo em link
+    de ordenar — ver `comum.listagem` e R46."""
     colunas = [
-        Column("nome", str(_("Vendedor")), strong=True,
+        Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
                render=lambda p: p.nome or p.email),
-        *([Column("loja", str(_("Loja")),
+        *([Column("loja", pagina.cabecalho("loja", str(_("Loja"))),
                   render=lambda p: _nome_da_loja(p.loja, varias_empresas))]
           if por_loja else []),
-        Column("vendido", str(_("Vendido")), align="num",
+        Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
                render=lambda p: em_reais(p.vendido)),
-        Column("atendimentos", str(_("Atendimentos")), align="num"),
-        Column("vendas", str(_("Vendas")), align="num"),
-        Column("conversao", str(_("Conversão")), align="num",
+        Column("atendimentos", pagina.cabecalho("atendimentos", str(_("Atendimentos"))), align="num"),
+        Column("vendas", pagina.cabecalho("vendas", str(_("Vendas"))), align="num"),
+        Column("conversao", pagina.cabecalho("conversao", str(_("Conversão"))), align="num",
                render=lambda p: _pct(p.conversao)),
-        Column("ticket", str(_("Ticket médio")), align="num",
+        Column("ticket", pagina.cabecalho("ticket", str(_("Ticket médio"))), align="num",
                render=lambda p: _dinheiro(p.ticket)),
-        Column("pediu", str(_("Cliente pediu")), align="num"),
-        Column("pausa", str(_("Pausa")), align="num",
+        Column("pediu", pagina.cabecalho("pediu", str(_("Cliente pediu"))), align="num"),
+        Column("pausa", pagina.cabecalho("pausa", str(_("Pausa"))), align="num",
                render=lambda p: f"{int(p.pausa.total_seconds() // 60)} min"),
     ]
     if com_meta:
         colunas += [
-            Column("meta", str(_("Meta")), align="num",
+            Column("meta", pagina.cabecalho("meta", str(_("Meta"))), align="num",
                    render=lambda p: _dinheiro(p.meta)),
-            Column("pct_meta", str(_("% da meta")), align="num",
-                   render=lambda p: _pct(p.pct_meta)),
+            Column("pct_meta", pagina.cabecalho("pct_meta", str(_("% da meta"))),
+                   align="num", render=lambda p: _pct(p.pct_meta)),
         ]
     return colunas
 
@@ -680,7 +670,7 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     blocos.append(cartao_do_ranking(request, mes, meses=meses_do_ranking(recorte, mes),
                                     attrs={"data-ind": "ranking"}, body=[
         listagem.barra,
-        Table(columns=_colunas(com_meta=True, por_loja=todas,
+        Table(columns=_colunas(listagem, com_meta=True, por_loja=todas,
                                varias_empresas=len(empresas) > 1),
               rows=listagem.linhas),
         listagem.paginacao,

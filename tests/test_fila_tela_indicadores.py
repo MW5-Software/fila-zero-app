@@ -129,7 +129,7 @@ def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
     _venda_hoje(rede, rede.caio, rede.matriz, "200")
     html = _html(logado("sylvia"), periodo="hoje", loja="todas")
     ranking = html[html.index('data-ind="ranking"'):]
-    assert re.search(r"<th[^>]*>\s*Loja", ranking)
+    assert re.search(r"<th[^>]*>\s*<a[^>]*>Loja", ranking)
     linhas = re.findall(r"<tr[^>]*>(.*?)</tr>", ranking, re.S)
     do_caio = [l for l in linhas if "Caio" in l]
     assert len(do_caio) == 2
@@ -150,7 +150,7 @@ def test_uma_loja_nao_tem_coluna_de_loja(rede):
 
     _venda_hoje(rede, rede.ana, rede.matriz, "300")
     html = _html(logado("sylvia"), periodo="hoje")
-    assert not re.search(r"<th[^>]*>\s*Loja", html)
+    assert not re.search(r"<th[^>]*>\s*<a[^>]*>Loja", html)
 
 
 def test_gerente_de_uma_loja_nao_ganha_todas_as_lojas(rede):
@@ -161,10 +161,7 @@ def test_gerente_de_uma_loja_nao_ganha_todas_as_lojas(rede):
     assert 'data-ind="por-loja"' not in html
 
 
-def test_ranking_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(rede):
-    """R46 com a emenda de 18/09/2026: o cliente pediu as tabelas sem a
-    ordenação por coluna, e o ranking é a primeira delas. O filtro por coluna e
-    a paginação continuam — e é isso que este teste cobra."""
+def test_ranking_tem_filtro_ordenacao_e_paginacao(rede):
     from tests.test_regra_tabela import (
         _MARCADOR_FILTRO, _MARCADOR_PAGINACAO, _PADRAO_CABECALHO_ORDENAVEL)
 
@@ -172,7 +169,7 @@ def test_ranking_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(rede):
     html = _html(logado("sylvia"), periodo="hoje", loja=str(rede.centro.pk))
     assert "<table" in html
     assert _MARCADOR_FILTRO in html and _MARCADOR_PAGINACAO in html
-    assert not _PADRAO_CABECALHO_ORDENAVEL.search(html)
+    assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
 
 
 def test_aviso_de_esquecidos(rede):

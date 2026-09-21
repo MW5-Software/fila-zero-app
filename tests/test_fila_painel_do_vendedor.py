@@ -140,17 +140,14 @@ def test_quem_nao_fechou_atendimento_ve_a_frase_e_nenhuma_linha_marcada(loja):
     assert 'aria-current="true"' not in html.split('data-ind="ranking-da-loja"')[1]
 
 
-def test_o_ranking_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(loja):
-    """A emenda à R46 de 18/09/2026 vale para o ranking do vendedor também: a
-    posição é sempre pelo vendido, e o cabeçalho clicável convidava a ordenar
-    por outra coisa."""
+def test_o_ranking_tem_filtro_ordenacao_e_paginacao(loja):
     from tests.test_regra_tabela import (
         _MARCADOR_FILTRO, _MARCADOR_PAGINACAO, _PADRAO_CABECALHO_ORDENAVEL)
 
     _atendimento(loja, loja.ana, "300")
     html = _html(logado("ana"), periodo="hoje")
     assert _MARCADOR_FILTRO in html and _MARCADOR_PAGINACAO in html
-    assert not _PADRAO_CABECALHO_ORDENAVEL.search(html)
+    assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
 
 
 def test_buscar_no_ranking_nao_muda_a_posicao(loja):

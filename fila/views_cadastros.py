@@ -159,21 +159,31 @@ def _desenhar(request, cadastro, erro=None) -> HttpResponse:
             conteudo.append(Alert(message=erro, tone="danger"))
         conteudo.append(Card(title=cadastro.titulo, padded=False, body=[
             listagem.barra,
-            # Cabeçalho em texto, e não clicável (18/09/2026, pedido do
-            # cliente): a lista de um cadastro já sai na ordem dela, que é o
-            # campo "Ordem" — ordenar por "Situação" só afastava a tela do que
-            # ela mostra por padrão.
             Table(columns=[
-                Column("nome", "Nome", strong=True),
-                Column("ordem", "Ordem", align="center"),
-                Column("ativo", "Situação",
+                # O nome veste a classe que a folha da tela põe em CAIXA ALTA
+                # (`fila/static/fila/cadastros.css`). É da FOLHA, e não do
+                # dado: o cadastro continua gravado como a pessoa o escreveu,
+                # e a folha de venda da fila mostra "Sofás" — a caixa alta é a
+                # leitura desta lista, e só dela (18/09/2026, pedido do
+                # cliente).
+                Column("nome", listagem.cabecalho("nome", "Nome"), strong=True,
+                       render=lambda l: format_html(
+                           '<span class="cadastro-nome">{}</span>', l.nome)),
+                # A coluna "Ordem" saiu em 18/09/2026, a pedido do cliente. O
+                # campo continua no cadastro, e a lista continua saindo por ele
+                # (`_ORDENAVEIS`, `padrao="ordem"`): o que saiu foi o número na
+                # cara de quem lê a tela.
+                Column("ativo", listagem.cabecalho("ativo", "Situação"),
                        render=lambda l: "Ativo" if l.ativo else "Inativo"),
             ], rows=listagem.linhas, row_actions=_acoes_da_linha),
             listagem.paginacao,
         ]))
         pagina = site.page(
             title=cadastro.titulo, width="full",
-            stylesheets=["/static/plataforma/listagem.css"],
+            # A folha da tela: o nome de cada item em caixa alta
+            # (`fila/static/fila/cadastros.css`).
+            stylesheets=["/static/plataforma/listagem.css",
+                         "/static/fila/cadastros.css"],
             content=conteudo, crumbs=[Crumb(cadastro.titulo)],
             user=getattr(request, "usuario", None),
             overlays=_modais(request, cadastro, listagem.linhas))

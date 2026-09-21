@@ -76,10 +76,7 @@ def test_colunas_filtro_e_acao_por_extenso(rede):
     _correcao(rede, rede.centro, rede.caio, rede.gil, "chegou antes")
     html = _html(logado("gil"))
     assert _MARCADOR_FILTRO in html and _MARCADOR_PAGINACAO in html
-    # Sem cabeçalho clicável desde 18/09/2026 (emenda à R46): a correção mais
-    # recente em cima é a ordem que o gerente quer, e o filtro é o que ele usa
-    # para procurar.
-    assert not _PADRAO_CABECALHO_ORDENAVEL.search(html)
+    assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
     assert "Mudou de posição" in html and "de 2º para 1º" in html
     filtrado = _html(logado("gil"), **{"f:observacao:contem": "banco"})
     assert "chegou antes" not in filtrado

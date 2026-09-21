@@ -1,0 +1,17 @@
+/* Os cadastros da fila: grupos de item, motivos de não venda e tipos de pausa.
+
+   O NOME de cada item cadastrado sai em CAIXA ALTA (18/09/2026, pedido do
+   cliente) — a mesma leitura da tela de Parâmetros, onde o nome do parâmetro
+   aparece em maiúsculas.
+
+   **Na folha, e não no dado.** O cadastro continua gravado como a pessoa o
+   escreveu ("Sofás", "Almoço"), e é assim que ele aparece na folha de venda
+   da fila, nos gráficos do Início e no histórico: subir a caixa no `save`
+   faria a caixa alta vazar para todo lugar onde o nome é lido, e não há como
+   voltar atrás depois — o nome original se perde. `text-transform` muda o que
+   se vê nesta lista, e só.
+
+   A classe vem do `render` da coluna em `fila/views_cadastros.py`, porque o
+   `Column` do design system não aceita classe livre na célula (`cell_classes`
+   é só alinhamento/peso) e o `nucleo/` é porte verbatim. */
+.cadastro-nome { text-transform: uppercase; }

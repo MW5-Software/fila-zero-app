@@ -395,32 +395,3 @@ reservada, largura acompanha. **Não é regra do KRONOS — é bug do
 **O que isto NÃO decide:** a marca do cliente na entrada e no menu continua
 inteira — cor, logo, favicon, rótulos. A regra é sobre um lugar só.
 
----
-
-## R49 — A ordem das colunas saiu das tabelas do app da fila (18/09/2026)
-
-**Emenda à R46**, pedida pelo cliente depois de usar o Fila Zero: as tabelas do
-app — o ranking do Início, o ranking do painel do vendedor, o histórico da fila
-e os três cadastros — **não têm mais cabeçalho clicável**. Filtro por coluna e
-paginação continuam obrigatórios, como na R46.
-
-**Por quê:** o ranking já tem a ordem que interessa, e ela não é uma escolha —
-é o vendido, do maior para o menor (`indicadores.PADRAO_DO_RANKING`). O
-cabeçalho clicável convidava a ordenar por "Pausa" e a ler a tabela como se ela
-fosse outra coisa. No cadastro, a lista sai na ordem dela, que é o campo
-`Ordem`, e ordenar por "Situação" só afastava a tela do que ela mostra por
-padrão. Quem procura uma linha usa o filtro da coluna, que ficou.
-
-**O que a emenda NÃO muda:** as telas da base (Usuários, Cargos, Empresas,
-Filiais, Auditoria) continuam com os três. A decisão é do app da fila, onde o
-ranking é a tela que a gestão abre todo dia — e não uma regra nova para o
-sistema inteiro.
-
-**Como a regra continua com dente:** a varredura de
-`tests/test_regra_tabela.py` ganhou uma lista de isenção **só da ordenação**,
-com o motivo ao lado e um teste que recusa nome de rota que não existe mais;
-filtro e paginação seguem exigidos para toda tabela, sem lista nenhuma. Como a
-varredura visita o sistema como superusuário sem empresa, ela não alcança as
-telas da fila (elas só montam `<table>` com uma loja no contexto): quem cobra
-as três ali — e agora também a AUSÊNCIA do cabeçalho clicável — são os testes
-de cada tela.

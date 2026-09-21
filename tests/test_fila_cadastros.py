@@ -111,14 +111,10 @@ def test_a_lista_mostra_so_a_empresa_do_contexto():
 
 
 @pytest.mark.parametrize("rota, model, rotulo", TELAS)
-def test_a_tabela_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(rota, model, rotulo):
-    """R46 com a emenda de 18/09/2026, conferida com uma linha na tela: a
-    varredura de `tests/test_regra_tabela.py` visita como superusuário sem
-    empresa, e a lista vazia não desenha `<table>` nenhuma — ela passaria sem
-    olhar.
-
-    O cadastro sai na ordem dele, que é o campo "Ordem", e a coluna clicável
-    só afastava a tela disso. O filtro e a paginação continuam."""
+def test_a_tabela_tem_filtro_ordenacao_e_paginacao(rota, model, rotulo):
+    """R46 conferida aqui, com uma linha na tela: a varredura de
+    `tests/test_regra_tabela.py` visita como superusuário sem empresa, e a
+    lista vazia não desenha `<table>` nenhuma — ela passaria sem olhar."""
     from tests.test_regra_tabela import (
         _MARCADOR_FILTRO, _MARCADOR_PAGINACAO, _PADRAO_CABECALHO_ORDENAVEL)
 
@@ -128,7 +124,40 @@ def test_a_tabela_tem_filtro_e_paginacao_e_sem_cabecalho_clicavel(rota, model, r
     assert "<table" in html
     assert _MARCADOR_FILTRO in html
     assert _MARCADOR_PAGINACAO in html
-    assert not _PADRAO_CABECALHO_ORDENAVEL.search(html)
+    assert _PADRAO_CABECALHO_ORDENAVEL.search(html)
+
+
+@pytest.mark.parametrize("rota, model, rotulo", TELAS)
+def test_a_coluna_ordem_saiu_da_tabela(rota, model, rotulo):
+    """18/09/2026, pedido do cliente: a coluna "Ordem" sai da TABELA.
+
+    O campo continua no cadastro (`Ordem` aparece no modal, e é por ele que a
+    lista sai), e é por isso que não dá para procurar a palavra na página
+    inteira: a conferência é no cabeçalho da tabela."""
+    empresa, _, _ = sylvia()
+    _model(model).irrestritos.create(empresa=empresa, nome="Almoço")
+    html = logado("sylvia").get(reverse(rota)).content.decode()
+    cabecalho = html[html.index("<thead>"):html.index("</thead>")]
+
+    assert "Ordem" not in cabecalho
+    assert "Nome" in cabecalho and "Situação" in cabecalho
+
+
+@pytest.mark.parametrize("rota, model, rotulo", TELAS)
+def test_o_nome_do_item_vem_na_classe_da_caixa_alta(rota, model, rotulo):
+    """O nome em CAIXA ALTA é da folha da tela, e não do dado: a célula veste
+    `cadastro-nome`, e o cadastro continua gravado como a pessoa o escreveu
+    ("Almoço", e não "ALMOÇO")."""
+    from pathlib import Path
+
+    empresa, _, _ = sylvia()
+    _model(model).irrestritos.create(empresa=empresa, nome="Almoço")
+    html = logado("sylvia").get(reverse(rota)).content.decode()
+
+    assert 'class="cadastro-nome">Almoço</span>' in html
+    assert "ALMOÇO" not in html
+    folha = Path("fila/static/fila/cadastros.css").read_text(encoding="utf-8")
+    assert ".cadastro-nome { text-transform: uppercase; }" in folha
 
 
 def test_filtrar_por_situacao_mostra_so_os_inativos():
