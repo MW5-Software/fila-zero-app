@@ -557,6 +557,9 @@ msgstr "Usted ya está atendiendo."
 msgid "Você está em pausa. Volte para a fila primeiro."
 msgstr "Usted está en pausa. Vuelva a la fila primero."
 
+msgid "Você está em espera. Entre na fila primeiro."
+msgstr "Usted está en espera. Entre en la fila primero."
+
 #, python-format
 msgid "A vez é de %(nome)s. Você é o %(posicao)sº da fila."
 msgstr "El turno es de %(nome)s. Usted es el %(posicao)sº de la fila."

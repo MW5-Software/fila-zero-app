@@ -519,6 +519,24 @@ def test_entrar_na_fila_de_quem_atende_ou_esta_em_pausa(loja):
     assert recusa.value.frase == "Encerre a pausa primeiro."
 
 
+@pytest.mark.parametrize("acao", ["vou_atender", "cliente_pediu"])
+def test_quem_esta_em_espera_nao_atende_sem_entrar_na_fila(loja, acao):
+    """Tela velha (dois aparelhos, toque duplo): o POST de atender chega de
+    quem já está em espera. Com a fila vazia isto era um 500."""
+    from fila import acoes
+    from fila.models import Atendimento, Estado, LugarNaFila
+
+    _com_espera(loja)
+    acoes.bater_ponto(loja.ana, loja.matriz)
+    acoes.vou_atender(loja.ana, loja.matriz)
+    acoes.finalizar(loja.ana, loja.matriz, _nao_venda(loja.cad.motivo.pk))
+    with pytest.raises(acoes.Recusa) as recusa:
+        getattr(acoes, acao)(loja.ana, loja.matriz)
+    assert recusa.value.frase == "Você está em espera. Entre na fila primeiro."
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.EM_ESPERA
+    assert Atendimento.irrestritos.count() == 1
+
+
 def test_encerrar_a_pausa_segue_o_fluxo_da_empresa(loja):
     from fila.acoes import bater_ponto, pausar, voltar_para_a_fila
     from fila.models import Estado, LugarNaFila, Pausa
