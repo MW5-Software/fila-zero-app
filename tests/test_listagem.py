@@ -114,6 +114,16 @@ class TestPaginacao:
         assert len(pagina.linhas) == POR_PAGINA
         assert pagina.paginacao.total == 60
 
+    def test_a_tela_pode_pedir_o_proprio_tamanho_de_pagina(self, muitos_perfis):
+        """`por_pagina` é a exceção da TELA (veio do Portal, 18/09/2026): o
+        seletor de produtos mora num diálogo, e as linhas do padrão empurravam
+        o botão de adicionar para fora da janela. O total continua o mesmo."""
+        pagina = montar_pagina(
+            _get(), _QUERY_BASE, ordenaveis=ORDENAVEIS, padrao="perfil",
+            por_pagina=7)
+        assert len(pagina.linhas) == 7
+        assert pagina.paginacao.total == 60
+
     def test_segunda_pagina_continua_de_onde_a_primeira_parou(self, muitos_perfis):
         primeira = montar_pagina(
             _get(), _QUERY_BASE, ordenaveis=ORDENAVEIS, padrao="perfil")

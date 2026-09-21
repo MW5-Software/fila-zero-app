@@ -326,11 +326,19 @@ def preparar_consulta(
     return queryset.order_by(*campos), crus
 
 
-def paginar(queryset, bruto: "str | None") -> "tuple[list, int, int, int]":
+def paginar(queryset, bruto: "str | None",
+            por_pagina: "int | None" = None) -> "tuple[list, int, int, int]":
     """`(linhas, total, numero, por_pagina)` — a paginação sem HTML.
 
     Usada pela tela (`montar_pagina`) e pela API (`listar_para_api`): o número
     de linhas por página e a volta para a página 1 existem num lugar só.
+
+    **`por_pagina` é a exceção da TELA, não da instalação** (18/09/2026). O
+    normal é o parâmetro `itens_por_pagina`, que o cliente ajusta uma vez e
+    vale para todas as listas. Uma tela passa o seu número quando o espaço
+    manda: o seletor de produtos vive dentro de um diálogo, e as 25 linhas do
+    padrão fazem a lista passar da altura da janela — o rodapé com "Adicionar"
+    sai de vista, e o botão que a pessoa procura é o que ela não acha.
     """
     # Import adiado: `parametro_catalogo` não é importado no topo do arquivo
     # de propósito — evita ciclo com `plataforma.parametro`, que declara o
@@ -339,7 +347,7 @@ def paginar(queryset, bruto: "str | None") -> "tuple[list, int, int, int]":
     # padrão que a declaração referencia, e não um número duplicado à parte.
     from plataforma.parametro_catalogo import valor_de
 
-    por_pagina = valor_de("itens_por_pagina")
+    por_pagina = por_pagina or valor_de("itens_por_pagina")
     total = queryset.count()
     numero = _pagina_valida(bruto)
     inicio = (numero - 1) * por_pagina
@@ -410,6 +418,7 @@ def montar_pagina(
     padrao: str,
     filtraveis: "dict[str, ColunaFiltravel] | None" = None,
     preservar: "Sequence[str]" = (),
+    por_pagina: "int | None" = None,
 ) -> Pagina:
     """Lê `?ordenar=` e `?pagina=` da requisição atual e devolve a `Pagina`
     pronta para a tela desenhar.
@@ -429,7 +438,8 @@ def montar_pagina(
     chave, desc, _ = _resolver_ordenacao(
         request.GET.get(PARAM_ORDENAR, ""), ordenaveis, padrao)
 
-    linhas, total, numero, por_pagina = paginar(queryset, request.GET.get(PARAM_PAGINA))
+    linhas, total, numero, por_pagina = paginar(
+        queryset, request.GET.get(PARAM_PAGINA), por_pagina)
 
     def url_for_page(pagina: int) -> str:
         return _url_com(request, {PARAM_PAGINA: pagina})
