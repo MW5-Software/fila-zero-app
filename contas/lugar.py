@@ -141,6 +141,12 @@ def alcance_em(pessoa, empresa, filial) -> str:
     return vigente.cargo.alcance if vigente else Alcance.PROPRIOS
 
 
+def _tem_tudo_do_cargo(editor, empresa, filial, cargo) -> bool:
+    retrato = User(id=str(editor.pk), name="",
+                   permissions=permissoes_em(editor, empresa, filial))
+    return all(pode(retrato, p) for p in permissoes_do_cargo(cargo))
+
+
 def pode_dar(editor, empresa, filial, cargo) -> bool:
     """Se `editor` pode alocar alguém com `cargo` neste lugar.
 
@@ -149,7 +155,9 @@ def pode_dar(editor, empresa, filial, cargo) -> bool:
 
     1. o lugar é um que o editor alcança; na empresa inteira, só quem alcança a
        empresa inteira;
-    2. o editor tem `usuarios.editar` ali e todas as permissões do cargo;
+    2. o editor tem `usuarios.editar` ali e todas as permissões do cargo — o
+       titular também, que não tem `usuarios.editar` a conferir mas não dá o
+       que não tem;
     3. o alcance do cargo não é maior que o do editor (R7).
     """
     if editor is None or empresa is None or cargo is None:
@@ -161,7 +169,10 @@ def pode_dar(editor, empresa, filial, cargo) -> bool:
     if _ve_tudo(editor):
         return True
     if editor.nivel == Nivel.TITULAR:
-        return _e_dono(editor, empresa)
+        # Dono dá qualquer cargo da conta, MENOS o que carrega o que ele
+        # mesmo não tem (`parametros.editar` é da MW5): a trava 2 vale aqui.
+        return (_e_dono(editor, empresa)
+                and _tem_tudo_do_cargo(editor, empresa, filial, cargo))
     if filial is None:
         if not Alocacao.objects.filter(pessoa=editor, empresa=empresa,
                                        filial__isnull=True).exists():
@@ -172,7 +183,7 @@ def pode_dar(editor, empresa, filial, cargo) -> bool:
                    permissions=permissoes_em(editor, empresa, filial))
     if not pode(retrato, "usuarios.editar"):
         return False
-    if not all(pode(retrato, p) for p in permissoes_do_cargo(cargo)):
+    if not _tem_tudo_do_cargo(editor, empresa, filial, cargo):
         return False
     if _TAMANHO_DO_ALCANCE[cargo.alcance] > _TAMANHO_DO_ALCANCE[
             alcance_em(editor, empresa, filial)]:

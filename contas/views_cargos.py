@@ -43,6 +43,7 @@ from nucleo.components import (
     Modal, PageHeader, Raw, SectionLabel, Select, Table, TextInput,
 )
 from nucleo.layout import Crumb
+from nucleo.permissoes import pode
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
 
@@ -60,6 +61,23 @@ __all__ = ["cargos"]
 SEM_MODULOS = frozenset({"cargos"})
 
 NAO_ENCONTRADO = _("Cargo não encontrado.")
+
+
+def _oferecidas(request) -> "list[tuple[str, str, str, str]]":
+    """As caixas que QUEM EDITA pode marcar: fora `SEM_MODULOS`, e só o que
+    ele mesmo tem. O titular não tem `parametros.editar` (é da MW5); oferecido
+    num cargo, bastava criá-lo e dá-lo a um membro para a configuração da
+    instalação inteira sair das mãos da MW5. A MW5 tem tudo e vê tudo."""
+    usuario = getattr(request, "usuario", None)
+    return [oferecida for oferecida in permissoes_oferecidas(SEM_MODULOS)
+            if pode(usuario, _com_ponto(oferecida))]
+
+
+def _com_ponto(oferecida) -> str:
+    """`("usuarios_editar", _, "usuarios", _)` → `usuarios.editar`. Pela chave
+    do módulo, e não pelo primeiro `_`: a chave pode ter um."""
+    codename, _rotulo, chave, _modulo = oferecida
+    return f"{chave}.{codename[len(chave) + 1:]}"
 
 
 def _conta(request):
@@ -252,7 +270,7 @@ def _desenhar(request, erro=None) -> HttpResponse:
     env = ambiente()
     with use_environment(env):
         site = montar_site(request)
-        oferecidas = permissoes_oferecidas(SEM_MODULOS)
+        oferecidas = _oferecidas(request)
 
         conteudo = [
             aviso_de_personificacao(request),
@@ -310,16 +328,17 @@ def _salvar_conceder(cargo: Cargo, enviados, conta) -> None:
     cargo.pode_conceder.set(Cargo.objects.filter(conta=conta, pk__in=pedidos))
 
 
-def _salvar_permissoes(cargo: Cargo, enviadas) -> None:
+def _salvar_permissoes(request, cargo: Cargo, enviadas) -> None:
     """Troca só a fatia que a tela ofereceu: permissão de módulo desligado não
     tem caixa, e um `.set()` cego a arrancaria em silêncio.
 
     **Com uma diferença:** o que é de `SEM_MODULOS` nunca sobrevive, nem vindo
     do POST nem já gravado. Um cargo com `cargos.editar` é a
     escalada que esta tela existe para não permitir.
+
+    O que o editor não tem também não entra pelo POST (ver `_oferecidas`).
     """
-    permitidos = {codename for codename, _r, _c, _m in
-                  permissoes_oferecidas(SEM_MODULOS)}
+    permitidos = {codename for codename, _r, _c, _m in _oferecidas(request)}
     validos = set(enviadas) & permitidos
     proibidos = {f"{chave}_" for chave in SEM_MODULOS}
 
@@ -360,7 +379,7 @@ def _acao_criar(request) -> HttpResponse:
     with transaction.atomic():
         cargo = Cargo.objects.create(conta=conta, nome=nome, rotulo=rotulo,
                                      alcance=alcance, e_cliente=e_cliente)
-        _salvar_permissoes(cargo, request.POST.getlist("permissoes"))
+        _salvar_permissoes(request, cargo, request.POST.getlist("permissoes"))
         _salvar_conceder(cargo, request.POST.getlist("pode_conceder"), conta)
         registrar(ACOES.CARGO_CRIADO, request.usuario, alvo=cargo.rotulo,
                   request=request)
@@ -378,7 +397,7 @@ def _acao_salvar(request, cargo: Cargo) -> HttpResponse:
         cargo.alcance = alcance
         cargo.e_cliente = e_cliente
         cargo.save(update_fields=["rotulo", "alcance", "e_cliente"])
-        _salvar_permissoes(cargo, request.POST.getlist("permissoes"))
+        _salvar_permissoes(request, cargo, request.POST.getlist("permissoes"))
         _salvar_conceder(cargo, request.POST.getlist("pode_conceder"),
                          cargo.conta)
         registrar(ACOES.CARGO_EDITADO, request.usuario, alvo=cargo.rotulo,
