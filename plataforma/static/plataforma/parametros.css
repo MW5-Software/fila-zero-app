@@ -1,0 +1,12 @@
+/* A tela de Parâmetros em MAIÚSCULAS (18/09/2026, pedido do cliente).
+
+   Vale para o título de cada parâmetro (`Card` → `.ch h2`) e para o nome do
+   grupo (`SectionLabel` → `.seclabel`), e só nesta tela: a folha é carregada
+   por `plataforma/views_parametros.py`, e mais ninguém a pede.
+
+   **No CSS, e não no dado.** O rótulo do parâmetro é a frase que o
+   `ParametroSpec` declara e que o Babel traduz; subir a caixa no `rotulo`
+   faria a frase do `gettext` ser a maiúscula, e em castelhano também — sem
+   volta, e mentindo sobre o nome do parâmetro em toda leitura que não é tela
+   (auditoria, ajuda, log). `text-transform` muda o que se vê, e só. */
+.ch h2, .seclabel { text-transform: uppercase; }

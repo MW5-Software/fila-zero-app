@@ -135,6 +135,10 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
         pagina = site.page(
             title=_("Parâmetros"),
             width="full",
+            # A folha desta tela: título e grupo em maiúsculas (18/09/2026).
+            # Ela é carregada só aqui, e é isso que a mantém fora do resto do
+            # sistema — `.seclabel` e `.ch h2` também existem noutras telas.
+            stylesheets=["/static/plataforma/parametros.css"],
             content=conteudo,
             crumbs=[Crumb(_("Parâmetros"))],
             user=getattr(request, "usuario", None),

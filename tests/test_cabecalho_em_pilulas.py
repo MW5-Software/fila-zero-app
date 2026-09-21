@@ -48,6 +48,20 @@ def test_a_pilula_so_vale_onde_o_has_vale(css):
     assert "border-radius: 999px" in bloco
 
 
+def test_a_pilula_tem_largura_para_o_nome_da_empresa(css):
+    """18/09/2026, pedido do cliente: 230px cortava o nome da empresa e o da
+    loja justamente em quem tem mais de uma — o caso em que o seletor existe —,
+    e um nome curto encolhia a pílula até virar um selo com um vão do lado. O
+    `max-width` continua: nome de sessenta caracteres não pode empurrar o
+    avatar e o idioma para fora da tela."""
+    regra = ".ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {"
+    bloco = css.split(regra)[1].split("}")[0]
+
+    assert "min-width: 200px" in bloco
+    assert "max-width: 340px" in bloco
+    assert "max-width: 230px" not in bloco
+
+
 def test_a_lista_desenhada_por_nos_vive_dentro_do_supports(css):
     """`appearance: base-select` é melhoria progressiva: onde o navegador não
     a entende (Firefox e Safari, hoje), a lista tem de continuar sendo a

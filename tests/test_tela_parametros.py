@@ -186,6 +186,34 @@ class TestRestaurar:
         ).exists()
 
 
+class TestOMaiusculoDaTela:
+    """18/09/2026, pedido do cliente: o título de cada parâmetro e o nome do
+    grupo em MAIÚSCULAS.
+
+    No CSS, e não no dado: o rótulo é a frase que o `ParametroSpec` declara e
+    que o Babel traduz, e subir a caixa nele faria a frase do `gettext` ser a
+    maiúscula — em castelhano também, e em toda leitura que não é tela.
+    """
+
+    def test_a_folha_da_tela_sobe_a_caixa_do_titulo_e_do_grupo(self):
+        from pathlib import Path
+
+        folha = Path("plataforma/static/plataforma/parametros.css").read_text(
+            encoding="utf-8")
+        assert ".ch h2, .seclabel { text-transform: uppercase; }" in folha
+
+    def test_a_tela_carrega_a_folha(self, cliente_admin):
+        html = cliente_admin.get(reverse("parametros")).content.decode()
+        assert "/static/plataforma/parametros.css" in html
+
+    def test_o_rotulo_no_html_continua_como_o_codigo_escreveu(self, cliente_admin):
+        """O outro lado: se um dia alguém "resolver" o maiúsculo no `rotulo` do
+        parâmetro, a frase do código vira maiúscula e este teste cai."""
+        html = cliente_admin.get(reverse("parametros")).content.decode()
+        assert "Meta para quem gerencia a loja" in html
+        assert "META PARA QUEM GERENCIA A LOJA" not in html
+
+
 class TestSemTabela:
     """R46 (filtro, ordenação, paginação) é sobre tela com `<table>` — esta
     tela é grupos de cartões e formulários, não uma listagem."""

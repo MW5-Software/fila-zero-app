@@ -470,9 +470,16 @@
   -webkit-mask: var(--ctx-icone) center / contain no-repeat;
   mask: var(--ctx-icone) center / contain no-repeat;
 }
+/* Largura (18/09/2026, pedido do cliente): 230px cortava o nome da empresa e o
+   da loja justamente em quem tem mais de uma — o caso em que o seletor existe.
+   O `min-width` é a outra metade do pedido: com nome curto, a pílula encolhia
+   até virar um selo, e sobrava um vão no meio do cabeçalho. O `max-width`
+   continua, porque um nome de 60 caracteres não pode empurrar o avatar e o
+   idioma para fora da tela. */
 .ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
   height: 34px;
-  max-width: 230px;
+  min-width: 200px;
+  max-width: 340px;
   padding: 0 28px 0 34px;
   border-radius: 999px;
   font-size: 13px;
