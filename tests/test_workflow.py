@@ -80,6 +80,17 @@ class TestONossoCiNaoPublicaImagemAlheia:
             f"{culpados}")
 
 
+    def test_so_publica_o_que_veio_de_push_neste_repositorio(self):
+        """`workflow_run` com `branches: main` filtra o NOME do branch, e o
+        `testes.yml` roda também em `pull_request`. Um PR de fork com um
+        branch chamado "main" terminava a suíte "na main" e subia para a GHCR
+        e para a homologação com os segredos daqui (auditoria de 21/09/2026).
+        A condição do job tem de exigir o `push` e o repositório de origem."""
+        texto = _sem_comentario(WORKFLOWS / "publicar-imagem.yml")
+        assert "github.event.workflow_run.event == 'push'" in texto
+        assert ("github.event.workflow_run.head_repository.full_name"
+                " == github.repository") in texto
+
 class TestASuiteRodaNoCi:
     """Sem isto, o CI existe e não prova nada — foi o estado do KRONOS até
     hoje: o workflow construía e publicava sem rodar um teste sequer."""
