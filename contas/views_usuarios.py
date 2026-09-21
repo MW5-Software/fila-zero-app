@@ -405,33 +405,60 @@ def _seletor_de_conta(request, atual=None) -> "Select | None":
                  for c in contas])
 
 
-def _nivel_de(usuario) -> str:
-    """O nível da pessoa, por extenso.
+def _com_cargo_ordem(pessoas):
+    """O primeiro cargo de cada pessoa, para a coluna ordenar.
 
-    **Deixou de existir o traço.** Enquanto o nível morava numa tabela ao
-    lado (`acesso_acesso`), uma pessoa podia não ter linha nenhuma, e a lista
-    escrevia "—" para não afirmar um nível que o banco não dizia. Agora
-    `nivel` é COLUNA da pessoa, com padrão: toda linha tem um, e o traço
-    passaria a ser um estado que não existe mais.
+    **Anotação, e não o caminho da relação.** `order_by("alocacoes__cargo__rotulo")`
+    faz JOIN com uma relação de VÁRIOS, e a pessoa com dois cargos volta duas
+    vezes na lista — a linha repetida que a coluna Cargo existe para evitar. O
+    `Min` agrega por pessoa (com o `GROUP BY` que a anotação cria), e a lista
+    continua com uma linha por gente. A coluna mostra TODOS os cargos; o que
+    ordena é o primeiro deles, em ordem alfabética.
+
+    A empresa já vem anotada por `_com_empresa` (que também usa `StringAgg` e
+    pelo mesmo motivo): as duas anotações convivem no mesmo `GROUP BY`.
     """
-    return usuario.get_nivel_display()
+    from django.db.models import Min
+
+    return pessoas.annotate(cargo_ordem=Min("alocacoes__cargo__rotulo"))
+
+
+def _cargos_de(usuario) -> str:
+    """Os cargos da pessoa, por extenso — um por alocação, sem repetir.
+
+    **A coluna era NÍVEL**, e ela não respondia à pergunta que esta tela mais
+    recebe ("quem é o gerente aqui?"): quase todo mundo é MEMBRO, e a lista
+    inteira escrevia "Usuário". Quem diz o que a pessoa faz é o CARGO da
+    alocação, no lugar em que ela está (18/09/2026, pedido do cliente).
+
+    Vários cargos saem juntos, separados por vírgula: a mesma pessoa é Gerente
+    numa loja e Vendedora noutra, e mostrar só um faria a tela mentir sobre
+    ela. O titular e a MW5 não têm alocação e ficam com "—": o que eles podem
+    não vem de cargo nenhum (`contas/fabrica.py`).
+    """
+    vistos: list[str] = []
+    for alocacao in usuario.alocacoes.all():
+        if alocacao.cargo.rotulo not in vistos:
+            vistos.append(alocacao.cargo.rotulo)
+    return ", ".join(vistos) if vistos else "—"
 
 
 def _colunas_da_lista(pagina) -> list[Column]:
     """`pagina.cabecalho` transforma o rótulo em link de ordenar — ver
     `comum.listagem` e R46.
 
-    **A coluna é NÍVEL**: a pergunta que se faz olhando esta tabela é "o que
-    essa pessoa é?" — a MW5, o titular ou um membro. Onde cada membro trabalha,
-    e com qual cargo, está no modal de editar (bloco Alocações).
+    **A coluna é CARGO** (18/09/2026, pedido do cliente): é ele que diz o que
+    a pessoa faz, e é por ele que se procura nesta tela. O nível continua na
+    ficha (e na coluna do modal), mas na lista ele só dizia "Usuário" para
+    quase todo mundo.
     """
     return [
         Column("nome", pagina.cabecalho("nome", "Nome"), strong=True,
                render=lambda u: u.nome or "—"),
         Column("login", pagina.cabecalho("login", "Login"),
                render=lambda u: u.email),
-        Column("nivel", pagina.cabecalho("nivel", "Nível"),
-               render=_nivel_de),
+        Column("cargo", pagina.cabecalho("cargo", "Cargo"),
+               render=_cargos_de),
         Column("empresa", pagina.cabecalho("empresa", "Empresa"),
                render=lambda u: u.empresa_nome or "—"),
         Column("situacao", pagina.cabecalho("situacao", "Situação"),
@@ -1001,11 +1028,12 @@ def _modais_de_usuario(request, usuario: Usuario, oferta) -> list[Modal]:
 _ORDENAVEIS = {
     "nome": ("nome", "email"),
     "login": ("email",),
-    # Pelo NÚMERO do nível, que é a hierarquia (0 é Master, 3 é Comprador), e
-    # não pelo rótulo, que sairia em ordem alfabética — "Admin, Comprador,
-    # Master, Vendedor" não é ordem nenhuma. Desempata pelo login como as
-    # outras.
-    "nivel": ("nivel", "email"),
+    # Pelo RÓTULO do cargo, que é o que a coluna mostra. `cargo_ordem` é a
+    # anotação de `_com_cargo_ordem`: ordenar pelo caminho da relação
+    # (`alocacoes__cargo__rotulo`) devolveria a pessoa DUAS vezes quando ela
+    # tem dois cargos — a linha repetida que a própria coluna foi feita para
+    # evitar. Desempata pelo login como as outras.
+    "cargo": ("cargo_ordem", "email"),
     "empresa": ("empresa_nome", "email"),
     "situacao": ("is_active", "email"),
 }
@@ -1014,23 +1042,30 @@ _ORDENAVEIS = {
 #: procura. "Situação" fica de fora de propósito: é ativo ou inativo, e um
 #: campo de texto para dois valores é pior que nenhum — quando existir um
 #: componente de escolha na coluna, ela entra.
-def _niveis_para_escolha() -> list[tuple[str, str]]:
-    """Os quatro níveis, na ordem da hierarquia. Lista fechada e conhecida —
-    por isso caixa de escolha, e não campo de texto."""
-    from contas.models import Nivel
+def _cargos_para_escolha() -> list[tuple[str, str]]:
+    """Os cargos que existem HOJE nesta instalação, por rótulo.
 
-    return [(str(int(n)), n.label) for n in Nivel]
+    **Não é lista fechada como era a dos níveis**: o titular cria cargos em
+    `/cargos`, e uma caixa fixa deixaria de achar quem tem o cargo novo. O
+    `Callable` existe justamente para isto (`comum.listagem.ColunaFiltravel`):
+    a lista é lida a cada desenho da barra, e não congelada na importação.
+    """
+    from contas.models import Cargo
+
+    return list(Cargo.objects.order_by("rotulo")
+                .values_list("rotulo", flat=True).distinct())
 
 
 _FILTRAVEIS = {
     "nome": ColunaFiltravel("nome", "Nome"),
     "login": ColunaFiltravel("email", "Login"),
-    # "Quem é vendedor aqui?" é a pergunta que esta tela mais recebe. A
-    # resposta é COLUNA da pessoa desde que o usuário passou a ser nosso —
-    # era `acesso__nivel`, um salto para a tabela ao lado. Antes disso era um
-    # filtro por perfil, que devolvia lista vazia sempre: ninguém tem perfil.
-    "nivel": ColunaFiltravel("nivel", "Nível", tipo="opcoes",
-                             opcoes=_niveis_para_escolha),
+    # "Quem é o gerente aqui?" é a pergunta que esta tela mais recebe, e até
+    # 18/09/2026 ela se respondia por NÍVEL — que devolve a lista inteira,
+    # porque quase todo mundo é MEMBRO ("Usuário"). O filtro é o CARGO da
+    # alocação, e o caminho da relação é de propósito: quem tem dois cargos
+    # aparece na busca dos dois.
+    "cargo": ColunaFiltravel("alocacoes__cargo__rotulo", "Cargo",
+                             tipo="opcoes", opcoes=_cargos_para_escolha),
     # Ativo ou inativo: dois valores conhecidos. Era a coluna que eu tinha
     # deixado sem filtro por não existir caixa de escolha — agora existe.
     "situacao": ColunaFiltravel("is_active", "Situação", tipo="opcoes",
@@ -1091,7 +1126,7 @@ def _desenhar(
         # 131 com 25, ou seja ~4 por linha. Em SQLite local cada uma custa
         # décimos de milissegundo; em Postgres com rede, cada ida e volta é
         # ~1ms, e as 25 linhas do padrão viram +100ms de tela.
-        pessoas = (_com_empresa(_pessoas_desta_pessoa(request))
+        pessoas = (_com_cargo_ordem(_com_empresa(_pessoas_desta_pessoa(request)))
                    .prefetch_related("alocacoes__empresa", "alocacoes__filial",
                                      "alocacoes__cargo"))
 
@@ -1154,7 +1189,7 @@ def _desenhar(
 COLUNAS_DE_EXPORTACAO = (
     ColunaDeExportacao("nome", "Nome", lambda u: u.get_full_name() or ""),
     ColunaDeExportacao("login", "Login", lambda u: u.email),
-    ColunaDeExportacao("nivel", "Nível", _nivel_de),
+    ColunaDeExportacao("cargo", "Cargo", _cargos_de),
     ColunaDeExportacao("empresa", "Empresa", lambda u: u.empresa_nome or ""),
     ColunaDeExportacao("situacao", "Situação",
                        lambda u: "Ativo" if u.is_active else "Inativo"),
@@ -1544,7 +1579,7 @@ def usuarios(request) -> HttpResponse:
         if request.GET.get("formato"):
             exportacao = preparar_exportacao(
                 request,
-                queryset=_com_empresa(_pessoas_desta_pessoa(request)),
+                queryset=_com_cargo_ordem(_com_empresa(_pessoas_desta_pessoa(request))),
                 colunas=COLUNAS_DE_EXPORTACAO,
                 ordenaveis=_ORDENAVEIS, padrao="login",
                 filtraveis=_FILTRAVEIS, titulo=_("Usuários"))

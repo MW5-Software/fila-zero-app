@@ -655,9 +655,14 @@ class TestOLoginNaoSeDuplica:
 
 
 @pytest.mark.django_db
-class TestAColunaDaListaEONivel:
-    """A coluna é o NÍVEL: a pergunta que se faz olhando esta tabela é "o que
-    essa pessoa é?" — a MW5, um titular ou um membro."""
+class TestAColunaDaListaEOCargo:
+    """A coluna é o CARGO da alocação (18/09/2026, pedido do cliente).
+
+    A coluna era NÍVEL, e a pergunta que se faz olhando esta tabela — "quem é
+    o gerente aqui?" — não se respondia por ela: quase todo mundo é MEMBRO, e
+    a lista inteira escrevia "Usuário". O nível diz o tamanho do alcance; o
+    cargo diz o que a pessoa faz.
+    """
 
     def _linhas(self, html) -> list:
         """As células de DADO de cada linha, sem a de ações.
@@ -673,102 +678,131 @@ class TestAColunaDaListaEONivel:
                  for c in re.findall(r"<td.*?</td>", tr, re.S)][1:]
                 for tr in re.findall(r"<tr>(.*?)</tr>", html, re.S)[1:]]
 
-    def _com_nivel(self, login, nivel):
-        """O nível é gravado DEPOIS de criar, e não no `create_user`.
+    def _com_cargo(self, login, cargo, filial=None):
+        """Uma pessoa alocada com o cargo de fábrica pedido.
 
-        `admin_do_cliente` monkeypatcheia `create_user` para dar vínculo de
-        empresa a toda pessoa nova (ver a fixture lá em cima), e esse vínculo
-        vem com nível. Passar o nível na criação faria o monkeypatch
-        sobrescrevê-lo logo em seguida.
+        A alocação é o que dá cargo a um membro desde a virada dos cargos
+        (§7): sem ela a linha dele fica com o traço, e o teste passaria por
+        outro motivo.
         """
+        from tests.conftest import alocar, empresa_do_teste
+
         pessoa = Usuario.objects.create_user(
             email=f"{login}@teste.com", password=SENHA)
-        pessoa.nivel = nivel
-        pessoa.save(update_fields=["nivel"])
+        alocar(pessoa, empresa_do_teste(), cargo, filial=filial)
         return pessoa
 
-    def test_a_coluna_mostra_o_nivel(self, admin_do_cliente, db):
-        from contas.models import Nivel
+    def _cargo_da_linha(self, html, login) -> "str | None":
+        linhas = self._linhas(html)
+        dela = [l for l in linhas if len(l) > 2 and login in l[1]]
+        return dela[0][2] if dela else None
 
-        self._com_nivel("membro.x", Nivel.MEMBRO)
+    def test_a_coluna_mostra_o_cargo(self, admin_do_cliente, db):
+        self._com_cargo("g.a", "gerente")
+        self._com_cargo("v.a", "vendedor")
         html = admin_do_cliente.get(reverse("usuarios")).content.decode()
-        assert "Nível" in html
-        # "Usuário" desde 15/09/2026 (era "Membro").
-        assert "Usuário" in html
-        assert ">Perfis<" not in html
 
-    def test_quem_nunca_foi_configurado_aparece_como_membro(
-            self, mw5_logada, db):
-        """**O traço acabou, e o motivo é a troca do usuário.**
+        assert ">Cargo<" in html or "Cargo" in html
+        assert self._cargo_da_linha(html, "g.a@teste.com") == "Gerente"
+        assert self._cargo_da_linha(html, "v.a@teste.com") == "Vendedor"
 
-        A coluna escrevia "—" para quem não tinha linha de `Acesso`. Com
-        `nivel` virando COLUNA da pessoa, com padrão, a linha sem nível deixou
-        de existir — toda pessoa tem um, e o padrão é o menos poderoso.
+    def test_quem_nao_tem_alocacao_aparece_com_traco(self, admin_do_cliente, db):
+        """Quem está na conta e ainda não foi alocado — e o titular, que não é
+        alocado nunca (§7). O que eles podem não vem de cargo nenhum, e a
+        célula diz isso em vez de inventar um."""
+        from tests.conftest import empresa_do_teste, por_na_conta
 
-        Só a MW5 vê essa linha: para quem não é superusuário, pessoa sem conta
-        não aparece na lista (`pessoas_alcancadas`).
+        pessoa = Usuario.objects.create_user(email="sem.cargo@teste.com",
+                                             password=SENHA)
+        por_na_conta(pessoa, empresa_do_teste())
+
+        assert self._cargo_da_linha(
+            admin_do_cliente.get(reverse("usuarios")).content.decode(),
+            "sem.cargo@teste.com") == "—"
+
+    def test_quem_tem_dois_cargos_aparece_uma_vez_e_com_os_dois(
+            self, admin_do_cliente, db):
+        """A pessoa é Gerente numa loja e Vendedora noutra.
+
+        Duas coisas de uma vez: a célula mostra os DOIS (esconder o segundo
+        faria a tela mentir sobre ela), e a linha dela aparece UMA vez — é o
+        que a anotação agregada de `_com_cargo_ordem` garante, e o que
+        `order_by` no caminho da relação teria quebrado.
         """
-        Usuario.objects.create_user(email="sem.acesso@teste.com", password=SENHA)
-        linhas = self._linhas(
-            mw5_logada.get(reverse("usuarios")).content.decode())
-        dela = [l for l in linhas if len(l) > 2 and "sem.acesso" in l[1]]
-        assert dela and dela[0][2] == "Usuário", linhas
+        from plataforma.models import Filial
 
-    def test_o_filtro_por_nivel_devolve_so_aquele_nivel(self, mw5_logada, db):
+        from tests.conftest import alocar, empresa_do_teste, matriz_do_teste
+
+        empresa = empresa_do_teste()
+        centro = Filial.objects.create(empresa=empresa, nome="Loja Centro",
+                                       apelido="Centro")
+        pessoa = Usuario.objects.create_user(email="dupla@teste.com",
+                                             password=SENHA)
+        alocar(pessoa, empresa, "gerente", filial=matriz_do_teste())
+        alocar(pessoa, empresa, "vendedor", filial=centro)
+
+        linhas = self._linhas(
+            admin_do_cliente.get(reverse("usuarios")).content.decode())
+        dela = [l for l in linhas if len(l) > 2 and "dupla@teste.com" in l[1]]
+
+        assert len(dela) == 1, linhas
+        assert "Gerente" in dela[0][2] and "Vendedor" in dela[0][2]
+
+    def test_o_filtro_por_cargo_devolve_so_quem_tem_ele(self, admin_do_cliente, db):
         """Olha as LINHAS da tabela, e não a página inteira: um login pode
         aparecer em outro lugar da página (a caixa de conta, por exemplo) e a
         asserção acusaria vazamento do filtro."""
-        from contas.models import Nivel
+        self._com_cargo("gerente.y", "gerente")
+        self._com_cargo("vendedor.y", "vendedor")
 
-        self._com_nivel("titular.y", Nivel.TITULAR)
-        self._com_nivel("membro.y", Nivel.MEMBRO)
-        linhas = self._linhas(mw5_logada.get(
-            reverse("usuarios"),
-            {"f:nivel:igual": str(int(Nivel.TITULAR))}).content.decode())
-        logins = [l[1] for l in linhas if len(l) > 1]
-        assert "titular.y@teste.com" in logins
-        assert "membro.y@teste.com" not in logins
+        html = admin_do_cliente.get(reverse("usuarios"),
+                                    {"f:cargo:igual": "Gerente"}).content.decode()
+        logins = [l[1] for l in self._linhas(html) if len(l) > 1]
 
-    def test_ordena_pela_hierarquia_e_nao_pelo_alfabeto(self, mw5_logada, db):
-        """O NÚMERO do nível, e não o rótulo: a ordem alfabética dos rótulos não
-        diz nada sobre quem manda em quem.
+        assert "gerente.y@teste.com" in logins
+        assert "vendedor.y@teste.com" not in logins
 
-        **Desde 15/09/2026 os rótulos ("Master, Titular, Usuário") coincidem
-        em ordem alfabética com a hierarquia**, então só o desempate pelos
-        logins invertidos abaixo continua pegando uma ordenação errada.
+    def test_a_barra_oferece_os_cargos_que_existem(self, admin_do_cliente, db):
+        """A caixa é do banco, e não uma lista fixa: o titular cria cargos em
+        `/cargos`, e uma lista fechada deixaria de achar quem tem o novo."""
+        from contas.models import Cargo
 
-        **Os logins são escolhidos ao contrário de propósito.** O membro se
-        chama `a.` e o titular `z.`, então a ordem alfabética é o INVERSO da
-        hierarquia. Com nomes na mesma sequência dos dois critérios, este
-        teste passava verde mesmo com a ordenação caindo no desempate por
-        login — provado por mutação.
-        """
-        from contas.models import Nivel
+        from tests.conftest import empresa_do_teste
 
-        self._com_nivel("a.membro", Nivel.MEMBRO)
-        self._com_nivel("z.titular", Nivel.TITULAR)
-        crescente = self._linhas(mw5_logada.get(
-            reverse("usuarios"), {"ordenar": "nivel"}).content.decode())
-        niveis = [l[2] for l in crescente if len(l) > 2]
-        assert niveis.index("Titular") < niveis.index("Usuário"), niveis
+        Cargo.objects.create(conta_id=empresa_do_teste().conta_id,
+                             nome="conferente", rotulo="Conferente",
+                             alcance="filial")
+        html = admin_do_cliente.get(reverse("usuarios")).content.decode()
 
-        decrescente = self._linhas(mw5_logada.get(
-            reverse("usuarios"), {"ordenar": "-nivel"}).content.decode())
+        assert ">Conferente<" in html
+        assert ">Gerente<" in html
+
+    def test_ordenar_por_cargo_usa_o_rotulo(self, admin_do_cliente, db):
+        """Pelo RÓTULO, que é o que a coluna mostra — e os logins são
+        escolhidos ao contrário de propósito: `a.` é vendedor e `z.` é gerente,
+        então ordenar pelo login daria o INVERSO do cargo."""
+        self._com_cargo("a.vendedor", "vendedor")
+        self._com_cargo("z.gerente", "gerente")
+
+        crescente = self._linhas(admin_do_cliente.get(
+            reverse("usuarios"), {"ordenar": "cargo"}).content.decode())
+        cargos = [l[2] for l in crescente if len(l) > 2]
+        assert cargos.index("Gerente") < cargos.index("Vendedor"), cargos
+
+        decrescente = self._linhas(admin_do_cliente.get(
+            reverse("usuarios"), {"ordenar": "-cargo"}).content.decode())
         invertidos = [l[2] for l in decrescente if len(l) > 2]
-        assert invertidos.index("Usuário") < invertidos.index("Titular")
+        assert invertidos.index("Vendedor") < invertidos.index("Gerente")
 
-    def test_o_arquivo_exportado_leva_o_nivel(self, admin_do_cliente, db):
-        from contas.models import Nivel
-
-        self._com_nivel("exporta.eu", Nivel.MEMBRO)
+    def test_o_arquivo_exportado_leva_o_cargo(self, admin_do_cliente, db):
+        self._com_cargo("exporta.eu", "gerente")
         resposta = admin_do_cliente.get(reverse("usuarios"),
                                         {"exportar": "csv"})
         assert resposta.status_code == 200
         conteudo = b"".join(resposta.streaming_content).decode("utf-8-sig") \
             if resposta.streaming else resposta.content.decode("utf-8-sig")
-        assert "Nível" in conteudo
-        assert "Usuário" in conteudo
-
+        assert "Cargo" in conteudo
+        assert "Gerente" in conteudo
 
 @pytest.mark.django_db
 class TestOPostCriaNaContaDeQuemCria:
