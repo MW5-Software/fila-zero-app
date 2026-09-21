@@ -264,9 +264,10 @@ def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
     mexe (P-4); vazio apaga. A linha da loja é trancada, como na fila: dois
     gerentes salvando juntos estourariam a trava do banco com 500.
     """
-    from comum.auditoria import ACOES, registrar
+    from comum.auditoria import registrar
 
     from .acoes import Recusa, _travar
+    from .auditoria import ACOES_DA_FILA
     from .models import MetaDeVenda
 
     if mes_encerrado(mes, agora):
@@ -302,7 +303,7 @@ def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
                 if atual is None:
                     continue
                 atual.delete()
-                registrar(ACOES.FILA_META_REMOVIDA, editor,
+                registrar(ACOES_DA_FILA.FILA_META_REMOVIDA, editor,
                           alvo=_alvo(loja, pessoa, mes), detalhe=f"era {antes}",
                           request=request)
             elif atual is None or atual.valor != valor:
@@ -312,7 +313,7 @@ def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
                 else:
                     atual.valor = valor
                     atual.save(update_fields=["valor", "alterada_em"])
-                registrar(ACOES.FILA_META_DEFINIDA, editor,
+                registrar(ACOES_DA_FILA.FILA_META_DEFINIDA, editor,
                           alvo=_alvo(loja, pessoa, mes),
                           detalhe=f"{valor_do_campo(valor)}; era {antes}",
                           request=request)

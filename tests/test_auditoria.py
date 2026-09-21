@@ -739,11 +739,10 @@ def _cenario_fila_pausa_iniciada():
 def _cenario_fila_posto_na_fila():
     from fila.acoes import Lancamento, finalizar, vou_atender
     from fila.correcoes import por_na_fila
-    from plataforma.models import FluxoDaFila
+    from fila.fluxo import FluxoDaFila, definir_fluxo
 
     dona, zeca, matriz, cad = _loja_com_gente_da_fila()
-    matriz.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
-    matriz.empresa.save(update_fields=["fluxo_da_fila"])
+    definir_fluxo(matriz.empresa, FluxoDaFila.ESPERA)
     vou_atender(zeca, matriz)
     finalizar(zeca, matriz, Lancamento("nao_vendeu", motivo_id=cad.motivo.pk))
     por_na_fila(dona, matriz, zeca.pk, observacao="cliente chegou")
@@ -872,19 +871,19 @@ class TestCadaAcaoDoVocabularioRegistra:
     nome faltando, e não só um número de casos a menos."""
 
     def test_o_vocabulario_inteiro_esta_coberto(self):
-        from comum.auditoria import ACOES
+        """O da base (`ACOES`) e o que cada módulo de negócio declara
+        (`comum.auditoria.declarar_acoes`) — as da fila moram em
+        `fila/auditoria.py` desde 21/09/2026."""
+        from comum.auditoria import vocabulario
 
-        nomes_do_vocabulario = {
-            nome for nome in vars(ACOES) if not nome.startswith("_")
-        }
-        assert nomes_do_vocabulario == set(_CENARIOS)
+        assert set(vocabulario()) == set(_CENARIOS)
 
     @pytest.mark.parametrize("nome_da_acao", sorted(_CENARIOS), )
     def test_a_acao_registra_com_autor_e_alvo_certos(self, nome_da_acao):
-        from comum.auditoria import ACOES
+        from comum.auditoria import vocabulario
         from contas.models import RegistroDeAuditoria
 
-        acao = getattr(ACOES, nome_da_acao)
+        acao = vocabulario()[nome_da_acao]
         cenario = _CENARIOS[nome_da_acao]
         autor_login_esperado, alvo_esperado = cenario()
 
@@ -1206,3 +1205,34 @@ class TestCadaAcaoMutanteDesfazOEfeitoSeRegistrarFalha:
             f"`registrar` — a `atomic()` que devia cercar os dois não está "
             f"cercando, ou não existe."
         )
+
+
+class TestOVocabularioDosModulos:
+    """A base não conhece os módulos de negócio (`CLAUDE.md` §3), e as ações
+    deles moravam na classe `ACOES` da base — no Fila Zero, doze `FILA_*`
+    dentro de `comum/auditoria.py`, o que impedia a base de voltar limpa. Cada
+    módulo declara as dele (`declarar_acoes`)."""
+
+    def test_a_acao_da_fila_nao_mora_na_base(self):
+        from comum.auditoria import ACOES
+
+        assert not [n for n in vars(ACOES) if n.startswith("FILA_")]
+
+    def test_a_acao_declarada_tem_rotulo_e_entra_no_vocabulario(self):
+        from comum.auditoria import ROTULOS, vocabulario
+        from fila.auditoria import ACOES_DA_FILA
+
+        assert vocabulario()["FILA_META_DEFINIDA"] == ACOES_DA_FILA.FILA_META_DEFINIDA
+        assert ROTULOS[ACOES_DA_FILA.FILA_META_DEFINIDA] == "Meta de venda definida"
+
+    def test_dois_modulos_nao_declaram_a_mesma_acao(self):
+        from comum.auditoria import declarar_acoes
+        from fila.auditoria import ACOES_DA_FILA
+
+        class Outro:
+            FILA_META_DEFINIDA = "outra_coisa"
+
+        with pytest.raises(ValueError):
+            declarar_acoes(Outro, {"outra_coisa": "Outra coisa"})
+        assert "outra_coisa" not in __import__("comum.auditoria").auditoria.ROTULOS
+        assert ACOES_DA_FILA.FILA_META_DEFINIDA
