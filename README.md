@@ -114,10 +114,10 @@ sem avisar — cadastrava-se num e olhava-se no outro.
 
 ```bash
 export DJANGO_SECRET_KEY=qualquer-coisa-local
-docker compose up -d banco          # o Postgres, publicado em 127.0.0.1:5436
+docker compose up -d banco          # o Postgres, publicado em 127.0.0.1:5440
 
 export DJANGO_DEBUG=1
-export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5436/kronos
+export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 
 uv sync --extra dev
 uv run python manage.py migrate
@@ -125,11 +125,25 @@ uv run python manage.py runserver
 uv run pytest -q
 ```
 
-A porta é **5436**: a 5432 é de outro projeto desta máquina, a 5433 é do
-KRONOS.net, a 5434 é do Portal de Vendas e a 5435 é da KRONOS base. Apontar para a porta errada abre o
-banco de outro produto sem nenhum aviso — e todos têm as MESMAS tabelas da
-base, o que torna o engano invisível até alguém gravar no lugar errado. Ela
-atende só `127.0.0.1`: o banco responde a quem está na máquina, não à rede.
+A porta é **5440**. As portas desta máquina, numa tabela só (a mesma no
+README de cada produto):
+
+| porta do banco | de quem |
+|---|---|
+| 5432 | outro projeto desta máquina |
+| 5433 | KRONOS.net (app 8000/8001) |
+| 5434 | Portal de Vendas (app 8003) |
+| 5435, 5436 | kronos-api2, publicadas em `0.0.0.0` |
+| 5437 | Kronos ERP |
+| 5438 | o banco avulso da suíte (`fz-banco-suite`) |
+| 5439 | KRONOS base (app 8004) |
+| 5440 | Fila Zero (app 8005) |
+
+Era a 5436 até 21/09/2026, quando o kronos-api2 já a tinha tomado. Apontar
+para a porta errada abre o banco de outro produto sem nenhum aviso — e todos
+têm as MESMAS tabelas da base, o que torna o engano invisível até alguém gravar
+no lugar errado. Ela atende só `127.0.0.1`: o banco responde a quem está na
+máquina, não à rede.
 
 **Confira a base antes de `migrate`.** O mesmo servidor Postgres pode guardar
 bases de produtos diferentes com nomes parecidos. Para saber de que código é

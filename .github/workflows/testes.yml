@@ -1,11 +1,11 @@
 # A suíte roda a cada push e a cada pull request.
 #
-# NÃO PUBLICA IMAGEM, e a ausência é deliberada. Este arquivo veio da cópia
-# do KRONOS.net, onde havia um segundo job empurrando para
+# Este arquivo NÃO PUBLICA IMAGEM: quem publica é o `publicar-imagem.yml`,
+# depois de a suíte daqui terminar verde, e só na imagem deste produto. Ele
+# veio da cópia do KRONOS.net, onde havia aqui um segundo job empurrando para
 # `ghcr.io/mw5-software/kronosnet` — a imagem que as sessenta instalações do
-# KRONOS baixam. Herdado aqui sem pensar, o primeiro `push` na `main` deste
-# produto teria SOBRESCRITO a imagem do outro. O job saiu inteiro; volta
-# quando este produto tiver repositório e nome de imagem próprios.
+# KRONOS baixam. Herdado sem pensar, o primeiro `push` na `main` teria
+# SOBRESCRITO a imagem do outro; `tests/test_workflow.py` cobra as duas pontas.
 #
 # Em POSTGRES, e não em SQLite: é o banco que roda em toda instalação.
 # Provar num banco e entregar noutro é provar a coisa errada — transação,
@@ -80,5 +80,12 @@ jobs:
         run: |
           pg_dump --version
           pg_restore --version
+
+      # Model mudado sem a migração passa na suíte — o banco de teste nasce
+      # das migrações, e uma troca de `choices` nem muda o esquema — e só
+      # aparece no `migrate` de alguém (a `fila/0006` do Fila Zero, em
+      # 21/09/2026).
+      - name: nenhuma migração esquecida
+        run: uv run python manage.py makemigrations --check --dry-run
 
       - run: uv run pytest -q

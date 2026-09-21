@@ -100,6 +100,14 @@ class TestASuiteRodaNoCi:
             "nenhum workflow roda a suíte"
         )
 
+    def test_o_ci_recusa_migracao_esquecida(self):
+        """Model mudado sem a migração passa na suíte (o banco de teste nasce
+        das migrações, e uma troca de `choices` nem muda o esquema) e só
+        aparece no `migrate` de alguém. O Fila Zero ficou assim com a
+        `fila/0006` (auditoria de 21/09/2026)."""
+        texto = _sem_comentario(WORKFLOWS / "testes.yml")
+        assert "makemigrations --check" in texto
+
     def test_a_suite_do_ci_roda_em_postgres(self):
         """Provar num banco e entregar noutro é provar a coisa errada."""
         textos = "\n".join(_sem_comentario(a) for a in _arquivos()).lower()
