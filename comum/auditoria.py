@@ -73,8 +73,10 @@ class ACOES:
     #: Uma ação só para logo e cores do menu de uma empresa (15/09/2026): o
     #: `alvo` diz a empresa, e o que se mexe ali é sempre a mesma pergunta.
     MENU_DA_EMPRESA_ALTERADO = "menu_da_empresa_alterado"
-    # As ações dos módulos de negócio de cada SaaS entram aqui, cada uma com o
-    # rótulo em `ROTULOS` e o cenário que `tests/test_auditoria.py` exige.
+    # As ações dos módulos de negócio NÃO entram aqui: cada módulo as declara
+    # no `ready()` do app (`declarar_acoes`, abaixo), com o rótulo, e o
+    # cenário que `tests/test_auditoria.py` exige. Até 21/09/2026 elas moravam
+    # nesta classe, e a base não voltava limpa para quem a copiou.
 
 
 #: O que a pessoa lê, por valor gravado no banco — a mesma tradução que a
