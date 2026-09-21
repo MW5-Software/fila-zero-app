@@ -178,6 +178,14 @@ def agir(request) -> HttpResponse:
         return HttpResponseNotAllowed(["POST"])
     acao = request.POST.get("acao", "")
     if acao in _DO_VENDEDOR:
+        # Bater o ponto é de quem atende, e quem gerencia a loja não atende
+        # (`tela.atende`, 18/09/2026): o gerente e o dono da conta passam por
+        # aqui e tomam 404 — a tela nem desenha o botão, e o POST forjado cai
+        # no mesmo lugar. As OUTRAS ações do vendedor seguem presas só a
+        # `fila.participar`, de propósito: quem já estava na loja quando esta
+        # regra entrou no ar termina o atendimento dele, em vez de ficar preso.
+        if acao == "ponto" and not tela.atende(request.usuario):
+            return HttpResponseNotFound()
         executar, precisa = _DO_VENDEDOR[acao], "fila.participar"
     elif acao in _DO_GERENTE:
         executar, precisa = _DO_GERENTE[acao], "fila.gerenciar"

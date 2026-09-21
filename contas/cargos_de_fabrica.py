@@ -54,6 +54,13 @@ CONCEDE: "dict[str, tuple[str, ...]]" = {
 #: `fila.relatorios` (entrega 2): gerente e supervisor leem os indicadores do
 #: alcance deles. `fila.metas` (entrega 3): gerente e supervisor definem as
 #: metas do alcance deles.
+#:
+#: **Quem bate ponto é só o Vendedor** (18/09/2026, pedido do cliente): a fila
+#: é de quem está no salão atendendo, e quem gerencia a loja não atende. A
+#: regra mora em `fila.tela.atende` — não é a AUSÊNCIA de `fila.participar`,
+#: que continua na lista do Gerente de propósito: `contas.lugar.pode_dar` exige
+#: que quem aloca tenha as permissões do cargo, e sem ela o gerente deixaria de
+#: poder conceder o cargo de Vendedor.
 DE_FABRICA: "tuple[tuple[str, str, str, bool, tuple[str, ...]], ...]" = (
     ("supervisor", "Supervisor", "empresa", False,
      ("usuarios.editar", "fila.ver", "fila.gerenciar", "fila.relatorios",

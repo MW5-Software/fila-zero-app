@@ -52,8 +52,15 @@ DE_FABRICA: dict[int, tuple[str, ...]] = {
     #: `contas/views_cargos.py`) —, e ela nunca é oferecida numa caixa de
     #: cargo.
     #:
-    #: **A fila (Fila Zero):** a Sylvia atende, corrige, mantém os cadastros,
-    #: lê os indicadores e define as metas.
+    #: **A fila (Fila Zero):** o dono da conta corrige, mantém os cadastros,
+    #: lê os indicadores e define as metas. Ele **não bate ponto** (18/09/2026,
+    #: pedido do cliente): a fila é de quem está no salão atendendo, e quem
+    #: gerencia a loja não atende. A regra é UMA e mora em `fila.tela.atende`,
+    #: lida pelo POST do ponto e pela tela — está lá, e não aqui, porque ela
+    #: não é "não pode participar": `fila.participar` continua na lista abaixo
+    #: de propósito, porque `contas.lugar.pode_dar` exige que quem aloca tenha
+    #: as permissões do cargo, e sem ela o dono e o gerente deixariam de poder
+    #: conceder o cargo de Vendedor — o cliente ficaria sem cadastrar vendedor.
     Nivel.TITULAR: (
         #: `conta.ver` (17/09/2026): a tela que mostra a conta dele, as
         #: empresas e as lojas de cada uma. É leitura.

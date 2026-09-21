@@ -21,14 +21,15 @@ from plataforma.contexto import filiais_de
 from nucleo.permissoes import pode
 from nucleo.rendering import use_environment
 
+from . import quem_atende
 from .ambiente import ambiente_da_fila
 from .correcoes import lancamentos_de_hoje
 from .estado import nome_de, retrato
 from .models import (Atendimento, Estado, GrupoDeItem, LugarNaFila,
                      MotivoDeNaoVenda, TipoDePausa)
 
-__all__ = ["PEDACOS", "ha_quanto", "hora_local", "iniciais", "minutos", "pagina",
-           "pedacos", "pessoas_na_frente", "sem_loja", "so_a_fila"]
+__all__ = ["PEDACOS", "atende", "ha_quanto", "hora_local", "iniciais", "minutos",
+           "pagina", "pedacos", "pessoas_na_frente", "sem_loja", "so_a_fila"]
 
 #: Os pedaços que a consulta troca, com o template de cada um.
 PEDACOS = {"painel": "fila/_painel.html", "lista": "fila/_lista.html",
@@ -70,6 +71,34 @@ def so_a_fila(user) -> bool:
         return False
     permissoes = frozenset(user.permissions)
     return "fila.participar" in permissoes and permissoes <= _SO_DO_VENDEDOR
+
+
+def atende(usuario) -> bool:
+    """Se `usuario` bate ponto nesta loja — e quem gerencia a loja não atende.
+
+    A fila é de quem está no salão atendendo (18/09/2026, pedido do cliente): o
+    supervisor, o gerente e o dono da conta não atendem, e por isso não entram
+    na fila. Quem atende é quem tem `fila.participar` e NÃO tem
+    `fila.gerenciar` — o que separa as duas coisas é gerenciar.
+
+    **A regra é esta, e não a ausência de `fila.participar` no cargo**, por um
+    motivo prático: `contas.lugar.pode_dar` exige que quem aloca tenha as
+    permissões do cargo que concede. Um gerente sem `fila.participar` deixaria
+    de poder cadastrar Vendedor, e a loja ficaria sem vendedor nenhum — o
+    remédio seria pior que a doença.
+
+    Quem já está na loja continua podendo agir (`fila.tela._contexto` soma
+    `r.meu` a isto): o gerente que estava atendendo quando esta regra entrou no
+    ar precisa fechar o atendimento dele, e não ficar preso na fila.
+
+    A regra em si mora em `fila.quem_atende`, junto com a lista de metas, para
+    não haver duas versões dela; aqui só se traduz o usuário da requisição para
+    o conjunto de permissões. Nem `None` nem o superusuário (a MW5, que não é
+    de conta nenhuma) atendem.
+    """
+    if usuario is None or usuario.superuser:
+        return False
+    return quem_atende.atende(usuario.permissions)
 
 
 def ha_quanto(instante, agora=None) -> str:
@@ -238,7 +267,11 @@ def _contexto(request, filial, recusa=""):
         "eu_tem_foto": bool(pessoa) and type(pessoa).objects.filter(
             pk=pessoa.pk, avatar__isnull=False).exists(),
         "agora": timezone.now(),
-        "pode_participar": pode(request.usuario, "fila.participar"),
+        # Quem gerencia não atende (`tela.atende`), e por isso vê o retrato da
+        # loja em vez do próprio estado na fila. `r.meu` abre a exceção de quem
+        # JÁ está na loja: quem estava atendendo quando a regra entrou no ar
+        # precisa poder fechar o atendimento.
+        "pode_participar": atende(request.usuario) or r.meu is not None,
         "pode_gerenciar": pode_gerenciar,
         "csrf": Markup(campo_csrf(request)),
         "url_fila": reverse("fila"),
