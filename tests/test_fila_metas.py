@@ -156,16 +156,65 @@ def test_lojas_com_metas_pelo_cargo(loja):
     assert lojas_com_metas(loja.ana, loja.empresa) == []
 
 
-def test_a_lista_traz_quem_participa_e_quem_saiu_com_meta(loja):
+def test_a_lista_traz_quem_atende_e_quem_saiu_com_meta(loja):
     gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
-    pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")  # não participa
+    pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")  # não atende
     centro = nova_loja(loja.empresa, "Centro")
     caio = pessoa_na_loja("caio", loja.empresa, centro)
     meta(loja, pessoa=caio, valor="5000")  # já teve meta aqui, hoje está no Centro
     linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
+    # Gil fica de fora: ele gerencia a loja, e quem gerencia não atende.
     assert _chaves(linhas) == [("Ana", True, False), ("Bia", True, False),
-                               ("Caio", False, False), ("Gil", True, True)]
+                               ("Caio", False, False)]
     assert linhas[2].valor == Decimal("5000")
+
+
+def test_a_lista_e_de_quem_atende_e_nao_de_quem_gerencia(loja):
+    """18/09/2026, pedido do cliente: a meta é de quem atende.
+
+    Gerencia a loja quem tem `fila.gerenciar`, e é isso que tira o gerente e o
+    supervisor da lista — e não o nome do cargo, que o titular pode renomear.
+    """
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    pessoa_na_loja("sara", loja.empresa, loja.matriz, cargo="supervisor")
+    nomes = [l.pessoa.nome
+             for l in regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)]
+    assert nomes == ["Ana", "Bia"]
+
+
+def test_o_parametro_devolve_a_meta_a_quem_gerencia(loja):
+    """`meta_para_gestor` é o degrau da loja em que o gerente também vende: a
+    mesma imagem, um parâmetro marcado — e não um `if` com o nome do cliente."""
+    from plataforma.parametro_catalogo import definir, valor_de
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    pessoa_na_loja("sara", loja.empresa, loja.matriz, cargo="supervisor")
+
+    # O padrão é NÃO, e é ele que vale na instalação que nunca mexeu nisto.
+    assert valor_de("meta_para_gestor") is False
+    assert "Gil" not in [l.pessoa.nome
+                         for l in regras.pessoas_da_lista(loja.matriz,
+                                                          SETEMBRO, gil)]
+
+    definir("meta_para_gestor", "1")
+
+    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
+    assert _chaves(linhas) == [("Ana", True, False), ("Bia", True, False),
+                               ("Gil", True, True), ("Sara", True, False)]
+
+
+def test_representante_e_cliente_ficam_de_fora_com_o_parametro_ligado(loja):
+    """A meta é de quem trabalha na loja: o parâmetro devolve a meta a quem
+    GERENCIA, e não a quem não põe os pés no salão."""
+    from plataforma.parametro_catalogo import definir
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    pessoa_na_loja("zeca", loja.empresa, loja.matriz, cargo="representante")
+    definir("meta_para_gestor", "1")
+
+    nomes = [l.pessoa.nome
+             for l in regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)]
+    assert "Zeca" not in nomes
 
 
 def test_gravar_cria_altera_apaga_e_audita(loja):
@@ -336,38 +385,114 @@ def test_repartir_nao_perde_centavo():
     assert regras.repartir(Decimal("0.01"), 3) == [Decimal("0.01"), Decimal("0"), Decimal("0")]
 
 
-def test_dividir_reparte_o_que_falta_so_entre_quem_esta_sem_meta(loja):
+def test_gravar_distribui_a_meta_da_loja_entre_quem_ficou_em_branco(loja):
+    """A meta geral distribui sozinha (18/09/2026, pedido do cliente): quem
+    ficou em branco já recebe a parte igual, sem botão nenhum. Quem digitou um
+    valor fica com o dele — a distribuição não passa por cima de quem foi
+    acertado à mão, e é isso que deixa editar um por um depois."""
+    from fila.models import MetaDeVenda
+
     gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
-    caio = pessoa_na_loja("caio", loja.empresa, loja.matriz)
+    regras.gravar(loja.matriz, SETEMBRO, gil, {
+        "loja": "90.000,00", str(loja.ana.pk): "30.000,00",
+        str(loja.bia.pk): ""}, agora=local(2026, 9, 10, 9))
+
+    metas = dict(MetaDeVenda.irrestritos
+                 .filter(mes=SETEMBRO, pessoa__isnull=False)
+                 .values_list("pessoa__nome", "valor"))
+    # 90.000 para dois vendedores ativos: 45.000 é a parte de cada um.
+    assert metas == {"Ana": Decimal("30000"), "Bia": Decimal("45000")}
+    assert regras.meta_da_loja(loja.matriz, SETEMBRO) == Decimal("90000")
+
+
+def test_a_distribuicao_nao_perde_o_centavo_da_sobra(loja):
+    """`repartir` é a conta de antes: 100 em 3 vira 33,34 + 33,33 + 33,33, e a
+    soma bate com a meta da loja — a loja não fica um centavo descoberta."""
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
     dora = pessoa_na_loja("dora", loja.empresa, loja.matriz)
-    meta(loja, pessoa=gil, valor="10000")   # a própria, travada, conta na soma
-    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
-    # O que está DIGITADO vale, e não o que está salvo: quem digitou a meta
-    # da loja e clicou em dividir não salvou nada ainda.
-    digitados, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {
-        "loja": "100.000,00", str(loja.ana.pk): "30.000,00",
-        str(loja.bia.pk): "", str(caio.pk): None, str(dora.pk): "  "})
-    assert aviso is None
-    assert digitados == {
-        "loja": "100.000,00", str(loja.ana.pk): "30.000,00",
-        str(loja.bia.pk): "20.000,00", str(caio.pk): "20.000,00",
-        str(dora.pk): "20.000,00"}
+    regras.gravar(loja.matriz, SETEMBRO, gil, {
+        "loja": "100,00", str(loja.ana.pk): "", str(loja.bia.pk): "",
+        str(dora.pk): ""}, agora=local(2026, 9, 10, 9))
+
+    valores = sorted(MetaDeVenda.irrestritos
+                     .filter(mes=SETEMBRO, pessoa__isnull=False)
+                     .values_list("valor", flat=True), reverse=True)
+    assert valores == [Decimal("33.34"), Decimal("33.33"), Decimal("33.33")]
+    assert sum(valores) == Decimal("100.00")
 
 
-def test_dividir_nao_divide_quando_nao_ha_o_que_dividir(loja):
+def test_loja_sem_vendedor_ativo_nao_estoura(loja):
+    """A parte é dividida pelos ATIVOS: sem nenhum, não há por quem dividir.
+
+    Sem este guarda é `ZeroDivisionError` — 500 na tela de quem acabou de
+    cadastrar a loja e digita a meta dela, que é justamente o primeiro uso.
+    """
+    centro = nova_loja(loja.empresa, "Centro")   # sem ninguém alocado
     gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
-    linhas = regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)
-    sem_loja, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {"loja": ""})
-    assert aviso == "Defina a meta da loja antes de dividir."
-    assert sem_loja == {"loja": ""}
-    _d, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {
-        "loja": "1000", str(loja.ana.pk): "1000"})
-    assert aviso == "As metas dos vendedores já cobrem a loja."
-    _d, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {
-        "loja": "5000", str(loja.ana.pk): "1000", str(loja.bia.pk): "1000"})
-    assert aviso == "Todos já têm meta. Apague a de quem deve receber a divisão."
-    _d, aviso = regras.dividir_o_que_falta(loja.matriz, SETEMBRO, linhas, {"loja": "abc"})
-    assert aviso == "Defina a meta da loja antes de dividir."
+
+    regras.gravar(centro, SETEMBRO, gil, {"loja": "1.000,00"},
+                  agora=local(2026, 9, 10, 9))
+
+    assert regras.meta_da_loja(centro, SETEMBRO) == Decimal("1000")
+    assert not regras.pessoas_da_lista(centro, SETEMBRO, gil)
+
+
+def test_o_campo_em_branco_apaga_quando_a_meta_da_loja_nao_muda(loja):
+    """O outro lado da distribuição automática: sem esta distinção não haveria
+    mais como tirar a meta de uma pessoa, porque o campo vazio viraria parte da
+    meta da loja em TODA gravação."""
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    meta(loja, valor="90000")
+    meta(loja, pessoa=loja.bia, valor="1000")
+
+    regras.gravar(loja.matriz, SETEMBRO, gil, {
+        "loja": "90.000,00", str(loja.ana.pk): "30000",
+        str(loja.bia.pk): ""}, agora=local(2026, 9, 10, 9))
+
+    assert not MetaDeVenda.irrestritos.filter(pessoa=loja.bia).exists()
+    assert MetaDeVenda.irrestritos.get(pessoa=loja.ana).valor == Decimal("30000")
+
+
+def test_mudar_a_meta_da_loja_distribui_de_novo(loja):
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    meta(loja, valor="90000")
+    meta(loja, pessoa=loja.bia, valor="1000")
+
+    regras.gravar(loja.matriz, SETEMBRO, gil, {
+        "loja": "100.000,00", str(loja.ana.pk): "",
+        str(loja.bia.pk): ""}, agora=local(2026, 9, 10, 9))
+
+    assert dict(MetaDeVenda.irrestritos
+                .filter(mes=SETEMBRO, pessoa__isnull=False)
+                .values_list("pessoa__nome", "valor")) == {
+        "Ana": Decimal("50000"), "Bia": Decimal("50000")}
+
+
+def test_quem_saiu_da_loja_nao_recebe_parte(loja):
+    """A parte é dos vendedores ATIVOS. Quem saiu da loja só continua na lista
+    porque já tinha meta aqui: apagar o campo dele apaga a meta — a
+    distribuição não o alcança, porque ele não vende nesta loja neste mês."""
+    from fila.models import MetaDeVenda
+
+    gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
+    caio = pessoa_na_loja("caio", loja.empresa, nova_loja(loja.empresa, "Centro"))
+    meta(loja, pessoa=caio, valor="1000")
+
+    regras.gravar(loja.matriz, SETEMBRO, gil, {
+        "loja": "90.000,00", str(loja.ana.pk): "", str(loja.bia.pk): "",
+        str(caio.pk): ""}, agora=local(2026, 9, 10, 9))
+
+    assert not MetaDeVenda.irrestritos.filter(pessoa=caio).exists()
+    assert dict(MetaDeVenda.irrestritos
+                .filter(mes=SETEMBRO, pessoa__in=[loja.ana, loja.bia])
+                .values_list("pessoa__nome", "valor")) == {
+        "Ana": Decimal("45000"), "Bia": Decimal("45000")}
 
 
 def test_ritmo_do_mes():

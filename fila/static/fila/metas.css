@@ -143,8 +143,9 @@
   .metas-colunas { display: none; }
   .metas-grade { grid-template-columns: 1fr minmax(130px, 150px); row-gap: 10px; }
   .metas .metas-vendido { text-align: left; flex-direction: row; align-items: baseline; gap: 6px; }
-  /* O botão de dividir tem a frase inteira: no celular ele quebra a linha em
-     vez de empurrar a página para o lado. */
+  /* O botão do veredito tem frase inteira: no celular ele quebra a linha em
+     vez de empurrar a página para o lado. (Desde 18/09/2026 o veredito não
+     tem botão — a regra fica para o próximo que tiver.) */
   .metas-veredito .btn { width: 100%; height: auto; min-height: var(--button-h); white-space: normal; text-align: left; padding-top: 8px; padding-bottom: 8px; }
   .metas-ritmo { grid-column: 1 / -1; }
 }

@@ -84,6 +84,31 @@ class TestAgrupamentoEValores:
         assert "Personalizado" in html
 
 
+class TestOParametroDaMetaDeGestor:
+    """O parâmetro do Fila Zero (`fila/parametro.py`) no mesmo caminho dos da
+    base: declarado no `ready()` do app, visível para quem tem
+    `parametros.editar` (`so_mw5=False`, porque é regra de negócio) e gravável.
+
+    Sem esta prova, o registro do parâmetro poderia ficar só no código do app
+    e ninguém veria a caixa na tela — o defeito que o cliente descreveria como
+    "pedi para configurar e não tem onde".
+    """
+
+    def test_o_admin_do_cliente_ve_o_parametro(self, cliente_admin):
+        html = cliente_admin.get(reverse("parametros")).content.decode()
+        assert "Meta para quem gerencia a loja" in html
+        assert "Metas" in html
+
+    def test_salvar_muda_o_que_vale_nesta_instalacao(self, cliente_admin, db):
+        from plataforma.parametro_catalogo import valor_de
+
+        assert valor_de("meta_para_gestor") is False
+        cliente_admin.post(reverse("parametros"), {
+            "acao": "salvar", "chave": "meta_para_gestor", "valor": "on",
+        })
+        assert valor_de("meta_para_gestor") is True
+
+
 class TestAFronteiraSoMw5:
     """`itens_por_pagina` (`plataforma.parametro`) é `so_mw5=True` — o admin
     do cliente nem vê a linha, e não só porque ela vem desabilitada."""

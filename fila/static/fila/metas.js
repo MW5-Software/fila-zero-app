@@ -3,7 +3,7 @@
    montado. As frases vêm do servidor, no idioma de quem abriu a tela, em
    `data-*` do `[data-metas]`: o script troca o valor, e não escreve frase.
 
-   Sem este script a tela funciona igual: salvar, dividir e copiar são POST,
+   Sem este script a tela funciona igual: salvar e copiar são POST,
    e a régua e as barras são as da última gravação. */
 (function () {
   "use strict";
@@ -102,8 +102,8 @@
   form.addEventListener("input", function (e) {
     if (e.target.matches("input[data-valor]")) atualizar();
   });
-  // Voltou de um POST com valores que não estão salvos (erro, copiar ou
-  // dividir): a barra de salvar aparece, porque há o que gravar.
+  // Voltou de um POST com valores que não estão salvos (erro ou cópia): a
+  // barra de salvar aparece, porque há o que gravar.
   if (document.querySelector(".alert") && form.querySelector("input[data-valor]:not(:disabled)")) {
     if (salvar) salvar.removeAttribute("data-limpo");
   }

@@ -117,7 +117,7 @@ def _desenhar(request, loja, mes, permitidas, editor, *, digitados=None,
     """A tela refeita em 17/09/2026 (maquete A aprovada pelo cliente): o mês
     como título, a meta da loja com a régua de cobertura, e uma linha por
     vendedor com o vendido e o ritmo. `digitados` são os campos como a pessoa
-    deixou (erro, copiar ou dividir), e valem sobre o que está salvo."""
+    deixou (erro ou copiar), e valem sobre o que está salvo."""
     from contas.models import Usuario
     from plataforma.site import montar_site
 
@@ -145,8 +145,8 @@ def _desenhar(request, loja, mes, permitidas, editor, *, digitados=None,
     nome_anterior = _nome_do_mes(anterior).split(" de ")[0]
     linhas = []
     for l in pessoas:
-        # A própria linha é sempre o valor salvo: ela não vem no POST, e o
-        # dividir devolveria o campo vazio por cima da meta que existe.
+        # A própria linha é sempre o valor salvo: ela não vem no POST, e a
+        # cópia devolveria o campo vazio por cima da meta que existe.
         texto = (regras.valor_do_campo(l.valor) if l.propria
                  else campo(str(l.pessoa.pk), l.valor))
         valor = l.valor if l.propria else do_campo(texto)
@@ -249,12 +249,6 @@ def metas(request) -> HttpResponse:
     campos = {"loja": "valor_loja", **{str(l.pessoa.pk): f"valor_{l.pessoa.pk}"
                                        for l in linhas}}
     valores = {c: request.POST.get(campos[c]) for c in chaves}
-    if request.POST.get("acao") == "dividir" and not regras.mes_encerrado(mes):
-        digitados, recusa = regras.dividir_o_que_falta(loja, mes, linhas, valores)
-        aviso = Alert(tone="info" if recusa else "ok", message=recusa or _(
-            "O que faltava foi dividido entre quem estava sem meta. Confira e salve."))
-        return _desenhar(request, loja, mes, permitidas, editor,
-                         digitados=digitados, aviso=aviso)
     if request.POST.get("acao") == "copiar":
         copia = regras.copiar_do_anterior(loja, mes, linhas)
         aviso = Alert(tone="info", message=(

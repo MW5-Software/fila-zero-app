@@ -58,11 +58,11 @@
           {%- for t in regua.trechos %}<span class="metas-trecho" data-trecho="{{ t.pk }}" style="width: {{ '%.2f'|format(t.largura) }}%" title="{{ t.nome }}"><span>{{ t.curto }}</span></span>{% endfor -%}
           <span class="metas-linha-loja" data-linha-loja style="left: {{ '%.2f'|format(regua.linha_loja or 0) }}%"{% if regua.linha_loja is none %} hidden{% endif %}><span data-rotulo>{{ regua.rotulo_loja }}</span></span>
         </div>
+        {# Sem botão de dividir desde 18/09/2026: a meta da loja distribui
+           sozinha ao salvar (`fila/metas._distribuir`), e quem quiser acerta
+           um por um na lista abaixo. #}
         <div class="metas-veredito">
           <span class="pill metas-pill {{ regua.tom }}" data-veredito>{{ regua.veredito }}</span>
-          {% if not encerrado %}
-          <button class="btn" type="submit" name="acao" value="dividir">{{ icon("users", "sm") }}<span>{{ traduzir("Dividir o que falta entre quem está sem meta") }}</span></button>
-          {% endif %}
         </div>
       </div>
     </section>

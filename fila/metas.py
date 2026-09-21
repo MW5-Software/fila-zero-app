@@ -25,7 +25,7 @@ __all__ = ["Acompanhamento", "Linha", "MES_ENCERRADO", "MetaDoRecorte", "Valores
            "acompanhar", "copiar_do_anterior", "gravar", "lojas_com_metas",
            "mes_anterior", "mes_do_texto", "mes_do_periodo", "mes_encerrado", "mes_seguinte", "meta_da_pessoa", "meta_do_recorte",
            "meta_da_loja", "metas_do_mes", "pessoas_da_lista", "primeiro_do_mes",
-           "Ritmo", "dividir_o_que_falta", "repartir", "ritmo",
+           "Ritmo", "repartir", "ritmo",
            "ultimo_do_mes", "valor_do_campo", "vendido_no_mes"]
 
 ZERO = Decimal("0")
@@ -158,17 +158,38 @@ class Linha:
 
 
 def _participa(pessoa, loja) -> bool:
-    from contas.lugar import permissoes_em
+    """Quem desta loja entra na lista da meta: quem ATENDE nela.
 
-    return bool({"fila.participar", "fila.*"}
-                & permissoes_em(pessoa, loja.empresa, loja))
+    Atende quem bate ponto, e quem gerencia a loja não atende
+    (`fila/quem_atende.py`, 18/09/2026): o gerente e o supervisor ficam fora da
+    lista, e o dono da conta nunca esteve nela — ela sai das alocações, e ele
+    não tem uma.
+
+    O parâmetro `meta_para_gestor` (padrão NÃO) devolve a meta a quem gerencia,
+    para a loja em que o gerente também vende. É por isso que a decisão é
+    parâmetro, e não código: é operação do cliente, e não arquitetura.
+    """
+    from contas.lugar import permissoes_em
+    from plataforma.parametro_catalogo import valor_de
+
+    from .quem_atende import atende
+
+    permissoes = permissoes_em(pessoa, loja.empresa, loja)
+    if atende(permissoes):
+        return True
+    # Quem não atende e não gerencia a loja (Representante, Cliente) fica fora
+    # com o parâmetro ligado ou desligado: a meta é de quem trabalha na loja.
+    if not {"fila.gerenciar", "fila.*"} & permissoes:
+        return False
+    return valor_de("meta_para_gestor")
 
 
 def pessoas_da_lista(loja, mes, editor) -> "list[Linha]":
     """Quem tem meta de pessoa nesta loja e mês (decisão P-5 do plano):
 
     - quem está alocado na loja (ou na empresa inteira) e, NESTE lugar,
-      participa da fila;
+      atende a fila (`_participa`: bate ponto quem atende, e quem gerencia a
+      loja não atende);
     - mais quem já tem meta aqui neste mês e não está mais na loja: a meta
       continua valendo, e sumir com ela da tela a esconderia de quem edita.
 
@@ -250,10 +271,12 @@ def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
 
     if mes_encerrado(mes, agora):
         raise Recusa(str(MES_ENCERRADO))
+    linhas = pessoas_da_lista(loja, mes, editor)
     alvos: "dict[str, object | None]" = {"loja": None}
-    for linha in pessoas_da_lista(loja, mes, editor):
+    for linha in linhas:
         if not linha.propria:
             alvos[str(linha.pessoa.pk)] = linha.pessoa
+    valores = _distribuir(loja, mes, linhas, valores)
 
     lidos, erros = {}, {}
     for chave in alvos:
@@ -349,39 +372,40 @@ def repartir(total: Decimal, partes: int) -> "list[Decimal]":
     return [Decimal(base + (1 if i < sobra else 0)) * CENTAVO for i in range(partes)]
 
 
-def dividir_o_que_falta(loja, mes, linhas: "list[Linha]",
-                        valores: "dict[str, str | None]") -> "tuple[dict[str, str], str | None]":
-    """O que falta para cobrir a meta da loja, repartido entre quem está sem
-    meta. Devolve `(campos, aviso)`; não grava, como copiar (M6).
+def _distribuir(loja, mes, linhas: "list[Linha]",
+                valores: "dict[str, str | None]") -> "dict[str, str | None]":
+    """A meta da loja vira meta individual IGUAL para quem ficou em branco.
 
-    Vale o que está DIGITADO na tela, e não o que está salvo: quem acabou de
-    digitar a meta da loja e clicou em dividir ainda não salvou nada. A meta
-    de quem edita (travada, fora do POST) conta na soma pelo valor salvo.
-    Quem já tem meta não é tocado (pedido do cliente, 17/09/2026): dividir
-    por cima apagaria o que o gerente acertou à mão.
+    Sem botão e sem JavaScript (18/09/2026, pedido do cliente): quem digita a
+    meta geral e salva já deixou a loja distribuída, e depois acerta um por um
+    à mão — quem tem valor digitado fica com o dele, e a distribuição não passa
+    por cima.
+
+    **Só quando a meta da loja é DEFINIDA ou MUDA nesta gravação.** O campo em
+    branco quer dizer "apagar" nas gravações em que ela não mudou, e sem esta
+    distinção não haveria mais como tirar a meta de uma pessoa sem tirar a da
+    loja junto — ou seja, a distribuição automática comeria a remoção (M6).
+
+    A parte é `meta da loja / nº de vendedores ATIVOS`, o mesmo número para
+    todos, e o centavo que não divide vai para os primeiros (`repartir`). Quem
+    saiu da loja não recebe nada: a meta dele é o que já estava lá.
+    Campo ausente do POST não é campo vazio — não se mexe nele (P-4).
     """
-    campos = {chave: (texto or "") for chave, texto in valores.items()}
-    da_loja, erro = _ler(campos.get("loja", ""))
-    if da_loja is None or erro:
-        return campos, _("Defina a meta da loja antes de dividir.")
-    soma, sem_meta = ZERO, []
-    for linha in linhas:
-        if linha.propria:
-            soma += linha.valor or ZERO
-            continue
-        valor, erro = _ler(campos.get(str(linha.pessoa.pk)) or "")
-        if valor is not None:
-            soma += valor
-        elif not erro and linha.na_loja:
-            sem_meta.append(linha)
-    falta = da_loja - soma
-    if falta <= ZERO:
-        return campos, _("As metas dos vendedores já cobrem a loja.")
-    if not sem_meta:
-        return campos, _("Todos já têm meta. Apague a de quem deve receber a divisão.")
-    for linha, parte in zip(sem_meta, repartir(falta, len(sem_meta))):
-        campos[str(linha.pessoa.pk)] = valor_do_campo(parte) if parte else ""
-    return campos, None
+    da_loja, erro = _ler(valores.get("loja") or "")
+    if da_loja is None or erro or meta_da_loja(loja, mes) == da_loja:
+        return valores
+    ativos = [linha for linha in linhas if linha.na_loja and not linha.propria]
+    # Loja sem vendedor ativo (a que acabou de nascer, ou a que ficou só com
+    # quem já saiu): não há por quem dividir, e `repartir(x, 0)` estouraria a
+    # tela com 500 no primeiro salvamento da meta da loja.
+    if not ativos:
+        return valores
+    campos = dict(valores)
+    for linha, parte in zip(ativos, repartir(da_loja, len(ativos))):
+        chave = str(linha.pessoa.pk)
+        if chave in valores and not (campos.get(chave) or "").strip() and parte:
+            campos[chave] = valor_do_campo(parte)
+    return campos
 
 
 @dataclass(frozen=True)

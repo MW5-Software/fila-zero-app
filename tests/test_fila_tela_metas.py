@@ -55,15 +55,11 @@ def test_supervisor_escolhe_a_loja(rede):
     assert "Ana" in html and "Caio" not in html
 
 
-def test_salvar_grava_e_a_propria_linha_vem_travada(rede):
+def test_salvar_grava(rede):
     from fila.metas import meta_da_loja
 
     gil = logado("gil")
-    html = _get(gil)
-    assert f'name="valor_{rede.gil.pk}"' in html
-    import re
-    propria = re.search(rf'<input[^>]*name="valor_{rede.gil.pk}"[^>]*>', html).group(0)
-    assert "disabled" in propria
+    _get(gil)
     resposta = gil.post(reverse("fila_metas"), {
         "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
         "valor_loja": "250.000,00", f"valor_{rede.caio.pk}": "30000",
@@ -71,6 +67,34 @@ def test_salvar_grava_e_a_propria_linha_vem_travada(rede):
     assert resposta.status_code == 302
     mes = timezone.localdate().replace(day=1)
     assert meta_da_loja(rede.centro, mes) == Decimal("250000")
+    from fila.models import MetaDeVenda
+    # A linha do próprio Gil não existe na lista (ele gerencia, e quem gerencia
+    # não tem meta), e o campo forjado com o pk dele não acha alvo: `gravar` só
+    # lê as chaves da lista que ele mesmo montou.
+    assert not MetaDeVenda.irrestritos.filter(pessoa=rede.gil).exists()
+
+
+def test_a_propria_linha_vem_travada_com_o_parametro_ligado(rede):
+    """Quem edita só aparece na lista quando também entra nela — no cargo de
+    fábrica, isso é o `meta_para_gestor` marcado. Aí a linha dele vem
+    DESABILITADA, e o POST com o pk dele não grava: ninguém define a própria
+    meta (`fila/metas.gravar`)."""
+    import re
+
+    from plataforma.parametro_catalogo import definir
+
+    definir("meta_para_gestor", "1")
+    gil = logado("gil")
+    html = _get(gil)
+    assert f'name="valor_{rede.gil.pk}"' in html
+    propria = re.search(rf'<input[^>]*name="valor_{rede.gil.pk}"[^>]*>', html).group(0)
+    assert "disabled" in propria
+
+    resposta = gil.post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "250.000,00", f"valor_{rede.caio.pk}": "30000",
+        f"valor_{rede.gil.pk}": "99999"})
+    assert resposta.status_code == 302
     from fila.models import MetaDeVenda
     assert not MetaDeVenda.irrestritos.filter(pessoa=rede.gil).exists()
 
@@ -183,34 +207,35 @@ def test_a_regua_mostra_quem_cobre_a_meta_da_loja(rede):
     assert "Caio" in regua and "width: 60.00%" in regua
 
 
-def test_dividir_preenche_quem_esta_sem_meta_e_nao_salva(rede):
+def test_salvar_ja_distribui_a_meta_da_loja(rede):
+    """Sem botão desde 18/09/2026: salvar a meta geral deixa os vendedores com
+    a parte igual, e a tela volta com tudo gravado."""
     from fila.models import MetaDeVenda
 
     dora = pessoa_na_loja("dora", rede.empresa, rede.centro)
     resposta = logado("gil").post(reverse("fila_metas"), {
-        "acao": "dividir", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
         "valor_loja": "90.000,00", f"valor_{rede.caio.pk}": "30.000,00",
         f"valor_{dora.pk}": ""})
-    assert resposta.status_code == 200
-    html = resposta.content.decode()
-    import re
-    campo = re.search(rf'<input[^>]*name="valor_{dora.pk}"[^>]*>', html).group(0)
-    assert 'value="60.000,00"' in campo
-    assert 'value="90.000,00"' in html
-    assert "Confira e salve." in html
-    assert not MetaDeVenda.irrestritos.exists()
+    assert resposta.status_code == 302
+    mes = timezone.localdate().replace(day=1)
+    metas = dict(MetaDeVenda.irrestritos
+                 .filter(mes=mes, pessoa__isnull=False)
+                 .values_list("pessoa__nome", "valor"))
+    assert metas == {"Caio": Decimal("30000"), "Dora": Decimal("45000")}
 
 
-def test_dividir_sem_meta_da_loja_avisa(rede):
-    resposta = logado("gil").post(reverse("fila_metas"), {
-        "acao": "dividir", "mes": _mes_atual(), "loja": str(rede.centro.pk),
-        "valor_loja": ""})
-    assert "Defina a meta da loja antes de dividir." in resposta.content.decode()
+def test_a_tela_nao_tem_botao_de_dividir(rede):
+    """O botão saiu: a distribuição é do servidor, no salvar — a mesma tela
+    funciona sem JavaScript e sem clique nenhum."""
+    html = _get(logado("gil"))
+    assert 'value="dividir"' not in html
+    assert "Dividir" not in html
 
 
-def test_mes_encerrado_nao_tem_salvar_nem_dividir(rede):
+def test_mes_encerrado_nao_tem_salvar_nem_copiar(rede):
     html = _get(logado("gil"), mes="2020-01")
-    assert "Salvar metas" not in html and 'value="dividir"' not in html
+    assert "Salvar metas" not in html
     assert 'value="copiar"' not in html
 
 
