@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
+"Generated-By: Babel 2.17.0\n"
 
 msgid "Idioma desconhecido."
 msgstr "Idioma desconocido."
@@ -1618,6 +1618,10 @@ msgstr "Mi panel"
 
 msgid "Ao vivo"
 msgstr "En vivo"
+
+#, python-format
+msgid "Já existe \"%(nome)s\" nesta lista."
+msgstr "Ya existe \"%(nome)s\" en esta lista."
 
 #~ msgid "Os dados da sua empresa, e de onde o cron lê o catálogo dela no Kronos."
 #~ msgstr ""
