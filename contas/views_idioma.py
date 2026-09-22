@@ -41,7 +41,13 @@ def _destino(request) -> str:
     clicou jura que estava dentro do sistema.
     """
     bruto = (request.POST.get("voltar") or "").strip()
-    if bruto.startswith("/") and not bruto.startswith("//"):
+    # Barra invertida e caractere de controle também saem: o navegador lê `\`
+    # como `/` e descarta tab e quebra de linha, e `/\outro.site` ou
+    # `/<tab>/outro.site` viram `//outro.site` na barra de endereço — passavam
+    # na trava do `//` (auditoria de 21/09/2026).
+    if (bruto.startswith("/") and not bruto.startswith("//")
+            and "\\" not in bruto
+            and not any(ord(c) < 32 or ord(c) == 127 for c in bruto)):
         return bruto
     return PADRAO_DE_VOLTA
 

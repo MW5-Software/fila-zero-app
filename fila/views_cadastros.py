@@ -227,7 +227,7 @@ def _tela(request, cadastro) -> HttpResponse:
                           alvo=_alvo(cadastro, linha), request=request)
         except IntegrityError:
             return _desenhar(request, cadastro,
-                             erro=f'Já existe "{nome}" nesta lista.')
+                             erro=_('Já existe "%(nome)s" nesta lista.') % {"nome": nome})
         return HttpResponseRedirect(reverse(cadastro.rota))
 
     linha = _linhas(request, cadastro).filter(
@@ -250,7 +250,7 @@ def _tela(request, cadastro) -> HttpResponse:
                           request=request)
         except IntegrityError:
             return _desenhar(request, cadastro,
-                             erro=f'Já existe "{nome}" nesta lista.')
+                             erro=_('Já existe "%(nome)s" nesta lista.') % {"nome": nome})
         return HttpResponseRedirect(reverse(cadastro.rota))
 
     if acao == "remover":

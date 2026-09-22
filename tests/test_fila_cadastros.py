@@ -56,6 +56,21 @@ def test_nome_repetido_sem_diferenca_de_caixa_responde_com_frase(rota, model, ro
     assert "Já existe" in resposta.content.decode()
 
 
+@pytest.mark.parametrize("rota, model, rotulo", TELAS)
+def test_nome_repetido_responde_no_idioma_de_quem_usa(rota, model, rotulo):
+    """A frase era um f-string solto, fora do gettext: o gerente em castelhano
+    lia a recusa em português (auditoria de 21/09/2026)."""
+    empresa, _, _ = sylvia()
+    _model(model).irrestritos.create(empresa=empresa, nome="Almoço")
+    cliente = logado("sylvia")
+    cliente.post(reverse("idioma"), {"idioma": "es", "voltar": "/"})
+    resposta = cliente.post(reverse(rota), {
+        "acao": "criar", "nome": "ALMOÇO", "ordem": "0"})
+    html = resposta.content.decode()
+    # As aspas saem escapadas no HTML (`&quot;`): o que se prova é a frase.
+    assert "Ya existe" in html and "en esta lista." in html
+
+
 def test_cadastro_usado_nao_se_remove_e_a_tela_diz_por_que():
     from datetime import datetime, timezone as tz
 
