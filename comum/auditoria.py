@@ -22,7 +22,7 @@ def _modelo():
 
     return apps.get_model("contas", "RegistroDeAuditoria")
 
-__all__ = ["ACOES", "ROTULOS", "registrar"]
+__all__ = ["ACOES", "ROTULOS", "declarar_acoes", "registrar", "vocabulario"]
 
 
 class ACOES:
@@ -73,27 +73,10 @@ class ACOES:
     #: Uma ação só para logo e cores do menu de uma empresa (15/09/2026): o
     #: `alvo` diz a empresa, e o que se mexe ali é sempre a mesma pergunta.
     MENU_DA_EMPRESA_ALTERADO = "menu_da_empresa_alterado"
-    # As ações dos módulos de negócio de cada SaaS entram aqui, cada uma com o
-    # rótulo em `ROTULOS` e o cenário que `tests/test_auditoria.py` exige.
-    # As correções da fila do Fila Zero (`fila/correcoes.py`). As ações do
-    # próprio vendedor NÃO entram: já são o histórico da fila, e uma linha de
-    # trilha por clique afogaria o que a auditoria existe para mostrar.
-    FILA_PESSOA_TIRADA = "fila_pessoa_tirada"
-    FILA_ATENDIMENTO_FECHADO = "fila_atendimento_fechado"
-    FILA_PAUSA_ENCERRADA = "fila_pausa_encerrada"
-    FILA_LANCAMENTO_CORRIGIDO = "fila_lancamento_corrigido"
-    FILA_POSICAO_MOVIDA = "fila_posicao_movida"
-    FILA_PAUSA_INICIADA = "fila_pausa_iniciada"
-    FILA_POSTO_NA_FILA = "fila_posto_na_fila"
-    # Os três cadastros da fila; o alvo leva o nome do cadastro na frente
-    # ("Grupo de item: Sofás"), porque os três dividem as mesmas três ações.
-    FILA_CADASTRO_CRIADO = "fila_cadastro_criado"
-    FILA_CADASTRO_EDITADO = "fila_cadastro_editado"
-    FILA_CADASTRO_REMOVIDO = "fila_cadastro_removido"
-    # As metas da fila (entrega 3); o alvo diz a loja, de quem e o mês, e o
-    # detalhe, o valor novo e o de antes.
-    FILA_META_DEFINIDA = "fila_meta_definida"
-    FILA_META_REMOVIDA = "fila_meta_removida"
+    # As ações dos módulos de negócio NÃO entram aqui: cada módulo as declara
+    # no `ready()` do app (`declarar_acoes`, abaixo), com o rótulo, e o
+    # cenário que `tests/test_auditoria.py` exige. Até 21/09/2026 elas moravam
+    # nesta classe, e a base não voltava limpa para quem a copiou.
 
 
 #: O que a pessoa lê, por valor gravado no banco — a mesma tradução que a
@@ -138,19 +121,55 @@ ROTULOS = {
     ACOES.LOGO_ALTERADO: "Logo alterado",
     ACOES.LOGO_REMOVIDO: "Logo removido",
     ACOES.MENU_DA_EMPRESA_ALTERADO: "Menu da empresa alterado",
-    ACOES.FILA_PESSOA_TIRADA: "Pessoa tirada da loja",
-    ACOES.FILA_ATENDIMENTO_FECHADO: "Atendimento fechado pelo gerente",
-    ACOES.FILA_PAUSA_ENCERRADA: "Pausa encerrada pelo gerente",
-    ACOES.FILA_LANCAMENTO_CORRIGIDO: "Lançamento corrigido",
-    ACOES.FILA_POSICAO_MOVIDA: "Posição na fila mudada pelo gerente",
-    ACOES.FILA_PAUSA_INICIADA: "Pausa iniciada pelo gerente",
-    ACOES.FILA_POSTO_NA_FILA: "Posto na fila pelo gerente",
-    ACOES.FILA_CADASTRO_CRIADO: "Cadastro da fila criado",
-    ACOES.FILA_CADASTRO_EDITADO: "Cadastro da fila editado",
-    ACOES.FILA_CADASTRO_REMOVIDO: "Cadastro da fila removido",
-    ACOES.FILA_META_DEFINIDA: "Meta de venda definida",
-    ACOES.FILA_META_REMOVIDA: "Meta de venda removida",
 }
+
+
+#: Os vocabulários que os módulos de negócio declararam, na ordem em que
+#: chegaram (`declarar_acoes`). O da base é `ACOES`, sempre o primeiro.
+_DECLARADOS: list = []
+
+
+def _nomes(namespace) -> dict[str, str]:
+    return {nome: valor for nome, valor in vars(namespace).items()
+            if not nome.startswith("_") and isinstance(valor, str)}
+
+
+def vocabulario() -> dict[str, str]:
+    """Toda ação que a trilha conhece, `{NOME: valor gravado}` — a da base e a
+    de cada módulo de negócio."""
+    todas = _nomes(ACOES)
+    for namespace in _DECLARADOS:
+        todas.update(_nomes(namespace))
+    return todas
+
+
+def declarar_acoes(namespace, rotulos: "dict[str, str]") -> None:
+    """Acrescenta ao vocabulário as ações de um módulo de negócio.
+
+    **A base não conhece os módulos** (`CLAUDE.md` §3), e as ações deles
+    moravam aqui dentro — no Fila Zero, doze `FILA_*` na classe `ACOES`. Era o
+    que impedia a base de voltar limpa para o produto: toda cópia dela trazia
+    a fila junto, ou apagava o que a fila usava (auditoria de 21/09/2026).
+
+    O módulo declara uma classe-namespace, como `ACOES`, e os rótulos, no
+    `ready()` do app dele. Nome ou valor repetido é recusado: duas ações com o
+    mesmo nome gravariam a mesma linha para dois fatos diferentes, e a trilha
+    mentiria sem erro nenhum. Declarar de novo o MESMO namespace (o `ready()`
+    roda mais de uma vez nos testes) não faz nada.
+    """
+    if namespace in _DECLARADOS:
+        return
+    ja = vocabulario()
+    novas = _nomes(namespace)
+    repetidos = sorted(set(novas) & set(ja)) + sorted(
+        v for v in novas.values() if v in ja.values())
+    if repetidos:
+        raise ValueError(f"ações já declaradas: {repetidos}")
+    sem_rotulo = sorted(v for v in novas.values() if v not in rotulos)
+    if sem_rotulo:
+        raise ValueError(f"ações sem rótulo: {sem_rotulo}")
+    _DECLARADOS.append(namespace)
+    ROTULOS.update(rotulos)
 
 
 def _conta_de(autor, login: str):

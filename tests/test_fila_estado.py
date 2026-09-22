@@ -87,12 +87,11 @@ def test_o_retrato_separa_quem_esta_em_espera(relogio):
     from fila.acoes import bater_ponto, finalizar, vou_atender
     from fila.estado import retrato
     from fila.models import Estado
-    from plataforma.models import FluxoDaFila
+    from fila.fluxo import FluxoDaFila, definir_fluxo
     from tests.fila_cenario import cadastros, pessoa_na_loja, sylvia
 
     empresa, matriz, _titular = sylvia()
-    empresa.fluxo_da_fila = FluxoDaFila.ESPERA
-    empresa.save(update_fields=["fluxo_da_fila"])
+    definir_fluxo(empresa, FluxoDaFila.ESPERA)
     cad = cadastros(empresa)
     ana = pessoa_na_loja("ana", empresa, matriz)
     bia = pessoa_na_loja("bia", empresa, matriz)

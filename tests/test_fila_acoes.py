@@ -443,10 +443,9 @@ def test_atendendo_numa_empresa_a_recusa_diz_a_loja_e_a_empresa(loja):
 # --- O fluxo da empresa (spec 2026-09-17-fluxo-da-fila-por-empresa) ---------
 
 def _com_espera(loja):
-    from plataforma.models import FluxoDaFila
+    from fila.fluxo import FluxoDaFila, definir_fluxo
 
-    loja.empresa.fluxo_da_fila = FluxoDaFila.ESPERA
-    loja.empresa.save(update_fields=["fluxo_da_fila"])
+    definir_fluxo(loja.empresa, FluxoDaFila.ESPERA)
     return loja
 
 

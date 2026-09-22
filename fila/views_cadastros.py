@@ -21,7 +21,9 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from comum.ambiente import ambiente
-from comum.auditoria import ACOES, registrar
+from comum.auditoria import registrar
+
+from .auditoria import ACOES_DA_FILA
 from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
@@ -221,7 +223,7 @@ def _tela(request, cadastro) -> HttpResponse:
             with transaction.atomic():
                 linha = cadastro.model.irrestritos.create(
                     empresa=empresa, nome=nome, ordem=ordem)
-                registrar(ACOES.FILA_CADASTRO_CRIADO, request.usuario,
+                registrar(ACOES_DA_FILA.FILA_CADASTRO_CRIADO, request.usuario,
                           alvo=_alvo(cadastro, linha), request=request)
         except IntegrityError:
             return _desenhar(request, cadastro,
@@ -242,7 +244,7 @@ def _tela(request, cadastro) -> HttpResponse:
             with transaction.atomic():
                 linha.nome, linha.ordem, linha.ativo = nome, ordem, ativo
                 linha.save(update_fields=["nome", "ordem", "ativo"])
-                registrar(ACOES.FILA_CADASTRO_EDITADO, request.usuario,
+                registrar(ACOES_DA_FILA.FILA_CADASTRO_EDITADO, request.usuario,
                           alvo=_alvo(cadastro, linha),
                           detalhe=f"era {antes}; {'ativo' if ativo else 'inativo'}",
                           request=request)
@@ -254,7 +256,7 @@ def _tela(request, cadastro) -> HttpResponse:
     if acao == "remover":
         try:
             with transaction.atomic():
-                registrar(ACOES.FILA_CADASTRO_REMOVIDO, request.usuario,
+                registrar(ACOES_DA_FILA.FILA_CADASTRO_REMOVIDO, request.usuario,
                           alvo=_alvo(cadastro, linha), request=request)
                 linha.delete()
         except ProtectedError:

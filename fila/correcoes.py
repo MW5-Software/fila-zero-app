@@ -20,7 +20,9 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
-from comum.auditoria import ACOES, registrar
+from comum.auditoria import registrar
+
+from .auditoria import ACOES_DA_FILA
 
 from . import acoes
 from .acoes import (Recusa, _abrir_pausa, _depois_do_atendimento,
@@ -128,7 +130,7 @@ def tirar_da_loja(autor, filial, pessoa_id, lancamento=None, *, observacao,
         alvo = _alvo(lugar, filial)
         _sair(lugar, agora, fechada_por=autor)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR, observacao,
-                   detalhe, agora, auditoria=ACOES.FILA_PESSOA_TIRADA, alvo=alvo,
+                   detalhe, agora, auditoria=ACOES_DA_FILA.FILA_PESSOA_TIRADA, alvo=alvo,
                    request=request)
 
 
@@ -149,7 +151,7 @@ def fechar_atendimento(autor, filial, pessoa_id, lancamento, *, observacao,
         _depois_do_atendimento(lugar, filial, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.FECHAR, observacao,
                    descrever(atendimento), agora,
-                   auditoria=ACOES.FILA_ATENDIMENTO_FECHADO,
+                   auditoria=ACOES_DA_FILA.FILA_ATENDIMENTO_FECHADO,
                    alvo=_alvo(lugar, filial), request=request)
 
 
@@ -167,7 +169,7 @@ def tirar_da_pausa(autor, filial, pessoa_id, *, observacao, request=None):
         pausa.save(update_fields=["fim"])
         _voltar_ao_fim(lugar, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR_PAUSA, observacao,
-                   pausa.tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_ENCERRADA,
+                   pausa.tipo.nome, agora, auditoria=ACOES_DA_FILA.FILA_PAUSA_ENCERRADA,
                    alvo=_alvo(lugar, filial), request=request)
 
 
@@ -200,7 +202,7 @@ def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
         depois = descrever(atendimento)
         _registrar(autor, filial, atendimento.vendedor_id, AcaoDeCorrecao.EDITAR,
                    observacao, f"antes: {antes}; depois: {depois}", _agora(),
-                   auditoria=ACOES.FILA_LANCAMENTO_CORRIGIDO,
+                   auditoria=ACOES_DA_FILA.FILA_LANCAMENTO_CORRIGIDO,
                    alvo=f"Atendimento de {nome_de(atendimento.vendedor)} em {filial}",
                    request=request)
 
@@ -271,7 +273,7 @@ def mover(autor, filial, pessoa_id, posicao, *, observacao, request=None):
         lugar.save(update_fields=["na_fila_desde"])
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.MOVER, observacao,
                    f"de {atual}º para {posicao}º", _agora(),
-                   auditoria=ACOES.FILA_POSICAO_MOVIDA, alvo=_alvo(lugar, filial),
+                   auditoria=ACOES_DA_FILA.FILA_POSICAO_MOVIDA, alvo=_alvo(lugar, filial),
                    request=request)
 
 
@@ -289,7 +291,7 @@ def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None)
         agora = _agora()
         tipo = _abrir_pausa(lugar, filial, tipo_id, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.PAUSAR, observacao,
-                   tipo.nome, agora, auditoria=ACOES.FILA_PAUSA_INICIADA,
+                   tipo.nome, agora, auditoria=ACOES_DA_FILA.FILA_PAUSA_INICIADA,
                    alvo=_alvo(lugar, filial), request=request)
 
 
@@ -310,5 +312,5 @@ def por_na_fila(autor, filial, pessoa_id, *, observacao, request=None):
         agora = _agora()
         _voltar_ao_fim(lugar, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.POR_NA_FILA,
-                   observacao, "", agora, auditoria=ACOES.FILA_POSTO_NA_FILA,
+                   observacao, "", agora, auditoria=ACOES_DA_FILA.FILA_POSTO_NA_FILA,
                    alvo=_alvo(lugar, filial), request=request)

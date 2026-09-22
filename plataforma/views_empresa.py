@@ -45,7 +45,8 @@ from nucleo.resposta import render
 
 from comum.pedido import id_do_post
 
-from .models import Empresa, FluxoDaFila
+from .caixas_da_empresa import caixas
+from .models import Empresa
 from .site import montar_site
 
 __all__ = ["campos_do_cadastro", "criar_do_post", "desenhar_com_erro",
@@ -167,10 +168,7 @@ def _campo_oculto(nome: str, valor: str) -> str:
 
 def _valores_de(linha: "Empresa | None") -> dict[str, str]:
     origem = linha or Empresa()
-    valores = {nome: getattr(origem, nome) or ""
-               for nome, _resto, _resto in CAMPOS}
-    valores["fluxo_da_fila"] = origem.fluxo_da_fila or FluxoDaFila.VOLTA
-    return valores
+    return {nome: getattr(origem, nome) or "" for nome, _resto, _resto in CAMPOS}
 
 
 def _validar(dados: dict[str, str]) -> "str | None":
@@ -265,18 +263,11 @@ def _campos(valores: dict[str, str], alvo: "Empresa | None" = None,
         ])
         for titulo, campos in GRUPOS
     ]
-    # A caixa do fluxo fica FORA de `GRUPOS` porque aquela lista é de campos
-    # de texto, lidos direto do POST e atribuídos à coluna (`_dados_do_post`).
-    # Este é escolha fechada: valor de fora das opções cai no padrão, e não
-    # vira coluna com lixo (spec 2026-09-17).
-    esquerda.append(Box(body=[
-        SectionLabel(label=_("Fila da vez")),
-        FormGrid(children=[Select(
-            name="fluxo_da_fila", label=_("Depois de lançar o atendimento"),
-            span=12, value=valores.get("fluxo_da_fila", FluxoDaFila.VOLTA),
-            options=[Option(v, r) for v, r in FluxoDaFila.choices],
-            help=_("Vale para todas as lojas desta empresa."))]),
-    ]))
+    # As caixas que os módulos de negócio registram (`plataforma.
+    # caixas_da_empresa`) — no Fila Zero, o fluxo da fila. Ficam FORA de
+    # `GRUPOS` porque aquela lista é de colunas da empresa, e o dado delas
+    # mora na tabela de cada módulo.
+    esquerda.extend(c.desenhar(alvo) for c in caixas())
 
     if not conexao:
         # Uma coluna só. Sem a `ep-duas` em volta, o formulário ocupa a
@@ -657,19 +648,8 @@ def _dados_do_post(request) -> dict[str, str]:
     """
     editaveis = CAMPOS if _e_master(request) else tuple(
         campo for campo in CAMPOS if campo not in CONEXAO)
-    dados = {nome: request.POST.get(nome, "").strip()
-             for nome, _resto, _resto in editaveis}
-    # **Campo ausente não mexe** (a mesma regra das metas): um POST sem o
-    # fluxo — de uma tela que não o desenha, ou de um cliente antigo — deixa
-    # o valor gravado onde está, em vez de zerá-lo.
-    #
-    # Escolha fechada, conferida pelo MODEL: `Empresa.save` chama
-    # `full_clean`, que recusa valor fora das opções, e a tela mostra a frase
-    # (`_frase_da_recusa`). Normalizar aqui também seria a segunda cópia da
-    # mesma regra — e a cópia que alguém esqueceria de mudar junto.
-    if "fluxo_da_fila" in request.POST:
-        dados["fluxo_da_fila"] = request.POST["fluxo_da_fila"].strip()
-    return dados
+    return {nome: request.POST.get(nome, "").strip()
+            for nome, _resto, _resto in editaveis}
 
 
 def _frase_da_recusa(erro) -> str:
@@ -731,6 +711,7 @@ def criar_do_post(request, dono=None) -> "tuple[Empresa | None, str]":
     try:
         nova = Empresa.objects.create(dono=dono, **dados)
         _gravar_senha(request, nova)
+        _gravar_caixas(request, nova)
     except ValidationError as recusa:
         return None, _frase_da_recusa(recusa)
     except ImproperlyConfigured as falta:
@@ -749,6 +730,7 @@ def _acao_salvar(request, alvo: Empresa) -> HttpResponse:
                 setattr(alvo, nome, valor)
             alvo.save()
             _gravar_senha(request, alvo)
+            _gravar_caixas(request, alvo)
             registrar(ACOES.EMPRESA_EDITADA, request.usuario,
                       alvo=str(alvo), request=request)
     except ValidationError as recusa:
@@ -759,6 +741,14 @@ def _acao_salvar(request, alvo: Empresa) -> HttpResponse:
     except ImproperlyConfigured as falta:
         return _desenhar(request, erro=str(falta))
     return HttpResponseRedirect(reverse("empresa"))
+
+
+def _gravar_caixas(request, alvo: Empresa) -> None:
+    """O que as caixas dos módulos de negócio receberam no POST. Dentro do
+    mesmo `atomic` da empresa: a `ValidationError` de uma delas desfaz o
+    formulário inteiro, e a tela mostra a frase (`_frase_da_recusa`)."""
+    for caixa in caixas():
+        caixa.gravar(request, alvo)
 
 
 def _gravar_senha(request, alvo: Empresa) -> None:

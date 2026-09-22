@@ -47,6 +47,46 @@ class Resultado(models.TextChoices):
     NAO_VENDEU = "nao_vendeu", _("Não vendeu")
 
 
+class FluxoDaFila(models.TextChoices):
+    """O que acontece com o vendedor depois que o atendimento é lançado
+    (spec 2026-09-17-fluxo-da-fila-por-empresa).
+
+    Mora na EMPRESA, e não na loja: a rede trabalha do mesmo jeito nas lojas
+    dela, e um campo por loja seria a mesma resposta repetida em cada uma, com
+    a chance de duas divergirem por esquecimento.
+    """
+
+    VOLTA = "volta_para_a_fila", _("Volta para o fim da fila")
+    ESPERA = "espera", _("Fica em espera e entra na fila quando quiser")
+
+
+class FluxoDaEmpresa(ModeloDaEmpresa):
+    """O fluxo da fila de UMA empresa — uma linha por empresa, e só quando ela
+    muda do padrão.
+
+    Era a coluna `plataforma.Empresa.fluxo_da_fila` até 21/09/2026: a base
+    carregava um campo de um módulo de negócio, e o Fila Zero nunca mais
+    recebia a base limpa. Aqui ele é da fila, e a base não sabe que existe
+    (`fila/fluxo.py` lê e grava; a caixa da tela de Empresas é registrada pela
+    fila em `plataforma.caixas_da_empresa`).
+
+    **Sem linha é o padrão** (`VOLTA`, o fluxo da Sylvia): nenhuma empresa
+    precisa de linha para funcionar como sempre funcionou.
+    """
+
+    fluxo = models.CharField(
+        _("fluxo da fila"), max_length=20, choices=FluxoDaFila.choices,
+        default=FluxoDaFila.VOLTA)
+
+    class Meta(ModeloDaEmpresa.Meta):
+        verbose_name = _("fluxo da fila da empresa")
+        verbose_name_plural = _("fluxos da fila das empresas")
+        constraints = [
+            models.UniqueConstraint(fields=["empresa"],
+                                    name="fila_um_fluxo_por_empresa"),
+        ]
+
+
 class Cadastro(ModeloDaEmpresa):
     """O que os três cadastros têm em comum.
 
