@@ -120,6 +120,15 @@ class TestATrocaPelaTela:
         página qualquer não pode trocar o idioma de quem a abrir."""
         assert logada.get(reverse("idioma")).status_code == 405
 
+    @pytest.mark.parametrize("fora", ["/\\outro.site", "//outro.site", "/\t/outro.site"])
+    def test_barra_invertida_tambem_e_fora_de_casa(self, logada, fora):
+        """`/\\outro.site` começa com `/` e não com `//`, e passava na trava; o
+        navegador lê a barra invertida como barra, e descarta o tab de
+        `/\\t/outro.site`, e nos dois casos vai para o outro host (auditoria de
+        21/09/2026)."""
+        resposta = logada.post(reverse("idioma"), {"idioma": "es", "voltar": fora})
+        assert resposta["Location"] == "/"
+
     def test_voltar_para_fora_de_casa_e_recusado(self, logada):
         """`?voltar=https://outro.site` faria desta rota um trampolim: o link
         sai do nosso domínio e quem clicou jura que estava dentro do
