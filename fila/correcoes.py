@@ -12,7 +12,7 @@ falhar, a correção desfaz junto (ver `comum.auditoria.registrar`).
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta
+from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import BooleanField, ExpressionWrapper, Q
@@ -30,6 +30,7 @@ from .acoes import (Recusa, _abrir_pausa, _depois_do_atendimento,
                     _sair, _travar, _validar, _voltar_ao_fim)
 from .estado import na_fila, nome_de
 from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
+from .periodo import inicio_do_dia
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
@@ -211,7 +212,7 @@ def lancamentos_de_hoje(filial, dia=None):
     """Os atendimentos fechados da loja no dia local (o de hoje por padrão),
     do mais recente para o mais antigo."""
     dia = dia or timezone.localdate()
-    inicio = timezone.make_aware(datetime.combine(dia, time.min))
+    inicio = inicio_do_dia(dia)
     return (Atendimento.objects.da_empresa(filial.empresa)
             .filter(filial=filial, fim__gte=inicio,
                     fim__lt=inicio + timedelta(days=1))
