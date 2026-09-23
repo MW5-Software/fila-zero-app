@@ -870,11 +870,15 @@ plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
   atende: os três ficavam sem caminho nenhum até o Início (18/09/2026, pedido
   do cliente: "dono, supervisor e gerente não tem o meu painel na página da
   fila").
-- **O estado da loja fica no MEIO da faixa** (23/09/2026, pedido do cliente:
-  com a loja vazia, o "0 na fila agora" ficava encostado à esquerda e o cartão
-  parecia pela metade). `.fila-hero-painel` ocupa a sobra da linha e
-  `.fila-estado` centra o que tem dentro — o grupo [numeral + texto + trilha],
-  com os botões seguindo à direita. Vale em qualquer largura.
+- **O NÚMERO sobe para ficar na linha do título** (23/09/2026; o cliente pediu
+  "centraliza o 0 na fila agora", e corrigiu depois do primeiro ajuste: "não
+  era centralizado no meio do trem, era centralizado na linha ali, era só
+  subir ele um pouco"). O número é centrado contra o bloco de texto inteiro —
+  título, apoio e a trilha da fila —, e com a trilha embaixo o cento do bloco
+  cai abaixo da linha do "na fila agora": `translateY(-10px)` no
+  `.fila-numeral` põe os dois na mesma altura (medido: o número nascia com o
+  centro 12px abaixo do centro do título). **O estado NÃO é centralizado no
+  cartão** — essa foi a primeira leitura, e ela está errada.
 - **O nome e a loja ficam FORA do cartão, numa faixa acima dele, e maiores**
   (23/09/2026, pedido do cliente: "na página da fila o nome do usuário e filial
   tem que sair do cargo e aumentar o tamanho para melhor visualição"): o celular
