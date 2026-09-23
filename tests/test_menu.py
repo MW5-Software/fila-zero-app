@@ -425,7 +425,9 @@ def test_administracao_abre_a_barra(db):
                permissions=["*"])
     grupos = [g.label for g in montar(mw5)]
     assert grupos[0] == "Administração", grupos
-    assert grupos.index("Cadastro") > 0
+    # "Configuração" desde 23/09/2026: era "Cadastro" (ver
+    # `plataforma/modulo.py`, no `MODULO_CONTA`).
+    assert grupos.index("Configuração") > 0
 
 
 @pytest.mark.django_db
@@ -438,7 +440,8 @@ def test_o_cadastro_reune_empresa_usuarios_e_produtos(db):
     administra um cliente, e a barra passou a dizer isso.
 
     **Filiais e Cargos vieram depois** (14/09/2026, pedido do João: "tudo que
-    for cadastro fica no menu Cadastro"). Os dois são cadastro do cliente — as
+    for cadastro fica no menu Cadastro", que desde 23/09/2026 se chama
+    Configuração). Os dois são cadastro do cliente — as
     unidades da empresa e os cargos da conta. Filiais estava na Administração
     por herança do KRONOS.net, onde a instalação era de UM cliente e cadastro
     de filial era configuração.
@@ -460,7 +463,7 @@ def test_o_cadastro_reune_empresa_usuarios_e_produtos(db):
     # a lista delas. "Conta" é o topo da hierarquia (conta -> empresas ->
     # lojas), e por isso vem antes.
     assert {"Conta", "Empresas", "Usuários", "Filiais", "Cargos"} <= \
-        set(grupos["Cadastro"])
+        set(grupos["Configuração"])
     for cadastro in ("Usuários", "Empresas", "Filiais", "Cargos"):
         assert cadastro not in grupos.get("Administração", []), cadastro
     # O que sobra na Administração é o que configura a instalação.
@@ -491,7 +494,7 @@ def test_o_cadastro_nao_empata_com_a_administracao_no_topo(db):
     da_administracao = min(ordens["aparencia"], ordens["modulos"],
                            ordens["falhas"])
     assert da_administracao < do_cadastro, (
-        f"Administração em {da_administracao} e Cadastro em {do_cadastro}: "
+        f"Administração em {da_administracao} e Configuração em {do_cadastro}: "
         "empatados, quem vem primeiro passa a ser a ordem de leitura do "
         "código")
 
@@ -609,7 +612,7 @@ def test_o_cadastro_segue_a_ordem_do_trabalho(db):
     grupos = {g.label: [f.label for f in (g.children or [])]
               for g in montar(mw5)}
 
-    cadastro = grupos["Cadastro"]
+    cadastro = grupos["Configuração"]
     ordem = [cadastro.index(nome) for nome in
              ("Conta", "Empresas", "Filiais", "Usuários", "Cargos")]
     assert ordem == sorted(ordem), cadastro

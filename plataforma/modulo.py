@@ -37,11 +37,18 @@ from django.utils.translation import gettext_lazy as _
 #: de Empresa e Usuários.
 #:
 #: `ordem=-5`: antes de Empresa (-4), porque a conta contém as empresas.
+# O grupo dos cadastros do CLIENTE passou a se chamar "Configuração" em
+# 23/09/2026 (pedido do cliente ao Fila Zero: "em vez de Fila da Vez muda para
+# Configuração/Fila"). Reúne o que ele configura — a conta, as empresas, as
+# filiais, os usuários e os cargos —, e o nome antigo ("Cadastro") repetia o
+# conceito que já é a palavra de cada tela. A mudança veio junto com o menu da
+# fila, que ganhou o grupo "Gerenciar Fila" e pôs o cadastro dele em
+# "Configuração > Fila" (`fila/modulo.py`).
 MODULO_CONTA = ModuloSpec(
     chave="conta",
     rotulo=_("Conta"),
     icone="building",
-    grupo="Cadastro",
+    grupo="Configuração",
     ordem=-5,
     rota="/conta",
     permissoes=("conta.ver",),
@@ -66,7 +73,7 @@ MODULO_EMPRESA = ModuloSpec(
 #: motivo: o cadastro da empresa é dado do cliente, como o produto e a
 #: gente dele. O que fica na Administração é o que configura a
 #: INSTALAÇÃO: parâmetros, aparência, módulos e falhas.
-    grupo="Cadastro",
+    grupo="Configuração",
     # A ordem DENTRO do Cadastro é a do trabalho do titular (14/09/2026):
     # Empresa (-4), Filiais (-3), Usuários (-2), Perfis (-1) — e o Catálogo,
     # que vem do módulo de vendas, depois. Empatadas, o desempate seria a
@@ -105,7 +112,7 @@ MODULO_FILIAIS = ModuloSpec(
     chave="filiais",
     rotulo=_("Filiais"),
     icone="grid",
-    grupo="Cadastro",
+    grupo="Configuração",
     ordem=-3,
     rota="/filiais",
     permissoes=("filiais.editar",),

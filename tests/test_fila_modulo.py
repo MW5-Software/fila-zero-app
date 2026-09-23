@@ -30,6 +30,48 @@ def test_o_modulo_esta_declarado_com_as_quatro_permissoes():
 
 
 @pytest.mark.django_db
+def test_o_menu_da_fila_como_o_cliente_pediu():
+    """23/09/2026, pedido do cliente: "Metas vai ser um Menu de Nível 1, em vez
+    de Fila da Vez muda para Configuração/Fila e em vez do menu chamar Vendas
+    vai chamar Gerenciar Fila".
+
+    **O teste olha o menu MONTADO**, e não as declarações: ninguém escreve o
+    menu à mão — ele nasce do `ModuloSpec` e dos atalhos (`plataforma.menu`) —,
+    e o que o cliente vê na barra é o resultado do cruzamento.
+    """
+    from nucleo.permissoes import User
+    from plataforma.catalogo import semear
+    from plataforma.menu import montar
+
+    semear()
+    grupos = {g.label: g for g in
+              montar(User(id=1, name="MW5", login="mw5", superuser=True,
+                          permissions=["*"]))}
+
+    # O grupo "Vendas" virou "Gerenciar Fila", e "Cadastro" virou
+    # "Configuração" — nenhum dos dois nomes antigos fica na barra.
+    assert "Vendas" not in grupos and "Cadastro" not in grupos
+
+    da_fila = grupos["Gerenciar Fila"]
+    # **Metas de PRIMEIRO nível**, ao lado da página e do histórico: ela não é
+    # filha de ninguém.
+    assert [(i.label, i.href) for i in da_fila.children] == [
+        ("Fila da vez", "/fila"),
+        ("Histórico da fila", "/fila/historico"),
+        ("Metas", "/fila/metas"),
+    ]
+    assert all(not i.children for i in da_fila.children), "Metas tem pai"
+
+    # O cadastro da fila em "Configuração > Fila", e não num segundo "Fila da
+    # vez" dentro do grupo dos cadastros.
+    configuracao = grupos["Configuração"]
+    pai = next(i for i in configuracao.children if i.label == "Fila")
+    assert [f.label for f in pai.children] == [
+        "Grupos de item", "Motivos de não venda", "Tipos de pausa"]
+    assert not any(i.label == "Fila da vez" for i in configuracao.children)
+
+
+@pytest.mark.django_db
 def test_o_modulo_nasce_ligado():
     from plataforma.models import Modulo
 

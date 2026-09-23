@@ -30,7 +30,7 @@ MODULO_CARGOS = ModuloSpec(
     chave="cargos",
     rotulo=_("Cargos"),
     icone="briefcase",
-    grupo="Cadastro",
+    grupo="Configuração",
     ordem=-1,
     rota="/cargos",
     permissoes=("cargos.editar",),
@@ -59,7 +59,7 @@ MODULO_USUARIOS = ModuloSpec(
 #: comentário de ordem em `plataforma/modulo.py`, `MODULO_EMPRESA`). E não a
 #: -100 da Administração: com ela, o grupo Cadastro herdaria a menor ordem
 #: dos seus e empataria com a Administração no topo.
-    grupo="Cadastro",
+    grupo="Configuração",
     ordem=-2,
     rota="/usuarios",
     permissoes=("usuarios.editar",),
