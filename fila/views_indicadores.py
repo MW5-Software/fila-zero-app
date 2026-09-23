@@ -6,11 +6,14 @@ como redirecionamento, para link antigo não quebrar.
 
 As lojas que a pessoa enxerga saem de `fila.indicadores.lojas_com_relatorio`,
 e a `?loja=` da URL só filtra DENTRO delas: uma loja forjada não amplia o
-recorte, ela é descartada e a tela mostra a loja do cabeçalho.
+recorte, ela é descartada e o painel mostra todas as lojas permitidas.
 
-Desde 17/09/2026 o painel abre na loja do cabeçalho, e "Todas as lojas" é uma
-escolha explícita. Antes, sem `?loja=`, ele somava todas: a Sylvia na Matriz
-via o vendedor do Centro no ranking, sem coluna que dissesse a loja.
+**O painel abre em "Todas as lojas"** (18/09/2026, pedido do cliente: "aquela
+área de filtros de datas e loja, tem que vir todas as lojas como default").
+Entre 17/09/2026 e esta data ele abria na loja do cabeçalho — foi o próprio
+cliente que desfez a decisão: quem trabalha na Matriz abria o Início e não via
+o vendedor do Centro, e a rede só aparecia trocando o filtro à mão. Com uma
+loja só não há escolha, e ela é o recorte.
 """
 
 from __future__ import annotations
@@ -296,24 +299,24 @@ def _empresas_do_pedido(request, pessoa):
 def _lojas_do_pedido(request, permitidas):
     """`(lojas do recorte, loja)`, com `loja` nula em "Todas as lojas".
 
-    Sem `?loja=` válida, vale a loja do cabeçalho: é onde a pessoa disse que
-    está, e é a que o seletor lá em cima mostra. Se o cargo não traz
-    relatório nela, a primeira permitida. "Todas" só existe para quem alcança
-    mais de uma: com uma loja só, "todas" é ela mesma.
-    """
-    from plataforma.contexto import filial_atual
+    **O painel abre em "Todas as lojas"** (18/09/2026, pedido do cliente:
+    "aquela área de filtros de datas e loja, tem que vir todas as lojas como
+    default"). Entre 17/09/2026 e esta data ele abria na loja do cabeçalho, e
+    foi o próprio cliente que desfez a decisão: quem trabalha na Matriz abria
+    o Início e não via o vendedor do Centro — a rede só aparecia trocando o
+    filtro à mão.
 
-    if len(permitidas) > 1 and request.GET.get("loja") == TODAS:
-        return permitidas, None
-    try:
-        escolhida = int(request.GET.get("loja", ""))
-    except ValueError:
-        escolhida = None
-    if escolhida is None or not any(l.pk == escolhida for l in permitidas):
-        cabecalho = filial_atual(request)
-        escolhida = cabecalho.pk if cabecalho is not None else None
-    uma = [l for l in permitidas if l.pk == escolhida] or list(permitidas[:1])
-    return uma, uma[0]
+    Com UMA loja permitida não há escolha: ela é o recorte, e "todas" seria ela
+    mesma. Uma `?loja=` que não é de nenhuma permitida é descartada, e o
+    recorte cai nas permitidas — como antes, o pedido nunca amplia o alcance.
+    """
+    if len(permitidas) <= 1:
+        return list(permitidas), (permitidas[0] if permitidas else None)
+    escolhida = inteiro_do_texto(request.GET.get("loja", ""))
+    uma = [loja for loja in permitidas if loja.pk == escolhida]
+    if uma:
+        return uma, uma[0]
+    return list(permitidas), None
 
 
 def _filtros(request, periodo, permitidas, loja, empresas=(), empresa=None):

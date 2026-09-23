@@ -1,9 +1,9 @@
 """O histórico das correções do gerente (spec 2026-09-17, C5).
 
 Mesma regra de loja do painel do Início: as lojas saem do cargo
-(`fila.gerenciar` em cada uma), a tela abre na loja do cabeçalho, e "Todas as
-lojas" é escolha explícita de quem alcança mais de uma. Uma `?loja=` forjada
-não amplia o recorte.
+(`fila.gerenciar` em cada uma), e a tela abre em "Todas as lojas" para quem
+alcança mais de uma (18/09/2026, o mesmo pedido do cliente no painel: o filtro
+de loja vem com todas). Uma `?loja=` forjada não amplia o recorte.
 
 O período abre em "Hoje", e não no padrão do painel ("Este mês"): o histórico
 é o que o gerente confere no fim do dia, e um mês inteiro afogaria o de hoje.

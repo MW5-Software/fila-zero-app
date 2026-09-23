@@ -52,11 +52,14 @@ def test_gerente_ve_so_a_loja_dele_e_a_forjada_cai_na_dele(rede):
     assert "foi ao banco" not in _html(gil, loja=str(rede.matriz.pk))
 
 
-def test_supervisor_ve_todas_as_lojas(rede):
+def test_supervisor_ve_todas_as_lojas_no_padrao(rede):
+    """Mesma regra de loja do painel (18/09/2026): sem `?loja=`, todas — e
+    `?loja=todas` continua valendo como pedido explícito."""
     _correcao(rede, rede.centro, rede.caio, rede.gil, "chegou antes")
     _correcao(rede, rede.matriz, rede.ana, rede.sara, "foi ao banco")
-    html = _html(logado("sara"), loja="todas")
-    assert "chegou antes" in html and "foi ao banco" in html
+    for params in ({}, {"loja": "todas"}):
+        html = _html(logado("sara"), **params)
+        assert "chegou antes" in html and "foi ao banco" in html, params
 
 
 def test_periodo_padrao_e_hoje(rede):

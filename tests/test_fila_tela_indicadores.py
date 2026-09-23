@@ -88,9 +88,10 @@ def test_supervisor_escolhe_todas_as_lojas_e_filtra_por_loja(rede):
     assert "R$ 700,00" in so_centro and "Ana" not in so_centro
 
 
-# --- A loja do cabeçalho (17/09/2026) ---------------------------------------
-# O painel somava todas as lojas quando a URL não dizia a loja, e o ranking da
-# Sylvia na Matriz mostrava o vendedor do Centro como se fosse da Matriz.
+# --- Todas as lojas por padrão (18/09/2026) ---------------------------------
+# O cliente pediu: "aquela área de filtros de datas e loja, tem que vir todas
+# as lojas como default". Entre 17/09/2026 e esta data o painel abria na loja
+# do cabeçalho, e quem estava na Matriz não via o vendedor do Centro.
 
 def _na_loja(cliente, loja):
     from plataforma.contexto import CHAVE
@@ -101,25 +102,31 @@ def _na_loja(cliente, loja):
     return cliente
 
 
-def test_titular_ve_a_loja_do_cabecalho(rede):
+def test_titular_abre_o_painel_com_todas_as_lojas(rede):
+    """Sem `?loja=`, o painel soma a REDE — e o seletor diz isso."""
     _venda_hoje(rede, rede.caio, rede.centro, "700")
     _venda_hoje(rede, rede.ana, rede.matriz, "300")
-    na_matriz = _html(logado("sylvia"), periodo="hoje")
-    assert "Ana" in na_matriz and "Caio" not in na_matriz
-    assert "R$ 700,00" not in na_matriz
-    no_centro = _html(_na_loja(logado("sylvia"), rede.centro), periodo="hoje")
-    assert "Caio" in no_centro and "Ana" not in no_centro
+    html = _html(logado("sylvia"), periodo="hoje")
+    assert "Ana" in html and "Caio" in html
+    assert "R$ 700,00" in html and "R$ 300,00" in html
+    # O padrão aparece no seletor E no título do cartão: somar lojas sem dizer
+    # qual é o recorte é o que a tela fazia antes de 17/09/2026.
+    assert 'value="todas" selected' in html
+    assert "Hoje, todas as lojas" in html
 
 
-def test_gerente_de_duas_lojas_ve_a_do_cabecalho(rede):
+def test_o_gerente_de_duas_lojas_abre_com_todas_e_o_filtro_continua(rede):
     from tests.conftest import alocar
 
     alocar(rede.gil, rede.empresa, "gerente", filial=rede.matriz)
     _venda_hoje(rede, rede.caio, rede.centro, "700")
     _venda_hoje(rede, rede.ana, rede.matriz, "300")
     html = _html(_na_loja(logado("gil"), rede.centro), periodo="hoje")
-    assert "Caio" in html and "Ana" not in html
-    assert "Ana" in _html(_na_loja(logado("gil"), rede.matriz), periodo="hoje")
+    assert "Caio" in html and "Ana" in html
+    # O padrão mudou, o filtro não: `?loja=` continua recortando.
+    so_matriz = _html(_na_loja(logado("gil"), rede.centro), periodo="hoje",
+                      loja=str(rede.matriz.pk))
+    assert "Ana" in so_matriz and "Caio" not in so_matriz
 
 
 def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
@@ -137,19 +144,21 @@ def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
     assert any("Matriz" in l and "R$ 200,00" in l for l in do_caio)
 
 
-def test_o_bloco_por_loja_so_aparece_em_todas_as_lojas(rede):
+def test_o_bloco_por_loja_vem_no_padrao_e_some_com_uma_loja(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
-    todas = _html(logado("sylvia"), periodo="hoje", loja="todas")
-    assert 'data-ind="por-loja"' in todas
-    assert "Centro" in todas[todas.index('data-ind="por-loja"'):]
-    assert 'data-ind="por-loja"' not in _html(logado("sylvia"), periodo="hoje")
+    padrao = _html(logado("sylvia"), periodo="hoje")
+    assert 'data-ind="por-loja"' in padrao
+    assert "Centro" in padrao[padrao.index('data-ind="por-loja"'):]
+    # Com UMA loja o bloco não existe: "por loja" de uma linha só é a tabela de
+    # cima repetida. `gil` é gerente só do Centro.
+    assert 'data-ind="por-loja"' not in _html(logado("gil"), periodo="hoje")
 
 
 def test_uma_loja_nao_tem_coluna_de_loja(rede):
     import re
 
     _venda_hoje(rede, rede.ana, rede.matriz, "300")
-    html = _html(logado("sylvia"), periodo="hoje")
+    html = _html(logado("sylvia"), periodo="hoje", loja=str(rede.matriz.pk))
     assert not re.search(r"<th[^>]*>\s*<a[^>]*>Loja", html)
 
 
@@ -228,7 +237,9 @@ def test_o_aviso_agrupa_por_loja_e_por_pessoa(rede):
 
 
 def test_sem_atendimento_mostra_traco_e_nao_zero_por_cento(rede):
-    html = _html(logado("sylvia"), periodo="hoje")
+    # Uma loja só: o teste é da coluna Conversão, e o bloco "Por loja" (que o
+    # padrão novo traz) tem a sua própria porcentagem de participação.
+    html = _html(logado("sylvia"), periodo="hoje", loja=str(rede.matriz.pk))
     assert "0%" not in html
     assert "—" in html
 
@@ -448,7 +459,8 @@ def test_os_filtros_tem_os_atalhos_e_nao_tem_mais_de_e_ate(rede):
     # "Últimos 90 dias" desde 18/09/2026: "90 dias" sozinho não dizia se eram
     # os que passaram ou os que vêm.
     assert '<option value="90dias" selected>Últimos 90 dias</option>' in html
-    assert "Últimos 90 dias, Matriz" in html
+    assert "Últimos 90 dias, Matriz" in _html(logado("sylvia"), periodo="90dias",
+                                              loja=str(rede.matriz.pk))
 
 
 # --- O ranking é do mês (17/09/2026) ----------------------------------------
