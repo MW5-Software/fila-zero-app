@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 146 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 147 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -311,6 +311,15 @@ e a MW5, que não são alocados), e a ordenação usa a anotação
 relação devolveria a pessoa DUAS vezes, que é a linha repetida que a coluna
 existe para evitar.
 
+**A tela de Usuários tem coluna e filtro de FILIAL** (23/09/2026, pedido do
+cliente: "falta filtrar por loja/filial"). É a filial da ALOCAÇÃO — o lugar em
+que a pessoa trabalha —, e não a da ficha da pessoa, que morreu em 14/09/2026:
+sem a coluna, só dava para saber em que loja alguém está abrindo o modal de
+cada linha. A ordenação usa `loja_ordem = Min("alocacoes__filial__apelido")`,
+pelo mesmo motivo do cargo (o caminho da relação devolveria a pessoa duas
+vezes), e a alocação sem filial escreve "Todas as filiais", que é o que ela
+significa.
+
 **Titular e MW5 não têm cargo.** As permissões deles são diretas, de
 `contas/fabrica.py`. Um cargo no dono permitiria trancá-lo para fora da própria
 conta.
@@ -363,6 +372,15 @@ O que custa quando se esquece:
   - protegida por qualquer tabela de negócio com `PROTECT` — perguntado ao
     próprio Django, porque a base não conhece os módulos;
   - se for a última ativa da empresa.
+- **A tela de Filiais tem o seletor de EMPRESA** (23/09/2026, pedido do
+  cliente: "quando eu for criar filial num dono de conta com mais de uma
+  empresa, preciso de um seletor para dizer de qual filial é aquela empresa").
+  A lista, a exportação, as ações e a filial nova seguem a empresa escolhida
+  (`?empresa=`, validada contra as empresas da CONTA — um id de fora cai na
+  empresa do contexto, que é a trava de sempre), e a escolha viaja nos links da
+  tabela (`preservar=("empresa",)`) e no POST das ações. No celular a faixa de
+  contexto do cabeçalho está escondida, e sem este campo a tela só enxergava a
+  empresa em que a sessão estava — a filial recém-criada na outra não aparecia.
 - **O módulo de Filiais nasce ligado** desde 17/09/2026
   (`ativo_por_padrao=True`): a filial é A LOJA da fila, e a conta tem várias
   empresas, cada uma com as lojas dela — sem a tela, o titular não cadastra a
@@ -719,6 +737,15 @@ Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
   `objects.da_empresa`.
 - **Atendimento entra pela hora do fim**, e aberto não entra. Conversão sem
   atendimento é "—".
+- **Quem está em primeiro no ranking tem faixa amarela** (23/09/2026, pedido do
+  cliente: "colocar uma faixa amarela para destacar o vendedor que está em
+  primeiro"), e ela sai do VENDIDO do mês — calculada antes da listagem
+  (`views_indicadores._primeiro_do_ranking`), e não da primeira linha da
+  tabela: a ordem é a que a pessoa escolheu, e ordenar por nome ou por conversão
+  não elege outro primeiro, que é a mesma regra de `posicoes_por_vendido`. Em
+  "Todas as lojas" a faixa é de UMA linha, o par (pessoa, loja). O amarelo é o
+  `--warn-bg` do tema, o mesmo dos alertas: legível nos dois temas e sem brigar
+  com a marca de cada cliente.
 - **O ranking é por subconsulta**: `Atendimento.vendedor` e `Pausa.pessoa`
   não têm relação reversa, e é de propósito.
 - **Os gráficos do Início não usam o `Chart` do design system**: ele escala
@@ -768,10 +795,43 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   apagar a meta de alguém a preencheria de volta), e o que a própria
   distribuição escreveu é reconhecido pelo `data-auto`; quem está fora da loja
   (`data-na-loja="0"`) não recebe parte.
+- **A soma das metas individuais não passa a meta da loja** (23/09/2026, pedido
+  do cliente: "quando eu vou manualmente destrinchar a meta dos vendedores
+  individualizada e ela passar o valor da meta total, colocar um aviso e não
+  deixar salvar"). A conta é a do que a gravação DEIXA — quem ficou em branco
+  recebeu a parte da distribuição e quem o POST não tocou continua com o que
+  está no banco —, e roda com a linha da loja já trancada (`_conferir_o_teto`).
+  A recusa sai no campo da meta da loja, que é a referência da soma, e NADA é
+  gravado: nem a loja, nem os vendedores. Cobrir exatamente a loja continua
+  valendo.
 - **O ranking do Início é sempre de um mês** (`?ranking_mes=`, escolhido numa
   lista desde 18/09/2026), e não do período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
   lojas", uma loja sem meta não faz a meta das outras parecer batida.
+
+### O turno da loja (23/09/2026)
+
+- **O turno é por FILIAL** (`fila.TurnoDaLoja`, uma linha por loja que tenha
+  turno; sem linha não há turno), e se cadastra na tela de Filiais pela caixa
+  `fila.turno.caixa` — a base não conhece a fila, e é
+  `plataforma.caixas_da_filial` que abre o buraco, do mesmo jeito que
+  `caixas_da_empresa` abre o da empresa.
+- **Uma hora depois do fim do turno, quem está NA FILA, EM ESPERA ou EM PAUSA
+  sai sozinho** (o pedido do cliente: "se o vendedor não saiu da fila, depois de
+  uma hora do turno ele sai sozinho"). **Quem está ATENDENDO fica**: fechar
+  sozinho um atendimento aberto perderia a venda que o vendedor está lançando.
+- **A regra roda na LEITURA**, e não num cron: não há relógio nesta instalação, e
+  a página da fila consulta o estado a cada três segundos. `turno.aplicar` entra
+  no caminho da página (`tela._contexto`) e no da consulta (`views.estado`), e é
+  idempotente. A saída é gravada com a hora do PRAZO, e não com a hora em que
+  alguém abriu a página: quem ficou até 00:00 não pode aparecer como tendo
+  ficado até as 3h.
+- **O prazo olha ontem também**: loja que fecha 23:30 tem prazo à 00:30 do dia
+  seguinte, e às 00:15 quem ficou de ontem ainda está dentro dele. Quem ENTROU
+  depois do prazo fica — é uma jornada nova.
+- A saída automática entra na trilha com o autor `sistema`
+  (`fila_saida_por_turno`): a pessoa some da fila, e sem a linha ninguém saberia
+  por quê.
 
 ### O painel do vendedor
 
@@ -797,6 +857,12 @@ plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
   atende: os três ficavam sem caminho nenhum até o Início (18/09/2026, pedido
   do cliente: "dono, supervisor e gerente não tem o meu painel na página da
   fila").
+- **O nome e a loja ficam FORA do cartão, numa faixa acima dele, e maiores**
+  (23/09/2026, pedido do cliente: "na página da fila o nome do usuário e filial
+  tem que sair do cargo e aumentar o tamanho para melhor visualição"): o celular
+  da loja passa de mão em mão, e é o que se lê antes de bater o ponto. Medido em
+  393px: o nome a 19px e a loja a 15px, contra 14px e 13px dentro do cartão —
+  que ficou com os links ("Histórico", "Meu painel", "Ao vivo") e os números.
 - **E a faixa de cima da página tem DUAS linhas no celular** (18/09/2026, com o
   print do cliente na mão: "com o meu painel ali, tá ficando tudo muito
   apertado"): em cima quem está logado e a loja, e os links — "Histórico", "Meu
@@ -815,7 +881,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 146 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 147 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a
