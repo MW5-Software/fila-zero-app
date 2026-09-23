@@ -447,6 +447,45 @@ _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 _FILTRAVEIS_POR_LOJA = {**_FILTRAVEIS, "loja": ColunaFiltravel("loja_nome", "Loja")}
 
 
+def _primeiro_do_ranking(consulta):
+    """A linha do primeiro lugar do ranking, pelo VENDIDO.
+
+    Pelo vendido, e não pela linha de cima da tabela (23/09/2026, pedido do
+    cliente: "colocar uma faixa amarela para destacar o vendedor que está em
+    primeiro"): a ordem da tabela é a que a pessoa escolheu, e ordenar por nome
+    ou por conversão não elege outro primeiro. É a mesma regra de
+    `indicadores.posicoes_por_vendido`, que já vale no painel do vendedor.
+
+    `[:1]`, e não `.first()`: em "Todas as lojas" a consulta vem embrulhada por
+    `_ConsultaPorLoja`, e o `.first()` delegado devolveria o dicionário cru —
+    sem a loja que a linha carrega.
+    """
+    ordenada = consulta.order_by("-vendido")
+    return (ordenada[:1] or [None])[0]
+
+
+def _attrs_da_linha(linha, primeiro=None, pessoa=None, por_loja=False) -> dict:
+    """Os atributos da linha do ranking.
+
+    Quem está em primeiro ganha a faixa (`.ind-primeiro`), e no painel do
+    vendedor a própria linha se marca como "eu" (`.ind-eu`, com
+    `aria-current`). Os dois juntos, e não um `row_attrs` em cada tela: a mesma
+    linha pode ser as duas coisas — o vendedor que lidera a loja —, e duas
+    listas de classe separadas se sobrescreveriam.
+    """
+    classes = []
+    if primeiro is not None and linha.pk == primeiro.pk and (
+            not por_loja or linha.loja_id == primeiro.loja_id):
+        classes.append("ind-primeiro")
+    sou_eu = pessoa is not None and linha.pk == pessoa.pk
+    if sou_eu:
+        classes.append("ind-eu")
+    attrs = {"class": " ".join(classes)} if classes else {}
+    if sou_eu:
+        attrs["aria-current"] = "true"
+    return attrs
+
+
 def _colunas(pagina, com_meta=False, por_loja=False, varias_empresas=False):
     """As colunas do ranking. `pagina.cabecalho` transforma o rótulo em link
     de ordenar — ver `comum.listagem` e R46."""
@@ -664,6 +703,9 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
         ordenaveis = {**ordenaveis, "loja": ("loja_nome", "nome")}
     else:
         consulta = ind.ranking(do_mes, mes)
+    # Quem está em primeiro, calculado ANTES da listagem: `montar_pagina`
+    # ordena, filtra e fatia, e o primeiro lugar não pode depender disso.
+    primeiro = _primeiro_do_ranking(consulta)
     listagem = montar_pagina(request, consulta,
                              ordenaveis=ordenaveis,
                              padrao=ind.PADRAO_DO_RANKING,
@@ -675,7 +717,9 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
         listagem.barra,
         Table(columns=_colunas(listagem, com_meta=True, por_loja=todas,
                                varias_empresas=len(empresas) > 1),
-              rows=listagem.linhas),
+              rows=listagem.linhas,
+              row_attrs=lambda linha: _attrs_da_linha(
+                  linha, primeiro=primeiro, por_loja=todas)),
         listagem.paginacao,
     ]))
     return blocos

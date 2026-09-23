@@ -18,6 +18,18 @@ form[action="/"] .formgrid { align-items: end; }
   clip-path: inset(50%); white-space: nowrap;
 }
 
+/* --- O primeiro do ranking ------------------------------------------------
+   "Colocar uma faixa amarela para destacar o vendedor que está em primeiro"
+   (23/09/2026, pedido do cliente). O amarelo vem do `--warn-bg`, o mesmo dos
+   alertas: ele já é legível nos dois temas e não briga com a marca de cada
+   cliente — um amarelo fixo aqui seria um amarelo que ninguém escolheu.
+
+   A faixa é do VENDIDO do mês, e não da linha de cima da tabela: a ordem é a
+   que a pessoa escolheu, e ordenar por nome não elege outro primeiro
+   (`views_indicadores._primeiro_do_ranking`). No painel do vendedor a própria
+   linha dele continua marcada (`.ind-eu`), e as duas classes convivem. */
+tr.ind-primeiro > td { background: var(--warn-bg); font-weight: 700; }
+
 /* --- O painel: os quatro números são as abas do gráfico ------------------ */
 
 .ind-abas {

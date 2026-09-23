@@ -124,6 +124,19 @@ def test_ordenar_por_pausa_nao_vale_para_o_vendedor(loja):
     assert 'data-ind="ranking-da-loja"' in html
 
 
+def test_a_linha_dele_pode_ser_tambem_a_do_primeiro(loja):
+    """O vendedor que lidera a loja tem as DUAS marcas na mesma linha: a dele
+    (`aria-current`, `.ind-eu`) e a faixa do primeiro lugar (`.ind-primeiro`,
+    23/09/2026). Duas listas de classe separadas se sobrescreveriam — é por isso
+    que as duas saem do mesmo `_attrs_da_linha`."""
+    _atendimento(loja, loja.ana, "900")
+    _atendimento(loja, loja.bia, "100")
+    ranking = _html(logado("ana"), periodo="hoje").split(
+        'data-ind="ranking-da-loja"')[1]
+    linha = ranking.split('aria-current="true"')[0].rsplit("<tr", 1)[1]
+    assert "ind-eu" in linha and "ind-primeiro" in linha
+
+
 def test_a_linha_dele_vem_marcada(loja):
     _atendimento(loja, loja.ana, "300")
     _atendimento(loja, loja.bia, "500")

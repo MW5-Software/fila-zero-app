@@ -25,7 +25,8 @@ from . import indicadores as ind
 from . import metas as regras_de_meta
 from .periodo import periodo_anterior, periodo_do_pedido
 from .valores import em_reais
-from .views_indicadores import (_filtros, _listas, _painel, _pct, cartao_do_ranking,
+from .views_indicadores import (_attrs_da_linha, _filtros, _listas, _painel, _pct,
+                                _primeiro_do_ranking, cartao_do_ranking,
                                 mes_do_ranking, meses_do_ranking)
 
 __all__ = ["inicio_do_vendedor"]
@@ -83,7 +84,11 @@ def _blocos(request, empresa, loja, pessoa) -> list:
     # As posições saem do recorte inteiro, antes do filtro por nome da
     # tabela: buscar "Ana" não pode fazer a Ana virar a primeira.
     posicoes = ind.posicoes_por_vendido(do_mes)
-    listagem = montar_pagina(request, ind.ranking(do_mes, mes),
+    consulta = ind.ranking(do_mes, mes)
+    # O primeiro da loja, pelo vendido, antes do filtro por nome da tabela —
+    # mesma conta do painel da gestão (`_primeiro_do_ranking`).
+    primeiro = _primeiro_do_ranking(consulta)
+    listagem = montar_pagina(request, consulta,
                              ordenaveis=ORDENAVEIS_COM_META,
                              padrao=ind.PADRAO_DO_RANKING,
                              filtraveis=_FILTRAVEIS,
@@ -101,8 +106,8 @@ def _blocos(request, empresa, loja, pessoa) -> list:
                  listagem.barra,
                  Table(columns=_colunas(listagem, posicoes, com_meta=True),
                        rows=listagem.linhas,
-                       row_attrs=lambda p: ({"class": "ind-eu", "aria-current": "true"}
-                                            if p.pk == pessoa.pk else {})),
+                       row_attrs=lambda linha: _attrs_da_linha(
+                           linha, primeiro=primeiro, pessoa=pessoa)),
                  listagem.paginacao,
              ]),
     ]

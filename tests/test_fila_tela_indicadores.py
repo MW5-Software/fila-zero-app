@@ -144,6 +144,44 @@ def test_todas_as_lojas_mostra_a_loja_de_cada_linha(rede):
     assert any("Matriz" in l and "R$ 200,00" in l for l in do_caio)
 
 
+# --- A faixa de quem está em primeiro (23/09/2026) --------------------------
+
+def _linha_destacada(html: str) -> str:
+    """O `<tr>` da faixa amarela do ranking, como texto."""
+    marca = 'class="ind-primeiro"'
+    assert marca in html, "ninguém ficou em primeiro no ranking"
+    resto = html[html.index(marca):]
+    return resto[:resto.index("</tr>")]
+
+
+def test_o_primeiro_do_ranking_ganha_a_faixa(rede):
+    """Pedido do cliente: "colocar uma faixa amarela para destacar o vendedor
+    que está em primeiro". Em "Todas as lojas" a linha é o par (pessoa, loja), e
+    a faixa é de UMA linha."""
+    _venda_hoje(rede, rede.ana, rede.matriz, "900")
+    _venda_hoje(rede, rede.caio, rede.centro, "100")
+    html = _html(logado("sylvia"), periodo="hoje", loja="todas")
+    linha = _linha_destacada(html)
+    assert "Ana" in linha and "Caio" not in linha
+    assert html.count('class="ind-primeiro"') == 1
+
+
+def test_ordenar_por_nome_nao_elege_outro_primeiro(rede):
+    """A ordem da tabela é a que a pessoa escolheu; o primeiro lugar é do
+    VENDIDO. Com o primeiro saindo da tabela JÁ ordenada, a Ana — primeira no
+    alfabeto — apareceria com a faixa no lugar do Caio, que vendeu mais. É o
+    defeito que `posicoes_por_vendido` já evita no painel do vendedor."""
+    _venda_hoje(rede, rede.caio, rede.centro, "900")
+    _venda_hoje(rede, rede.ana, rede.matriz, "100")
+    html = _html(logado("sylvia"), periodo="hoje", ordenar="nome", loja="todas")
+    linha = _linha_destacada(html)
+    assert "Caio" in linha and "Ana" not in linha
+    # E a tabela está de fato em ordem alfabética: a faixa não está na primeira
+    # linha.
+    ranking = html[html.index('data-ind="ranking"'):]
+    assert ranking.index("Ana") < ranking.index("Caio")
+
+
 def test_o_bloco_por_loja_vem_no_padrao_e_some_com_uma_loja(rede):
     _venda_hoje(rede, rede.caio, rede.centro, "700")
     padrao = _html(logado("sylvia"), periodo="hoje")
