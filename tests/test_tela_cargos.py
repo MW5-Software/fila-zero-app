@@ -270,3 +270,37 @@ class TestQuemPodeConceder:
               pode_conceder=[str(vendedor.pk)])
         novo = Cargo.objects.get(conta=cenario["dono_alfa"], nome="coordenador")
         assert list(novo.pode_conceder.values_list("nome", flat=True)) == ["vendedor"]
+
+
+class TestOAlcanceDizOQueSeVe:
+    """18/09/2026, pedido do cliente: "na área de enxerga não fica muito bem
+    entendido o que seria os próprios".
+
+    O rótulo da opção passou a dizer o que SE ENXERGA, e o campo ganhou a frase
+    que explica os três: sem ela, "a filial" continuaria querendo dizer "a
+    filial de quem". O mesmo rótulo vale na caixa do cargo, no filtro e na
+    célula da coluna — os três saem de `Alcance.choices` e do
+    `get_alcance_display`.
+    """
+
+    def _tela(self, cenario):
+        return cenario["cliente"].get(reverse("cargos")).content.decode()
+
+    def test_o_rotulo_de_cada_alcance_diz_o_que_se_ve(self, cenario):
+        vendedor = Cargo.objects.get(conta=cenario["dono_alfa"], nome="vendedor")
+        html = self._tela(cenario)
+        assert "Só os registros da própria pessoa" in html
+        assert "Os registros da filial" in html
+        assert "Os registros da empresa" in html
+        # A coluna e a exportação saem do `get_alcance_display`: o mesmo
+        # rótulo, e nunca o curto de antes.
+        assert vendedor.get_alcance_display() in {
+            "Só os registros da própria pessoa",
+            "Os registros da filial",
+            "Os registros da empresa",
+        }
+        # O rótulo antigo, que era o que não se entendia, não voltou.
+        assert ">Os próprios<" not in html
+
+    def test_o_campo_tem_a_frase_que_explica_os_tres(self, cenario):
+        assert "só os que a própria pessoa lançou" in self._tela(cenario)

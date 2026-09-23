@@ -365,9 +365,13 @@ class Alcance(models.TextChoices):
     filial", e não porque um `if` conhece a palavra.
     """
 
-    PROPRIOS = "proprios", "Os próprios"
-    FILIAL = "filial", "A filial"
-    EMPRESA = "empresa", "A empresa"
+    # Os rótulos dizem o QUE se enxerga, e não "os próprios" (18/09/2026,
+    # pedido do cliente: "não fica muito bem entendido o que seria os
+    # próprios"). Eles aparecem nos três lugares onde a dúvida nascia: a caixa
+    # do cargo, o filtro da tabela e a própria célula da coluna "Enxerga".
+    PROPRIOS = "proprios", "Só os registros da própria pessoa"
+    FILIAL = "filial", "Os registros da filial"
+    EMPRESA = "empresa", "Os registros da empresa"
 
 
 class Cargo(ComGuid):

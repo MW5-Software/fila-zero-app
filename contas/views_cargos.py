@@ -169,7 +169,14 @@ def _campos_do_cargo(rotulo="", alcance=Alcance.PROPRIOS, e_cliente=False):
     return FormGrid(children=[
         TextInput(name="rotulo", label=_("Nome do cargo"), span=6,
                   value=rotulo, required=True),
+        # A frase de ajuda existe porque o rótulo sozinho não respondia a
+        # pergunta que o cliente fez (18/09/2026): "a filial" de quem, e
+        # "os próprios" o quê. O texto diz as três em uma linha.
         Select(name="alcance", label=_("Enxerga"), span=4, value=alcance,
+               help=_("Quais registros este cargo vê nas telas: só os que a "
+                      "própria pessoa lançou, os de todo mundo na filial em "
+                      "que ela estiver, ou os de todas as filiais da "
+                      "empresa."),
                options=list(Alcance.choices)),
         Checkbox(name="e_cliente", value="1", label=_("É cliente"),
                  checked=e_cliente,
