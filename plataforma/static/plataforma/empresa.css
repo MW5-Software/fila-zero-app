@@ -26,7 +26,17 @@
      ficam estreitos para o polegar, e o de confirmar vem por último porque é
      o último passo. */
   .ep-rodape { flex-direction: column-reverse; }
-  .ep-rodape .btn { width: 100%; }
+  /* O rótulo centralizado DENTRO do botão (18/09/2026, pedido do cliente:
+     "os botões do modal de editar empresa, no mobile, têm de ser
+     centralizados").
+
+     Largura inteira sozinha não centraliza nada: o `.btn` é uma caixa flex, e
+     o `justify-content` que ele herda é `normal` — que numa caixa flex quer
+     dizer `flex-start`. Medido no celular em 390px: botão de 335px começando
+     em x=43, e o texto a partir de x=60. O botão ocupava a linha e a palavra
+     ficava colada na borda esquerda, que é o que se lê como "não
+     centralizado". */
+  .ep-rodape .btn { width: 100%; justify-content: center; }
 }
 
 /* A largura do modal.

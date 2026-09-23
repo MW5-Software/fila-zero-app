@@ -646,3 +646,19 @@ header .wrap > .h-actions { grid-area: 1 / 3; justify-self: end; }
 /* O `hidden` do formulário que não vale tem de vencer o `display` acima —
    senão os dois "Confirmar" aparecem juntos. */
 #trocar-dialogo .mfoot form[hidden] { display: none; }
+
+/* ---------------------------------------------------------------------------
+   O campo de arquivo do "Meu Perfil" vazava para fora do cartão.
+
+   O `<input type="file">` do design system não encolhe: a largura mínima do
+   conteúdo — o botão nativo mais "Nenhum arquivo escolhido" — é maior que a
+   coluna que sobra ao lado do avatar, e a caixa é empurrada para fora do
+   cartão. Medido no celular em 18/09/2026: o campo ia até 399px numa tela de
+   390 (`document.scrollWidth` 399 contra `clientWidth` 390), e a página
+   inteira ganhava rolagem horizontal por causa de um campo.
+
+   `min-width: 0` é o que faltava: item de flex nasce com `min-width: auto`, e
+   `auto` quer dizer "nunca menor que o meu conteúdo", que é exatamente a
+   largura que não cabia. Com ele o campo aceita a coluna, e o navegador corta
+   o nome do arquivo por dentro — como faz em qualquer campo estreito. */
+.recorte-atual input[type="file"] { min-width: 0; max-width: 100%; }

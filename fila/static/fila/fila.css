@@ -350,9 +350,19 @@
    ao alcance do polegar, e as folhas sobem de baixo. */
 @media (max-width: 720px) {
   .fila-pagina main { padding: 14px 12px 196px; }
-  .fila-pagina { --header-h: 64px; }
+  /* A faixa do cabeçalho no celular tem de caber o logo do COMPUTADOR, e por
+     isso são 80px e não 64px (18/09/2026, pedido do cliente: "logo do Kronos
+     no celular tá cortado").
+
+     A marca do produto é EMPILHADA — símbolo, "Kronos" e a linha "ERP | CRM"
+     —, e a 44px as três se colam: o desenho da palavra encosta na linha de
+     baixo e o conjunto se lê como logo cortado. Medido no Chrome em 390px, o
+     desenho nunca foi recortado (campo de 63x44 com `object-fit: contain`,
+     igual à fonte, pixel a pixel): era o TAMANHO. O logo volta aos 60px de
+     sempre (regra de cima), e a faixa sobe junto, como no computador — 60
+     dentro de 80 deixa o mesmo respiro que 60 dentro de 84. */
+  .fila-pagina { --header-h: 80px; }
   .fila-pagina header .wrap { padding: 0 12px; gap: 10px; }
-  .fila-marca, .fila-marca img { height: 44px; }
   .fila > * + * { margin-top: 14px; }
 
   .fila-hero { padding: 14px 16px 18px; border-radius: 16px; }

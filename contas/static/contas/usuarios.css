@@ -50,7 +50,12 @@
      ficam estreitos demais para o polegar, e o de confirmar vem por último
      porque é o último passo. */
   .ct-rodape { flex-direction: column-reverse; }
-  .ct-rodape .btn { width: 100%; }
+  /* O rótulo centralizado DENTRO do botão (18/09/2026, pedido do cliente:
+     "botões de criar usuário e cancelar no mobile têm de ser centralizados").
+     O par exato é `.ep-rodape`, do cadastro de empresa, com o mesmo motivo
+     escrito lá: largura inteira com o texto encostado à esquerda continua
+     parecendo botão fora do lugar. */
+  .ct-rodape .btn { width: 100%; justify-content: center; }
 }
 
 /* **A largura do modal desta tela.** O `lg` do design system é 820px, e ele
