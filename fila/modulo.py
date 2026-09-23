@@ -64,8 +64,16 @@ MODULO = ModuloSpec(
         #
         # O ícone é o do ATALHO, e só passou a importar aqui: no segundo nível
         # o `Sidebar` não desenha ícone, e no primeiro desenha em todo item.
+        #
+        # **`ordem=-1` é o que põe as Metas em SEGUNDO lugar na barra** — o
+        # cliente viu a primeira versão com ela no fim ("metas tem que ser o
+        # segundo item né, não o último"). O grupo nasce com a posição do
+        # atalho, e sem `ordem` ela seria a do módulo (0), ou seja ATRÁS dele:
+        # -1 é o degrau de cima, e o grupo dos cadastros vem antes de todos
+        # (ordem negativa dos módulos da base, de -5 a -1). A barra do cliente
+        # sai: Configuração, Metas, Gerenciar Fila.
         Atalho(rotulo=_("Metas"), rota="/fila/metas", icone="target",
-               permissao="fila.metas", grupo="Metas"),
+               permissao="fila.metas", grupo="Metas", ordem=-1),
     ),
     ativo_por_padrao=True,
 )

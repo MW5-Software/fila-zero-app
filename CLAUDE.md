@@ -634,7 +634,10 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   **Configuração** — Conta, Empresas, Filiais, Usuários, Cargos e
   **Configurações da Fila**, com os três cadastros dentro —; **Gerenciar
   Fila** — Fila da vez e Histórico da fila —; e **Metas**, sozinha, no mesmo
-  degrau. O grupo dos cadastros do cliente se chamava "Cadastro" e virou
+  degrau e em SEGUNDO lugar na barra (o cliente viu a primeira versão com ela
+  no fim: "metas tem que ser o segundo item né, não o último" — o
+  `ordem=-1` do atalho é o que a põe ali, e o comentário em `fila/modulo.py`
+  diz por quê). O grupo dos cadastros do cliente se chamava "Cadastro" e virou
   "Configuração" nos cinco módulos da base (`contas/modulo.py`,
   `plataforma/modulo.py`): o nome antigo repetia o conceito que já é a palavra
   de cada tela. E o pai do cadastro da fila é "Configurações da Fila", e não

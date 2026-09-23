@@ -81,12 +81,14 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
     assert not any(i.label in ("Fila", "Fila da vez")
                    for i in configuracao.children)
 
-    # Os três assuntos da fila na barra, e nesta ordem: "Configuração" abre a
-    # lista porque carrega os cadastros (ordem negativa), e os dois da fila vêm
-    # depois dela.
+    # **E ela é o SEGUNDO item da barra**, não o último (o cliente viu a
+    # primeira versão com as Metas no fim: "metas tem que ser o segundo item
+    # né, não o último"): "Configuração" abre a lista porque carrega os
+    # cadastros do cliente (ordem negativa), e o módulo da fila (ordem 0) fica
+    # DEPOIS dela.
     assert [g for g in grupos if g in
             ("Configuração", "Gerenciar Fila", "Metas")] == [
-        "Configuração", "Gerenciar Fila", "Metas"]
+        "Configuração", "Metas", "Gerenciar Fila"]
 
 
 @pytest.mark.django_db
