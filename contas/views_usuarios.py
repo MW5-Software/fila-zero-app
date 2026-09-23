@@ -1081,7 +1081,16 @@ _ORDENAVEIS = {
 #: campo de texto para dois valores é pior que nenhum — quando existir um
 #: componente de escolha na coluna, ela entra.
 def _cargos_para_escolha() -> list[tuple[str, str]]:
-    """Os cargos que existem HOJE nesta instalação, por rótulo.
+    """Os cargos que existem HOJE nesta instalação, como pares `(valor,
+    rótulo)` — que é o que a caixa de escolha da barra consome.
+
+    **O par, e não uma lista de rótulos soltos** (corrigido em 23/09/2026, com
+    o print do cliente na mão: "o filtro de cargo tá vindo errado"). Quem monta
+    a caixa desempacota cada opção em `valor, rótulo`, e uma STRING se
+    desempacota em CARACTERES: o filtro oferecia "l", "e", "e", "u", "e" — a
+    segunda letra de Cliente, Gerente, Representante, Supervisor e Vendedor. O
+    valor é o próprio rótulo porque é ele que a coluna compara
+    (`alocacoes__cargo__rotulo`).
 
     **Não é lista fechada como era a dos níveis**: o titular cria cargos em
     `/cargos`, e uma caixa fixa deixaria de achar quem tem o cargo novo. O
@@ -1090,8 +1099,9 @@ def _cargos_para_escolha() -> list[tuple[str, str]]:
     """
     from contas.models import Cargo
 
-    return list(Cargo.objects.order_by("rotulo")
-                .values_list("rotulo", flat=True).distinct())
+    rotulos = (Cargo.objects.order_by("rotulo")
+               .values_list("rotulo", flat=True).distinct())
+    return [(rotulo, rotulo) for rotulo in rotulos]
 
 
 def _filiais_para_escolha() -> list[tuple[str, str]]:

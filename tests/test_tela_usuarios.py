@@ -391,6 +391,31 @@ class TestPermissaoSoDaMw5:
 
 
 @pytest.mark.django_db
+class TestOFiltroDeCargo:
+    def test_o_filtro_oferece_o_rotulo_inteiro(self, mw5_logada):
+        """23/09/2026, com o print do cliente na mão: "o filtro de cargo tá
+        vindo errado". Ele vinha com "l", "e", "e", "u", "e" — a segunda letra
+        de Cliente, Gerente, Representante, Supervisor e Vendedor.
+
+        A caixa de escolha desempacota cada opção em `valor, rótulo`, e uma
+        STRING se desempacota em CARACTERES: a lista chegava como rótulos
+        soltos, e não como pares.
+        """
+        from tests.conftest import alocar, empresa_do_teste
+
+        # Uma pessoa alocada numa conta: é `alocar` que cria os cargos de
+        # fábrica da conta, e sem eles o filtro não teria o que oferecer — o
+        # teste passaria vazio.
+        pessoa = Usuario.objects.create_user(
+            email="docargo@teste.com", password=SENHA, nome="Do Cargo")
+        alocar(pessoa, empresa_do_teste(), "vendedor")
+        html = mw5_logada.get(reverse("usuarios")).content.decode()
+        assert ">Gerente</option>" in html
+        assert ">Vendedor</option>" in html
+        assert ">e</option>" not in html
+
+
+@pytest.mark.django_db
 class TestAColunaDeFilial:
     """A coluna e o filtro de Filial (23/09/2026, pedido do cliente: "falta
     filtrar por loja/filial").
