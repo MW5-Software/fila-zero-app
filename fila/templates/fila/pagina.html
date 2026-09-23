@@ -26,7 +26,9 @@
       </span>
       <span class="fila-hero-direita">
         {% if pode_gerenciar %}<a class="fila-meu-painel" href="/fila/historico" data-historico>{{ icon("history", "sm") }}<span>{{ traduzir("Histórico") }}</span></a>{% endif %}
-        {% if pode_participar %}<a class="fila-meu-painel" href="/" data-meu-painel>{{ icon("chart-column", "sm") }}<span>{{ traduzir("Meu painel") }}</span></a>{% endif %}
+        {# O link é de quem tem painel na raiz, e não só de quem atende: o
+           gerente, o supervisor e o dono abrem a raiz no painel da gestão. #}
+        {% if pode_ver_painel %}<a class="fila-meu-painel" href="/" data-meu-painel>{{ icon("chart-column", "sm") }}<span>{{ traduzir("Meu painel") }}</span></a>{% endif %}
         <span class="fila-hero-vivo" data-ao-vivo><span class="fila-vivo-ponto"></span><span data-ao-vivo-texto>{{ traduzir("Ao vivo") }}</span></span>
       </span>
     </div>

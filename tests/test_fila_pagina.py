@@ -265,10 +265,36 @@ def test_quem_participa_acha_o_painel_pela_fila(loja):
     assert 'href="/" data-meu-painel' in html and "Meu painel" in html
 
 
-def test_quem_so_ve_a_fila_nao_tem_o_link_do_painel(loja):
-    # Supervisor de fábrica: fila.ver e fila.gerenciar, sem fila.participar.
+def test_o_supervisor_tambem_acha_o_painel_pela_fila(loja):
+    """O link é de quem TEM painel na raiz, e não só de quem atende.
+
+    O supervisor de fábrica gerencia a loja e não bate ponto, mas a raiz dele
+    é o painel da gestão (`fila.relatorios`) — e sem o link ele não tinha
+    caminho nenhum até lá (18/09/2026, pedido do cliente: "dono, supervisor e
+    gerente não tem o meu painel na página da fila").
+    """
     pessoa_na_loja("sara", loja.empresa, None, cargo="supervisor")
-    assert "data-meu-painel" not in _html(logado("sara"))
+    assert 'href="/" data-meu-painel' in _html(logado("sara"))
+
+
+def test_o_gerente_e_o_dono_tambem_acham(loja):
+    for login in ("gil", "sylvia"):
+        assert 'href="/" data-meu-painel' in _html(logado(login)), login
+
+
+def test_quem_so_ve_a_fila_nao_tem_o_link_do_painel(loja):
+    """`fila.ver` sozinho abre a fila e mais nada: em `/` a pessoa recebe a
+    saudação, e o link não teria para onde levar."""
+    from contas.models import Usuario
+    from tests.conftest import alocar, cargo_com, email_de
+    from tests.fila_cenario import SENHA
+
+    cargo = cargo_com(loja.empresa, "fila.ver", nome="so-ve")
+    vera = Usuario.objects.create_user(email=email_de("vera"), password=SENHA,
+                                       nome="Vera",
+                                       dono_id=loja.empresa.dono_id)
+    alocar(vera, loja.empresa, cargo, filial=loja.matriz)
+    assert "data-meu-painel" not in _html(logado("vera"))
 
 
 def test_as_folhas_abrem_pela_url(loja):

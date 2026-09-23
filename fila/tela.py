@@ -249,6 +249,16 @@ def _contexto(request, filial, recusa=""):
         grupos_do_lancamento = Q(pk__in=editando.itens.values("grupo_id"))
         motivo_do_lancamento = Q(pk=editando.motivo_id)
     lancamentos = list(lancamentos_de_hoje(filial)) if pode_gerenciar else []
+    # Quem tem painel na RAIZ vê o link, e não só quem atende. A raiz é o
+    # painel da GESTÃO para quem lê indicadores em alguma loja, e o painel do
+    # vendedor para quem atende na loja do cabeçalho — a MESMA decisão de
+    # `fila.views.inicio`, e é por isso que ela vem de lá, e não de um `if`
+    # novo aqui (18/09/2026, pedido do cliente: "dono, supervisor e gerente não
+    # tem o meu painel na página da fila").
+    from .indicadores import lojas_com_relatorio
+
+    pode_ver_painel = (bool(lojas_com_relatorio(pessoa, empresa))
+                       or atende(request.usuario) or r.meu is not None)
     return {
         "r": r,
         "trilha": _trilha(r),
@@ -272,6 +282,7 @@ def _contexto(request, filial, recusa=""):
         # JÁ está na loja: quem estava atendendo quando a regra entrou no ar
         # precisa poder fechar o atendimento.
         "pode_participar": atende(request.usuario) or r.meu is not None,
+        "pode_ver_painel": pode_ver_painel,
         "pode_gerenciar": pode_gerenciar,
         "csrf": Markup(campo_csrf(request)),
         "url_fila": reverse("fila"),
