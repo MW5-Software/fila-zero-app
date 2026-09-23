@@ -339,14 +339,23 @@ class TestAFilaEUmaTelaDoSistema:
         assert 'class="side"' not in html
         assert 'class="fila-pagina"' in html
 
-    def test_o_estado_da_loja_fica_no_meio_da_faixa(self):
-        """23/09/2026, pedido do cliente: com a loja vazia, o "0 na fila agora"
-        ficava encostado à esquerda e o cartão parecia pela metade."""
+    def test_o_numero_sobe_para_a_linha_do_titulo(self):
+        """23/09/2026, ajuste do cliente: "não era centralizado no meio do
+        trem, era centralizado na linha ali, era só subir ele um pouco".
+
+        O número é centrado contra o bloco de texto inteiro — título, apoio e a
+        trilha —, e por isso nascia abaixo da linha do "na fila agora". O que
+        se prova aqui é o ajuste: o número sobe dez pixels, e o estado NÃO é
+        centralizado no cartão (a primeira leitura disto, que o cliente
+        corrigiu).
+        """
         folha = self._folha()
-        bloco = folha[folha.index(".fila-estado {"):]
-        bloco = bloco[:bloco.index("}")]
-        assert "justify-content: center" in bloco
-        assert ".fila-hero-painel" in folha
+        numero = folha[folha.index(".fila-numeral {"):]
+        numero = numero[:numero.index("}")]
+        assert "translateY(-10px)" in numero
+        estado = folha[folha.index(".fila-estado {"):]
+        estado = estado[:estado.index("}")]
+        assert "justify-content: center" not in estado
 
     def test_a_folha_nao_inventa_cor(self):
         """Toda cor vem do tema: uma cor escrita à mão aqui não acompanharia a

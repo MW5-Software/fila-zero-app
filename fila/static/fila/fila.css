@@ -108,12 +108,7 @@
 .fila-secundarias { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .fila-principal { min-width: 240px; height: 52px; font-size: 15px; justify-content: center; border-radius: 12px; }
 
-/* O estado da loja no MEIO da faixa (23/09/2026, pedido do cliente: com a loja
-   vazia, o "0 na fila agora" ficava encostado à esquerda e o cartão parecia
-   pela metade). O painel ocupa a sobra da linha e centra o que tem dentro; os
-   botões continuam à direita, e a faixa de ações fica onde sempre esteve. */
-.fila-hero-painel { flex: 1 1 auto; min-width: 0; }
-.fila-estado { display: flex; align-items: center; justify-content: center; gap: 22px; min-width: 0; }
+.fila-estado { display: flex; align-items: center; gap: 22px; min-width: 0; }
 .fila-estado-txt { min-width: 0; }
 .fila-estado-titulo {
   margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 800;
@@ -123,8 +118,17 @@
 
 /* O número é a resposta: a posição na fila, ou os minutos de atendimento ou
    de pausa. Grande o bastante para ser lido com o celular na mão, de pé. */
+/* O número SOBE um pouco, para ficar na mesma linha de leitura do título
+   (23/09/2026, ajuste pedido pelo cliente: "centraliza na linha ali, era só
+   subir ele um pouco"). Ele é centrado contra o bloco de texto INTEIRO —
+   título, linha de apoio e a trilha da fila —, e com a trilha embaixo o
+   cento do bloco cai bem abaixo da linha do "na fila agora": o número
+   nascia baixo em relação ao título. Dez pixels acima põem os dois na mesma
+   altura; a primeira leitura disto foi centrar o estado no CARTÃO, e o
+   cliente corrigiu. */
 .fila-numeral {
   margin: 0; display: flex; align-items: flex-start; flex: none;
+  transform: translateY(-10px);
   font-family: var(--font-display); font-weight: 800; color: var(--primary);
   font-variant-numeric: tabular-nums; line-height: .82;
 }
