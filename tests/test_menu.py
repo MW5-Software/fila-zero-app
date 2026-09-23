@@ -311,6 +311,51 @@ def test_nenhum_grupo_repete_o_nome_de_um_filho(db):
 
 
 @pytest.mark.django_db
+def test_grupo_de_um_filho_com_o_nome_dele_sobe_para_o_primeiro_nivel(
+        catalogo_limpo, db):
+    """Grupo que só tem o destino com o nome dele mesmo não é grupo.
+
+    O cliente pediu "Metas" como menu de PRIMEIRO nível (23/09/2026), e neste
+    menu um destino só chega ao primeiro nível por um grupo: o degrau diria
+    "Metas" e abriria para "Metas" — o rótulo gasto à toa que o teste acima já
+    recusa, e um clique a mais para chegar na tela. O `montar` então desfaz o
+    degrau quando os dois nomes são iguais, e o destino sobe inteiro.
+
+    O grupo de um filho com OUTRO nome continua grupo: é ele que separa
+    "Consultas > Frete", e o teste `test_os_itens_sao_agrupados_pelo_grupo_
+    declarado` cobra.
+    """
+    from nucleo.layout import Sidebar
+    from nucleo.rendering import create_environment, use_environment
+    from plataforma.catalogo import semear
+    from plataforma.declaracao import Atalho
+    from plataforma.menu import montar
+    from plataforma.models import Modulo
+
+    registrar(ModuloSpec(
+        chave="frete", rotulo="Frete", icone="truck", grupo="Consultas",
+        rota="/frete", permissoes=("frete.ver",),
+        atalhos=(Atalho(rotulo="Tabelas", rota="/frete/tabelas",
+                        permissao="frete.ver", grupo="Tabelas"),)))
+    semear()
+    Modulo.objects.filter(chave="frete").update(ativo=True)
+
+    quem = User(id="2", name="Ana", permissions={"frete.ver"})
+    topo = {i.label: i for i in montar(quem)}
+    assert topo["Tabelas"].href == "/frete/tabelas"
+    assert not topo["Tabelas"].children
+    assert [f.label for f in topo["Consultas"].children] == ["Frete"]
+
+    # E desenha: o primeiro nível desenha ícone em TODO item, e o atalho não
+    # tem um (no segundo nível ele é opcional). Sem a pasta de reserva, o
+    # `Icon` recebe nome vazio — `icons.get('')` levanta `KeyError`, e a home
+    # cai com 500.
+    with use_environment(create_environment()):
+        html = str(Sidebar(items=montar(quem)).render())
+    assert "/frete/tabelas" in html
+
+
+@pytest.mark.django_db
 class TestOAtalhoEmOutroGrupo:
     """Um atalho pode morar num grupo diferente do módulo.
 

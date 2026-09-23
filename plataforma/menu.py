@@ -39,8 +39,15 @@ __all__ = ["montar"]
 #: segundo nível, recusando nome vazio.
 _ICONE_DO_PAI = "folder"
 
+#: Os nomes de grupo de HOJE. O cliente renomeou dois e criou um em
+#: 23/09/2026 — "Configuração" e "Gerenciar Fila" (`contas/modulo.py`,
+#: `plataforma/modulo.py`) e "Metas" (`fila/modulo.py`) —, e "Geral" é o do
+#: módulo de exemplo. Renomear um grupo é renomear esta lista também: é ela
+#: que o extrator encontra, e sem ela o grupo sai em português na instalação
+#: castelhana.
 NOMES_DE_GRUPO = (
-    _("Administração"), _("Cadastro"), _("Vendas"), _("Geral"),
+    _("Administração"), _("Configuração"), _("Gerenciar Fila"), _("Metas"),
+    _("Geral"),
 )
 
 
@@ -199,6 +206,34 @@ def montar(user: "User | None") -> list[NavItem]:
     # entram pelo laço acima como qualquer outro — quem separa quem vê o quê
     # continua sendo a permissão, não um grupo à parte na tela.
 
-    return [NavItem(label=_traduzido(grupo), icon="folder",
-                    children=grupos[grupo])
-            for grupo in sorted(grupos, key=lambda g: posicao[g])]
+    itens: list[NavItem] = []
+    for grupo in sorted(grupos, key=lambda g: posicao[g]):
+        filhos = grupos[grupo]
+        # **Grupo com UM destino que já tem o nome dele não é grupo.** O
+        # rótulo sairia duas vezes na barra, uma abrindo para a outra, e o
+        # degrau não diria nada que o filho já não diga — é o rótulo gasto à
+        # toa que o teste do "Catálogo" recusa. O destino sobe inteiro
+        # (rótulo, ícone, endereço) e passa a ser ele o item de primeiro
+        # nível, que é o pedido do cliente de 23/09/2026 para as Metas:
+        # "Metas é um menu de Nível 1 igual Configurações e Gerenciar Fila".
+        #
+        # Só quando os dois nomes são IGUAIS: o grupo de um filho com outro
+        # nome continua sendo grupo, e é ele que separa "Consultas > Frete".
+        if len(filhos) == 1 and filhos[0].label == _traduzido(grupo):
+            unico = filhos[0]
+            itens.append(NavItem(
+                label=unico.label,
+                # O primeiro nível desenha ícone SEMPRE, e o atalho pode não
+                # ter um (no segundo nível ele é opcional). Sem o `or`, o
+                # `Icon` recebe nome vazio e a home cai com 500 — o mesmo
+                # defeito que o `icon="folder"` do grupo evita.
+                icon=unico.icon or _ICONE_DO_PAI,
+                href=unico.href,
+                badge=unico.badge,
+                permission=unico.permission,
+                children=unico.children,
+            ))
+            continue
+        itens.append(NavItem(label=_traduzido(grupo), icon="folder",
+                             children=filhos))
+    return itens

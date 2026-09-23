@@ -629,14 +629,29 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   permissão que põe a fila no menu), `ativo_por_padrao=True`, e **os nomes da
   barra** (23/09/2026, pedido do cliente: "Metas vai ser um Menu de Nível 1, em
   vez de Fila da Vez muda para Configuração/Fila e em vez do menu chamar Vendas
-  vai chamar Gerenciar Fila"). A barra ficou: **Gerenciar Fila** — Fila da vez,
-  Histórico da fila e Metas, os três de PRIMEIRO nível —, e **Configuração**,
-  com Conta, Empresas, Filiais, Usuários, Cargos e **Fila** (os três cadastros
-  dentro, em "Configuração > Fila"). O grupo dos cadastros do cliente se
-  chamava "Cadastro" e virou "Configuração" nos cinco módulos da base
-  (`contas/modulo.py`, `plataforma/modulo.py`): o nome antigo repetia o
-  conceito que já é a palavra de cada tela. O teste que prende isso é o
-  `test_o_menu_da_fila_como_o_cliente_pediu`, e ele olha o menu MONTADO.
+  vai chamar Gerenciar Fila"; e, com o print da barra na mão, "Metas é um menu
+  de Nivel 1 igual Configurações e Gerenciar Fila"). A barra ficou:
+  **Configuração** — Conta, Empresas, Filiais, Usuários, Cargos e
+  **Configurações da Fila**, com os três cadastros dentro —; **Gerenciar
+  Fila** — Fila da vez e Histórico da fila —; e **Metas**, sozinha, no mesmo
+  degrau. O grupo dos cadastros do cliente se chamava "Cadastro" e virou
+  "Configuração" nos cinco módulos da base (`contas/modulo.py`,
+  `plataforma/modulo.py`): o nome antigo repetia o conceito que já é a palavra
+  de cada tela. E o pai do cadastro da fila é "Configurações da Fila", e não
+  "Fila": "Fila" dizia o mesmo que o item da página e não dizia que ali dentro
+  se CONFIGURA — foi a segunda correção do cliente no mesmo assunto.
+- **`plataforma/menu.py` desfaz o grupo de um destino só com o nome dele**
+  (23/09/2026). Um destino chega ao primeiro nível por um grupo, e o grupo que
+  o cliente pediu para as Metas diria "Metas" abrindo para "Metas": o rótulo
+  gasto à toa que o teste do "Catálogo" recusa, e um clique a mais para chegar
+  na tela. Quando o grupo tem UM filho e o rótulo é o mesmo, o filho sobe
+  inteiro — rótulo, ícone e endereço — e é ele o item de primeiro nível; o
+  atalho das Metas declara `icone="target"`, que no segundo nível não era
+  desenhado. Grupo de um filho com OUTRO nome continua grupo, e é ele que
+  separa "Consultas > Frete". Quem cobra é o
+  `test_grupo_de_um_filho_com_o_nome_dele_sobe_para_o_primeiro_nivel`, e quem
+  prende a barra da fila é o `test_o_menu_da_fila_como_o_cliente_pediu` — os
+  dois olham o menu MONTADO.
 - `fila/views_cadastros.py` — as três telas de cadastro, uma view para as três.
   **A coluna "Ordem" saiu da tabela** (18/09/2026, pedido do cliente): o campo
   continua no cadastro, e a lista continua saindo por ele (`padrao="ordem"`).

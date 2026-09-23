@@ -31,32 +31,41 @@ MODULO = ModuloSpec(
     permissoes=("fila.ver", "fila.participar", "fila.gerenciar",
                 "fila.cadastros", "fila.relatorios", "fila.metas"),
     atalhos=(
-        # O cadastro da fila mora em "Configuração > Fila" (23/09/2026, pedido
-        # do cliente: "em vez de Fila da Vez muda para Configuração/Fila").
-        # Eram quatro itens pendurados num SEGUNDO "Fila da vez", dentro do
-        # grupo "Cadastro": o módulo repetido na barra, e o cadastro longe do
-        # nome dele. O grupo dos cadastros do cliente passou a se chamar
-        # Configuração (`contas/modulo.py`, `plataforma/modulo.py`), e o pai
-        # aqui é "Fila".
+        # O cadastro da fila mora em "Configuração > Configurações da Fila"
+        # (23/09/2026). Eram quatro itens pendurados num SEGUNDO "Fila da vez",
+        # dentro do grupo "Cadastro": o módulo repetido na barra, e o cadastro
+        # longe do nome dele. O grupo dos cadastros do cliente passou a se
+        # chamar Configuração (`contas/modulo.py`, `plataforma/modulo.py`).
+        #
+        # "Configurações da Fila", e não "Fila" (o cliente corrigiu com o
+        # print da barra na mão): "Fila" sozinho dizia o mesmo que o item da
+        # página, e não dizia que ali dentro se CONFIGURA.
         Atalho(rotulo=_("Grupos de item"), rota="/fila/grupos",
                permissao="fila.cadastros", grupo="Configuração",
-               pai="Fila"),
+               pai="Configurações da Fila"),
         Atalho(rotulo=_("Motivos de não venda"), rota="/fila/motivos",
                permissao="fila.cadastros", grupo="Configuração",
-               pai="Fila"),
+               pai="Configurações da Fila"),
         Atalho(rotulo=_("Tipos de pausa"), rota="/fila/pausas",
                permissao="fila.cadastros", grupo="Configuração",
-               pai="Fila"),
+               pai="Configurações da Fila"),
         # Solto no grupo, ao lado da fila, e não como submenu: um `pai` com o
         # nome do módulo criaria um segundo item com o mesmo rótulo.
         Atalho(rotulo=_("Histórico da fila"), rota="/fila/historico",
                permissao="fila.gerenciar", grupo="Gerenciar Fila"),
-        # **Metas é de PRIMEIRO nível** (23/09/2026, pedido do cliente: "Metas
-        # vai ser um Menu de Nível 1"): era filha do "Fila da vez", e a tela em
-        # que a gestão mexe todo mês fica no mesmo degrau da página e do
-        # histórico.
-        Atalho(rotulo=_("Metas"), rota="/fila/metas",
-               permissao="fila.metas", grupo="Gerenciar Fila"),
+        # **Metas é de primeiro nível** (23/09/2026; o cliente pediu "Metas vai
+        # ser um Menu de Nível 1", e corrigiu com o print da barra: "igual
+        # Configurações e Gerenciar Fila"). Era filha do "Fila da vez", e virou
+        # o grupo dela — grupo que o menu DESFAZ, porque ele tem um destino só
+        # e com o nome dele mesmo: com o degrau, a barra diria "Metas" duas
+        # vezes (`plataforma/menu.py`). O que fica é o que o cliente pediu:
+        # "Metas" no primeiro nível, ao lado de Configuração e Gerenciar Fila,
+        # abrindo a tela num clique.
+        #
+        # O ícone é o do ATALHO, e só passou a importar aqui: no segundo nível
+        # o `Sidebar` não desenha ícone, e no primeiro desenha em todo item.
+        Atalho(rotulo=_("Metas"), rota="/fila/metas", icone="target",
+               permissao="fila.metas", grupo="Metas"),
     ),
     ativo_por_padrao=True,
 )

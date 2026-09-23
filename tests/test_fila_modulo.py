@@ -44,31 +44,49 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
     from plataforma.menu import montar
 
     semear()
-    grupos = {g.label: g for g in
-              montar(User(id=1, name="MW5", login="mw5", superuser=True,
-                          permissions=["*"]))}
+    itens = montar(User(id=1, name="MW5", login="mw5", superuser=True,
+                        permissions=["*"]))
+    grupos = {i.label: i for i in itens}
 
     # O grupo "Vendas" virou "Gerenciar Fila", e "Cadastro" virou
     # "Configuração" — nenhum dos dois nomes antigos fica na barra.
     assert "Vendas" not in grupos and "Cadastro" not in grupos
 
-    da_fila = grupos["Gerenciar Fila"]
-    # **Metas de PRIMEIRO nível**, ao lado da página e do histórico: ela não é
-    # filha de ninguém.
-    assert [(i.label, i.href) for i in da_fila.children] == [
+    assert [(i.label, i.href) for i in grupos["Gerenciar Fila"].children] == [
         ("Fila da vez", "/fila"),
         ("Histórico da fila", "/fila/historico"),
-        ("Metas", "/fila/metas"),
     ]
-    assert all(not i.children for i in da_fila.children), "Metas tem pai"
 
-    # O cadastro da fila em "Configuração > Fila", e não num segundo "Fila da
-    # vez" dentro do grupo dos cadastros.
+    # **Metas é de PRIMEIRO nível**, no mesmo degrau de "Configuração" e
+    # "Gerenciar Fila" (o cliente corrigiu a primeira leitura com o print da
+    # barra na mão: "Metas é um menu de Nível 1 igual Configurações e
+    # Gerenciar Fila"). Ela era a terceira linha DENTRO de "Gerenciar Fila".
+    #
+    # E o rótulo sai UMA vez: o grupo que o atalho declara tem este destino só,
+    # com o nome dele mesmo, e o menu sobe o destino para o primeiro nível em
+    # vez de repetir a palavra (`plataforma/menu.py`).
+    assert (grupos["Metas"].label, grupos["Metas"].href) == (
+        "Metas", "/fila/metas")
+    assert not grupos["Metas"].children
+    assert "Metas" not in [i.label for i in grupos["Gerenciar Fila"].children]
+
+    # O cadastro da fila em "Configuração > Configurações da Fila". O pai não
+    # se chama "Fila" (dizia o mesmo que o item da página, e não dizia que ali
+    # dentro se configura), e nem "Fila da vez" — o módulo repetido que havia.
     configuracao = grupos["Configuração"]
-    pai = next(i for i in configuracao.children if i.label == "Fila")
+    pai = next(i for i in configuracao.children
+               if i.label == "Configurações da Fila")
     assert [f.label for f in pai.children] == [
         "Grupos de item", "Motivos de não venda", "Tipos de pausa"]
-    assert not any(i.label == "Fila da vez" for i in configuracao.children)
+    assert not any(i.label in ("Fila", "Fila da vez")
+                   for i in configuracao.children)
+
+    # Os três assuntos da fila na barra, e nesta ordem: "Configuração" abre a
+    # lista porque carrega os cadastros (ordem negativa), e os dois da fila vêm
+    # depois dela.
+    assert [g for g in grupos if g in
+            ("Configuração", "Gerenciar Fila", "Metas")] == [
+        "Configuração", "Gerenciar Fila", "Metas"]
 
 
 @pytest.mark.django_db
