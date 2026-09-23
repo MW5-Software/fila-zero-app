@@ -320,6 +320,13 @@ pelo mesmo motivo do cargo (o caminho da relação devolveria a pessoa duas
 vezes), e a alocação sem filial escreve "Todas as filiais", que é o que ela
 significa.
 
+**E o filtro de Cargo** (23/09/2026, com o print do cliente na mão: "o filtro
+de cargo tá vindo errado"): `_cargos_para_escolha` devolvia a lista de rótulos
+SOLTOS, e a caixa de escolha desempacota cada opção em `(valor, rótulo)` — uma
+STRING se desempacota em CARACTERES, e o filtro oferecia "l", "e", "e", "u",
+"e", que são a segunda letra de Cliente, Gerente, Representante, Supervisor e
+Vendedor. O par é `(rotulo, rotulo)`, porque é o rótulo que a coluna compara.
+
 **Titular e MW5 não têm cargo.** As permissões deles são diretas, de
 `contas/fabrica.py`. Um cargo no dono permitiria trancá-lo para fora da própria
 conta.
@@ -804,6 +811,12 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   A recusa sai no campo da meta da loja, que é a referência da soma, e NADA é
   gravado: nem a loja, nem os vendedores. Cobrir exatamente a loja continua
   valendo.
+- **Soma acima da meta da loja é AVISO, e não "cobre com folga"** (23/09/2026,
+  com o print do cliente): "Cobre a loja, com R$ 25.000,00 de folga" era
+  aritmética verdadeira e leitura errada — o cliente entendeu "está tudo
+  certo" e pediu o bloqueio. O veredito passou a dizer o mesmo que a recusa do
+  `gravar`, e a frase viaja para o `metas.js` (`data-acima`): o aviso aparece
+  ENQUANTO se digita, antes de clicar em salvar.
 - **O ranking do Início é sempre de um mês** (`?ranking_mes=`, escolhido numa
   lista desde 18/09/2026), e não do período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
@@ -857,6 +870,11 @@ plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
   atende: os três ficavam sem caminho nenhum até o Início (18/09/2026, pedido
   do cliente: "dono, supervisor e gerente não tem o meu painel na página da
   fila").
+- **O estado da loja fica no MEIO da faixa** (23/09/2026, pedido do cliente:
+  com a loja vazia, o "0 na fila agora" ficava encostado à esquerda e o cartão
+  parecia pela metade). `.fila-hero-painel` ocupa a sobra da linha e
+  `.fila-estado` centra o que tem dentro — o grupo [numeral + texto + trilha],
+  com os botões seguindo à direita. Vale em qualquer largura.
 - **O nome e a loja ficam FORA do cartão, numa faixa acima dele, e maiores**
   (23/09/2026, pedido do cliente: "na página da fila o nome do usuário e filial
   tem que sair do cargo e aumentar o tamanho para melhor visualição"): o celular
