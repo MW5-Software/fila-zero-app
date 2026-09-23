@@ -625,6 +625,18 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 - `fila/views.py`, `fila/tela.py`, `fila/templates/fila/` — a página fora do
   shell, com ambiente Jinja próprio (`fila/ambiente.py`), a consulta
   `GET /fila/estado` e as ações em `POST /fila/agir`.
+- `fila/modulo.py` — o que o módulo diz de si: `fila.ver` primeiro (é a
+  permissão que põe a fila no menu), `ativo_por_padrao=True`, e **os nomes da
+  barra** (23/09/2026, pedido do cliente: "Metas vai ser um Menu de Nível 1, em
+  vez de Fila da Vez muda para Configuração/Fila e em vez do menu chamar Vendas
+  vai chamar Gerenciar Fila"). A barra ficou: **Gerenciar Fila** — Fila da vez,
+  Histórico da fila e Metas, os três de PRIMEIRO nível —, e **Configuração**,
+  com Conta, Empresas, Filiais, Usuários, Cargos e **Fila** (os três cadastros
+  dentro, em "Configuração > Fila"). O grupo dos cadastros do cliente se
+  chamava "Cadastro" e virou "Configuração" nos cinco módulos da base
+  (`contas/modulo.py`, `plataforma/modulo.py`): o nome antigo repetia o
+  conceito que já é a palavra de cada tela. O teste que prende isso é o
+  `test_o_menu_da_fila_como_o_cliente_pediu`, e ele olha o menu MONTADO.
 - `fila/views_cadastros.py` — as três telas de cadastro, uma view para as três.
   **A coluna "Ordem" saiu da tabela** (18/09/2026, pedido do cliente): o campo
   continua no cadastro, e a lista continua saindo por ele (`padrao="ordem"`).
