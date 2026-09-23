@@ -295,6 +295,27 @@ def test_apagar_uma_meta_abaixo_do_teto_salva(rede):
     assert not MetaDeVenda.irrestritos.filter(mes=mes, pessoa=rede.ana).exists()
 
 
+def test_a_soma_acima_da_loja_vira_aviso(rede):
+    """23/09/2026, com o print do cliente na mão: com a loja em R$ 100.000,00 e
+    as metas dos vendedores somando R$ 125.000,00, a tela escrevia "Cobre a
+    loja, com R$ 25.000,00 de folga" — aritmética verdadeira, e o cliente leu
+    como "está tudo certo" quando a soma tinha PASSADO a meta da loja.
+
+    Agora é aviso, com a mesma frase da recusa do `gravar`, e ela também viaja
+    na página para o aviso aparecer enquanto se digita (`data-acima`), antes de
+    clicar em salvar.
+    """
+    dora = pessoa_na_loja("dora", rede.empresa, rede.centro)
+    _meta(rede, rede.centro, "100000")
+    _meta(rede, rede.centro, "50000", pessoa=rede.caio)
+    _meta(rede, rede.centro, "75000", pessoa=dora)
+    html = _get(logado("gil"))
+    assert "acima da meta da loja" in html
+    assert "R$ 125.000,00" in html and "R$ 100.000,00" in html
+    assert "de folga" not in html
+    assert 'data-acima="As metas dos vendedores somam' in html
+
+
 def test_a_tela_nao_tem_botao_de_dividir(rede):
     """O botão saiu: a distribuição é do servidor, no salvar — a mesma tela
     funciona sem JavaScript e sem clique nenhum."""

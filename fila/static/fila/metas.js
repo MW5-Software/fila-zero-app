@@ -145,7 +145,10 @@
     if (!loja) veredito.textContent = raiz.dataset.semLoja;
     else if (soma < loja) { veredito.classList.add("warn"); veredito.textContent = frase("falta", { valor: reais(loja - soma) }); }
     else if (soma === loja) { veredito.classList.add("ok"); veredito.textContent = raiz.dataset.exata; }
-    else { veredito.classList.add("ok"); veredito.textContent = frase("cobre", { valor: reais(soma - loja) }); }
+    // Soma ACIMA da loja: aviso, e não "cobre com folga" (23/09/2026). O aviso
+    // aparece enquanto se digita — antes de clicar em salvar, que era o
+    // pedido do cliente —, e o servidor recusa a gravação com a mesma frase.
+    else { veredito.classList.add("warn"); veredito.textContent = frase("acima", { soma: reais(soma), loja: reais(loja) }); }
 
     if (salvar) {
       salvar.toggleAttribute("data-limpo", alteradas === 0);

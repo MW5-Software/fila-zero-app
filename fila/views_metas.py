@@ -104,8 +104,14 @@ def _regua(linhas, da_loja):
     elif soma == da_loja:
         tom, veredito = "ok", _("Cobre exatamente a meta da loja")
     else:
-        tom, veredito = "ok", _("Cobre a loja, com %(valor)s de folga") % {
-            "valor": em_reais(soma - da_loja)}
+        # Soma ACIMA da meta da loja: é AVISO, e não "cobre com folga"
+        # (23/09/2026). A frase antiga era aritmética verdadeira e operação
+        # mentirosa — o cliente leu "cobre a loja, com R$ 25.000,00 de folga"
+        # como "está tudo certo" e pediu o bloqueio; hoje `gravar` recusa essa
+        # gravação (`_conferir_o_teto`), e a tela diz o mesmo que a recusa.
+        tom, veredito = "warn", _(
+            "As metas dos vendedores somam %(soma)s, acima da meta da loja "
+            "(%(loja)s)") % {"soma": em_reais(soma), "loja": em_reais(da_loja)}
     return {"soma": em_reais(soma), "trechos": trechos, "tom": tom, "veredito": veredito,
             "linha_loja": None if da_loja is None else float(da_loja * 100 / base),
             "rotulo_loja": "" if da_loja is None else _("meta da loja %(valor)s") % {
@@ -201,7 +207,12 @@ def _desenhar(request, loja, mes, permitidas, editor, *, digitados=None,
         # o script troca o número, e não escreve frase.
         "textos": {
             "falta": _("Faltam %(valor)s para cobrir a loja"),
-            "cobre": _("Cobre a loja, com %(valor)s de folga"),
+            # A frase da soma acima da loja, para o aviso aparecer ANTES de
+            # clicar em salvar (23/09/2026, pedido do cliente): o `metas.js`
+            # recalcula o veredito enquanto se digita, e o servidor recusa a
+            # gravação com a mesma frase.
+            "acima": _("As metas dos vendedores somam %(soma)s, acima da meta "
+                       "da loja (%(loja)s)"),
             "exata": _("Cobre exatamente a meta da loja"),
             "sem_loja": _("Sem meta da loja neste mês."),
             "rotulo_loja": _("meta da loja %(valor)s"),
