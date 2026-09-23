@@ -103,6 +103,84 @@ class TestSoAEmpresaDele:
         assert alvo.ativa is True
 
 
+@pytest.fixture
+def duas_empresas(db, modulo_filiais_ligado):
+    """A MESMA conta com duas empresas (spec 2026-09-17). É o caso do cliente
+    que pediu o seletor: "quando eu for criar filial num dono de conta com mais
+    de uma empresa, preciso de um seletor para dizer de qual filial é aquela
+    empresa" (23/09/2026)."""
+    from plataforma.models import Empresa, Filial
+
+    dono, alfa = _titular_com_empresa("dono-duas", "Alfa Ltda")
+    beta = Empresa.objects.create(razao_social="Beta Ltda", dono=dono)
+    loja_beta = Filial.objects.create(empresa=beta, nome="Loja da Beta",
+                                      apelido="CentroBeta")
+    # Uma filial com nome SÓ da Alfa: as duas empresas têm uma "Matriz", e sem
+    # esta linha o teste de escopo passaria com a lista trocada.
+    Filial.objects.create(empresa=alfa, nome="Loja da Alfa", apelido="SoDaAlfa")
+    return {"dono": dono, "alfa": alfa, "beta": beta, "loja_beta": loja_beta,
+            "cliente": _entrar("dono-duas")}
+
+
+class TestODonoComDuasEmpresas:
+    def test_o_modal_de_criar_pergunta_a_empresa(self, duas_empresas):
+        html = duas_empresas["cliente"].get(reverse("filiais")).content.decode()
+        assert '<select class="ctl" id="empresa" name="empresa"' in html
+
+    def test_com_uma_empresa_so_nao_ha_seletor(self, cenario):
+        """Com uma empresa só o campo seria uma pergunta com uma resposta só —
+        e é o caso de quase toda conta."""
+        html = cenario["cliente"].get(reverse("filiais")).content.decode()
+        assert '<select class="ctl" id="empresa" name="empresa"' not in html
+
+    def test_a_filial_nasce_na_empresa_escolhida(self, duas_empresas):
+        from plataforma.models import Filial
+
+        resposta = duas_empresas["cliente"].post(reverse("filiais"), {
+            "acao": "criar", "nome": "Loja Nova", "apelido": "Nova",
+            "empresa": str(duas_empresas["beta"].pk)})
+        nova = Filial.objects.get(apelido="Nova")
+        assert nova.empresa == duas_empresas["beta"]
+        # A tela volta na empresa escolhida: sem isto, a filial recém-criada
+        # não apareceria na lista, e quem cadastrou criaria de novo.
+        assert resposta["Location"].endswith(
+            f"?empresa={duas_empresas['beta'].pk}")
+
+    def test_a_lista_segue_a_empresa_escolhida(self, duas_empresas):
+        """Da tabela para baixo: o cabeçalho do sistema continua mostrando as
+        lojas da empresa em que a sessão está, e é por isso que a asserção
+        olha o cartão da lista, e não a página inteira."""
+        cliente = duas_empresas["cliente"]
+        html = cliente.get(
+            reverse("filiais"),
+            {"empresa": str(duas_empresas["beta"].pk)}).content.decode()
+        lista = html[html.index("Filiais existentes"):]
+        assert "CentroBeta" in lista and "SoDaAlfa" not in lista
+        # Sem escolha, a lista é a da empresa do contexto (o cabeçalho).
+        padrao = cliente.get(reverse("filiais")).content.decode()
+        padrao = padrao[padrao.index("Filiais existentes"):]
+        assert "SoDaAlfa" in padrao and "CentroBeta" not in padrao
+
+    def test_os_links_da_tabela_levam_a_empresa(self, duas_empresas):
+        """Ordenar, filtrar e paginar preservam a escolha: sem o
+        `preservar=("empresa",)`, tocar numa coluna devolvia a empresa do
+        cabeçalho e a lista trocava embaixo de quem estava lendo."""
+        beta = duas_empresas["beta"].pk
+        html = duas_empresas["cliente"].get(
+            reverse("filiais"), {"empresa": str(beta)}).content.decode()
+        assert f"empresa={beta}" in html
+
+    def test_empresa_de_outra_conta_nao_amplia_o_alcance(self, cenario,
+                                                        duas_empresas):
+        """Um id de fora é descartado e a lista cai na empresa do contexto: o
+        pedido ESCOLHE dentro do alcance, nunca o amplia."""
+        html = duas_empresas["cliente"].get(
+            reverse("filiais"),
+            {"empresa": str(cenario["beta"].pk)}).content.decode()
+        assert "SoDaBeta" not in html
+        assert "Matriz" in html
+
+
 class TestAMatriz:
     def test_a_matriz_nao_se_remove(self, cenario):
         from plataforma.models import Filial

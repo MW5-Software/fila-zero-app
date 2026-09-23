@@ -17,7 +17,8 @@ from .contexto import empresa_atual
 from .models import Filial
 
 __all__ = ["FILTRAVEIS", "ORDENAVEIS", "ROTULOS", "antes_de_desativar",
-           "filiais_da_empresa", "pode_desativar", "pode_remover"]
+           "empresa_do_pedido", "empresas_da_conta", "filiais_da_empresa",
+           "pode_desativar", "pode_remover"]
 
 #: Perguntado antes de desativar uma filial, com `filial=`. Quem responder
 #: uma frase recusa a desativação, e a tela mostra a frase.
@@ -136,7 +137,48 @@ def pode_remover(filial: Filial) -> "str | None":
     return pode_desativar(filial)
 
 
-def filiais_da_empresa(request):
+def empresas_da_conta(empresa) -> list:
+    """As empresas da MESMA conta de `empresa` — o que o seletor da tela de
+    Filiais oferece (23/09/2026, pedido do cliente: "quando eu for criar filial
+    num dono de conta com mais de uma empresa, preciso de um seletor para dizer
+    de qual filial é aquela empresa").
+
+    **Pela conta, e não pelo alcance da pessoa**: quem abre esta tela tem
+    `filiais.editar`, que é do titular e da MW5, e a conta do titular são
+    exatamente as empresas dele. Para o membro — que não tem a permissão — o
+    seletor nem chega a existir.
+
+    Sem empresa (ou empresa sem titular, o que só acontece antes da conta
+    existir), a lista é vazia.
+    """
+    from .models import Empresa
+
+    if empresa is None or empresa.dono_id is None:
+        return []
+    return list(Empresa.objects.filter(dono_id=empresa.dono_id)
+                .order_by("razao_social"))
+
+
+def empresa_do_pedido(request):
+    """A empresa escolhida na TELA: `?empresa=` no GET ou `empresa` no POST,
+    validada contra as empresas da conta.
+
+    Um id de fora — de outra conta, ou inventado — é descartado, e a escolha
+    cai na empresa do contexto, que é a mesma trava de sempre: o pedido nunca
+    AMPLIA o alcance, só escolhe dentro dele.
+    """
+    from comum.pedido import inteiro_do_texto
+
+    dona = empresa_atual(request)
+    bruto = request.POST.get("empresa") or request.GET.get("empresa") or ""
+    escolhida = inteiro_do_texto(bruto)
+    for candidata in empresas_da_conta(dona):
+        if candidata.pk == escolhida:
+            return candidata
+    return dona
+
+
+def filiais_da_empresa(request, empresa=None):
     """As filiais que a tela e a API enxergam: as da empresa do contexto, e só elas.
 
     **É a trava da tela de Filiais, e é o que permitiu dar `filiais.editar` ao
@@ -150,13 +192,21 @@ def filiais_da_empresa(request):
     (`tests/test_api_nao_importa_view.py`), e uma segunda cópia desta trava é
     a cópia que alguém esquece de corrigir.
 
+    `empresa` é a escolha da TELA de Filiais (`?empresa=`, ver
+    `empresa_do_pedido`), e só vale dentro da conta: um id de outra conta cai
+    na empresa do contexto. A API chama sem `empresa`, e continua enxergando a
+    empresa do cabeçalho — o alcance dela não muda por causa da tela.
+
     Sem empresa no contexto, nada: `none()` e não `all()`, porque o erro de
     faltar contexto não pode ser mostrar tudo.
     """
-    empresa = empresa_atual(request)
-    if empresa is None:
+    dona = empresa_atual(request)
+    if empresa is not None:
+        dona = next((e for e in empresas_da_conta(dona) if e.pk == empresa.pk),
+                    dona)
+    if dona is None:
         return Filial.objects.none()
-    return Filial.objects.filter(empresa=empresa)
+    return Filial.objects.filter(empresa=dona)
 
 
 #: As colunas ordenáveis e filtráveis da lista de filiais — as mesmas na tela,

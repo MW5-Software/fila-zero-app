@@ -8,6 +8,7 @@ montar_pagina`.
 
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
@@ -18,16 +19,18 @@ from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_permissao
 from comum.personificacao import aviso as aviso_de_personificacao
 from nucleo.components import (
-    Alert, Badge, Box, Button, Card, Column, Form, FormGrid,
-    IconButton, Modal, PageHeader, Raw, Table, TextInput,
+    Alert, Badge, Box, Button, Card, Cell, Column, Form, FormGrid,
+    IconButton, Modal, Option, PageHeader, Raw, Select, Table, TextInput,
 )
 from nucleo.layout import Crumb
 from comum.ambiente import ambiente
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
 
+from .caixas_da_filial import caixas
 from .filiais import (
-    FILTRAVEIS, ORDENAVEIS, ROTULOS, filiais_da_empresa, pode_desativar, pode_remover,
+    FILTRAVEIS, ORDENAVEIS, ROTULOS, empresa_do_pedido, empresas_da_conta,
+    filiais_da_empresa, pode_desativar, pode_remover,
 )
 from comum.exportacao import ColunaDeExportacao, botoes, preparar_exportacao
 from comum.guardas_de_modulo import exigir_modulo_ligado
@@ -142,17 +145,49 @@ def _acoes_da_linha(filial: Filial) -> Box:
     ])
 
 
-def _modal_criar_filial(request) -> Modal:
+def _campo_de_empresa(empresas, escolhida) -> "Select | None":
+    """O seletor de empresa do modal de criar (23/09/2026, pedido do cliente:
+    "quando eu for criar filial num dono de conta com mais de uma empresa,
+    preciso de um seletor para dizer de qual filial é aquela empresa").
+
+    Só aparece para quem tem mais de uma: com uma empresa só, o campo seria uma
+    pergunta com uma resposta única. Nasce na empresa escolhida na tela, que é
+    a que a lista está mostrando.
+    """
+    if len(empresas) <= 1:
+        return None
+    return Select(name="empresa", label=_("Empresa"), span=12, required=True,
+                  value=str(escolhida.pk) if escolhida else "",
+                  help=_("A filial nasce nesta empresa."),
+                  options=[Option(str(e.pk), str(e)) for e in empresas])
+
+
+def _modal_criar_filial(request, empresas=(), escolhida=None) -> Modal:
+    campo = _campo_de_empresa(empresas, escolhida)
     return Modal(id="filial-criar", title=_("Nova filial"), size="lg",
         body=Form(action=reverse("filiais"), children=[
             Raw(html=campo_csrf(request)),
             Raw(html=_campo_oculto("acao", "criar")),
-            FormGrid(children=_campos({})),
+            FormGrid(children=[*([campo] if campo else []), *_campos({})]),
+            # As caixas dos módulos de negócio (`plataforma.caixas_da_filial`)
+            # — no Fila Zero, o fim do turno da loja.
+            *[caixa.desenhar(None) for caixa in caixas()],
             Button(label=_("Criar filial"), variant="primary", type="submit"),
         ]))
 
 
-def _modais_de_filial(request, filial: Filial) -> list[Modal]:
+def _empresa_oculta(escolhida) -> list:
+    """A empresa escolhida viaja no POST das ações que mexem numa filial já
+    existente: é ela que diz onde a ação procura a filial — e para onde a tela
+    volta. Sem isto, editar a filial da segunda empresa cairia em "Filial não
+    encontrada", porque o POST seria lido na empresa do cabeçalho.
+    """
+    if escolhida is None:
+        return []
+    return [Raw(html=_campo_oculto("empresa", str(escolhida.pk)))]
+
+
+def _modais_de_filial(request, filial: Filial, escolhida=None) -> list[Modal]:
     """Um `Modal` de editar, um de ativar/desativar e um de remover — cada
     um com o próprio `<form>`, nascendo fechado, em `overlays=`. Mesmo papel
     de `contas.views_usuarios._modais_de_usuario`."""
@@ -174,7 +209,9 @@ def _modais_de_filial(request, filial: Filial) -> list[Modal]:
                   Raw(html=campo_csrf(request)),
                   Raw(html=_campo_oculto("acao", "salvar")),
                   Raw(html=_campo_oculto("filial", str(filial.pk))),
+                  *_empresa_oculta(escolhida),
                   FormGrid(children=_campos(valores)),
+                  *[caixa.desenhar(filial) for caixa in caixas()],
                   Button(label=_("Salvar"), variant="primary", type="submit"),
               ])),
         Modal(id=_id_do_modal("estado", filial.pk), title=rotulo_de_estado,
@@ -182,6 +219,7 @@ def _modais_de_filial(request, filial: Filial) -> list[Modal]:
                   Raw(html=campo_csrf(request)),
                   Raw(html=_campo_oculto("acao", acao_de_estado)),
                   Raw(html=_campo_oculto("filial", str(filial.pk))),
+                  *_empresa_oculta(escolhida),
                   aviso_de_estado,
                   Button(label=rotulo_de_estado,
                          variant="danger" if acao_de_estado == "desativar" else "primary",
@@ -196,6 +234,7 @@ def _modais_de_filial(request, filial: Filial) -> list[Modal]:
                   Raw(html=campo_csrf(request)),
                   Raw(html=_campo_oculto("acao", "remover")),
                   Raw(html=_campo_oculto("filial", str(filial.pk))),
+                  *_empresa_oculta(escolhida),
                   Alert(tone="danger",
                         message=f'Remover a filial "{filial}"? Esta ação '
                                 f'não pode ser desfeita.'),
@@ -208,6 +247,9 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
     env = ambiente()
     with use_environment(env):
         site = montar_site(request)
+
+        escolhida = empresa_do_pedido(request)
+        empresas = empresas_da_conta(empresa_atual(request))
 
         conteudo = [
             aviso_de_personificacao(request),
@@ -223,9 +265,32 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
         if erro:
             conteudo.append(Alert(message=erro, tone="danger"))
 
+        # O seletor de empresa (23/09/2026). O dono de conta com mais de uma
+        # empresa cadastra a filial de qualquer uma delas, e no celular o
+        # seletor do cabeçalho está escondido (`.ctx-mid` some abaixo de
+        # 1000px): sem este campo, a tela só enxergava a empresa em que a
+        # SESSÃO estava, e a filial recém-criada na outra não aparecia.
+        if len(empresas) > 1:
+            conteudo.append(Card(
+                attrs={"data-empresa": "filtro"},
+                body=Form(method="get", action=reverse("filiais"),
+                          children=FormGrid(children=[
+                              Select(name="empresa", label=_("Empresa"), span=4,
+                                     value=str(escolhida.pk) if escolhida else "",
+                                     options=[Option(str(e.pk), str(e))
+                                              for e in empresas]),
+                              Cell(span=2, children=Button(
+                                  label=_("Ver"), variant="primary",
+                                  type="submit")),
+                          ]))))
+
         listagem = montar_pagina(
-            request, filiais_da_empresa(request), ordenaveis=ORDENAVEIS,
-            padrao="filial", filtraveis=FILTRAVEIS)
+            request, filiais_da_empresa(request, escolhida), ordenaveis=ORDENAVEIS,
+            padrao="filial", filtraveis=FILTRAVEIS,
+            # A empresa escolhida viaja nos links de ordenar, filtrar e
+            # paginar: sem ela, tocar numa coluna devolvia a lista para a
+            # empresa do cabeçalho.
+            preservar=("empresa",))
         filiais_existentes = listagem.linhas
 
         conteudo.append(Card(
@@ -239,9 +304,9 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
             ],
         ))
 
-        modais = [_modal_criar_filial(request)]
+        modais = [_modal_criar_filial(request, empresas, escolhida)]
         for filial in filiais_existentes:
-            modais.extend(_modais_de_filial(request, filial))
+            modais.extend(_modais_de_filial(request, filial, escolhida))
 
         pagina = site.page(
             # `full`: a tela usa a largura toda — mesmo motivo de
@@ -281,6 +346,35 @@ COLUNAS_DE_EXPORTACAO = (
 # ---------------------------------------------------------------------------
 
 
+def _frase_da_recusa(erro) -> str:
+    """A `ValidationError` de uma caixa de módulo virada em frase para a tela —
+    o mesmo par de `plataforma.views_empresa._frase_da_recusa`."""
+    if getattr(erro, "messages", None):
+        return " ".join(str(mensagem) for mensagem in erro.messages)
+    return str(erro)
+
+
+def _gravar_caixas(request, filial: Filial) -> None:
+    """O que as caixas dos módulos de negócio receberam no POST. Dentro do
+    mesmo `atomic` da filial: a `ValidationError` de uma delas desfaz o
+    formulário inteiro, e a tela mostra a frase."""
+    for caixa in caixas():
+        caixa.gravar(request, filial)
+
+
+def _voltar(request, empresa) -> HttpResponseRedirect:
+    """A volta para a tela, mantendo a empresa escolhida.
+
+    Sem isto, criar a filial da segunda empresa devolvia a lista da PRIMEIRA e
+    a filial nova não aparecia — quem cadastrou criaria de novo, achando que
+    não gravou.
+    """
+    dona = empresa_atual(request)
+    if empresa is not None and (dona is None or empresa.pk != dona.pk):
+        return HttpResponseRedirect(f"{reverse('filiais')}?empresa={empresa.pk}")
+    return HttpResponseRedirect(reverse("filiais"))
+
+
 def _acao_criar(request) -> HttpResponse:
     dados = {nome: request.POST.get(nome, "").strip() for nome, _resto, _resto in CAMPOS}
     erro = _validar(dados)
@@ -291,10 +385,10 @@ def _acao_criar(request) -> HttpResponse:
     # nasce em preparação — não `Filial.ativa` default, que é o mesmo
     # padrão só que fixo no código para toda instalação.
     dados["ativa"] = valor_de("nova_filial_nasce_ativa")
-    # A filial nasce na empresa do contexto — nunca sem empresa, que era o
-    # que acontecia até 14/09/2026 e fazia a filial nova não pertencer a
-    # ninguém.
-    empresa = empresa_atual(request)
+    # A filial nasce na empresa ESCOLHIDA na tela, que é a do cabeçalho quando
+    # ninguém escolheu nada — nunca sem empresa, que era o que acontecia até
+    # 14/09/2026 e fazia a filial nova não pertencer a ninguém.
+    empresa = empresa_do_pedido(request)
     if empresa is None:
         return _desenhar(
             request, erro=_("Escolha uma empresa no cabeçalho antes de criar "
@@ -302,10 +396,15 @@ def _acao_criar(request) -> HttpResponse:
     dados["empresa"] = empresa
     # `atomic()`: se `registrar` falhar, a filial recém-criada desfaz
     # junto — nunca uma filial criada sem ninguém saber quem criou.
-    with transaction.atomic():
-        filial = Filial.objects.create(**dados)
-        registrar(ACOES.FILIAL_CRIADA, request.usuario, alvo=str(filial), request=request)
-    return HttpResponseRedirect(reverse("filiais"))
+    try:
+        with transaction.atomic():
+            filial = Filial.objects.create(**dados)
+            _gravar_caixas(request, filial)
+            registrar(ACOES.FILIAL_CRIADA, request.usuario, alvo=str(filial),
+                      request=request)
+    except ValidationError as recusa:
+        return _desenhar(request, erro=_frase_da_recusa(recusa))
+    return _voltar(request, empresa)
 
 
 def _acao_salvar(request, filial) -> HttpResponse:
@@ -313,12 +412,17 @@ def _acao_salvar(request, filial) -> HttpResponse:
     erro = _validar(dados)
     if erro:
         return _desenhar(request, erro=erro)
-    with transaction.atomic():
-        for nome, valor in dados.items():
-            setattr(filial, nome, valor)
-        filial.save(update_fields=[nome for nome, _resto, _resto in CAMPOS])
-        registrar(ACOES.FILIAL_EDITADA, request.usuario, alvo=str(filial), request=request)
-    return HttpResponseRedirect(reverse("filiais"))
+    try:
+        with transaction.atomic():
+            for nome, valor in dados.items():
+                setattr(filial, nome, valor)
+            filial.save(update_fields=[nome for nome, _resto, _resto in CAMPOS])
+            _gravar_caixas(request, filial)
+            registrar(ACOES.FILIAL_EDITADA, request.usuario, alvo=str(filial),
+                      request=request)
+    except ValidationError as recusa:
+        return _desenhar(request, erro=_frase_da_recusa(recusa))
+    return _voltar(request, empresa_do_pedido(request))
 
 
 def _trocar_estado(request, filial, ativar: bool) -> HttpResponse:
@@ -347,7 +451,7 @@ def _trocar_estado(request, filial, ativar: bool) -> HttpResponse:
             ACOES.FILIAL_ATIVADA if ativar else ACOES.FILIAL_DESATIVADA,
             request.usuario, alvo=str(filial), request=request,
         )
-    return HttpResponseRedirect(reverse("filiais"))
+    return _voltar(request, empresa_do_pedido(request))
 
 
 def _acao_ativar(request, filial) -> HttpResponse:
@@ -369,8 +473,7 @@ def _acao_remover(request, filial) -> HttpResponse:
         # de remoção que sobrevive a uma remoção que não aconteceu.
         registrar(ACOES.FILIAL_REMOVIDA, request.usuario, alvo=str(filial), request=request)
         filial.delete()
-    return HttpResponseRedirect(reverse("filiais"))
-    return HttpResponseRedirect(reverse("filiais"))
+    return _voltar(request, empresa_do_pedido(request))
 
 
 ACOES_SEM_FILIAL = {"criar": _acao_criar}
@@ -391,7 +494,7 @@ def filiais(request) -> HttpResponse:
         # A exportação roda aqui dentro, depois dos guardas.
         if request.GET.get("formato"):
             exportacao = preparar_exportacao(
-                request, queryset=filiais_da_empresa(request),
+                request, queryset=filiais_da_empresa(request, empresa_do_pedido(request)),
                 colunas=COLUNAS_DE_EXPORTACAO,
                 ordenaveis=ORDENAVEIS, padrao="filial",
                 filtraveis=FILTRAVEIS, titulo=_("Filiais"))
@@ -410,7 +513,7 @@ def filiais(request) -> HttpResponse:
         return HttpResponseRedirect(reverse("filiais"))
 
     # A partir daqui toda ação mexe numa filial JÁ existente.
-    filial = filiais_da_empresa(request).filter(
+    filial = filiais_da_empresa(request, empresa_do_pedido(request)).filter(
         pk=id_do_post(request, "filial")).first()
     if filial is None:
         return _desenhar(request, erro=_("Filial não encontrada."))
