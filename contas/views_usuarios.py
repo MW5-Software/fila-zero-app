@@ -405,8 +405,9 @@ def _seletor_de_conta(request, atual=None) -> "Select | None":
                  for c in contas])
 
 
-def _com_cargo_ordem(pessoas):
-    """O primeiro cargo de cada pessoa, para a coluna ordenar.
+def _com_ordens_da_alocacao(pessoas):
+    """O primeiro cargo e a primeira filial de cada pessoa, para as colunas
+    ordenarem.
 
     **Anotação, e não o caminho da relação.** `order_by("alocacoes__cargo__rotulo")`
     faz JOIN com uma relação de VÁRIOS, e a pessoa com dois cargos volta duas
@@ -416,11 +417,43 @@ def _com_cargo_ordem(pessoas):
     ordena é o primeiro deles, em ordem alfabética.
 
     A empresa já vem anotada por `_com_empresa` (que também usa `StringAgg` e
-    pelo mesmo motivo): as duas anotações convivem no mesmo `GROUP BY`.
+    pelo mesmo motivo): as anotações convivem no mesmo `GROUP BY`.
+
+    `loja_ordem` é a MESMA ideia para a coluna "Filial" (23/09/2026): a pessoa
+    alocada em duas lojas voltaria duas vezes se a ordenação fosse pelo caminho
+    da relação. `Min` ignora os nulos, então quem tem uma alocação na empresa
+    inteira e outra numa loja ordena pela loja.
     """
     from django.db.models import Min
 
-    return pessoas.annotate(cargo_ordem=Min("alocacoes__cargo__rotulo"))
+    return pessoas.annotate(cargo_ordem=Min("alocacoes__cargo__rotulo"),
+                            loja_ordem=Min("alocacoes__filial__apelido"))
+
+
+def _lojas_de(usuario) -> str:
+    """As filiais em que a pessoa está alocada — um apelido por alocação, sem
+    repetir.
+
+    **A coluna volta em 23/09/2026, por outro caminho.** A filial que saiu
+    desta tela em 14/09/2026 era a da FICHA da pessoa (`Usuario.filiais`), um
+    campo que ninguém lia; a filial da ALOCAÇÃO ficou, e é ela que diz em que
+    loja a pessoa trabalha (é o que o bloco Alocações do modal pergunta). Sem
+    esta coluna, a única forma de saber em que loja alguém está era abrir o
+    modal de cada linha — e o cliente pediu o filtro ("falta filtrar por
+    loja/filial").
+
+    A alocação sem filial é a empresa INTEIRA (o modal diz "Todas as
+    filiais"), e é isso que a coluna escreve: mostrar o nome de uma loja ali
+    seria mentir sobre quem circula por todas. Titular e MW5 não têm alocação e
+    ficam com "—".
+    """
+    vistos: list[str] = []
+    for alocacao in usuario.alocacoes.all():
+        texto = (alocacao.filial.apelido if alocacao.filial_id
+                 else str(_("Todas as filiais")))
+        if texto not in vistos:
+            vistos.append(texto)
+    return ", ".join(vistos) if vistos else "—"
 
 
 def _cargos_de(usuario) -> str:
@@ -461,6 +494,7 @@ def _colunas_da_lista(pagina) -> list[Column]:
                render=_cargos_de),
         Column("empresa", pagina.cabecalho("empresa", "Empresa"),
                render=lambda u: u.empresa_nome or "—"),
+        Column("loja", pagina.cabecalho("loja", "Filial"), render=_lojas_de),
         Column("situacao", pagina.cabecalho("situacao", "Situação"),
                align="center", render=lambda u: Badge(
             label="Ativo" if u.is_active else "Inativo",
@@ -861,20 +895,22 @@ def _modal_criar_usuario(request, oferta) -> Modal:
     quem é a pessoa, o que ela é (só a MW5 escolhe), e onde trabalha, com qual
     cargo.
 
-    **A filial saiu desta tela inteira** — a caixa do cadastro, a coluna da
-    tabela, o filtro e a coluna do arquivo exportado. Filial é herança do
+    **A filial da FICHA da pessoa saiu desta tela** — a caixa do cadastro, e
+    com ela a coluna e o filtro que liam aquele campo. Filial é herança do
     KRONOS.net, onde a instalação era de UM cliente e o que variava dentro
     dela era a filial. Neste produto o inquilino é a EMPRESA, e a busca que
     autorizou esta remoção é curta: `usuario.filiais` não era lido em lugar
     nenhum fora deste arquivo — nem em `catalogo/`, nem em `orcamento/`, nem
-    no que hoje é `contas/alcance.py`, nem na sessão. Duas caixas pediam a mesma coisa e a
-    resposta de uma delas não ia a lugar nenhum, o que é pior que inútil:
-    parecia que ia.
+    no que hoje é `contas/alcance.py`, nem na sessão. Duas caixas pediam a
+    mesma coisa e a resposta de uma delas não ia a lugar nenhum, o que é pior
+    que inútil: parecia que ia.
 
-    Tirar só a caixa e deixar a coluna teria sido pior ainda — uma coluna
-    "Filial" que ninguém mais consegue preencher, e um filtro que nunca acha
-    nada. A tela de Filiais (`plataforma/views_filiais.py`) continua de pé; o
-    que saiu foi a filial da ficha da PESSOA.
+    **A filial da ALOCAÇÃO ficou, e a coluna e o filtro voltaram por ela**
+    (23/09/2026, pedido do cliente: "falta filtrar por loja/filial"). São
+    coisas diferentes: aquela era um campo da pessoa que nunca era lido; esta é
+    o lugar em que a pessoa trabalha, perguntado logo abaixo, no bloco
+    Alocações — e sem a coluna só dava para saber abrindo o modal de cada
+    linha.
     """
     return Modal(id="usuario-criar", title=_("Novo usuário"), size="lg",
         body=Form(action=reverse("usuarios"), children=[
@@ -1034,6 +1070,8 @@ _ORDENAVEIS = {
     # tem dois cargos — a linha repetida que a própria coluna foi feita para
     # evitar. Desempata pelo login como as outras.
     "cargo": ("cargo_ordem", "email"),
+    # A anotação de `_com_ordens_da_alocacao`, pelo mesmo motivo do cargo.
+    "loja": ("loja_ordem", "email"),
     "empresa": ("empresa_nome", "email"),
     "situacao": ("is_active", "email"),
 }
@@ -1056,6 +1094,22 @@ def _cargos_para_escolha() -> list[tuple[str, str]]:
                 .values_list("rotulo", flat=True).distinct())
 
 
+def _filiais_para_escolha() -> list[tuple[str, str]]:
+    """As filiais que existem HOJE, por apelido — com a empresa ao lado quando
+    o apelido sozinho não diz qual é.
+
+    Mesmo `Callable` de `_cargos_para_escolha`, e pelo mesmo motivo: a lista é
+    lida a cada desenho da barra, e não congelada na importação. O VALOR é o
+    apelido, que é o que a coluna mostra e o que o filtro compara.
+    """
+    from plataforma.models import Filial
+
+    filiais = list(Filial.objects.select_related("empresa").order_by("apelido"))
+    varias = len({f.empresa_id for f in filiais}) > 1
+    return [(f.apelido, f"{f.apelido} ({f.empresa})" if varias else f.apelido)
+            for f in filiais]
+
+
 _FILTRAVEIS = {
     "nome": ColunaFiltravel("nome", "Nome"),
     "login": ColunaFiltravel("email", "Login"),
@@ -1070,6 +1124,11 @@ _FILTRAVEIS = {
     # deixado sem filtro por não existir caixa de escolha — agora existe.
     "situacao": ColunaFiltravel("is_active", "Situação", tipo="opcoes",
                                 opcoes=lambda: [("1", "Ativo"), ("0", "Inativo")]),
+    # A filial da ALOCAÇÃO, e não a da ficha da pessoa — essa morreu em
+    # 14/09/2026. O caminho da relação aqui é de propósito, como no Cargo: quem
+    # está alocado em duas lojas aparece na busca das duas.
+    "loja": ColunaFiltravel("alocacoes__filial__apelido", "Filial",
+                            tipo="opcoes", opcoes=_filiais_para_escolha),
     # A anotação de `_com_empresa`, e não um caminho de relação: a empresa do
     # titular e a do usuário chegam por lados diferentes da conta.
     "empresa": ColunaFiltravel("empresa_nome", "Empresa"),
@@ -1126,7 +1185,7 @@ def _desenhar(
         # 131 com 25, ou seja ~4 por linha. Em SQLite local cada uma custa
         # décimos de milissegundo; em Postgres com rede, cada ida e volta é
         # ~1ms, e as 25 linhas do padrão viram +100ms de tela.
-        pessoas = (_com_cargo_ordem(_com_empresa(_pessoas_desta_pessoa(request)))
+        pessoas = (_com_ordens_da_alocacao(_com_empresa(_pessoas_desta_pessoa(request)))
                    .prefetch_related("alocacoes__empresa", "alocacoes__filial",
                                      "alocacoes__cargo"))
 
@@ -1191,6 +1250,7 @@ COLUNAS_DE_EXPORTACAO = (
     ColunaDeExportacao("login", "Login", lambda u: u.email),
     ColunaDeExportacao("cargo", "Cargo", _cargos_de),
     ColunaDeExportacao("empresa", "Empresa", lambda u: u.empresa_nome or ""),
+    ColunaDeExportacao("loja", "Filial", _lojas_de),
     ColunaDeExportacao("situacao", "Situação",
                        lambda u: "Ativo" if u.is_active else "Inativo"),
 )
@@ -1579,7 +1639,8 @@ def usuarios(request) -> HttpResponse:
         if request.GET.get("formato"):
             exportacao = preparar_exportacao(
                 request,
-                queryset=_com_cargo_ordem(_com_empresa(_pessoas_desta_pessoa(request))),
+                queryset=_com_ordens_da_alocacao(
+                    _com_empresa(_pessoas_desta_pessoa(request))),
                 colunas=COLUNAS_DE_EXPORTACAO,
                 ordenaveis=_ORDENAVEIS, padrao="login",
                 filtraveis=_FILTRAVEIS, titulo=_("Usuários"))

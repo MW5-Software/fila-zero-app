@@ -376,17 +376,72 @@ class TestPermissaoSoDaMw5:
         criado = Usuario.objects.get(email="laranja@teste.com")
         assert not criado.user_permissions.exists()
 
-    def test_a_filial_saiu_da_tela(self, mw5_logada):
-        """Nem a caixa, nem a coluna, nem o filtro.
+    def test_a_filial_da_ficha_saiu_da_tela(self, mw5_logada):
+        """Nem a caixa, nem o campo da pessoa.
 
-        Filial é herança do KRONOS.net, onde a instalação era de UM cliente.
-        Aqui o inquilino é a empresa, e `usuario.filiais` não era lido em
-        lugar nenhum fora desta tela. Deixar a coluna sem a caixa teria sido
-        pior: uma coluna que ninguém consegue mais preencher.
+        Filial da FICHA (`Usuario.filiais`) é herança do KRONOS.net, onde a
+        instalação era de UM cliente, e não era lida em lugar nenhum fora desta
+        tela. A filial da ALOCAÇÃO é outra coisa — o lugar em que a pessoa
+        trabalha —, e ela tem coluna e filtro desde 23/09/2026
+        (`TestAColunaDeFilial`): o que saiu foi o campo da pessoa.
         """
         html = mw5_logada.get(reverse("usuarios")).content.decode()
         assert 'name="filiais"' not in html
         assert "filtro_filial" not in html
+
+
+@pytest.mark.django_db
+class TestAColunaDeFilial:
+    """A coluna e o filtro de Filial (23/09/2026, pedido do cliente: "falta
+    filtrar por loja/filial").
+
+    Voltaram pela ALOCAÇÃO, e não pela ficha da pessoa: o que a tela mostra é
+    em que loja a pessoa trabalha, que é o que o bloco Alocações pergunta.
+    Sem a coluna, a única forma de saber isso era abrir o modal de cada linha.
+    """
+
+    def _pessoa(self, login, nome=None):
+        return Usuario.objects.create_user(
+            email=f"{login}@teste.com", password=SENHA, nome=nome or login.title())
+
+    def _linha(self, html: str, email: str) -> str:
+        return next(linha for linha in html.split("<tr") if email in linha)
+
+    def test_a_coluna_mostra_a_loja_da_alocacao(self, mw5_logada):
+        from tests.conftest import alocar, empresa_do_teste, matriz_do_teste
+
+        pessoa = self._pessoa("daloja", "Da Loja")
+        alocar(pessoa, empresa_do_teste(), "vendedor", filial=matriz_do_teste())
+        html = mw5_logada.get(reverse("usuarios")).content.decode()
+        assert ">Filial<" in html
+        assert "Matriz" in self._linha(html, "daloja@teste.com")
+
+    def test_a_alocacao_na_empresa_inteira_diz_todas_as_filiais(self, mw5_logada):
+        """A alocação sem filial é a empresa inteira (o modal escreve "Todas as
+        filiais"): pôr o nome de uma loja ali seria mentir sobre quem circula
+        por todas."""
+        from tests.conftest import alocar, empresa_do_teste
+
+        pessoa = self._pessoa("daempresa", "Da Empresa")
+        alocar(pessoa, empresa_do_teste(), "vendedor")
+        html = mw5_logada.get(reverse("usuarios")).content.decode()
+        assert "Todas as filiais" in self._linha(html, "daempresa@teste.com")
+
+    def test_o_filtro_de_filial_estreita_a_lista(self, mw5_logada):
+        from plataforma.models import Filial
+        from tests.conftest import alocar, empresa_do_teste, matriz_do_teste
+
+        empresa = empresa_do_teste()
+        centro = Filial.objects.create(empresa=empresa, nome="Centro",
+                                       apelido="Centro")
+        da_matriz = self._pessoa("dmatriz", "Da Matriz")
+        do_centro = self._pessoa("dcentro", "Do Centro")
+        alocar(da_matriz, empresa, "vendedor", filial=matriz_do_teste())
+        alocar(do_centro, empresa, "vendedor", filial=centro)
+        html = mw5_logada.get(reverse("usuarios"),
+                              {"f:loja:igual": "Centro"}).content.decode()
+        assert "dcentro@teste.com" in html
+        assert "dmatriz@teste.com" not in html
 
 
 @pytest.mark.django_db
