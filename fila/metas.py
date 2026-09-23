@@ -255,6 +255,46 @@ def _alvo(loja, pessoa, mes) -> str:
     return f"{loja}: {quem} em {mes:%m/%Y}"
 
 
+def _conferir_o_teto(loja, mes, alvos, lidos) -> None:
+    """A soma das metas individuais não passa a meta da loja (23/09/2026).
+
+    O cliente pediu com estas palavras: "quando eu cadastro uma meta e vou
+    manualmente destrinchar a meta dos vendedores individualizada e ela passar
+    o valor da meta total, colocar um aviso e não deixar salvar". A tela já
+    avisava quando FALTAVA cobrir a loja; o que passava era o contrário — a
+    loja com meta de R$ 100 e vendedores somando R$ 120.
+
+    A conta é a do que a gravação DEIXA, e não a do que veio no POST: quem
+    ficou em branco recebeu a parte da distribuição (`_distribuir`), e quem o
+    POST não tocou continua com o que está no banco. Sem olhar o que fica, R$
+    70 digitado mais a parte igual de R$ 50 do vizinho em branco passariam com
+    a loja em R$ 100.
+
+    Roda com a linha da loja já trancada: dois gerentes salvando juntos leriam
+    a mesma soma e os dois passariam.
+    """
+    from .valores import em_reais
+
+    da_loja = lidos["loja"] if "loja" in lidos else meta_da_loja(loja, mes)
+    if da_loja is None:
+        return
+    ficam = {meta.pessoa_id: meta.valor
+             for meta in _metas_do_mes(loja, mes).filter(pessoa__isnull=False)}
+    for chave, valor in lidos.items():
+        if chave == "loja":
+            continue
+        pessoa = alvos[chave]
+        if valor is None:
+            ficam.pop(pessoa.pk, None)
+        else:
+            ficam[pessoa.pk] = valor
+    soma = sum(ficam.values(), ZERO)
+    if soma > da_loja:
+        raise ValoresInvalidos({"loja": _(
+            "As metas dos vendedores somam %(soma)s, acima da meta da loja "
+            "(%(loja)s).") % {"soma": em_reais(soma), "loja": em_reais(da_loja)}})
+
+
 def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
            agora: "datetime | None" = None, request=None) -> int:
     """Grava as metas do mês desta loja, tudo ou nada.
@@ -295,6 +335,7 @@ def gravar(loja, mes, editor, valores: "dict[str, str | None]", *,
     mudancas = 0
     with transaction.atomic():
         _travar(loja)
+        _conferir_o_teto(loja, mes, alvos, lidos)
         for chave, valor in lidos.items():
             pessoa = alvos[chave]
             atual = _metas_do_mes(loja, mes).filter(pessoa=pessoa).first()

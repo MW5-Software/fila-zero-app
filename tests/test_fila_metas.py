@@ -236,9 +236,13 @@ def test_gravar_cria_altera_apaga_e_audita(loja):
 
 
 def test_campo_ausente_nao_mexe(loja):
+    """O valor da meta da loja aqui não é enfeite: desde 23/09/2026 a soma das
+    metas individuais não passa a da loja, e a Ana já tem R$ 30.000,00 — com a
+    loja em R$ 1.000,00 a gravação seria recusada pelo teto (que é outro
+    teste), e este ficaria provando a coisa errada."""
     gil = pessoa_na_loja("gil", loja.empresa, loja.matriz, cargo="gerente")
     meta(loja, pessoa=loja.ana, valor="30000")
-    regras.gravar(loja.matriz, SETEMBRO, gil, {"loja": "1000"}, agora=local(2026, 9, 10))
+    regras.gravar(loja.matriz, SETEMBRO, gil, {"loja": "50000"}, agora=local(2026, 9, 10))
     assert regras.pessoas_da_lista(loja.matriz, SETEMBRO, gil)[0].valor == Decimal("30000")
 
 

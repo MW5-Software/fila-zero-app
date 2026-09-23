@@ -225,6 +225,76 @@ def test_salvar_ja_distribui_a_meta_da_loja(rede):
     assert metas == {"Caio": Decimal("30000"), "Dora": Decimal("45000")}
 
 
+def test_a_soma_dos_vendedores_nao_passa_a_meta_da_loja(rede):
+    """23/09/2026, pedido do cliente: "quando eu vou manualmente destrinchar a
+    meta dos vendedores individualizada e ela passar o valor da meta total,
+    colocar um aviso e não deixar salvar".
+
+    O aviso sai no campo da meta da loja, que é a referência da soma, e NADA é
+    gravado — nem a meta da loja, nem as dos vendedores.
+    """
+    from fila.models import MetaDeVenda
+
+    dora = pessoa_na_loja("dora", rede.empresa, rede.centro)
+    resposta = logado("gil").post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "100.000,00", f"valor_{rede.caio.pk}": "70.000,00",
+        f"valor_{dora.pk}": "50.000,00"})
+    html = resposta.content.decode()
+    assert resposta.status_code == 200
+    assert "acima da meta da loja" in html
+    assert "R$ 120.000,00" in html and "R$ 100.000,00" in html
+    assert "Nada foi salvo" in html
+    assert not MetaDeVenda.irrestritos.exists()
+
+
+def test_a_distribuicao_tambem_respeita_o_teto(rede):
+    """O caso que o cliente viveu: a meta da loja distribui a parte IGUAL para
+    quem ficou em branco, e o que já estava digitado fica. Com a loja em
+    R$ 90.000,00 e um vendedor em R$ 50.000,00, o vizinho em branco receberia
+    R$ 45.000,00 e a soma passaria para R$ 95.000,00 — a gravação é recusada em
+    vez de gravar a loja estourada."""
+    from fila.models import MetaDeVenda
+
+    dora = pessoa_na_loja("dora", rede.empresa, rede.centro)
+    resposta = logado("gil").post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "90.000,00", f"valor_{rede.caio.pk}": "50.000,00",
+        f"valor_{dora.pk}": ""})
+    assert resposta.status_code == 200
+    assert "R$ 95.000,00" in resposta.content.decode()
+    assert not MetaDeVenda.irrestritos.exists()
+
+
+def test_a_soma_igual_a_meta_da_loja_salva(rede):
+    """O teto é a soma IGUAL: cobrir exatamente a loja é o que se quer."""
+    from fila.models import MetaDeVenda
+
+    dora = pessoa_na_loja("dora", rede.empresa, rede.centro)
+    resposta = logado("gil").post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "100.000,00", f"valor_{rede.caio.pk}": "60.000,00",
+        f"valor_{dora.pk}": "40.000,00"})
+    assert resposta.status_code == 302
+    mes = timezone.localdate().replace(day=1)
+    assert MetaDeVenda.irrestritos.filter(mes=mes).count() == 3
+
+
+def test_apagar_uma_meta_abaixo_do_teto_salva(rede):
+    """A recusa não é uma parede: tirar a meta de quem estourou passa."""
+    from fila.models import MetaDeVenda
+
+    mes = timezone.localdate().replace(day=1)
+    _meta(rede, rede.centro, "100000")
+    _meta(rede, rede.centro, "60000", pessoa=rede.caio)
+    _meta(rede, rede.centro, "60000", pessoa=rede.ana)
+    resposta = logado("gil").post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        f"valor_{rede.ana.pk}": ""})
+    assert resposta.status_code == 302
+    assert not MetaDeVenda.irrestritos.filter(mes=mes, pessoa=rede.ana).exists()
+
+
 def test_a_tela_nao_tem_botao_de_dividir(rede):
     """O botão saiu: a distribuição é do servidor, no salvar — a mesma tela
     funciona sem JavaScript e sem clique nenhum."""
