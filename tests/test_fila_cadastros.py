@@ -31,14 +31,16 @@ def test_criar_editar_desativar_e_remover(rota, model, rotulo):
     Model = _model(model)
 
     assert cliente.post(reverse(rota), {"acao": "criar", "nome": "Primeiro",
-                                        "ordem": "2"}).status_code == 302
+                                        "ordem": "9"}).status_code == 302
     linha = Model.irrestritos.get(empresa=empresa)
-    assert (linha.nome, linha.ordem, linha.ativo) == ("Primeiro", 2, True)
+    # O `ordem` do POST é IGNORADO desde 18/09/2026 (o campo saiu do modal): o
+    # item novo recebe o próximo número, que é o que o põe no fim da lista.
+    assert (linha.nome, linha.ordem, linha.ativo) == ("Primeiro", 1, True)
     assert RegistroDeAuditoria.objects.filter(
         acao="fila_cadastro_criado", alvo=f"{rotulo}: Primeiro").exists()
 
     cliente.post(reverse(rota), {"acao": "salvar", "id": str(linha.pk),
-                                 "nome": "Renomeado", "ordem": "1"})
+                                 "nome": "Renomeado", "ordem": "9"})
     linha.refresh_from_db()
     assert (linha.nome, linha.ordem, linha.ativo) == ("Renomeado", 1, False)
 
@@ -47,11 +49,43 @@ def test_criar_editar_desativar_e_remover(rota, model, rotulo):
 
 
 @pytest.mark.parametrize("rota, model, rotulo", TELAS)
+def test_o_modal_nao_pede_mais_a_ordem(rota, model, rotulo):
+    """18/09/2026, pedido do cliente: a coluna "Ordem" saiu da tabela, e ele
+    viu que o MODAL ainda pedia o número. O campo não existe em formulário
+    nenhum da tela — nem no de criar, nem no de editar."""
+    sylvia()
+    html = logado("sylvia").get(reverse(rota)).content.decode()
+
+    assert 'name="ordem"' not in html
+    assert ">Ordem<" not in html
+
+
+@pytest.mark.parametrize("rota, model, rotulo", TELAS)
+def test_o_item_novo_entra_no_fim_e_a_edicao_nao_mexe_na_ordem(rota, model, rotulo):
+    """A ordem continua mandando na lista (`padrao="ordem"`), e é por isso que
+    a tela não pode zerá-la: editar um item que estava no fim da lista o
+    traria para o começo, sem ninguém pedir."""
+    empresa, _, _ = sylvia()
+    Model = _model(model)
+    primeiro = Model.irrestritos.create(empresa=empresa, nome="Almoço", ordem=7)
+    cliente = logado("sylvia")
+
+    cliente.post(reverse(rota), {"acao": "criar", "nome": "Jantar"})
+    assert Model.irrestritos.get(nome="Jantar").ordem == 8, "o novo vai no fim"
+
+    cliente.post(reverse(rota), {"acao": "salvar", "id": str(primeiro.pk),
+                                 "nome": "Almoço e jantar", "ativo": "1"})
+    primeiro.refresh_from_db()
+    assert primeiro.ordem == 7
+    assert primeiro.nome == "Almoço e jantar"
+
+
+@pytest.mark.parametrize("rota, model, rotulo", TELAS)
 def test_nome_repetido_sem_diferenca_de_caixa_responde_com_frase(rota, model, rotulo):
     empresa, _, _ = sylvia()
     _model(model).irrestritos.create(empresa=empresa, nome="Almoço")
     resposta = logado("sylvia").post(reverse(rota), {
-        "acao": "criar", "nome": "ALMOÇO", "ordem": "0"})
+        "acao": "criar", "nome": "ALMOÇO"})
     assert resposta.status_code == 200
     assert "Já existe" in resposta.content.decode()
 
@@ -65,7 +99,7 @@ def test_nome_repetido_responde_no_idioma_de_quem_usa(rota, model, rotulo):
     cliente = logado("sylvia")
     cliente.post(reverse("idioma"), {"idioma": "es", "voltar": "/"})
     resposta = cliente.post(reverse(rota), {
-        "acao": "criar", "nome": "ALMOÇO", "ordem": "0"})
+        "acao": "criar", "nome": "ALMOÇO"})
     html = resposta.content.decode()
     # As aspas saem escapadas no HTML (`&quot;`): o que se prova é a frase.
     assert "Ya existe" in html and "en esta lista." in html
@@ -191,11 +225,24 @@ def test_filtrar_por_situacao_mostra_so_os_inativos():
 
 
 def test_ordem_grande_demais_nao_estoura():
-    """B4: 99999999999 no campo Ordem estourava o inteiro do Postgres."""
+    """B4: 99999999999 no campo Ordem estourava o inteiro do Postgres.
+
+    Desde 18/09/2026 o campo não existe, e o número do POST é IGNORADO: a
+    ordem do item novo sai da própria lista (`_proxima_ordem`). O POST forjado
+    não quebra nada — e a lista que já chegou ao teto do inteiro devolve o
+    teto, em vez de estourar na linha seguinte.
+    """
     from fila.models import TipoDePausa
 
     empresa, _, _ = sylvia()
     resposta = logado("sylvia").post(reverse("fila_pausas"), {
         "acao": "criar", "nome": "Café", "ordem": "99999999999"})
     assert resposta.status_code == 302
-    assert TipoDePausa.irrestritos.get(empresa=empresa).ordem == 2_147_483_647
+    assert TipoDePausa.irrestritos.get(empresa=empresa).ordem == 1
+
+    TipoDePausa.irrestritos.create(empresa=empresa, nome="Almoço",
+                                   ordem=2_147_483_647)
+    resposta = logado("sylvia").post(reverse("fila_pausas"), {
+        "acao": "criar", "nome": "Jantar", "ordem": "99999999999"})
+    assert resposta.status_code == 302
+    assert TipoDePausa.irrestritos.get(nome="Jantar").ordem == 2_147_483_647

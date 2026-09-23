@@ -90,12 +90,19 @@ def _oculto(nome: str, valor: str) -> Raw:
                                 nome, valor))
 
 
-def _campos(nome="", ordem=0, ativo=True, com_ativo=False):
+def _campos(nome="", ativo=True, com_ativo=False):
+    """Os campos do modal de cadastro — sem a "Ordem" (18/09/2026).
+
+    O cliente pediu que o campo saísse: primeiro saiu a COLUNA da tabela, e
+    depois ele viu que o modal ainda pedia o número. A coluna continua no
+    banco e continua mandando na ordem da lista (`padrao="ordem"`), mas quem
+    a escreve agora é a tela: o item novo entra no FIM (`_proxima_ordem`), e
+    editar não mexe no que já estava lá — zerar a ordem de quem tinha uma
+    seria mexer, sem avisar, na posição de tudo que já existe.
+    """
     campos = [
-        TextInput(name="nome", label=_("Nome"), span=8, value=nome,
+        TextInput(name="nome", label=_("Nome"), span=12, value=nome,
                   required=True, maxlength=80),
-        TextInput(name="ordem", label=_("Ordem"), span=4, type="number",
-                  value=str(ordem)),
     ]
     if com_ativo:
         campos.append(Checkbox(
@@ -118,7 +125,7 @@ def _modais(request, cadastro, linhas) -> list:
             body=Form(action=acao, children=[
                 Raw(html=campo_csrf(request)), _oculto("acao", "salvar"),
                 _oculto("id", str(linha.pk)),
-                _campos(linha.nome, linha.ordem, linha.ativo, com_ativo=True),
+                _campos(linha.nome, linha.ativo, com_ativo=True),
                 Button(label=_("Salvar"), variant="primary", type="submit")])))
         modais.append(Modal(
             id=f"cadastro-{linha.pk}-remover", title=_("Remover"),
@@ -193,13 +200,26 @@ def _desenhar(request, cadastro, erro=None) -> HttpResponse:
 
 
 def _ler(request):
+    """`(nome, ativo)` do POST. A "Ordem" não vem mais da tela."""
     nome = (request.POST.get("nome") or "").strip()[:80]
-    try:
-        # Teto do inteiro do Postgres: acima dele a gravação estourava com 500.
-        ordem = min(max(0, int(request.POST.get("ordem") or 0)), 2_147_483_647)
-    except ValueError:
-        ordem = 0
-    return nome, ordem, request.POST.get("ativo") == "1"
+    return nome, request.POST.get("ativo") == "1"
+
+
+def _proxima_ordem(linhas) -> int:
+    """O número que põe o item novo no FIM da lista.
+
+    A ordem da lista é a coluna `ordem` (`_ORDENAVEIS`, `padrao="ordem"`), e
+    ela deixou de ser campo da tela: quem chega agora recebe o próximo número
+    em vez de zero — com zero (o padrão da coluna) o item novo saltaria para o
+    começo, na frente de tudo que o cliente já tinha ordenado.
+    """
+    from django.db.models import Max
+
+    # O teto do inteiro do Postgres, aqui e não no POST: era o B4, quando o
+    # número vinha do campo e 99999999999 estourava a coluna com 500. Agora o
+    # número sai da própria lista, e uma lista que já chegou ao teto devolve o
+    # teto em vez de estourar na linha seguinte.
+    return min((linhas.aggregate(m=Max("ordem"))["m"] or 0) + 1, 2_147_483_647)
 
 
 def _alvo(cadastro, linha) -> str:
@@ -216,13 +236,14 @@ def _tela(request, cadastro) -> HttpResponse:
             "Escolha uma empresa no cabeçalho antes de cadastrar."))
 
     if acao == "criar":
-        nome, ordem, _ativo = _ler(request)
+        nome, _ativo = _ler(request)
         if not nome:
             return _desenhar(request, cadastro, erro=_("Informe o nome."))
         try:
             with transaction.atomic():
                 linha = cadastro.model.irrestritos.create(
-                    empresa=empresa, nome=nome, ordem=ordem)
+                    empresa=empresa, nome=nome,
+                    ordem=_proxima_ordem(_linhas(request, cadastro)))
                 registrar(ACOES_DA_FILA.FILA_CADASTRO_CRIADO, request.usuario,
                           alvo=_alvo(cadastro, linha), request=request)
         except IntegrityError:
@@ -236,14 +257,15 @@ def _tela(request, cadastro) -> HttpResponse:
         return _desenhar(request, cadastro, erro=NAO_ENCONTRADO)
 
     if acao == "salvar":
-        nome, ordem, ativo = _ler(request)
+        nome, ativo = _ler(request)
         if not nome:
             return _desenhar(request, cadastro, erro=_("Informe o nome."))
         antes = _alvo(cadastro, linha)
         try:
             with transaction.atomic():
-                linha.nome, linha.ordem, linha.ativo = nome, ordem, ativo
-                linha.save(update_fields=["nome", "ordem", "ativo"])
+                # A ordem NÃO entra aqui: ela é do cadastro, não da tela.
+                linha.nome, linha.ativo = nome, ativo
+                linha.save(update_fields=["nome", "ativo"])
                 registrar(ACOES_DA_FILA.FILA_CADASTRO_EDITADO, request.usuario,
                           alvo=_alvo(cadastro, linha),
                           detalhe=f"era {antes}; {'ativo' if ativo else 'inativo'}",
