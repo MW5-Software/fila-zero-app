@@ -284,7 +284,11 @@ integração usa esta coluna. A empresa e o usuário também têm a sua.
 nesta empresa (numa filial, ou na empresa inteira), com este `contas.Cargo`. A
 mesma Ana é Gerente na Centro e Vendedora na Norte. O cargo carrega:
 - as **permissões**;
-- o **alcance**: os próprios, a filial ou a empresa;
+- o **alcance**: só os registros da própria pessoa, os da filial ou os da
+  empresa. O rótulo de cada opção diz o que se enxerga desde 18/09/2026 (o
+  cliente: "não fica muito bem entendido o que seria os próprios"), e o campo
+  tem uma frase de apoio com os três — antes era "Os próprios", "A filial" e
+  "A empresa", e nenhum deles respondia "os próprios do quê";
 - se é de **cliente** (`e_cliente`): quem compra da empresa, e não quem trabalha
   nela.
 
@@ -443,6 +447,26 @@ O que custa quando se esquece:
 - Abaixo de 1000px o design system esconde a faixa de contexto inteira
   (`.ctx-mid { display: none }`): no celular ninguém troca de empresa nem de
   loja pelo cabeçalho. É de lá, e continua como estava.
+
+### As telas no celular (18/09/2026)
+
+Duas correções do mesmo dia, medidas no Chrome headless com 390px de largura:
+
+- **O rodapé do diálogo centraliza os botões.** As telas de Usuário e de
+  Empresa põem as ações em `.ct-rodape` e `.ep-rodape`, e no celular os botões
+  ficam empilhados e de largura inteira desde sempre. Faltava o rótulo DENTRO
+  do botão: `.btn` é caixa flex e o `justify-content` que ele herda é `normal`,
+  que numa caixa flex quer dizer `flex-start` — o texto ficava colado na borda
+  esquerda (medido: botão de 335px começando em x=43, texto a partir de x=60,
+  centro do texto em 93 e do botão em 211). `justify-content: center` no
+  `@media` de 620px de cada folha, com o motivo escrito nas duas.
+- **O campo de arquivo do "Meu Perfil" não vaza mais do cartão.** O
+  `<input type="file">` do `nucleo` não encolhe, e a largura mínima do conteúdo
+  — o botão nativo mais "Nenhum arquivo escolhido" — é maior que a coluna ao
+  lado do avatar: o campo ia até 399px numa tela de 390, e a página inteira
+  ganhava rolagem horizontal (`scrollWidth` 399 contra `clientWidth` 390).
+  `min-width: 0` na folha desta casa (`kronos.css`) resolve: item de flex nasce
+  com `min-width: auto`, e `auto` quer dizer "nunca menor que o meu conteúdo".
 
 ### O que sustenta a permissão
 
@@ -670,12 +694,16 @@ Spec `docs/superpowers/specs/2026-09-15-fila-indicadores-design.md`; plano
   redireciona para lá com os mesmos filtros. As lojas saem de
   `fila.indicadores.lojas_com_relatorio` (o cargo no lugar), e a `?loja=` só
   filtra dentro delas.
-- **O painel abre na loja do cabeçalho** (17/09/2026); "Todas as lojas"
-  (`?loja=todas`) é escolha explícita de quem alcança mais de uma. Antes a
-  soma era o padrão, e a Sylvia na Matriz via o vendedor do Centro no
-  ranking. Em "Todas", o ranking é uma linha por pessoa EM CADA loja
-  (`indicadores.ranking_por_loja`, com a coluna Loja) e o bloco "Por loja"
-  põe as lojas lado a lado.
+- **O painel abre em "Todas as lojas"** (18/09/2026, pedido do cliente:
+  "aquela área de filtros de datas e loja, tem que vir todas as lojas como
+  default"). Entre 17/09/2026 e esta data ele abria na loja do cabeçalho, e a
+  decisão de então tinha o motivo dela — a Sylvia na Matriz via o vendedor do
+  Centro no ranking —, mas o que ela custava é o que o cliente viu: a rede só
+  aparecia trocando o filtro à mão. Em "Todas", o ranking é uma linha por
+  pessoa EM CADA loja (`indicadores.ranking_por_loja`, com a coluna Loja) e o
+  bloco "Por loja" põe as lojas lado a lado; com UMA loja não há escolha, e ela
+  é o recorte. O histórico das correções segue a mesma regra — ele importa o
+  mesmo `_lojas_do_pedido`.
 - `fila/periodo.py` resolve o período e o anterior (em andamento compara até
   o mesmo ponto); `fila/indicadores.py` faz as contas, na hora, sempre por
   `objects.da_empresa`.
@@ -752,8 +780,13 @@ plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
   com `Rank()` na consulta, buscar "Ana" a faria virar a primeira.
 - **A faixa da meta é só a meta dele** (`metas.meta_da_pessoa`); a meta da
   loja não é régua de ninguém em particular.
-- A página da fila não tem menu: o caminho do vendedor até o painel é o link
-  "Meu painel", para quem tem `fila.participar`.
+- A página da fila não tem menu: o caminho até o painel da raiz é o link "Meu
+  painel", e ele é de quem TEM painel lá — o vendedor (o painel dele, por
+  `fila.participar`) e também o dono, o supervisor e o gerente (o painel da
+  gestão, por `fila.relatorios`). Era só de quem atende, e quem gerencia não
+  atende: os três ficavam sem caminho nenhum até o Início (18/09/2026, pedido
+  do cliente: "dono, supervisor e gerente não tem o meu painel na página da
+  fila").
 
 ---
 
