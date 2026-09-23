@@ -366,6 +366,18 @@
   .fila > * + * { margin-top: 14px; }
 
   .fila-hero { padding: 14px 16px 18px; border-radius: 16px; }
+  /* A faixa de cima da página passou a ter QUATRO coisas quando o link "Meu
+     painel" chegou também ao dono, ao supervisor e ao gerente (18/09/2026), e
+     no celular nada tinha respiro: a loja quebrava em duas linhas ("Filial" /
+     "1") e os dois links ficavam colados no "Ao vivo" (o cliente, com o print
+     na mão: "com o meu painel ali, tá ficando tudo muito apertado").
+
+     Aqui os links descem para a PRÓPRIA linha e se espalham nela; em cima
+     ficam quem está logado e a loja, que é o que se lê primeiro. A quebra
+     automática (`flex-wrap`) continua valendo para quem tem nome ou loja
+     compridos. */
+  .fila-hero-topo { flex-wrap: wrap; row-gap: 8px; }
+  .fila-hero-direita { flex: 1 0 100%; justify-content: space-between; gap: 10px; }
   .fila-hero-corpo { margin-top: 10px; }
   .fila-estado { gap: 14px; align-items: flex-start; }
   /* A trilha não quebra linha no celular: corre de lado, e a própria pessoa

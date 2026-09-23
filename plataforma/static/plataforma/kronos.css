@@ -662,3 +662,23 @@ header .wrap > .h-actions { grid-area: 1 / 3; justify-self: end; }
    largura que não cabia. Com ele o campo aceita a coluna, e o navegador corta
    o nome do arquivo por dentro — como faz em qualquer campo estreito. */
 .recorte-atual input[type="file"] { min-width: 0; max-width: 100%; }
+
+/* ---------------------------------------------------------------------------
+   A marca do rodapé aparecia CORTADA em cima e embaixo.
+
+   O `nucleo` trata todo `<span>` do rodapé como linha de texto —
+   `footer > span { overflow: hidden; text-overflow: ellipsis }` —, e a marca
+   do rodapé TAMBÉM é um `<span>` (`.footer-marca`, em
+   `nucleo/templates/layout/footer.html`). Com o recorte ligado, a caixa do
+   logo encolhe para a altura da LINHA (medido: 24,39px) e a imagem de 40px
+   (`--logo-footer-h`, de `plataforma/marca.py`) é fatiada: sobram 8px fora em
+   cima e 8px embaixo. O cliente viu o "K" e o "Kronos" cortados no celular
+   (18/09/2026: "o logo no footer ainda tá cortado").
+
+   Medido no Chrome, na mesma página: com `overflow: hidden` a caixa tem
+   24,39px de altura; com `visible`, 40px — o desenho inteiro. O recorte
+   continua valendo para o TEXTO do rodapé, que é para quem ele foi escrito;
+   a marca sai dele e volta a crescer com o desenho. A largura já está
+   protegida por `max-width: min(var(--logo-footer-w), 100%)`, e a faixa do
+   rodapé (80px) comporta os 40px do logo. */
+.footer-marca { overflow: visible; }

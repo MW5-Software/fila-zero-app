@@ -107,3 +107,41 @@ def test_o_cabecalho_da_fila_no_celular_cabe_o_logo_do_computador(fila):
     # se este par voltar, o logo volta a encolher.
     assert ".fila-marca, .fila-marca img" not in fila
     assert "height: 60px" in _bloco(fila, ".fila-marca img {")
+
+
+def test_a_marca_do_rodape_nao_e_recortada(kronos):
+    """O logo do rodapé aparecia fatiado em cima e embaixo.
+
+    O `nucleo` trata todo `<span>` do rodapé como linha de texto —
+    `footer > span { overflow: hidden; text-overflow: ellipsis }` —, e a marca
+    do rodapé TAMBÉM é um `<span>` (`.footer-marca`, em
+    `nucleo/templates/layout/footer.html`). Com o recorte ligado, a caixa
+    encolhe para a altura da linha e a imagem de 40px (`--logo-footer-h`) perde
+    8px em cima e 8px embaixo: o cliente viu o "K" e o "Kronos" fatiados no
+    celular (18/09/2026: "o logo no footer ainda tá cortado").
+
+    Medido no Chrome, na mesma página: com `overflow: hidden` a caixa tem
+    24,39px de altura; com `visible`, os 40px do desenho inteiro.
+    """
+    assert "overflow: visible" in _bloco(kronos, ".footer-marca")
+
+
+def test_a_faixa_de_cima_da_fila_respira_no_celular(fila):
+    """Quatro coisas numa linha de celular não cabiam.
+
+    Com o link "Meu painel" chegando também ao dono, ao supervisor e ao gerente
+    (18/09/2026), a faixa de cima da página da fila passou a ter o nome, a loja,
+    dois links e o "Ao vivo": a loja quebrava em duas linhas e os links ficavam
+    colados um no outro — o cliente, com o print na mão: "com o meu painel ali,
+    tá ficando tudo muito apertado".
+
+    No celular os links descem para a própria linha (`flex-basis: 100%`) e se
+    espalham nela; a quebra automática continua valendo para nome e loja
+    compridos.
+    """
+    celular = fila.index("@media (max-width: 720px)")
+
+    assert fila.rindex(".fila-hero-topo") > celular
+    assert "flex-wrap: wrap" in _bloco(fila, ".fila-hero-topo")
+    assert fila.rindex(".fila-hero-direita") > celular
+    assert "flex: 1 0 100%" in _bloco(fila, ".fila-hero-direita")

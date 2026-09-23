@@ -450,7 +450,7 @@ O que custa quando se esquece:
 
 ### As telas no celular (18/09/2026)
 
-Duas correções do mesmo dia, medidas no Chrome headless com 390px de largura:
+Três correções do mesmo dia, medidas no Chrome headless com 390px de largura:
 
 - **O rodapé do diálogo centraliza os botões.** As telas de Usuário e de
   Empresa põem as ações em `.ct-rodape` e `.ep-rodape`, e no celular os botões
@@ -467,6 +467,16 @@ Duas correções do mesmo dia, medidas no Chrome headless com 390px de largura:
   ganhava rolagem horizontal (`scrollWidth` 399 contra `clientWidth` 390).
   `min-width: 0` na folha desta casa (`kronos.css`) resolve: item de flex nasce
   com `min-width: auto`, e `auto` quer dizer "nunca menor que o meu conteúdo".
+- **A marca do rodapé não é mais recortada.** O `nucleo` trata todo `<span>` do
+  rodapé como linha de texto (`footer > span { overflow: hidden; text-overflow:
+  ellipsis }`), e a marca do rodapé TAMBÉM é um `<span>` (`.footer-marca`, em
+  `nucleo/templates/layout/footer.html`): com o recorte, a caixa encolhe para a
+  altura da linha e a imagem de 40px (`--logo-footer-h`, de
+  `plataforma/marca.py`) perdia 8px em cima e 8px embaixo — o cliente viu o "K"
+  e o "Kronos" fatiados. Medido: a caixa tinha 24,39px de altura com
+  `overflow: hidden`, e volta aos 40px do desenho com `visible`, que é a regra
+  desta casa. O recorte continua valendo para o TEXTO do rodapé, que é para
+  quem ele foi escrito.
 
 ### O que sustenta a permissão
 
@@ -787,6 +797,13 @@ plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
   atende: os três ficavam sem caminho nenhum até o Início (18/09/2026, pedido
   do cliente: "dono, supervisor e gerente não tem o meu painel na página da
   fila").
+- **E a faixa de cima da página tem DUAS linhas no celular** (18/09/2026, com o
+  print do cliente na mão: "com o meu painel ali, tá ficando tudo muito
+  apertado"): em cima quem está logado e a loja, e os links — "Histórico", "Meu
+  painel" e "Ao vivo" — numa linha só deles, espalhados. Com o link novo, os
+  quatro itens numa linha de 390px não tinham respiro: a loja quebrava em duas
+  linhas e os links ficavam colados. A quebra automática continua valendo para
+  nome ou loja compridos.
 
 ---
 
