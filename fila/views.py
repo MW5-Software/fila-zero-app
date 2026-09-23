@@ -84,6 +84,12 @@ def estado(request) -> JsonResponse:
     filial = filial_atual(request)
     if filial is None:
         return JsonResponse({"versao": "", "mudou": False})
+    # A saída pelo fim do turno roda ANTES de medir a versão: sem isto, a
+    # pessoa sairia e a tela continuaria mostrando a fila antiga até alguém
+    # recarregar a página inteira.
+    from .turno import aplicar as aplicar_o_turno
+
+    aplicar_o_turno(filial)
     # A versão sozinha é uma consulta; o retrato inteiro, só quando mudou.
     if request.GET.get("versao") == versao_da_fila(filial):
         return JsonResponse({"versao": request.GET["versao"], "mudou": False})

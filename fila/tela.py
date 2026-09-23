@@ -236,6 +236,12 @@ def _meus_numeros(pessoa, filial) -> "MeusNumeros | None":
 def _contexto(request, filial, recusa=""):
     pessoa = usuario_de(request.usuario)
     empresa = filial.empresa
+    # O turno da loja passa por aqui, e não num cron: a página e a consulta de
+    # 3 em 3 segundos desenham por este caminho, e o sistema não tem relógio.
+    # Ver `fila/turno.py` — é idempotente.
+    from .turno import aplicar as aplicar_o_turno
+
+    aplicar_o_turno(filial)
     pode_gerenciar = pode(request.usuario, "fila.gerenciar")
     r = retrato(filial, pessoa)
     editando = _lancamento_em_edicao(request, filial) if pode_gerenciar else None

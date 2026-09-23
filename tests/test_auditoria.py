@@ -802,6 +802,38 @@ def _cenario_fila_meta_definida():
     return email_de("dona-fila"), f"{matriz}: Zeca em {mes:%m/%Y}"
 
 
+def _cenario_fila_saida_por_turno():
+    """A saída automática não tem autor, e a linha diz isso: quem assina é o
+    `sistema` (`fila/turno.py`). Sem ela, a pessoa some da fila e ninguém sabe
+    por quê."""
+    from datetime import datetime, time, timedelta
+
+    from django.utils import timezone
+
+    from fila import turno
+    from fila.models import Estado, LugarNaFila, Presenca
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    # A entrada é de ONTEM e o prazo é o de hoje, para a saída não depender da
+    # hora em que a suíte roda.
+    ontem = timezone.now() - timedelta(days=1)
+    LugarNaFila.irrestritos.filter(pessoa=zeca).delete()
+    Presenca.irrestritos.filter(pessoa=zeca).delete()
+    presenca = Presenca.irrestritos.create(empresa=matriz.empresa, filial=matriz,
+                                          pessoa=zeca, entrada=ontem)
+    LugarNaFila.irrestritos.create(empresa=matriz.empresa, filial=matriz,
+                                   pessoa=zeca, presenca=presenca,
+                                   estado=Estado.NA_FILA, na_fila_desde=ontem,
+                                   desde=ontem)
+    turno.definir(matriz, time(8, 0))
+    agora = timezone.now().replace(hour=12, minute=0, second=0, microsecond=0)
+    if agora < datetime.combine(timezone.localdate(), time(9, 0),
+                                tzinfo=agora.tzinfo):
+        agora += timedelta(days=1)
+    turno.aplicar(matriz, agora)
+    return turno.SISTEMA, f"Zeca em {matriz}"
+
+
 def _cenario_fila_meta_removida():
     from django.utils import timezone
 
@@ -861,6 +893,7 @@ _CENARIOS = {
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,
     "FILA_META_DEFINIDA": _cenario_fila_meta_definida,
     "FILA_META_REMOVIDA": _cenario_fila_meta_removida,
+    "FILA_SAIDA_POR_TURNO": _cenario_fila_saida_por_turno,
 }
 
 

@@ -87,6 +87,31 @@ class FluxoDaEmpresa(ModeloDaEmpresa):
         ]
 
 
+class TurnoDaLoja(ModeloDaEmpresa):
+    """O turno de UMA loja: a hora em que ele termina.
+
+    Na LOJA, e não na empresa (23/09/2026, decisão do cliente): a rede tem
+    lojas que fecham em horas diferentes, e um horário por empresa obrigaria a
+    última a esperar a primeira. **Sem linha não há turno** — e sem turno não
+    há saída automática: nenhuma loja precisa de linha para funcionar como
+    sempre funcionou (mesma forma de `FluxoDaEmpresa`).
+
+    `fim` é a hora de FECHAR a loja. Quem ainda estiver dentro uma hora depois
+    dela sai sozinho (`fila/turno.py`), menos quem está atendendo: fechar um
+    atendimento aberto sozinho perderia a venda que o vendedor está lançando.
+    """
+
+    filial = models.OneToOneField(
+        "plataforma.Filial", verbose_name=_("loja"),
+        on_delete=models.CASCADE, related_name="turno",
+        help_text=_("A loja deste turno."))
+    fim = models.TimeField(_("fim do turno"))
+
+    class Meta(ModeloDaEmpresa.Meta):
+        verbose_name = _("turno da loja")
+        verbose_name_plural = _("turnos das lojas")
+
+
 class Cadastro(ModeloDaEmpresa):
     """O que os três cadastros têm em comum.
 

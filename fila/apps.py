@@ -18,6 +18,8 @@ class FilaConfig(AppConfig):
         from contas.entrada import destino_depois_de_entrar
         from plataforma.caixas_da_empresa import CaixaDaEmpresa
         from plataforma.caixas_da_empresa import registrar as registrar_caixa
+        from plataforma.caixas_da_filial import CaixaDaFilial
+        from plataforma.caixas_da_filial import registrar as registrar_caixa_da_loja
         from plataforma.declaracao import registrar
         from plataforma.filiais import antes_de_desativar
         from plataforma.parametro_declaracao import registrar as registrar_parametro
@@ -36,6 +38,14 @@ class FilaConfig(AppConfig):
         # fila (`fila.FluxoDaEmpresa`), e não numa coluna da empresa.
         registrar_caixa(CaixaDaEmpresa(chave="fila_fluxo", desenhar=caixa,
                                        gravar=gravar_do_post))
+        # A caixa "Fim do turno" na tela de Filiais: o turno mora na tabela da
+        # fila (`fila.TurnoDaLoja`), e não numa coluna da filial.
+        from .turno import caixa as caixa_do_turno
+        from .turno import gravar_do_post as gravar_o_turno
+
+        registrar_caixa_da_loja(CaixaDaFilial(chave="fila_turno",
+                                              desenhar=caixa_do_turno,
+                                              gravar=gravar_o_turno))
         # O parâmetro entra pelo mesmo caminho do módulo, e pelo mesmo motivo:
         # declarar no corpo de `parametro.py` faria o registro depender da
         # ordem de import entre os apps. Ele NÃO semeia linha nenhuma — o

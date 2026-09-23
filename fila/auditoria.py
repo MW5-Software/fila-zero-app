@@ -35,6 +35,10 @@ class ACOES_DA_FILA:
     # detalhe, o valor novo e o de antes.
     FILA_META_DEFINIDA = "fila_meta_definida"
     FILA_META_REMOVIDA = "fila_meta_removida"
+    # A saída automática do fim do turno (`fila/turno.py`): não tem autor, e a
+    # linha diz que foi o sistema — sem ela, a pessoa some da fila e ninguém
+    # sabe por quê.
+    FILA_SAIDA_POR_TURNO = "fila_saida_por_turno"
 
 
 ROTULOS_DA_FILA = {
@@ -50,4 +54,5 @@ ROTULOS_DA_FILA = {
     ACOES_DA_FILA.FILA_CADASTRO_REMOVIDO: "Cadastro da fila removido",
     ACOES_DA_FILA.FILA_META_DEFINIDA: "Meta de venda definida",
     ACOES_DA_FILA.FILA_META_REMOVIDA: "Meta de venda removida",
+    ACOES_DA_FILA.FILA_SAIDA_POR_TURNO: "Saída pelo fim do turno",
 }
