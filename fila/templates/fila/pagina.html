@@ -6,24 +6,33 @@
 
   <div id="fila-recusa" class="alert warn fila-recusa" role="alert"{% if not recusa %} hidden{% endif %}>{{ icon("alert") }}<div>{{ recusa }}</div></div>
 
+  {# Quem está logado e em que loja, FORA do cartão e maiores (23/09/2026,
+     pedido do cliente: "na página da fila o nome do usuário e filial tem que
+     sair do cargo e aumentar o tamanho para melhor visualição").
+
+     Fica acima do painel porque é o que se lê ANTES de bater o ponto: o celular
+     da loja passa de mão em mão, e o nome grande evita bater o ponto no lugar
+     de outro. A loja vem junto com o nome por ser a mesma pergunta ("eu, na
+     Matriz"), e continua sendo o seletor de troca quando há mais de uma. #}
+  <div class="fila-quem-onde">
+    <span class="fila-hero-esquerda">
+    {% if eu_id %}<span class="fila-hero-quem" data-quem>{{ avatar(eu_id, nome, eu_tem_foto, "sm") }}<span>{{ nome }}</span></span>{% endif %}
+    {% if outras_lojas %}
+    <details class="fila-hero-loja fila-trocar-loja">
+      <summary>{{ icon("store", "sm") }}<span>{{ filial }}</span>{{ icon("chevron-down", "sm") }}</summary>
+      <div class="fila-trocar-loja-menu">
+        <p>{{ traduzir("Trocar de loja") }}</p>
+        {% for loja, endereco in outras_lojas %}<a href="{{ endereco }}">{{ loja }}</a>{% endfor %}
+      </div>
+    </details>
+    {% else %}
+    <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
+    {% endif %}
+    </span>
+  </div>
+
   <section class="fila-hero" aria-live="polite">
     <div class="fila-hero-topo">
-      <span class="fila-hero-esquerda">
-      {# Quem está logado, antes da loja: o celular da loja passa de mão em
-         mão, e o nome em cima evita bater o ponto no lugar de outro. #}
-      {% if eu_id %}<span class="fila-hero-quem" data-quem>{{ avatar(eu_id, nome, eu_tem_foto, "sm") }}<span>{{ nome }}</span></span>{% endif %}
-      {% if outras_lojas %}
-      <details class="fila-hero-loja fila-trocar-loja">
-        <summary>{{ icon("store", "sm") }}<span>{{ filial }}</span>{{ icon("chevron-down", "sm") }}</summary>
-        <div class="fila-trocar-loja-menu">
-          <p>{{ traduzir("Trocar de loja") }}</p>
-          {% for loja, endereco in outras_lojas %}<a href="{{ endereco }}">{{ loja }}</a>{% endfor %}
-        </div>
-      </details>
-      {% else %}
-      <span class="fila-hero-loja">{{ icon("store", "sm") }}<span>{{ filial }}</span></span>
-      {% endif %}
-      </span>
       <span class="fila-hero-direita">
         {% if pode_gerenciar %}<a class="fila-meu-painel" href="/fila/historico" data-historico>{{ icon("history", "sm") }}<span>{{ traduzir("Histórico") }}</span></a>{% endif %}
         {# O link é de quem tem painel na raiz, e não só de quem atende: o

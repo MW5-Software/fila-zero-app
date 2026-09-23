@@ -109,6 +109,19 @@ def test_o_cabecalho_da_fila_no_celular_cabe_o_logo_do_computador(fila):
     assert "height: 60px" in _bloco(fila, ".fila-marca img {")
 
 
+def test_o_nome_e_a_loja_da_fila_saem_do_cartao_e_crescem(fila):
+    """23/09/2026, pedido do cliente: "na página da fila o nome do usuário e
+    filial tem que sair do cargo e aumentar o tamanho para melhor visualição".
+
+    Medido no Chrome em 393px: o nome a 19px e a loja a 15px, numa faixa ACIMA
+    do cartão do painel — antes os dois ficavam dentro dele, a 14px e 13px, e
+    era o que se lia por último.
+    """
+    assert ".fila-quem-onde" in fila
+    assert "font-size: 19px" in _bloco(fila, ".fila-quem-onde .fila-hero-quem")
+    assert "font-size: 15px" in _bloco(fila, ".fila-quem-onde .fila-hero-loja")
+
+
 def test_a_marca_do_rodape_nao_e_recortada(kronos):
     """O logo do rodapé aparecia fatiado em cima e embaixo.
 

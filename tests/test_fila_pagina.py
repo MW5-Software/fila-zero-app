@@ -535,16 +535,26 @@ def test_a_versao_muda_quando_a_meta_muda(loja):
 
 def test_o_nome_de_quem_esta_logado_fica_no_topo(loja):
     """O celular da loja passa de mão em mão: o nome em cima diz de quem é a
-    fila que está aberta, antes de alguém bater o ponto no lugar de outro."""
+    fila que está aberta, antes de alguém bater o ponto no lugar de outro.
+
+    Desde 23/09/2026 ele sai FORA do cartão, numa faixa própria acima do painel
+    (pedido do cliente: "o nome do usuário e filial tem que sair do cargo e
+    aumentar o tamanho para melhor visualição"), com a loja ao lado.
+    """
     import re
 
     from contas.models import Usuario
 
     Usuario.objects.filter(pk=loja.ana.pk).update(nome="Ana Souza")
     html = _html(logado("ana"))
-    topo = re.search(r'<div class="fila-hero-topo">(.*?)<div class="fila-hero-corpo">', html, re.S)
-    assert topo and 'data-quem' in topo.group(1)
-    assert "Ana Souza" in topo.group(1)
+    faixa = re.search(r'<div class="fila-quem-onde">(.*?)<section class="fila-hero"',
+                      html, re.S)
+    assert faixa and 'data-quem' in faixa.group(1)
+    assert "Ana Souza" in faixa.group(1)
+    # A loja vai junto: "eu, na Matriz" é a mesma pergunta.
+    assert "Matriz" in faixa.group(1)
+    # E a faixa vem ANTES do cartão do painel.
+    assert html.index('class="fila-quem-onde"') < html.index('<section class="fila-hero"')
     assert "Ana Souza" in _html(logado("ana"), "/fila?folha=pausa")
 
 
