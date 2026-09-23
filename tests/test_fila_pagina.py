@@ -339,6 +339,15 @@ class TestAFilaEUmaTelaDoSistema:
         assert 'class="side"' not in html
         assert 'class="fila-pagina"' in html
 
+    def test_o_estado_da_loja_fica_no_meio_da_faixa(self):
+        """23/09/2026, pedido do cliente: com a loja vazia, o "0 na fila agora"
+        ficava encostado à esquerda e o cartão parecia pela metade."""
+        folha = self._folha()
+        bloco = folha[folha.index(".fila-estado {"):]
+        bloco = bloco[:bloco.index("}")]
+        assert "justify-content: center" in bloco
+        assert ".fila-hero-painel" in folha
+
     def test_a_folha_nao_inventa_cor(self):
         """Toda cor vem do tema: uma cor escrita à mão aqui não acompanharia a
         marca do cliente, e a fila voltaria a parecer outro sistema. O único

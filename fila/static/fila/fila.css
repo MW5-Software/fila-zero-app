@@ -108,7 +108,12 @@
 .fila-secundarias { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .fila-principal { min-width: 240px; height: 52px; font-size: 15px; justify-content: center; border-radius: 12px; }
 
-.fila-estado { display: flex; align-items: center; gap: 22px; min-width: 0; }
+/* O estado da loja no MEIO da faixa (23/09/2026, pedido do cliente: com a loja
+   vazia, o "0 na fila agora" ficava encostado à esquerda e o cartão parecia
+   pela metade). O painel ocupa a sobra da linha e centra o que tem dentro; os
+   botões continuam à direita, e a faixa de ações fica onde sempre esteve. */
+.fila-hero-painel { flex: 1 1 auto; min-width: 0; }
+.fila-estado { display: flex; align-items: center; justify-content: center; gap: 22px; min-width: 0; }
 .fila-estado-txt { min-width: 0; }
 .fila-estado-titulo {
   margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 800;
