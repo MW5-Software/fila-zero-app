@@ -22,7 +22,7 @@ from comum.ambiente import ambiente
 from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_permissao
 from comum.guardas_de_modulo import exigir_modulo_ligado
-from comum.pedido import id_do_post, inteiro_do_texto
+from comum.pedido import id_do_post
 from comum.personificacao import aviso as aviso_de_personificacao
 from contas.identidade import usuario_de
 from nucleo.components import Alert, PageHeader, Raw
@@ -40,16 +40,40 @@ __all__ = ["metas"]
 
 
 def _loja_escolhida(request, permitidas):
-    """A loja do pedido, só entre as permitidas; a forjada cai na primeira."""
-    # A mesma regra do id do POST para a URL: "²" e número gigante viram
-    # "nenhuma", e a tela cai na primeira loja em vez de 500.
-    pk = (id_do_post(request, "loja") if request.method == "POST"
-          else inteiro_do_texto(request.GET.get("loja", "")))
+    """A loja da tela: a do CABEÇALHO, e no POST a que o formulário mostrava.
+
+    Até 25/09/2026 a tela tinha um seletor "Loja" próprio, que abria na
+    primeira loja da lista e não conversava com o do cabeçalho — o cliente viu
+    as duas lojas escolhidas na mesma tela. Agora a meta é da loja em que a
+    sessão está, como a página da fila, e a `?loja=` da URL não escolhe nada.
+
+    O POST continua levando a loja no campo oculto: grava a que a pessoa
+    estava VENDO, mesmo que o cabeçalho tenha mudado noutra aba. Nos dois
+    casos, só entre as permitidas; fora delas cai na primeira.
+    """
+    from plataforma.contexto import filial_atual
+
+    if request.method == "POST":
+        pk = id_do_post(request, "loja")
+    else:
+        atual = filial_atual(request)
+        pk = atual.pk if atual is not None else None
     return next((l for l in permitidas if l.pk == pk), permitidas[0])
 
 
-def _endereco(mes, loja) -> str:
-    return reverse("fila_metas") + "?" + urlencode({"mes": f"{mes:%Y-%m}", "loja": loja.pk})
+def _endereco(mes) -> str:
+    return reverse("fila_metas") + "?" + urlencode({"mes": f"{mes:%Y-%m}"})
+
+
+def _trocar_e_voltar(loja, mes) -> str:
+    """Troca a filial da sessão para `loja` e volta para as metas do mês. É o
+    caminho do celular, onde o cabeçalho esconde o seletor de filial; a troca
+    pede confirmação (`plataforma.views_filial.filial_trocar`), porque GET não
+    muda estado nesta casa."""
+    from plataforma.contexto import CHAVE
+
+    return (reverse("filial_trocar") + "?"
+            + urlencode({CHAVE: loja.pk, "voltar": _endereco(mes)}))
 
 
 def _nome_do_mes(mes) -> str:
@@ -190,13 +214,15 @@ def _desenhar(request, loja, mes, permitidas, editor, *, digitados=None,
                      if None in salvas_antes else None)
 
     contexto = {
-        "loja": loja, "lojas": permitidas, "encerrado": encerrado,
+        "loja": loja, "encerrado": encerrado,
+        "outras_lojas": [(l, _trocar_e_voltar(l, mes))
+                         for l in permitidas if l.pk != loja.pk],
         "mes_titulo": _nome_do_mes(mes), "mes_valor": f"{mes:%Y-%m}",
         "andamento": andamento, "estado_do_mes": estado_do_mes,
         "url_metas": reverse("fila_metas"),
-        "url_anterior": _endereco(anterior, loja),
-        "url_seguinte": _endereco(regras.mes_seguinte(mes), loja),
-        "url_descartar": _endereco(mes, loja),
+        "url_anterior": _endereco(anterior),
+        "url_seguinte": _endereco(regras.mes_seguinte(mes)),
+        "url_descartar": _endereco(mes),
         "csrf": Markup(campo_csrf(request)),
         "da_loja": {"campo": texto_loja, "erro": erros.get("loja"),
                     "vendido": info_vendido, "anterior": info_anterior},
@@ -283,7 +309,7 @@ def metas(request) -> HttpResponse:
                          digitados=digitados, erros=invalidos.erros,
                          aviso=Alert(tone="danger",
                                      message=_("Corrija os valores marcados. Nada foi salvo.")))
-    return HttpResponseRedirect(_endereco(mes, loja))
+    return HttpResponseRedirect(_endereco(mes))
 
 
 def _desenhar_sem_loja(request) -> HttpResponse:

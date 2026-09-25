@@ -133,7 +133,12 @@ def _campo_oculto(nome: str, valor: str) -> Raw:
 
 def _colunas(pagina) -> "list[Column]":
     return [
-        Column("rotulo", pagina.cabecalho("cargo", "Cargo"), strong=True),
+        # O nome em CAIXA ALTA pela folha (`.nome-em-caixa-alta`, em
+        # `plataforma/static/plataforma/listagem.css`), e não pelo dado
+        # (25/09/2026, pedido do cliente).
+        Column("rotulo", pagina.cabecalho("cargo", "Cargo"), strong=True,
+               render=lambda c: format_html(
+                   '<span class="nome-em-caixa-alta">{}</span>', c.rotulo)),
         Column("alcance", pagina.cabecalho("alcance", "Enxerga"),
                render=lambda c: c.get_alcance_display()),
         Column("cliente", "Cliente", align="center",

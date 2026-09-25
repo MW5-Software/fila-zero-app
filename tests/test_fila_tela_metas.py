@@ -40,6 +40,16 @@ def test_vendedor_nao_abre(rede):
     assert logado("caio").get(reverse("fila_metas")).status_code == 404
 
 
+def _na_loja(cliente, loja):
+    """Põe a sessão em `loja`, como o seletor do cabeçalho faz."""
+    from plataforma.contexto import CHAVE
+
+    sessao = cliente.session
+    sessao[CHAVE] = loja.pk
+    sessao.save()
+    return cliente
+
+
 def test_gerente_ve_so_a_loja_dele_e_a_forjada_e_descartada(rede):
     html = _get(logado("gil"), loja=str(rede.matriz.pk))
     assert "Caio" in html and "Ana" not in html
@@ -50,9 +60,35 @@ def test_loja_da_url_que_nao_e_numero_nao_derruba(rede):
         assert "Metas de venda" in _get(logado("sara"), loja=bruto)
 
 
-def test_supervisor_escolhe_a_loja(rede):
-    html = _get(logado("sara"), loja=str(rede.matriz.pk))
+def test_a_loja_e_a_do_cabecalho(rede):
+    """25/09/2026, pedido do cliente: a tela tinha um seletor "Loja" próprio,
+    que abria na primeira loja da lista e não conversava com o do cabeçalho —
+    duas lojas escolhidas na mesma tela. A meta é da loja em que a sessão
+    está, como a página da fila, e a `?loja=` da URL não escolhe mais nada."""
+    sara = logado("sara")
+    html = _get(_na_loja(sara, rede.centro), loja=str(rede.matriz.pk))
+    assert "Caio" in html and "Ana" not in html
+
+    html = _get(_na_loja(sara, rede.matriz))
     assert "Ana" in html and "Caio" not in html
+
+
+def test_a_tela_nao_tem_seletor_de_loja_proprio(rede):
+    html = _get(_na_loja(logado("sara"), rede.centro))
+    assert "data-trocar-loja" not in html
+    assert '<select class="ctl" name="loja"' not in html
+
+
+def test_no_celular_as_outras_lojas_trocam_e_voltam_para_as_metas(rede):
+    """Abaixo de 1000px o cabeçalho esconde o seletor de filial (é do design
+    system), e sem este caminho o celular não trocaria de loja nas metas. A
+    troca passa pela confirmação de sempre e volta para cá."""
+    from urllib.parse import quote
+
+    html = _get(_na_loja(logado("sara"), rede.centro))
+    assert 'class="metas-trocar-loja"' in html
+    assert f"filial_id={rede.matriz.pk}" in html
+    assert "voltar=" + quote(reverse("fila_metas"), safe="") in html
 
 
 def test_salvar_grava(rede):

@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 148 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 149 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -331,6 +331,12 @@ SOLTOS, e a caixa de escolha desempacota cada opção em `(valor, rótulo)` — 
 STRING se desempacota em CARACTERES, e o filtro oferecia "l", "e", "e", "u",
 "e", que são a segunda letra de Cliente, Gerente, Representante, Supervisor e
 Vendedor. O par é `(rotulo, rotulo)`, porque é o rótulo que a coluna compara.
+
+**O NOME sai em CAIXA ALTA nas listas de Usuários, Empresas e Cargos**
+(25/09/2026, pedido do cliente: "igual Configurações da Fila"), pela classe
+`.nome-em-caixa-alta` de `plataforma/static/plataforma/listagem.css` — pela
+folha, e não pelo dado, pelo mesmo motivo dos cadastros da fila: o nome
+gravado é o que o cabeçalho, o avatar e a trilha mostram.
 
 **Titular e MW5 não têm cargo.** As permissões deles são diretas, de
 `contas/fabrica.py`. Um cargo no dono permitiria trancá-lo para fora da própria
@@ -858,6 +864,14 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   certo" e pediu o bloqueio. O veredito passou a dizer o mesmo que a recusa do
   `gravar`, e a frase viaja para o `metas.js` (`data-acima`): o aviso aparece
   ENQUANTO se digita, antes de clicar em salvar.
+- **A loja das metas é a do CABEÇALHO** (25/09/2026, pedido do cliente, com
+  o print de dois seletores na mesma tela): a tela tinha um "Loja" próprio,
+  que abria na primeira loja da lista e não conversava com o do cabeçalho.
+  Agora vale `filial_atual`, como na página da fila, e a `?loja=` da URL não
+  escolhe nada; o POST ainda leva a loja no campo oculto, para gravar a que a
+  pessoa estava VENDO. Até 1000px, onde o design system esconde o seletor do
+  cabeçalho, a tela mostra "Trocar de loja", que passa pela confirmação de
+  `filial_trocar` e volta para as metas.
 - **O ranking do Início é sempre de um mês** (`?ranking_mes=`, escolhido numa
   lista desde 18/09/2026), e não do período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
@@ -944,7 +958,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 148 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 149 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

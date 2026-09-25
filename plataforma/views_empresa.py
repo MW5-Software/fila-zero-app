@@ -322,8 +322,12 @@ def _endereco_do_banco(e: Empresa) -> str:
 def _colunas(pagina) -> list[Column]:
     """`pagina.cabecalho` transforma o rótulo em link de ordenar — R46."""
     return [
+        # O nome em CAIXA ALTA pela folha (`.nome-em-caixa-alta`, em
+        # `plataforma/static/plataforma/listagem.css`), e não pelo dado
+        # (25/09/2026, pedido do cliente).
         Column("empresa", pagina.cabecalho("empresa", "Empresa"), strong=True,
-               render=lambda e: str(e)),
+               render=lambda e: format_html(
+                   '<span class="nome-em-caixa-alta">{}</span>', str(e))),
         Column("cnpj", pagina.cabecalho("cnpj", "CNPJ"),
                render=lambda e: e.cnpj or "—"),
         Column("municipio", pagina.cabecalho("municipio", "Município/UF"),

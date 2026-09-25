@@ -15,12 +15,21 @@
   letter-spacing: -.01em; min-width: 200px; text-align: center;
 }
 .metas-andamento { margin: 0; font-size: 13px; color: var(--on-surface-2); }
-.metas-loja { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.metas-loja label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--on-surface-2); }
-.metas-loja select { min-width: 180px; }
-/* Com script, trocar a loja já abre: o botão só existe para quem não tem. */
-.metas-com-script [data-sem-script] { display: none; }
 .metas-uma-loja { margin: 0 0 0 auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--on-surface-2); }
+/* A loja se troca pelo cabeçalho (25/09/2026). Até 1000px o design
+   system esconde o seletor de filial dele (`.ctx-mid`), e só aí este caminho
+   aparece — o mesmo corte, para nunca haver dois seletores nem nenhum. */
+.metas-trocar-loja { position: relative; display: none; }
+.metas-trocar-loja summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; color: var(--primary); font-size: 13px; font-weight: 600; }
+.metas-trocar-loja summary::-webkit-details-marker { display: none; }
+.metas-trocar-loja-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; min-width: 200px;
+  display: grid; padding: 6px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--outline); box-shadow: var(--shadow);
+}
+.metas-trocar-loja-menu a { padding: 10px 8px; border-radius: 8px; color: var(--on-surface); text-decoration: none; font-size: 14px; font-weight: 600; }
+.metas-trocar-loja-menu a:hover { background: var(--surface-2); }
+@media (max-width: 1000px) { .metas-trocar-loja { display: block; } }
 
 /* --- A loja: a meta e se os vendedores a cobrem ------------------------- */
 
@@ -137,8 +146,9 @@
 
 @media (max-width: 760px) {
   .metas-mes h2 { min-width: 0; font-size: 19px; }
-  .metas-loja, .metas-uma-loja { margin-left: 0; width: 100%; }
-  .metas-loja label, .metas-loja select { flex: 1; }
+  .metas-uma-loja { margin-left: 0; }
+  .metas-trocar-loja { margin-left: auto; }
+  .metas-trocar-loja-menu { right: 0; }
   .metas-loja-card { grid-template-columns: 1fr; gap: 18px; }
   .metas-colunas { display: none; }
   .metas-grade { grid-template-columns: 1fr minmax(130px, 150px); row-gap: 10px; }

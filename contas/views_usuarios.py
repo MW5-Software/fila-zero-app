@@ -24,6 +24,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from nucleo.components import (
@@ -486,8 +487,13 @@ def _colunas_da_lista(pagina) -> list[Column]:
     quase todo mundo.
     """
     return [
+        # O nome em CAIXA ALTA pela folha (`.nome-em-caixa-alta`, em
+        # `plataforma/static/plataforma/listagem.css`), e não pelo dado
+        # (25/09/2026, pedido do cliente).
         Column("nome", pagina.cabecalho("nome", "Nome"), strong=True,
-               render=lambda u: u.nome or "—"),
+               render=lambda u: format_html(
+                   '<span class="nome-em-caixa-alta">{}</span>', u.nome)
+               if u.nome else "—"),
         Column("login", pagina.cabecalho("login", "Login"),
                render=lambda u: u.email),
         Column("cargo", pagina.cabecalho("cargo", "Cargo"),

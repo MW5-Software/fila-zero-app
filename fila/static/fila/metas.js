@@ -52,9 +52,6 @@
     return reais(c).replace("R$ ", "");
   }
 
-  var trocarLoja = raiz.querySelector("[data-trocar-loja]");
-  if (trocarLoja) trocarLoja.addEventListener("change", function () { trocarLoja.form.submit(); });
-
   if (!form) return;
   var salvar = form.querySelector("[data-salvar]");
   var mudadas = form.querySelector("[data-mudadas]");

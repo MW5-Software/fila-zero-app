@@ -16,18 +16,17 @@
       <a class="iconbtn" href="{{ url_seguinte }}" title="{{ traduzir('Mês seguinte') }}" aria-label="{{ traduzir('Mês seguinte') }}">{{ icon("chevron-right") }}</a>
     </nav>
     <p class="metas-andamento">{{ andamento }}</p>
-    {% if lojas|length > 1 %}
-    <form class="metas-loja" method="get" action="{{ url_metas }}">
-      <input type="hidden" name="mes" value="{{ mes_valor }}">
-      <label><span>{{ traduzir("Loja") }}</span>
-        <select class="ctl" name="loja" data-trocar-loja>
-          {% for l in lojas %}<option value="{{ l.pk }}"{% if l.pk == loja.pk %} selected{% endif %}>{{ l }}</option>{% endfor %}
-        </select>
-      </label>
-      <button class="btn" type="submit" data-sem-script>{{ traduzir("Abrir") }}</button>
-    </form>
-    {% else %}
+    {# A loja é a do cabeçalho (25/09/2026): aqui só o nome. O "Trocar de
+       loja" existe para o celular, onde o cabeçalho esconde o seletor de
+       filial, e a folha o esconde de 1000px para cima. #}
     <p class="metas-uma-loja">{{ icon("store", "sm") }}<span>{{ loja }}</span></p>
+    {% if outras_lojas %}
+    <details class="metas-trocar-loja">
+      <summary>{{ traduzir("Trocar de loja") }}{{ icon("chevron-down", "sm") }}</summary>
+      <div class="metas-trocar-loja-menu">
+        {% for l, endereco in outras_lojas %}<a href="{{ endereco }}">{{ l }}</a>{% endfor %}
+      </div>
+    </details>
     {% endif %}
   </div>
 
