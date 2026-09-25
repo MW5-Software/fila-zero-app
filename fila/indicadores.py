@@ -166,8 +166,13 @@ def por_grupo(recorte: Recorte, vendedor=None) -> "list[tuple[str, Decimal]]":
         .order_by("-valor", "grupo__nome"))]
 
 
+#: A não venda sem motivo: o atendimento que ficou aberto de um dia para o
+#: outro e foi fechado quando alguém abriu a loja (25/09/2026).
+SEM_LANCAMENTO = gettext_lazy("Fechado sem lançamento")
+
+
 def motivos(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
-    return [(linha["motivo__nome"], linha["n"]) for linha in (
+    return [(linha["motivo__nome"] or str(SEM_LANCAMENTO), linha["n"]) for linha in (
         _atendimentos(recorte, vendedor).filter(resultado=Resultado.NAO_VENDEU)
         .values("motivo__nome").annotate(n=Count("pk"))
         .order_by("-n", "motivo__nome"))]

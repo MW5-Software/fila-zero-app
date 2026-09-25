@@ -812,6 +812,29 @@ def _cenario_fila_meta_definida():
     return email_de("dona-fila"), f"{matriz}: Zeca em {mes:%m/%Y}"
 
 
+def _cenario_fila_ponto_esquecido_fechado():
+    """O ponto aberto de ONTEM é fechado quando alguém bate o ponto na loja
+    (`fila.acoes._fechar_pontos_esquecidos`), e quem assina é o `sistema`."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from contas.models import Usuario
+    from fila.acoes import bater_ponto
+    from fila.models import LugarNaFila, Presenca
+
+    _dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    ontem = timezone.now() - timedelta(days=1)
+    Presenca.irrestritos.filter(pessoa=zeca).update(entrada=ontem)
+    LugarNaFila.irrestritos.filter(pessoa=zeca).update(na_fila_desde=ontem,
+                                                      desde=ontem)
+    yara = Usuario.objects.create_user(email=email_de("yara-abre"), password=SENHA,
+                                       nome="Yara")
+    alocar(yara, empresa_do_teste(), "vendedor", filial=matriz)
+    bater_ponto(yara, matriz)
+    return "sistema", f"Zeca em {matriz}"
+
+
 def _cenario_fila_saida_por_turno():
     """A saída automática não tem autor, e a linha diz isso: quem assina é o
     `sistema` (`fila/turno.py`). Sem ela, a pessoa some da fila e ninguém sabe
@@ -905,6 +928,7 @@ _CENARIOS = {
     "FILA_META_DEFINIDA": _cenario_fila_meta_definida,
     "FILA_META_REMOVIDA": _cenario_fila_meta_removida,
     "FILA_SAIDA_POR_TURNO": _cenario_fila_saida_por_turno,
+    "FILA_PONTO_ESQUECIDO_FECHADO": _cenario_fila_ponto_esquecido_fechado,
 }
 
 

@@ -20,6 +20,7 @@ pelo POST são a exceção: vêm de fora, e por isso passam por
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db import transaction
@@ -153,6 +154,47 @@ def _sair(lugar, agora, fechada_por=None) -> None:
     lugar.delete()
 
 
+def _fechar_pontos_esquecidos(filial, agora) -> int:
+    """Fecha o ponto de quem ficou aberto nesta loja desde um DIA ANTERIOR, e
+    devolve quantos (25/09/2026, pedido do cliente: "primeiro que for abrir a
+    loja, se tiver gente lá bugado, ele reseta a loja").
+
+    Na fila, em espera, em pausa e ATENDENDO: o atendimento de ontem fecha
+    como não venda, sem motivo e sem mídia — é o "Fechado sem lançamento" dos
+    indicadores. Diferente do fim do turno, que deixa quem atende: lá o prazo
+    é de uma hora e a venda ainda pode estar sendo lançada; aqui já virou o
+    dia. A hora da saída é o fim do dia da ENTRADA, e nunca antes da última
+    mudança de estado (`desde`) — quem entrou em pausa às 00:30 teria a pausa
+    fechada antes de começar. A trilha registra cada um, com o autor
+    `sistema`, como a saída pelo turno.
+    """
+    from comum.auditoria import registrar
+
+    from .auditoria import ACOES_DA_FILA
+    from .correcoes import _alvo
+    from .periodo import inicio_do_dia
+    from .turno import SISTEMA
+
+    hoje = inicio_do_dia(timezone.localdate(agora))
+    esquecidos = list(LugarNaFila.irrestritos
+                      .filter(filial=filial, presenca__entrada__lt=hoje)
+                      .select_related("presenca", "pessoa"))
+    for lugar in esquecidos:
+        dia = timezone.localdate(lugar.presenca.entrada)
+        limite = max(inicio_do_dia(dia + timedelta(days=1)) - timedelta(seconds=1),
+                     lugar.desde)
+        if lugar.estado == Estado.ATENDENDO:
+            Atendimento.irrestritos.filter(
+                vendedor_id=lugar.pessoa_id, fim__isnull=True).update(
+                    fim=limite, resultado=Resultado.NAO_VENDEU)
+        _sair(lugar, limite)
+        registrar(ACOES_DA_FILA.FILA_PONTO_ESQUECIDO_FECHADO, SISTEMA,
+                  alvo=_alvo(lugar, filial),
+                  detalhe=_("ponto aberto desde %(dia)s") % {
+                      "dia": dia.strftime("%d/%m/%Y")})
+    return len(esquecidos)
+
+
 def bater_ponto(pessoa, filial) -> None:
     with transaction.atomic():
         # A linha da PESSOA trancada antes de tudo: quem não está em loja
@@ -184,6 +226,9 @@ def bater_ponto(pessoa, filial) -> None:
         if lugar is not None and _em_pausa_da_gestao(pessoa.pk):
             raise Recusa(NA_PAUSA_DA_GESTAO)
         agora = _agora()
+        # Sob a MESMA trava da loja: quem abre a loja limpa quem ficou preso
+        # de outro dia antes de entrar na fila dela.
+        _fechar_pontos_esquecidos(filial, agora)
         if lugar is not None:
             # Uma presença aberta por pessoa: chegar numa loja fecha a outra.
             _sair(lugar, agora)

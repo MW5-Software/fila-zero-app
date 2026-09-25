@@ -1787,3 +1787,9 @@ msgstr "Finalice la atención antes de cerrar el registro."
 
 msgid "Fila Zero"
 msgstr "Fila Zero"
+
+msgid "Fechado sem lançamento"
+msgstr "Cerrado sin registro"
+
+msgid "ponto aberto desde %(dia)s"
+msgstr "registro abierto desde %(dia)s"

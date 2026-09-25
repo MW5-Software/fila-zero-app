@@ -41,6 +41,9 @@ class ACOES_DA_FILA:
     # linha diz que foi o sistema — sem ela, a pessoa some da fila e ninguém
     # sabe por quê.
     FILA_SAIDA_POR_TURNO = "fila_saida_por_turno"
+    # O ponto esquecido de um dia anterior, fechado quando alguém bate o ponto
+    # na loja (25/09/2026). Também sem autor: é o sistema.
+    FILA_PONTO_ESQUECIDO_FECHADO = "fila_ponto_esquecido_fechado"
 
 
 ROTULOS_DA_FILA = {
@@ -58,4 +61,5 @@ ROTULOS_DA_FILA = {
     ACOES_DA_FILA.FILA_META_DEFINIDA: "Meta de venda definida",
     ACOES_DA_FILA.FILA_META_REMOVIDA: "Meta de venda removida",
     ACOES_DA_FILA.FILA_SAIDA_POR_TURNO: "Saída pelo fim do turno",
+    ACOES_DA_FILA.FILA_PONTO_ESQUECIDO_FECHADO: "Ponto esquecido fechado ao abrir a loja",
 }

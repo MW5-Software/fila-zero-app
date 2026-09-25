@@ -91,7 +91,8 @@ def descrever(atendimento) -> str:
         return f"vendeu {em_reais(atendimento.total)} ({itens}){midia}"
     if atendimento.resultado == Resultado.NAO_VENDEU:
         observacao = f" ({atendimento.observacao})" if atendimento.observacao else ""
-        return f"não vendeu: {atendimento.motivo.nome}{observacao}{midia}"
+        motivo = atendimento.motivo.nome if atendimento.motivo_id else "sem lançamento"
+        return f"não vendeu: {motivo}{observacao}{midia}"
     return "aberto"
 
 

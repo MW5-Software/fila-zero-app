@@ -251,3 +251,105 @@ def test_a_pagina_da_fila_aplica_o_turno(loja):
     resposta = logado("ana").get("/fila")
     assert resposta.status_code == 200
     assert not LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+
+# --- A loja aberta de novo (25/09/2026) --------------------------------------
+#
+# Pedido do cliente: "primeiro que for abrir a loja, se tiver gente lá bugado,
+# ele reseta a loja". Bater o ponto fecha o de quem ficou aberto de um DIA
+# ANTERIOR, nesta loja — na fila, em espera, em pausa e atendendo (o
+# atendimento de ontem fecha como não venda, sem lançamento) —, com a hora do
+# fim daquele dia. O relógio do `relogio` está em 15/09/2026, 13h UTC.
+
+def _ontem_as_18():
+    return _local(2026, 9, 14, 18, 0)
+
+
+def _fim_de_ontem():
+    return _local(2026, 9, 15, 0, 0) - timedelta(seconds=1)
+
+
+def _linhas_do_esquecido():
+    from contas.models import RegistroDeAuditoria
+
+    return RegistroDeAuditoria.objects.filter(acao="fila_ponto_esquecido_fechado")
+
+
+@pytest.mark.parametrize("estado", ["na_fila", "em_espera", "em_pausa"])
+def test_bater_o_ponto_fecha_o_ponto_esquecido_de_ontem(loja, estado):
+    from fila.acoes import bater_ponto
+    from fila.models import LugarNaFila, Pausa, Presenca
+
+    lugar = _na_loja(loja.ana, loja.matriz, _ontem_as_18(), estado=estado)
+    if estado == "em_pausa":
+        from tests.fila_cenario import cadastros
+
+        Pausa.irrestritos.create(empresa=loja.empresa, pessoa=loja.ana,
+                                 filial=loja.matriz, presenca=lugar.presenca,
+                                 tipo=cadastros(loja.empresa).tipo,
+                                 inicio=_ontem_as_18())
+    bater_ponto(loja.bia, loja.matriz)
+
+    assert not LugarNaFila.irrestritos.filter(pk=lugar.pk).exists()
+    assert Presenca.irrestritos.get(pk=lugar.presenca_id).saida == _fim_de_ontem()
+    assert not Pausa.irrestritos.filter(pessoa=loja.ana, fim__isnull=True).exists()
+    assert _linhas_do_esquecido().count() == 1
+    assert LugarNaFila.irrestritos.filter(pessoa=loja.bia, filial=loja.matriz).exists()
+
+
+def test_o_atendimento_de_ontem_fecha_como_nao_venda_sem_lancamento(loja):
+    from fila.acoes import bater_ponto
+    from fila.indicadores import Recorte, motivos
+    from fila.models import Atendimento
+    from fila.periodo import Periodo
+
+    lugar = _na_loja(loja.ana, loja.matriz, _ontem_as_18(), estado="atendendo")
+    atendimento = Atendimento.irrestritos.create(
+        empresa=loja.empresa, filial=loja.matriz, vendedor=loja.ana,
+        presenca=lugar.presenca, inicio=_ontem_as_18())
+    bater_ponto(loja.bia, loja.matriz)
+
+    atendimento.refresh_from_db()
+    assert (atendimento.resultado, atendimento.motivo_id, atendimento.fim) == (
+        "nao_vendeu", None, _fim_de_ontem())
+    setembro = Periodo(_local(2026, 9, 1), _local(2026, 10, 1), "intervalo", "setembro")
+    assert motivos(Recorte(loja.empresa, (loja.matriz,), setembro)) == [
+        ("Fechado sem lançamento", 1)]
+
+
+def test_quem_bateu_o_ponto_hoje_fica(loja):
+    from fila.acoes import bater_ponto
+    from fila.models import LugarNaFila
+
+    lugar = _na_loja(loja.ana, loja.matriz, _local(2026, 9, 15, 8, 0))
+    bater_ponto(loja.bia, loja.matriz)
+    assert LugarNaFila.irrestritos.filter(pk=lugar.pk).exists()
+    assert not _linhas_do_esquecido().exists()
+
+
+def test_so_a_loja_em_que_se_bate_o_ponto(loja):
+    from fila.acoes import bater_ponto
+    from fila.models import LugarNaFila
+
+    lugar = _na_loja(loja.ana, loja.centro, _ontem_as_18())
+    bater_ponto(loja.bia, loja.matriz)
+    assert LugarNaFila.irrestritos.filter(pk=lugar.pk).exists()
+
+
+def test_quem_ficou_na_pausa_depois_da_meia_noite_nao_ganha_fim_antes_do_inicio(loja):
+    """A hora da saída é o fim do dia da ENTRADA, mas nunca antes da última
+    mudança de estado (`desde`): quem entrou em pausa às 00:30 não pode ter a
+    pausa fechada às 23:59:59 da véspera."""
+    from fila.acoes import bater_ponto
+    from fila.models import Pausa
+    from tests.fila_cenario import cadastros
+
+    lugar = _na_loja(loja.ana, loja.matriz, _ontem_as_18(), estado="em_pausa")
+    depois = _local(2026, 9, 15, 0, 30)
+    lugar.desde = depois
+    lugar.save(update_fields=["desde"])
+    pausa = Pausa.irrestritos.create(
+        empresa=loja.empresa, pessoa=loja.ana, filial=loja.matriz,
+        presenca=lugar.presenca, tipo=cadastros(loja.empresa).tipo, inicio=depois)
+    bater_ponto(loja.bia, loja.matriz)
+    pausa.refresh_from_db()
+    assert pausa.fim >= pausa.inicio

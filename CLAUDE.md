@@ -986,6 +986,15 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
 - **O prazo olha ontem também**: loja que fecha 23:30 tem prazo à 00:30 do dia
   seguinte, e às 00:15 quem ficou de ontem ainda está dentro dele. Quem ENTROU
   depois do prazo fica — é uma jornada nova.
+- **Quem abre a loja limpa o ponto esquecido** (25/09/2026, pedido do
+  cliente: "primeiro que for abrir a loja, se tiver gente lá bugado, ele
+  reseta a loja"). Bater o ponto fecha, sob a mesma trava, o ponto de quem
+  está aberto nesta loja desde um DIA ANTERIOR (`acoes._fechar_pontos_
+  esquecidos`) — na fila, em espera, em pausa e atendendo; o atendimento de
+  ontem fecha como não venda sem motivo, o "Fechado sem lançamento" dos
+  indicadores. A hora é o fim do dia da entrada, nunca antes do `desde`. Vale
+  com ou sem turno cadastrado; na trilha, `fila_ponto_esquecido_fechado`, com
+  o autor `sistema`.
 - A saída automática entra na trilha com o autor `sistema`
   (`fila_saida_por_turno`): a pessoa some da fila, e sem a linha ninguém saberia
   por quê.
