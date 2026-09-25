@@ -505,3 +505,7 @@ select.fila-cadastro:has(option:checked:not([value=""])) { text-transform: upper
 /* O motivo da correção fecha a folha, logo antes dos botões (spec 2026-09-17). */
 .fila-motivo-correcao { display: grid; gap: 6px; margin-top: 14px; }
 .fila-motivo-correcao textarea { resize: vertical; }
+
+/* "Está atendendo", no cartão do 1º da fila, para o 2º e o 3º (25/09/2026):
+   embaixo do nome, e não ao lado, para não apertar a linha no celular. */
+.fila-colega-atendendo { margin-top: 6px; align-self: flex-start; }

@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 151 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 152 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -756,6 +756,14 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
     pesam no vendedor**: ficam fora da coluna Pausa do ranking e do painel
     dele (`fixa=""` nas três consultas).
 
+- **O 2º e o 3º da fila põem o 1º em atendimento** (25/09/2026, pedido do
+  cliente: "se o primeiro da fila foi atender e esqueceu de mexer no sistema,
+  o segundo e o terceiro podem colocar ele em atendimento via botão"). O botão
+  "Está atendendo" fica no cartão do 1º, só para quem está em 2º ou 3º, e abre
+  uma folha de confirmação. `acoes.colega_atendendo` confere de novo, sob a
+  trava, a posição de quem age e que o alvo ainda é o 1º, e abre o atendimento
+  como o "Vou atender". É ação de vendedor, e mesmo assim vai para o histórico
+  (`AcaoDeCorrecao.COLEGA`) e para a trilha: é sobre OUTRA pessoa.
 - **"Fechar o ponto"** (25/09/2026, pedido do cliente: "fechamento de ponto
   em vez de tirar da fila"): é o nome do "Sair da loja" do vendedor e do
   "Tirar da loja" do gerente, que encerram o ponto. O histórico diz "Fechou o
@@ -1060,7 +1068,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 151 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 152 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

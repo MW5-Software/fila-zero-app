@@ -92,6 +92,23 @@
 {% if pode_participar %}
 {% call modal("finalizar", traduzir("Como terminou o atendimento?"), folha == "finalizar") %}{{ fechamento("finalizar", none) }}{% endcall %}
 
+{# O 2º ou o 3º põe o 1º em atendimento (25/09/2026). A pessoa vem do botão
+   (`data-pessoa`); sem script, é o 1º da fila desenhado agora — e o servidor
+   confere de novo, sob a trava, que ele ainda é o 1º. #}
+{% call modal("colega_atendendo", traduzir("Pôr em atendimento?"), folha == "colega_atendendo", r.fila[0].nome if r.fila else "") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
+    {{ csrf }}<input type="hidden" name="acao" value="colega_atendendo">
+    <input type="hidden" name="pessoa" value="{{ r.fila[0].pessoa_id if r.fila else '' }}">
+    <p>{{ traduzir("Use quando o 1º da fila foi atender e esqueceu de marcar no sistema. Ele passa a atender, e a fila anda.") }}</p>
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Pôr em atendimento") }}</button>
+  </div>
+</form>
+{% endcall %}
+
 {% call modal("pausa", traduzir("Pausa para quê?"), folha == "pausa") %}
 <form method="post" action="{{ url_agir }}" data-acao>
   <div class="mbody">

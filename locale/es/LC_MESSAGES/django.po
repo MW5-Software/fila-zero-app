@@ -1793,3 +1793,27 @@ msgstr "Cerrado sin registro"
 
 msgid "ponto aberto desde %(dia)s"
 msgstr "registro abierto desde %(dia)s"
+
+msgid "Pôs o 1º da fila em atendimento"
+msgstr "Puso al 1º de la fila en atención"
+
+msgid "Só o 2º e o 3º da fila podem pôr o 1º em atendimento."
+msgstr "Solo el 2º y el 3º de la fila pueden poner al 1º en atención."
+
+msgid "Essa pessoa não é mais o 1º da fila."
+msgstr "Esa persona ya no es el 1º de la fila."
+
+msgid "foi atender e não marcou no sistema"
+msgstr "fue a atender y no lo marcó en el sistema"
+
+msgid "Está atendendo"
+msgstr "Está atendiendo"
+
+msgid "Pôr em atendimento?"
+msgstr "¿Poner en atención?"
+
+msgid "Pôr em atendimento"
+msgstr "Poner en atención"
+
+msgid "Use quando o 1º da fila foi atender e esqueceu de marcar no sistema. Ele passa a atender, e a fila anda."
+msgstr "Úselo cuando el 1º de la fila fue a atender y olvidó marcarlo en el sistema. Pasa a atender, y la fila avanza."

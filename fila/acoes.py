@@ -35,7 +35,7 @@ from .models import (Atendimento, Estado, GrupoDeItem, ItemVendido,
                      LugarNaFila, Midia, MotivoDeNaoVenda, Pausa, PausaFixa, Presenca,
                      Resultado, TipoDePausa)
 
-__all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto",
+__all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto", "colega_atendendo",
            "cliente_pediu", "entrar_na_fila", "finalizar", "pausar",
            "sair_da_loja", "voltar_para_a_fila", "vou_atender"]
 
@@ -271,6 +271,39 @@ def vou_atender(pessoa, filial) -> None:
                          % {"nome": nome_de(primeiro.pessoa),
                             "posicao": posicao_de(lugar)})
         _abrir_atendimento(lugar, filial, pediu=False)
+
+
+def colega_atendendo(autor, filial, pessoa_id) -> None:
+    """O 2º ou o 3º da fila põe o 1º em atendimento (25/09/2026, pedido do
+    cliente: "se o cara que é o primeiro da fila foi atender e esqueceu de
+    mexer no sistema, o segundo e o terceiro podem colocar ele em atendimento
+    via botão"). Quem está logo atrás é quem vê o primeiro com um cliente, e é
+    quem fica esperando a vez que não anda.
+
+    Tudo conferido de novo sob a trava da loja: quem age está na fila, em 2º
+    ou 3º, e `pessoa_id` é o 1º AGORA — o botão foi desenhado segundos antes,
+    e a fila pode ter andado. O 1º passa a atender como se tivesse tocado em
+    "Vou atender", e o histórico da loja diz quem o pôs.
+    """
+    from .auditoria import ACOES_DA_FILA
+    from .correcoes import _alvo, _registrar
+    from .models import AcaoDeCorrecao
+
+    with transaction.atomic():
+        _travar(filial)
+        meu = _lugar_na_loja(autor.pk, filial)
+        minha_posicao = posicao_de(meu)
+        if meu.estado != Estado.NA_FILA or minha_posicao not in (2, 3):
+            raise Recusa(_("Só o 2º e o 3º da fila podem pôr o 1º em atendimento."))
+        primeiro = na_fila(filial).select_related("pessoa").first()
+        if primeiro is None or primeiro.pessoa_id != pessoa_id:
+            raise Recusa(_("Essa pessoa não é mais o 1º da fila."))
+        _abrir_atendimento(primeiro, filial, pediu=False)
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.COLEGA_ATENDENDO,
+                   _("foi atender e não marcou no sistema"),
+                   f"por {nome_de(autor)}, {minha_posicao}º da fila", _agora(),
+                   auditoria=ACOES_DA_FILA.FILA_COLEGA_POSTO_EM_ATENDIMENTO,
+                   alvo=_alvo(primeiro, filial))
 
 
 def cliente_pediu(pessoa, filial) -> None:

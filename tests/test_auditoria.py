@@ -835,6 +835,19 @@ def _cenario_fila_ponto_esquecido_fechado():
     return "sistema", f"Zeca em {matriz}"
 
 
+def _cenario_fila_colega_posto_em_atendimento():
+    from contas.models import Usuario
+    from fila.acoes import bater_ponto, colega_atendendo
+
+    _dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    yara = Usuario.objects.create_user(email=email_de("yara-colega"), password=SENHA,
+                                       nome="Yara")
+    alocar(yara, empresa_do_teste(), "vendedor", filial=matriz)
+    bater_ponto(yara, matriz)
+    colega_atendendo(yara, matriz, zeca.pk)
+    return email_de("yara-colega"), f"Zeca em {matriz}"
+
+
 def _cenario_fila_saida_por_turno():
     """A saída automática não tem autor, e a linha diz isso: quem assina é o
     `sistema` (`fila/turno.py`). Sem ela, a pessoa some da fila e ninguém sabe
@@ -929,6 +942,7 @@ _CENARIOS = {
     "FILA_META_REMOVIDA": _cenario_fila_meta_removida,
     "FILA_SAIDA_POR_TURNO": _cenario_fila_saida_por_turno,
     "FILA_PONTO_ESQUECIDO_FECHADO": _cenario_fila_ponto_esquecido_fechado,
+    "FILA_COLEGA_POSTO_EM_ATENDIMENTO": _cenario_fila_colega_posto_em_atendimento,
 }
 
 

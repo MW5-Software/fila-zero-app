@@ -392,6 +392,9 @@ class AcaoDeCorrecao(models.TextChoices):
     EDITAR = "editar", _("Corrigiu o lançamento")
     POR_NA_FILA = "por_na_fila", _("Pôs na fila")
     RECOLOCAR = "recolocar", _("Recolocou na fila")
+    # O 2º ou o 3º da fila pôs o 1º em atendimento (25/09/2026): quem age é
+    # um colega, e não o gerente, mas é uma ação sobre OUTRA pessoa.
+    COLEGA_ATENDENDO = "colega", _("Pôs o 1º da fila em atendimento")
 
 
 class CorrecaoNaFila(ModeloDaEmpresa):

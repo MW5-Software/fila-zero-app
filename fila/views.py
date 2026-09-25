@@ -143,6 +143,10 @@ _DO_VENDEDOR = {
     "ponto": lambda r, f, p: acoes.bater_ponto(p, f),
     "atender": lambda r, f, p: acoes.vou_atender(p, f),
     "cliente_pediu": lambda r, f, p: acoes.cliente_pediu(p, f),
+    # O 2º ou o 3º da fila põe o 1º em atendimento (25/09/2026). A regra de
+    # quem pode é do domínio (`acoes.colega_atendendo`), sob a trava.
+    "colega_atendendo": lambda r, f, p: acoes.colega_atendendo(
+        p, f, _pessoa_do_post(r)),
     "finalizar": lambda r, f, p: acoes.finalizar(p, f, _lancamento(r)),
     "pausar": lambda r, f, p: acoes.pausar(p, f, id_do_post(r, "tipo")),
     "voltar": lambda r, f, p: acoes.voltar_para_a_fila(p, f),

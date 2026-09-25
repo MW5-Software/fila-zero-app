@@ -24,6 +24,12 @@
         <span class="fila-linha-txt">
           <span class="fila-linha-nome">{{ l.nome }} {{ voce(l) }}</span>
           {% if loop.first %}<span class="fila-linha-meta">{{ traduzir("Próximo a atender") }}</span>{% endif %}
+          {# O 2º e o 3º põem o 1º em atendimento, quando ele foi atender e não
+             marcou (25/09/2026). Só para eles: são os que veem o 1º com um
+             cliente e ficam esperando a vez que não anda. #}
+          {% if loop.first and not l.e_voce and r.meu and r.meu.posicao in (2, 3) %}
+          <a class="btn sm fila-colega-atendendo" href="{{ url_fila }}?folha=colega_atendendo" data-folha="colega_atendendo" data-pessoa="{{ l.pessoa_id }}" data-nome="{{ l.nome }}">{{ icon("handshake", "sm") }}<span>{{ traduzir("Está atendendo") }}</span></a>
+          {% endif %}
         </span>
         <span class="fila-linha-tempo"><time data-desde="{{ l.desde.isoformat() }}">{{ l.desde|ha_quanto(agora) }}</time></span>
         {{ corrigir(l) }}
