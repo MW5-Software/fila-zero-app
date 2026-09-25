@@ -1005,6 +1005,10 @@ plano `docs/superpowers/plans/2026-09-16-fila-painel-do-vendedor.md`.
   atendimentos.** A posição é sempre por vendido
   (`indicadores.posicoes_por_vendido`), calculada antes do filtro por nome:
   com `Rank()` na consulta, buscar "Ana" a faria virar a primeira.
+- **O valor vendido do ranking é só o dele** (25/09/2026, pedido do cliente:
+  "tirar o valor só do vendedor ranking"): a posição de todos continua, e o
+  valor dos colegas sai como "—", com o cabeçalho sem ordenar — ordenar pelo
+  valor escondido serviria só para descobri-lo. A gestão vê a coluna inteira.
 - **A faixa da meta é só a meta dele** (`metas.meta_da_pessoa`); a meta da
   loja não é régua de ninguém em particular.
 - A página da fila não tem menu: o caminho até o painel da raiz é o link "Meu

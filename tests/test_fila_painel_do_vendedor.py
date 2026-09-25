@@ -100,7 +100,25 @@ def test_o_ranking_nao_mostra_o_que_e_do_gerente(loja):
         assert coluna in ranking
     for coluna in ("Pausa", "Ticket médio", "Cliente pediu", "Atendimentos"):
         assert f">{coluna}<" not in ranking
-    assert "Bia" in ranking and "R$ 500,00" in ranking
+    assert "Bia" in ranking
+
+
+def test_o_vendedor_so_ve_o_proprio_valor_no_ranking(loja):
+    """25/09/2026, pedido do cliente: "tirar o valor só do vendedor ranking".
+    O vendedor vê a posição de todos, mas quanto cada colega vendeu não é
+    placar dele: o valor dos outros sai como "—", e o dele continua. A gestão
+    continua vendo tudo (`test_fila_tela_indicadores`)."""
+    _atendimento(loja, loja.ana, "300")
+    _atendimento(loja, loja.bia, "500")
+    ranking = _html(logado("ana"), periodo="hoje").split('data-ind="ranking-da-loja"')[1]
+    assert "R$ 300,00" in ranking
+    assert "R$ 500,00" not in ranking
+    assert "1º" in ranking and "2º" in ranking
+    # Ordenar pelo valor escondido serviria só para descobri-lo.
+    assert "ordenar=vendido" not in ranking and "ordenar=-vendido" not in ranking
+
+    gestao = _html(logado("gil"), periodo="hoje")
+    assert "R$ 500,00" in gestao
 
 
 def test_a_posicao_e_por_vendido_mesmo_reordenado(loja):

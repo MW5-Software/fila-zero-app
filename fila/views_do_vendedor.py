@@ -41,7 +41,7 @@ ORDENAVEIS_COM_META = {**ORDENAVEIS,
 _FILTRAVEIS = {"nome": ColunaFiltravel("nome", "Vendedor")}
 
 
-def _colunas(pagina, posicoes, com_meta):
+def _colunas(pagina, posicoes, com_meta, pessoa):
     colunas = [
         # Sem cabeçalho ordenável: a posição é sempre pelo vendido, e "ordenar
         # por posição" seria ordenar pelo vendido com outro nome.
@@ -49,8 +49,13 @@ def _colunas(pagina, posicoes, com_meta):
                render=lambda p: f"{posicoes[p.pk]}º"),
         Column("nome", pagina.cabecalho("nome", str(_("Vendedor"))), strong=True,
                render=lambda p: p.nome or p.email),
-        Column("vendido", pagina.cabecalho("vendido", str(_("Vendido"))), align="num",
-               render=lambda p: em_reais(p.vendido)),
+        # O valor é só o DELE (25/09/2026, pedido do cliente: "tirar o valor só
+        # do vendedor ranking"): a posição de todos continua, mas quanto cada
+        # colega vendeu não é placar do vendedor. Sem cabeçalho ordenável —
+        # ordenar pelo valor escondido serviria só para descobri-lo. A gestão
+        # continua com a coluna inteira (`views_indicadores`).
+        Column("vendido", str(_("Vendido")), align="num",
+               render=lambda p: em_reais(p.vendido) if p.pk == pessoa.pk else "—"),
         Column("vendas", pagina.cabecalho("vendas", str(_("Vendas"))), align="num"),
         Column("conversao", pagina.cabecalho("conversao", str(_("Conversão"))),
                align="num", render=lambda p: _pct(p.conversao)),
@@ -104,7 +109,7 @@ def _blocos(request, empresa, loja, pessoa) -> list:
              subtitulo=_onde_estou(posicoes, pessoa),
              attrs={"data-ind": "ranking-da-loja"}, body=[
                  listagem.barra,
-                 Table(columns=_colunas(listagem, posicoes, com_meta=True),
+                 Table(columns=_colunas(listagem, posicoes, com_meta=True, pessoa=pessoa),
                        rows=listagem.linhas,
                        row_attrs=lambda linha: _attrs_da_linha(
                            linha, primeiro=primeiro, pessoa=pessoa)),
