@@ -312,3 +312,92 @@ def test_as_posicoes_do_recolocar_seguem_a_fila_de_agora(loja):
     assert "2º · depois de Ana" in posicoes
     assert "3º · depois de Bia (fim da fila)" in posicoes
     assert "Caio" not in posicoes
+
+
+# --- Sair da loja (25/09/2026) ----------------------------------------------
+#
+# "Sair da loja" e bater o ponto em OUTRA loja fechavam a presença, e com ela a
+# pausa: o vendedor voltava batendo o ponto de novo, no fim da fila, sem a
+# gestão. As duas portas fecham na pausa da gestão; quem tira da loja é a
+# gestão ("Tirar da loja"), e o fim do turno continua valendo.
+
+def test_o_vendedor_nao_sai_da_loja_na_pausa_da_gestao(loja):
+    from fila.acoes import Recusa, sair_da_loja
+
+    _por_na_administrativa(loja)
+    with pytest.raises(Recusa, match="quem tira você da loja é a gestão"):
+        sair_da_loja(loja.ana, loja.matriz)
+    assert _pausa_aberta(loja.ana).fixa == "administrativa"
+
+    html = logado("ana").get(reverse("fila")).content.decode()
+    assert 'value="sair"' not in html.split('id="fila-barra"')[1].split('id="fila-lista"')[0]
+
+
+def test_nem_batendo_o_ponto_em_outra_loja(loja):
+    from fila.acoes import Recusa, bater_ponto
+    from fila.models import LugarNaFila
+    from tests.fila_cenario import nova_loja
+
+    centro = nova_loja(loja.empresa, "Centro")
+    _por_na_administrativa(loja)
+    with pytest.raises(Recusa, match="quem tira você da loja é a gestão"):
+        bater_ponto(loja.ana, centro)
+    assert LugarNaFila.irrestritos.get(pessoa=loja.ana).filial == loja.matriz
+
+
+def test_a_gestao_tira_da_loja(loja):
+    from fila.correcoes import tirar_da_loja
+    from fila.models import LugarNaFila
+
+    _por_na_administrativa(loja)
+    tirar_da_loja(loja.gil, loja.matriz, loja.ana.pk, observacao="foi embora")
+    assert not LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+    assert not _pausa_aberta_existe(loja.ana)
+
+
+def test_o_fim_do_turno_tira_da_pausa_da_gestao(loja):
+    from datetime import time
+
+    from fila import turno
+    from fila.models import LugarNaFila
+
+    _por_na_administrativa(loja)
+    turno.definir(loja.matriz, time(18, 0))
+    assert turno.aplicar(loja.matriz, timezone.now() + timedelta(days=1)) >= 1
+    assert not LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+    assert not _pausa_aberta_existe(loja.ana)
+
+
+def test_a_pausa_comum_continua_saindo_da_loja(loja):
+    from fila.acoes import pausar, sair_da_loja
+    from fila.models import LugarNaFila
+
+    pausar(loja.ana, loja.matriz, loja.cad.tipo.pk)
+    sair_da_loja(loja.ana, loja.matriz)
+    assert not LugarNaFila.irrestritos.filter(pessoa=loja.ana).exists()
+
+
+def _pausa_aberta_existe(pessoa):
+    from fila.models import Pausa
+
+    return Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).exists()
+
+
+# --- As posições do "Mudar de posição" (25/09/2026) --------------------------
+
+def test_as_posicoes_do_mover_seguem_a_fila_de_agora(loja):
+    """O mesmo defeito do "Recolocar": a folha era desenhada na abertura da
+    página, e a lista ficava velha quando a fila mudava — o gerente lia
+    "2º · Caio" e a pessoa caía no 2º da fila de agora, que já era outro."""
+    from fila.acoes import vou_atender
+    from fila.tela import PEDACOS
+
+    assert "mover" in PEDACOS
+    cliente = logado("gil")
+    html = cliente.get(reverse("fila")).content.decode()
+    assert '<div id="fila-mover">' in html.split('id="folha-mover"')[1]
+
+    vou_atender(loja.ana, loja.matriz)
+    mover = cliente.get(reverse("fila_estado"), {"versao": "velha"}).json()["html"]["mover"]
+    assert "1º · Bia" in mover and "2º · Caio" in mover
+    assert "Ana" not in mover

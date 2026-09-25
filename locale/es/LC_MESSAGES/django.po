@@ -1769,3 +1769,6 @@ msgstr "final de la fila"
 
 msgid "A gestão escolhe o seu lugar na fila."
 msgstr "La gestión elige su lugar en la fila."
+
+msgid "Na pausa da gestão, quem tira você da loja é a gestão."
+msgstr "En la pausa de la gestión, quien te saca de la tienda es la gestión."

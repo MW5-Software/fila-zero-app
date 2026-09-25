@@ -57,10 +57,20 @@
     if (!html) return;
     var eraVez = !!document.querySelector("#fila-painel .painel-sua-vez");
     var posicaoAntes = numeroDaPosicao();
-    ["painel", "lista", "barra", "lancamentos", "meus", "posicoes"].forEach(function (nome) {
+    ["painel", "lista", "barra", "lancamentos", "meus", "posicoes", "mover"].forEach(function (nome) {
       var lugar = el("fila-" + nome);
       if (lugar && typeof html[nome] === "string") lugar.innerHTML = html[nome];
     });
+    // O "Mudar de posição" aberto: a lista nova veio com a posição de quem
+    // está sendo movido HABILITADA (o servidor desenha para o alvo da URL).
+    // Desabilita de novo, pela pessoa que a folha aberta está movendo.
+    var mover = el("folha-mover");
+    if (mover && mover.classList.contains("open")) {
+      var quem = mover.querySelector("input[name=pessoa]");
+      mover.querySelectorAll("[data-posicao-de]").forEach(function (opcao) {
+        opcao.disabled = !!quem && opcao.dataset.posicaoDe === quem.value;
+      });
+    }
     if (novaVersao) { versao = novaVersao; corpo.dataset.versao = novaVersao; }
     var eVez = !!document.querySelector("#fila-painel .painel-sua-vez");
     corpo.classList.remove("fila-chegou", "fila-mudou");

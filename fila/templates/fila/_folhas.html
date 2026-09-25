@@ -235,14 +235,7 @@
   <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="mover">
     <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
-    <fieldset class="fila-opcoes">
-      <legend class="msec-title">{{ traduzir("Para qual posição?") }}</legend>
-      {% for l in r.fila %}
-      {# A posição de quem está sendo movido vem desabilitada: o servidor
-         desenha para o alvo da URL, e o script acerta para o alvo do toque. #}
-      <label class="fila-opcao"><input type="radio" name="posicao" value="{{ l.posicao }}" required data-posicao-de="{{ l.pessoa_id }}"{% if alvo and l.pessoa_id == alvo.pessoa_id %} disabled{% endif %}><span>{{ l.posicao }}º · {{ l.nome }}</span></label>
-      {% endfor %}
-    </fieldset>
+    <div id="fila-mover">{% include "fila/_mover.html" %}</div>
     {{ motivo_da_correcao() }}
   </div>
   <div class="mfoot">

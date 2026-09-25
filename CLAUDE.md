@@ -726,14 +726,22 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
     obrigatória, 1…N+1 da fila de AGORA, pelo mesmo encaixe do "Mudar de
     posição". O "Tirar da pausa" recusa a pausa da gestão, e o `voltar` do
     vendedor também — a barra dele mostra "Só a gestão tira você desta
-    pausa." no lugar do botão. "Sair da loja" continua valendo.
+    pausa." no lugar do botão.
+  - **Nem "Sair da loja", nem bater o ponto em outra loja** (25/09/2026):
+    as duas fechavam a presença e a pausa junto, e o vendedor voltava batendo
+    o ponto, no fim da fila, sem a gestão. Quem tira da loja é a gestão
+    ("Tirar da loja"), e o fim do turno continua valendo — os dois passam por
+    `acoes._sair`, e não pelas portas do vendedor.
   - Nas folhas, quem está numa delas tem o estado `em_pausa_fixa`
     (`tela.estado_da_folha`) — não é estado da fila, é o que troca "Tirar da
     pausa" por "Recolocar na fila" no "Corrigir".
   - **As posições do "Recolocar" são um pedaço** (`fila/_posicoes.html`, em
     `PEDACOS`): desenhadas só na abertura da página, ficavam velhas — o
-    gerente via "2º · antes de Caio" com o próprio Caio na pausa. O "Mudar de
-    posição" ainda tem as posições congeladas.
+    gerente via "2º · antes de Caio" com o próprio Caio na pausa. As do
+    "Mudar de posição" também (`fila/_mover.html`), e o `fila.js` bloqueia
+    de novo a posição de quem está sendo movido quando a lista é trocada com
+    a folha aberta. As posições dizem quem fica na FRENTE ("2º · depois de
+    Caio"), e não "antes de".
   - Nos indicadores aparecem no "Tempo em pausa" com o nome delas, mas **não
     pesam no vendedor**: ficam fora da coluna Pausa do ranking e do painel
     dele (`fixa=""` nas três consultas).

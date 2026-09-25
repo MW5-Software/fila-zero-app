@@ -181,6 +181,8 @@ def bater_ponto(pessoa, filial) -> None:
             raise Recusa(_("Você está atendendo em %(loja)s (%(empresa)s). "
                            "Finalize lá antes de entrar aqui.")
                          % {"loja": lugar.filial, "empresa": lugar.filial.empresa})
+        if lugar is not None and _em_pausa_da_gestao(pessoa.pk):
+            raise Recusa(NA_PAUSA_DA_GESTAO)
         agora = _agora()
         if lugar is not None:
             # Uma presença aberta por pessoa: chegar numa loja fecha a outra.
@@ -376,6 +378,17 @@ def _abrir_pausa(lugar, filial, tipo_id, agora, *, fixa=None) -> Pausa:
 
 
 SO_A_GESTAO_TIRA = _("Só a gestão tira você desta pausa.")
+#: As duas portas por onde o vendedor saía da pausa da gestão sem a gestão
+#: (25/09/2026): "Sair da loja" e bater o ponto em OUTRA loja, que fecha a
+#: presença desta. Com a pausa fechada junto, ele batia o ponto de novo e
+#: entrava no fim da fila. Quem tira da loja é a gestão ("Tirar da loja"), e o
+#: fim do turno continua valendo — os dois passam por `_sair`, e não por aqui.
+NA_PAUSA_DA_GESTAO = _("Na pausa da gestão, quem tira você da loja é a gestão.")
+
+
+def _em_pausa_da_gestao(pessoa_id) -> bool:
+    return Pausa.irrestritos.filter(pessoa_id=pessoa_id, fim__isnull=True).exclude(
+        fixa="").exists()
 
 
 def pausar(pessoa, filial, tipo_id) -> None:
@@ -394,8 +407,7 @@ def voltar_para_a_fila(pessoa, filial) -> None:
             raise Recusa(_("Você não está em pausa."))
         # Da pausa da gestão quem tira é a gestão, e escolhendo a posição
         # (`correcoes.recolocar`, 25/09/2026).
-        if Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).exclude(
-                fixa="").exists():
+        if _em_pausa_da_gestao(pessoa.pk):
             raise Recusa(SO_A_GESTAO_TIRA)
         agora = _agora()
         Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).update(
@@ -409,4 +421,6 @@ def sair_da_loja(pessoa, filial) -> None:
         lugar = _lugar_na_loja(pessoa.pk, filial)
         if lugar.estado == Estado.ATENDENDO:
             raise Recusa(_("Finalize o atendimento antes de sair da loja."))
+        if _em_pausa_da_gestao(pessoa.pk):
+            raise Recusa(NA_PAUSA_DA_GESTAO)
         _sair(lugar, _agora())

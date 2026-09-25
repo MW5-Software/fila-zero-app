@@ -36,7 +36,9 @@ PEDACOS = {"painel": "fila/_painel.html", "lista": "fila/_lista.html",
            "barra": "fila/_barra.html", "lancamentos": "fila/_lancamentos.html",
            "meus": "fila/_meus.html",
            # As posições do "Recolocar na fila" (25/09/2026): mudam com a fila.
-           "posicoes": "fila/_posicoes.html"}
+           "posicoes": "fila/_posicoes.html",
+           # E as do "Mudar de posição", pelo mesmo motivo.
+           "mover": "fila/_mover.html"}
 
 #: O que o vendedor tem. Quem tem SÓ isto não tem o que fazer no dashboard.
 _SO_DO_VENDEDOR = frozenset({"fila.ver", "fila.participar"})

@@ -1,0 +1,15 @@
+{# As posições do "Mudar de posição". Um PEDAÇO (25/09/2026), pelo mesmo
+   motivo do "Recolocar na fila" (`_posicoes.html`): desenhadas só na abertura
+   da página, ficavam velhas — o gerente lia "2º · Caio", e a pessoa caía no
+   2º da fila de AGORA, que já era outro. #}
+{% if pode_gerenciar %}
+<fieldset class="fila-opcoes">
+  <legend class="msec-title">{{ traduzir("Para qual posição?") }}</legend>
+  {% for l in r.fila %}
+  {# A posição de quem está sendo movido vem desabilitada: o servidor
+     desenha para o alvo da URL, e o script acerta para o alvo do toque — e
+     de novo quando a consulta troca este pedaço com a folha aberta. #}
+  <label class="fila-opcao"><input type="radio" name="posicao" value="{{ l.posicao }}" required data-posicao-de="{{ l.pessoa_id }}"{% if alvo and l.pessoa_id == alvo.pessoa_id %} disabled{% endif %}><span>{{ l.posicao }}º · {{ l.nome }}</span></label>
+  {% endfor %}
+</fieldset>
+{% endif %}

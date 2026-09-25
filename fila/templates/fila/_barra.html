@@ -26,8 +26,9 @@
   <a class="btn primary lg fila-principal" href="{{ url_fila }}?folha=finalizar" data-folha="finalizar">{{ icon("check", "sm") }}<span>{{ traduzir("Finalizar atendimento") }}</span></a>
 {% elif meu.pausa_fixa %}
   {# Da pausa da gestão quem tira é a gestão, escolhendo a posição
-     (25/09/2026): sem o botão, e o servidor recusa o "voltar" forjado. #}
-  <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>
+     (25/09/2026): sem "Voltar" e sem "Sair da loja" — saindo, o vendedor
+     batia o ponto de novo e entrava no fim da fila. O servidor recusa os dois
+     forjados. #}
   <p class="fila-aviso-gestao">{{ icon("lock", "sm") }}<span>{{ traduzir("Só a gestão tira você desta pausa.") }}</span></p>
 {% else %}
   <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>

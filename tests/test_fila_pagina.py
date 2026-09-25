@@ -91,7 +91,7 @@ def test_acao_com_javascript_devolve_o_estado_novo(loja):
     assert resposta["ok"] is True
     assert "É a sua vez" in resposta["html"]["painel"]
     assert set(resposta["html"]) == {"painel", "lista", "barra", "lancamentos",
-                                    "meus", "posicoes"}
+                                    "meus", "posicoes", "mover"}
     recusa = _agir_js(logado("ana"), acao="ponto")
     assert recusa == {**recusa, "ok": False, "frase": "Você já está nesta loja."}
 
