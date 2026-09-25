@@ -126,3 +126,26 @@ class TestOBotaoDentroDaLinhaDeItem:
         corpo = _regra(".itemrow .form")
         assert "display: flex" in corpo
         assert "margin: 0" in corpo
+
+
+class TestARolagemDoMenu:
+    """25/09/2026, o cliente: "scroll do menu está sem estilização". A lista
+    do menu rola (`.side-nav { overflow-y: auto }`, do design system), e a
+    barra era a do sistema operacional — larga e cinza-clara por cima do fundo
+    escuro do menu.
+
+    A cor sai de `--sidebar-text`, como os outros estados do menu: o fundo é
+    do cliente (`AparenciaDaEmpresa`), e um cinza fixo sumiria num menu claro
+    ou gritaria num escuro."""
+
+    def test_o_padrao_fino_e_na_cor_do_menu(self):
+        regra = _regra(".side-nav")
+        assert "scrollbar-width: thin" in regra
+        assert "scrollbar-color:" in regra
+        assert "var(--sidebar-text)" in regra
+
+    def test_o_caminho_do_safari(self):
+        """O Safari ainda não lê `scrollbar-color`; ele lê os pseudo-elementos
+        `::-webkit-scrollbar`. O Chrome, que lê os dois, fica com o padrão."""
+        assert "var(--sidebar-text)" in _regra(".side-nav::-webkit-scrollbar-thumb")
+        assert "width: 6px" in _regra(".side-nav::-webkit-scrollbar")
