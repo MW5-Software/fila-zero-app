@@ -192,6 +192,15 @@ def _decidir_filial(request) -> "Filial | None":
     # desempata pelo nome: "Filial 1" passa na frente de "Matriz" no alfabeto, e
     # entrar caía numa filial qualquer. Quem não alcança a Matriz fica com a
     # primeira que alcança. O seletor continua na ordem de sempre.
+    return filial_de_entrada(permitidas)
+
+
+def filial_de_entrada(permitidas) -> "Filial | None":
+    """Em que filial se cai numa empresa sem escolha gravada: a Matriz, ou a
+    primeira que se alcança. Pública porque o diálogo de troca
+    (`plataforma.trocar`) diz ANTES de trocar de empresa em qual loja a
+    pessoa vai cair, e a frase não pode divergir do que a sessão faz depois.
+    """
     return permitidas.filter(e_matriz=True).first() or permitidas.first()
 
 

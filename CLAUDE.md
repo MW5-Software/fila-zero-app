@@ -450,6 +450,13 @@ O que custa quando se esquece:
   pode deixar o cabeçalho mostrando um lugar onde a pessoa não está. O
   diálogo só existe para quem tem o que trocar, e quem age continua sendo o
   POST de `empresa_trocar`/`filial_trocar`.
+- **A pergunta diz "Trocar Empresa/Filial?" e "Você vai passar a trabalhar
+  na EMPRESA - LOJA"** (25/09/2026, pedido do cliente). O script só conhece
+  o nome escolhido, e o servidor manda o resto no formulário: na troca de
+  loja, a empresa de agora (`data-empresa`); na de empresa, a loja em que se
+  cai (`data-chegada`), calculada por `plataforma.contexto.filial_de_entrada`
+  — a MESMA que a sessão usa depois de trocar, senão a frase diria uma loja e
+  a pessoa cairia noutra.
 - **A página `/sair` continua sendo a única que age**, e o item do menu é um
   `<a href="/sair">` de verdade: sem JavaScript cai na confirmação de sempre
   (`comum/confirmacao.py`), e o POST continua sendo o único jeito de sair.

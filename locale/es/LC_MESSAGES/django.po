@@ -346,11 +346,11 @@ msgstr "Cancelar"
 msgid "Confirmar"
 msgstr "Confirmar"
 
-msgid "Você vai passar a trabalhar em"
+msgid "Você vai passar a trabalhar na"
 msgstr "Vas a pasar a trabajar en"
 
-msgid "Trocar de lugar?"
-msgstr "¿Cambiar de lugar?"
+msgid "Trocar Empresa/Filial?"
+msgstr "¿Cambiar Empresa/Sucursal?"
 
 msgid "Densidade"
 msgstr "Densidad"

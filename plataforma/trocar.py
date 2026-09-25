@@ -34,7 +34,8 @@ __all__ = ["ID_DO_DIALOGO", "modal_de_troca"]
 ID_DO_DIALOGO = "trocar-dialogo"
 
 
-def _formulario(request, *, para: str, action: str, campo: str, extras=()):
+def _formulario(request, *, para: str, action: str, campo: str, extras=(),
+                dados=None):
     """Um dos dois formulários do diálogo, nascendo escondido.
 
     `hidden` no `<form>`, e não `display:none` na folha: o navegador tira do
@@ -52,7 +53,35 @@ def _formulario(request, *, para: str, action: str, campo: str, extras=()):
         for nome, valor in extras]
     campos.append(Button(label=_("Confirmar"), variant="primary", type="submit"))
     return Form(action=action, children=campos,
-                attrs={"data-para": para, "hidden": True})
+                attrs={"data-para": para, "hidden": True, **(dados or {})})
+
+
+def _empresa_de_agora(request) -> str:
+    """O nome da empresa desta sessão, para a troca de LOJA dizer "Empresa -
+    Loja" (o script só conhece a loja que se escolheu)."""
+    from .contexto import empresa_atual
+
+    atual = empresa_atual(request)
+    return str(atual) if atual is not None else ""
+
+
+def _chegada_por_empresa(request) -> str:
+    """`{id da empresa: nome da loja em que se cai}`, em JSON, para a troca de
+    EMPRESA dizer "Empresa - Loja" antes de trocar. A loja sai de
+    `filial_de_entrada`, a mesma função que a sessão usa depois da troca."""
+    import json
+
+    from comum.sessao import identidade_da_sessao
+
+    from .contexto import empresas_de, filiais_de, filial_de_entrada
+
+    pessoa = identidade_da_sessao(request)
+    chegada = {}
+    for empresa in empresas_de(pessoa):
+        filial = filial_de_entrada(filiais_de(pessoa, empresa))
+        if filial is not None:
+            chegada[str(empresa.pk)] = str(filial)
+    return json.dumps(chegada, ensure_ascii=False)
 
 
 def modal_de_troca(request, *, com_empresa: bool = True,
@@ -66,23 +95,31 @@ def modal_de_troca(request, *, com_empresa: bool = True,
     # A frase fica montada, com o nome de destino em branco: o script escreve
     # o texto do `<option>` que a pessoa escolheu. `textContent`, e não HTML —
     # o nome é dado cadastrado, e dado cadastrado nunca vira marcação.
+    #
+    # A frase diz a empresa E a loja (25/09/2026, pedido do cliente: "Trocar
+    # Empresa/Filial? Você vai passar a trabalhar na empresa - filial
+    # selecionada"): o script junta o nome escolhido com o que o formulário
+    # traz — a empresa de agora (`data-empresa`), ou a loja em que se cai
+    # (`data-chegada`).
     pergunta = Raw(html=format_html(
         "<p>{} <strong data-alvo-da-troca></strong>.</p>",
-        _("Você vai passar a trabalhar em")))
+        _("Você vai passar a trabalhar na")))
     return Modal(
         id=ID_DO_DIALOGO,
-        title=_("Trocar de lugar?"),
+        title=_("Trocar Empresa/Filial?"),
         size="sm",
         body=pergunta,
         footer=[Button(label=_("Cancelar"), attrs={"data-modal-close": ""})]
         + ([_formulario(request, para="empresa",
-                        action=reverse("empresa_trocar"), campo=CHAVE_EMPRESA)]
+                        action=reverse("empresa_trocar"), campo=CHAVE_EMPRESA,
+                        dados={"data-chegada": _chegada_por_empresa(request)})]
            if com_empresa else [])
         # A loja volta para a página de onde se trocou — é o que a fila
         # precisa (`plataforma.views_filial._voltar_seguro` confere que o
         # caminho é desta instalação antes de devolver alguém para ele).
         + ([_formulario(request, para="filial",
                         action=reverse("filial_trocar"), campo=CHAVE,
-                        extras=(("voltar", request.get_full_path()),))]
+                        extras=(("voltar", request.get_full_path()),),
+                        dados={"data-empresa": _empresa_de_agora(request)})]
            if com_filial else []),
     )

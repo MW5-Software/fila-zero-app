@@ -24,11 +24,21 @@
   // ou sem o formulário desse nível, quem chamou segue com o caminho dele.
   function abrir(para, id, nome) {
     var dialogo = document.getElementById("trocar-dialogo");
-    if (!dialogo || !dialogo.querySelector('form[data-para="' + para + '"]')) {
-      return false;
+    var escolhido = dialogo && dialogo.querySelector('form[data-para="' + para + '"]');
+    if (!escolhido) return false;
+    // "Empresa - Loja" (25/09/2026, pedido do cliente). O servidor manda o
+    // pedaço que o script não sabe: na troca de loja, a empresa de agora; na
+    // de empresa, a loja em que se cai. Sem ele, fica só o nome escolhido.
+    var outro = "";
+    if (para === "filial") {
+      outro = escolhido.dataset.empresa || "";
+    } else {
+      try { outro = JSON.parse(escolhido.dataset.chegada || "{}")[id] || ""; }
+      catch (erro) { outro = ""; }
     }
+    var frase = !outro ? nome : para === "filial" ? outro + " - " + nome : nome + " - " + outro;
     dialogo.querySelectorAll("[data-alvo-da-troca]").forEach(function (alvo) {
-      alvo.textContent = nome;
+      alvo.textContent = frase;
     });
     dialogo.querySelectorAll("form[data-para]").forEach(function (formulario) {
       var e_esse = formulario.dataset.para === para;

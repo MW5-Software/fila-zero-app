@@ -163,3 +163,62 @@ def test_o_caminho_por_url_continua_perguntando(com_duas):
 
 def test_o_script_da_troca_vem_em_toda_pagina(com_duas):
     assert "/static/plataforma/contexto.js" in _home(com_duas)
+
+
+class TestAPerguntaDizEmpresaEFilial:
+    """25/09/2026, pedido do cliente: "Trocar Empresa/Filial? Você vai passar
+    a trabalhar na empresa - filial selecionada". A pergunta dizia só o nome
+    escolhido ("Trocar de lugar? Você vai passar a trabalhar em Centro"), e
+    não em qual empresa aquela loja estava.
+
+    O script escreve os dois nomes, e o servidor entrega o que ele não sabe:
+    na troca de loja, a empresa de agora; na troca de empresa, a loja em que
+    a pessoa vai CAIR — a Matriz, ou a primeira que alcança
+    (`plataforma.contexto.filial_de_entrada`), a mesma que a sessão escolhe
+    depois de trocar."""
+
+    def _dialogo(self, html):
+        return html.split('id="trocar-dialogo"')[1].split("</form></div>")[0]
+
+    def test_o_titulo_e_a_frase(self, com_duas):
+        html = _home(com_duas)
+        assert "Trocar Empresa/Filial?" in html
+        assert "Você vai passar a trabalhar na" in html
+
+    def test_a_troca_de_loja_leva_o_nome_da_empresa_de_agora(self, db):
+        from tests.fila_cenario import logado, nova_loja, sylvia
+
+        empresa, _matriz, _titular = sylvia()
+        nova_loja(empresa, "Centro")
+        html = logado("sylvia").get("/fila").content.decode()
+
+        assert f'data-empresa="{empresa}"' in html
+
+    def test_a_troca_de_empresa_leva_a_loja_em_que_se_cai(self, com_duas):
+        import json
+        import re
+
+        from plataforma.models import Empresa, Filial
+
+        beta = Empresa.objects.get(razao_social="Beta Ltda")
+        Filial.objects.create(empresa=beta, nome="Aaa Primeira", apelido="Aaa Primeira")
+        html = _home(com_duas)
+
+        bruto = re.search(r"data-chegada='([^']*)'", html) or re.search(
+            r'data-chegada="([^"]*)"', html)
+        assert bruto, "o formulário da empresa não diz em que loja se cai"
+        from html import unescape
+
+        chegada = json.loads(unescape(bruto.group(1)))
+        assert chegada[str(beta.pk)] == "Matriz", (
+            "a Matriz vem antes de quem a passa no alfabeto, como na sessão")
+
+
+def test_a_filial_de_entrada_e_a_mesma_da_sessao(db):
+    """A frase e a sessão perguntam à MESMA função: se divergissem, o
+    diálogo diria uma loja e a pessoa cairia noutra."""
+    import inspect
+
+    from plataforma import contexto
+
+    assert "filial_de_entrada(" in inspect.getsource(contexto._decidir_filial)
