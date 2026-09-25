@@ -3,7 +3,7 @@
 {% macro corrigir(l) %}
 {% if pode_gerenciar and not l.e_voce %}
 <a class="iconbtn fila-corrigir" href="{{ url_fila }}?folha=corrigir&pessoa={{ l.pessoa_id }}" title="{{ traduzir('Corrigir') }} {{ l.nome }}" aria-label="{{ traduzir('Corrigir') }} {{ l.nome }}"
-   data-folha="corrigir" data-pessoa="{{ l.pessoa_id }}" data-nome="{{ l.nome }}" data-estado="{{ l.estado }}">{{ icon("dots-vertical", "sm") }}</a>
+   data-folha="corrigir" data-pessoa="{{ l.pessoa_id }}" data-nome="{{ l.nome }}" data-estado="{{ 'em_pausa_fixa' if l.pausa_fixa else l.estado }}">{{ icon("dots-vertical", "sm") }}</a>
 {% endif %}
 {% endmacro %}
 

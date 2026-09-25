@@ -1718,3 +1718,51 @@ msgstr[1] "%(n)s atenciones · ventas de cada canal"
 
 msgid "%(v)s de %(n)s"
 msgstr "%(v)s de %(n)s"
+
+msgid "Administrativa"
+msgstr "Administrativa"
+
+msgid "Gestão"
+msgstr "Gestión"
+
+msgid "pausa da gestão"
+msgstr "pausa de la gestión"
+
+msgid "Recolocou na fila"
+msgstr "Volvió a poner en la fila"
+
+msgid "Só a gestão tira você desta pausa."
+msgstr "Solo la gestión te saca de esta pausa."
+
+msgid "Escolha a posição na fila."
+msgstr "Elija la posición en la fila."
+
+msgid "Essa pessoa não está numa pausa da gestão."
+msgstr "Esa persona no está en una pausa de la gestión."
+
+msgid "Essa é uma pausa da gestão: use Recolocar na fila."
+msgstr "Esta es una pausa de la gestión: use Volver a poner en la fila."
+
+msgid "Recolocar na fila"
+msgstr "Volver a poner en la fila"
+
+msgid "Encerra a pausa da gestão e põe na posição que você escolher."
+msgstr "Termina la pausa de la gestión y pone en la posición que usted elija."
+
+msgid "Pausas da gestão"
+msgstr "Pausas de la gestión"
+
+msgid "Só a gestão tira desta pausa, escolhendo a posição na fila."
+msgstr "Solo la gestión saca de esta pausa, eligiendo la posición en la fila."
+
+msgid "Em qual lugar da fila?"
+msgstr "¿En qué lugar de la fila?"
+
+msgid "antes de"
+msgstr "antes de"
+
+msgid "fim da fila"
+msgstr "final de la fila"
+
+msgid "A gestão escolhe o seu lugar na fila."
+msgstr "La gestión elige su lugar en la fila."

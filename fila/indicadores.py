@@ -27,7 +27,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy
 
 from .estado import nome_de
-from .models import Atendimento, ItemVendido, Pausa, Presenca, Resultado
+from .models import Atendimento, ItemVendido, Pausa, PausaFixa, Presenca, Resultado
 from .periodo import Periodo, inicio_do_dia
 
 __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
@@ -210,12 +210,15 @@ def pausa_por_tipo(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
               .filter(filial__in=recorte.lojas, fim__isnull=False,
                       inicio__lt=ate, fim__gt=de))
     if vendedor is not None:
-        pausas = pausas.filter(pessoa=vendedor)
+        # O painel do vendedor não conta a pausa da GESTÃO (25/09/2026): foi
+        # a gestão que o tirou da fila, e não ele que parou.
+        pausas = pausas.filter(pessoa=vendedor, fixa="")
     linhas = (pausas.annotate(dentro=dentro)
-              .values("tipo__nome").annotate(total=Sum("dentro"))
-              .order_by("-total", "tipo__nome"))
-    return [(linha["tipo__nome"], int(linha["total"].total_seconds() // 60))
-            for linha in linhas]
+              .values("tipo__nome", "fixa").annotate(total=Sum("dentro")))
+    fixas = dict(PausaFixa.choices)
+    contas = [((linha["tipo__nome"] or str(fixas[linha["fixa"]])),
+               int(linha["total"].total_seconds() // 60)) for linha in linhas]
+    return sorted(contas, key=lambda par: (-par[1], par[0]))
 
 
 class Fatia(NamedTuple):
@@ -377,9 +380,10 @@ def ranking(recorte: Recorte, mes: "date | None" = None):
     base = _atendimentos(recorte)
     venda = Q(resultado=Resultado.VENDEU)
     de, ate = recorte.periodo.de, recorte.periodo.ate
+    # A pausa da GESTÃO não pesa no vendedor (25/09/2026).
     pausas = (do_recorte(Pausa, recorte)
               .filter(filial__in=recorte.lojas, fim__isnull=False,
-                      inicio__lt=ate, fim__gt=de)
+                      inicio__lt=ate, fim__gt=de, fixa="")
               .annotate(dentro=ExpressionWrapper(
                   Least("fim", Value(ate, output_field=DateTimeField()))
                   - Greatest("inicio", Value(de, output_field=DateTimeField())),
@@ -477,8 +481,9 @@ def ranking_por_loja(recorte: Recorte, mes: "date | None" = None):
     venda = Q(resultado=Resultado.VENDEU)
     de, ate = recorte.periodo.de, recorte.periodo.ate
     pausas = (do_recorte(Pausa, recorte)
+              # A pausa da GESTÃO não pesa no vendedor (25/09/2026).
               .filter(pessoa=OuterRef("vendedor"), filial=OuterRef("filial"),
-                      fim__isnull=False, inicio__lt=ate, fim__gt=de)
+                      fim__isnull=False, inicio__lt=ate, fim__gt=de, fixa="")
               .order_by().values("pessoa")
               .annotate(x=Sum(ExpressionWrapper(
                   Least("fim", Value(ate, output_field=DateTimeField()))

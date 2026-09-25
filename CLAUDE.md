@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 150 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 151 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -716,6 +716,28 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   a porcentagem já escrita. "Sem mídia" vai no fim, para a soma bater com o
   total do painel.
 
+- **As pausas da gestão: Administrativa e Gestão** (25/09/2026, pedido do
+  cliente). Fixas no código (`fila.PausaFixa`), e não cadastro: a `Pausa` tem
+  um tipo cadastrado OU uma pausa fixa, e a restrição
+  `fila_pausa_tipo_ou_fixa` recusa as duas coisas e nenhuma.
+  - **Só quem gerencia a loja** põe (a folha "Pôr em pausa" as oferece
+    separadas das cadastradas; o `pausar` do vendedor lê só id, e não tem
+    como pedi-las) e **recoloca**: `correcoes.recolocar`, com a posição
+    obrigatória, 1…N+1 da fila de AGORA, pelo mesmo encaixe do "Mudar de
+    posição". O "Tirar da pausa" recusa a pausa da gestão, e o `voltar` do
+    vendedor também — a barra dele mostra "Só a gestão tira você desta
+    pausa." no lugar do botão. "Sair da loja" continua valendo.
+  - Nas folhas, quem está numa delas tem o estado `em_pausa_fixa`
+    (`tela.estado_da_folha`) — não é estado da fila, é o que troca "Tirar da
+    pausa" por "Recolocar na fila" no "Corrigir".
+  - **As posições do "Recolocar" são um pedaço** (`fila/_posicoes.html`, em
+    `PEDACOS`): desenhadas só na abertura da página, ficavam velhas — o
+    gerente via "2º · antes de Caio" com o próprio Caio na pausa. O "Mudar de
+    posição" ainda tem as posições congeladas.
+  - Nos indicadores aparecem no "Tempo em pausa" com o nome delas, mas **não
+    pesam no vendedor**: ficam fora da coluna Pausa do ranking e do painel
+    dele (`fixa=""` nas três consultas).
+
 ### O que custa esquecer
 
 - **Ler o estado antes de trancar.** Dois toques em "Vou atender" leriam os
@@ -1000,7 +1022,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 150 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 151 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

@@ -34,7 +34,7 @@ from .periodo import inicio_do_dia
 from .valores import em_reais
 
 __all__ = ["descrever", "editar_lancamento", "fechar_atendimento",
-           "lancamentos_de_hoje", "ler_observacao", "mover", "por_em_pausa",
+           "lancamentos_de_hoje", "ler_observacao", "mover", "por_em_pausa", "recolocar",
            "por_na_fila",
            "tirar_da_loja",
            "tirar_da_pausa"]
@@ -168,12 +168,16 @@ def tirar_da_pausa(autor, filial, pessoa_id, *, observacao, request=None):
             raise Recusa(_("Essa pessoa não está em pausa."))
         pausa = Pausa.irrestritos.select_related("tipo").get(
             pessoa_id=pessoa_id, fim__isnull=True)
+        # A pausa da gestão volta pela POSIÇÃO escolhida (`recolocar`), e não
+        # para o fim: tirar por aqui pularia a escolha que o cliente pediu.
+        if pausa.fixa:
+            raise Recusa(_("Essa é uma pausa da gestão: use Recolocar na fila."))
         agora = _agora()
         pausa.fim = agora
         pausa.save(update_fields=["fim"])
         _voltar_ao_fim(lugar, agora)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.TIRAR_PAUSA, observacao,
-                   pausa.tipo.nome, agora, auditoria=ACOES_DA_FILA.FILA_PAUSA_ENCERRADA,
+                   pausa.nome, agora, auditoria=ACOES_DA_FILA.FILA_PAUSA_ENCERRADA,
                    alvo=_alvo(lugar, filial), request=request)
 
 
@@ -285,9 +289,13 @@ def mover(autor, filial, pessoa_id, posicao, *, observacao, request=None):
                    request=request)
 
 
-def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None):
+def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, fixa=None,
+                 request=None):
     """O vendedor foi ao banco e não apertou "Pausa" (C4). Só quem está na
-    fila: quem atende tem o atendimento fechado antes, pela mesma folha."""
+    fila: quem atende tem o atendimento fechado antes, pela mesma folha.
+
+    `fixa` é a pausa da GESTÃO — Administrativa ou Gestão (25/09/2026) —, que
+    só existe por aqui: é esta a porta de quem gerencia a loja."""
     observacao = ler_observacao(observacao)
     with transaction.atomic():
         _travar(filial)
@@ -297,9 +305,49 @@ def por_em_pausa(autor, filial, pessoa_id, tipo_id, *, observacao, request=None)
         if lugar.estado not in (Estado.NA_FILA, Estado.EM_ESPERA):
             raise Recusa(NAO_ESTA_NA_FILA)
         agora = _agora()
-        tipo = _abrir_pausa(lugar, filial, tipo_id, agora)
+        pausa = _abrir_pausa(lugar, filial, tipo_id, agora, fixa=fixa)
         _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.PAUSAR, observacao,
-                   tipo.nome, agora, auditoria=ACOES_DA_FILA.FILA_PAUSA_INICIADA,
+                   pausa.nome, agora, auditoria=ACOES_DA_FILA.FILA_PAUSA_INICIADA,
+                   alvo=_alvo(lugar, filial), request=request)
+
+
+def recolocar(autor, filial, pessoa_id, posicao, *, observacao, request=None):
+    """Tira da pausa da GESTÃO e põe na `posicao` da fila (25/09/2026).
+
+    O cliente: "para voltar na fila só eles podem recolocar, e vão ter que
+    colocar qual lugar da fila o vendedor vai voltar". A posição é 1…N+1 da
+    fila de AGORA — N+1 é o fim —, e o encaixe é o mesmo do "Mudar de posição"
+    (`_instante_entre`): um instante estritamente entre os vizinhos, e não um
+    número guardado.
+    """
+    observacao = ler_observacao(observacao)
+    with transaction.atomic():
+        _travar(filial)
+        lugar = _lugar_de_outro(autor, filial, pessoa_id)
+        pausa = (Pausa.irrestritos.filter(pessoa_id=pessoa_id, fim__isnull=True)
+                 .exclude(fixa="").first()
+                 if lugar.estado == Estado.EM_PAUSA else None)
+        if pausa is None:
+            raise Recusa(_("Essa pessoa não está numa pausa da gestão."))
+        outros = list(na_fila(filial))
+        if posicao is None or not 1 <= posicao <= len(outros) + 1:
+            raise Recusa(_("Escolha a posição na fila."))
+        agora = _agora()
+        instante = agora
+        if outros:
+            instante = _instante_entre(outros, posicao)
+            if instante is None:
+                _espacar(outros)
+                instante = _instante_entre(outros, posicao)
+        pausa.fim = agora
+        pausa.save(update_fields=["fim"])
+        lugar.estado = Estado.NA_FILA
+        lugar.na_fila_desde = instante
+        lugar.desde = agora
+        lugar.save(update_fields=["estado", "na_fila_desde", "desde"])
+        _registrar(autor, filial, pessoa_id, AcaoDeCorrecao.RECOLOCAR, observacao,
+                   f"{pausa.nome} → {posicao}º", agora,
+                   auditoria=ACOES_DA_FILA.FILA_RECOLOCADO_NA_FILA,
                    alvo=_alvo(lugar, filial), request=request)
 
 

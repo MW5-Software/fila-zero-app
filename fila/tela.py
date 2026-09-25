@@ -26,7 +26,7 @@ from .ambiente import ambiente_da_fila
 from .correcoes import lancamentos_de_hoje
 from .estado import nome_de, retrato
 from .models import (Atendimento, Estado, GrupoDeItem, LugarNaFila,
-                     Midia, MotivoDeNaoVenda, TipoDePausa)
+                     Midia, MotivoDeNaoVenda, PausaFixa, TipoDePausa)
 
 __all__ = ["PEDACOS", "atende", "ha_quanto", "hora_local", "iniciais", "minutos",
            "pagina", "pedacos", "pessoas_na_frente", "sem_loja", "so_a_fila"]
@@ -34,7 +34,9 @@ __all__ = ["PEDACOS", "atende", "ha_quanto", "hora_local", "iniciais", "minutos"
 #: Os pedaços que a consulta troca, com o template de cada um.
 PEDACOS = {"painel": "fila/_painel.html", "lista": "fila/_lista.html",
            "barra": "fila/_barra.html", "lancamentos": "fila/_lancamentos.html",
-           "meus": "fila/_meus.html"}
+           "meus": "fila/_meus.html",
+           # As posições do "Recolocar na fila" (25/09/2026): mudam com a fila.
+           "posicoes": "fila/_posicoes.html"}
 
 #: O que o vendedor tem. Quem tem SÓ isto não tem o que fazer no dashboard.
 _SO_DO_VENDEDOR = frozenset({"fila.ver", "fila.participar"})
@@ -176,8 +178,30 @@ def _alvo_da_folha(request, filial):
     lugar = (LugarNaFila.objects.da_empresa(filial.empresa)
              .filter(filial=filial, pessoa_id=pessoa_id)
              .select_related("pessoa").first())
-    return (Alvo(lugar.pessoa_id, nome_de(lugar.pessoa), lugar.estado)
-            if lugar else None)
+    if lugar is None:
+        return None
+    return Alvo(lugar.pessoa_id, nome_de(lugar.pessoa),
+                estado_da_folha(lugar.estado, _em_pausa_fixa(lugar)))
+
+
+#: O "estado" que as folhas do gerente leem para quem está numa pausa da
+#: GESTÃO (25/09/2026). Não é um estado da fila — a pessoa continua
+#: `EM_PAUSA` —, é o que decide, no "Corrigir", "Recolocar na fila" no lugar
+#: de "Tirar da pausa". O cartão (`data-estado`) e a folha sem script
+#: (`Alvo.estado`) dizem o mesmo, e por isso a regra mora aqui.
+EM_PAUSA_FIXA = "em_pausa_fixa"
+
+
+def estado_da_folha(estado: str, pausa_fixa: bool) -> str:
+    return EM_PAUSA_FIXA if estado == Estado.EM_PAUSA and pausa_fixa else estado
+
+
+def _em_pausa_fixa(lugar) -> bool:
+    from .models import Pausa
+
+    return (lugar.estado == Estado.EM_PAUSA
+            and Pausa.irrestritos.filter(pessoa_id=lugar.pessoa_id,
+                                         fim__isnull=True).exclude(fixa="").exists())
 
 
 @dataclass(frozen=True)
@@ -318,6 +342,8 @@ def _contexto(request, filial, recusa=""):
         "motivos": list(MotivoDeNaoVenda.objects.da_empresa(empresa)
                         .filter(ativos | motivo_do_lancamento)),
         "tipos": list(TipoDePausa.objects.da_empresa(empresa).filter(ativo=True)),
+        # As pausas da GESTÃO (25/09/2026): só a folha do gerente as oferece.
+        "pausas_fixas": PausaFixa.choices,
         # Vazia quando a empresa não tem mídia ativa: a folha não desenha o
         # campo, e `acoes._validar_midia` não o cobra (25/09/2026).
         "midias": list(Midia.objects.da_empresa(empresa)

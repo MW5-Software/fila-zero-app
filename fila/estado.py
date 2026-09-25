@@ -12,7 +12,7 @@ from datetime import datetime
 
 from django.db.models import BooleanField, Count, ExpressionWrapper, Max, Q, Sum
 
-from .models import Estado, LugarNaFila, Pausa
+from .models import Estado, LugarNaFila, Pausa, PausaFixa
 
 __all__ = ["Linha", "Retrato", "na_fila", "nome_de", "posicao_de",
            "retrato", "versao_da_fila"]
@@ -111,6 +111,9 @@ class Linha:
     posicao: "int | None"
     tipo_de_pausa: str
     e_voce: bool
+    #: Numa pausa da GESTÃO (25/09/2026): o vendedor não sai sozinho, e o
+    #: "Corrigir" oferece "Recolocar na fila" no lugar de "Tirar da pausa".
+    pausa_fixa: bool = False
     #: Se a pessoa tem foto (`/avatar/<id>`). Só o "tem", e não os bytes:
     #: a consulta de 3 em 3 segundos não pode carregar imagem.
     tem_foto: bool = False
@@ -136,9 +139,11 @@ def retrato(filial, pessoa) -> Retrato:
         .annotate(tem_foto=ExpressionWrapper(
             Q(pessoa__avatar__isnull=False), output_field=BooleanField()))
         .order_by("na_fila_desde", "pk"))
-    tipos = dict(Pausa.objects.da_empresa(filial.empresa)
-                 .filter(filial=filial, fim__isnull=True)
-                 .values_list("pessoa_id", "tipo__nome"))
+    abertas = {pessoa: (tipo or str(PausaFixa(fixa).label), bool(fixa))
+               for pessoa, tipo, fixa in (
+                   Pausa.objects.da_empresa(filial.empresa)
+                   .filter(filial=filial, fim__isnull=True)
+                   .values_list("pessoa_id", "tipo__nome", "fixa"))}
     posicao = 0
     atendendo, fila, em_pausa, em_espera = [], [], [], []
     for lugar in lugares:
@@ -148,7 +153,8 @@ def retrato(filial, pessoa) -> Retrato:
             pessoa_id=lugar.pessoa_id, nome=nome_de(lugar.pessoa),
             estado=lugar.estado, desde=lugar.desde,
             posicao=posicao if lugar.estado == Estado.NA_FILA else None,
-            tipo_de_pausa=tipos.get(lugar.pessoa_id, ""),
+            tipo_de_pausa=abertas.get(lugar.pessoa_id, ("", False))[0],
+            pausa_fixa=abertas.get(lugar.pessoa_id, ("", False))[1],
             e_voce=lugar.pessoa_id == pessoa_id, tem_foto=lugar.tem_foto)
         {Estado.NA_FILA: fila, Estado.ATENDENDO: atendendo,
          Estado.EM_PAUSA: em_pausa,

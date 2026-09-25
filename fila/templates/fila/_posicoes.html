@@ -1,0 +1,14 @@
+{# As posições do "Recolocar na fila" (25/09/2026). Um PEDAÇO, e não parte
+   fixa da folha: a consulta de 3 em 3 segundos troca os pedaços, e as
+   posições desenhadas quando a página abriu ficavam velhas — o gerente via
+   "2º · antes de Caio" com o próprio Caio na pausa. Quem está em pausa não
+   está em `r.fila`, e por isso nunca aparece aqui. #}
+{% if pode_gerenciar %}
+<fieldset class="fila-opcoes fila-opcoes-lista">
+  <legend class="msec-title">{{ traduzir("Em qual lugar da fila?") }}</legend>
+  {% for l in r.fila %}
+  <label class="fila-opcao"><input type="radio" name="posicao" value="{{ loop.index }}" required><span>{{ loop.index }}º · {{ traduzir("antes de") }} {{ l.nome }}</span></label>
+  {% endfor %}
+  <label class="fila-opcao"><input type="radio" name="posicao" value="{{ r.fila|length + 1 }}" required><span>{{ r.fila|length + 1 }}º · {{ traduzir("fim da fila") }}</span></label>
+</fieldset>
+{% endif %}

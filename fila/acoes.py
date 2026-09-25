@@ -31,7 +31,7 @@ from plataforma.models import Filial
 
 from .estado import na_fila, nome_de, posicao_de
 from .models import (Atendimento, Estado, GrupoDeItem, ItemVendido,
-                     LugarNaFila, Midia, MotivoDeNaoVenda, Pausa, Presenca,
+                     LugarNaFila, Midia, MotivoDeNaoVenda, Pausa, PausaFixa, Presenca,
                      Resultado, TipoDePausa)
 
 __all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto",
@@ -349,22 +349,33 @@ def finalizar(pessoa, filial, lancamento) -> None:
         _depois_do_atendimento(lugar, filial, agora)
 
 
-def _abrir_pausa(lugar, filial, tipo_id, agora):
+def _abrir_pausa(lugar, filial, tipo_id, agora, *, fixa=None) -> Pausa:
     """Abre a pausa e muda o lugar. Um miolo para o "Pausa" do vendedor e o
     "Pôr em pausa" do gerente (spec 2026-09-17, C4): duas cópias divergiriam
-    no primeiro ajuste."""
-    tipo = (TipoDePausa.objects.da_empresa(filial.empresa)
-            .filter(pk=tipo_id, ativo=True).first()
-            if tipo_id is not None else None)
-    if tipo is None:
-        raise Recusa(_("Escolha o tipo de pausa."))
-    Pausa.irrestritos.create(empresa=filial.empresa, pessoa_id=lugar.pessoa_id,
-                             filial=filial, presenca=lugar.presenca,
-                             tipo=tipo, inicio=agora)
+    no primeiro ajuste.
+
+    `fixa` é a pausa da GESTÃO (25/09/2026), que só o gerente passa: o
+    `pausar` do vendedor não tem como pedi-la."""
+    if fixa:
+        if fixa not in PausaFixa.values:
+            raise Recusa(_("Escolha o tipo de pausa."))
+        tipo = None
+    else:
+        tipo = (TipoDePausa.objects.da_empresa(filial.empresa)
+                .filter(pk=tipo_id, ativo=True).first()
+                if tipo_id is not None else None)
+        if tipo is None:
+            raise Recusa(_("Escolha o tipo de pausa."))
+    pausa = Pausa.irrestritos.create(
+        empresa=filial.empresa, pessoa_id=lugar.pessoa_id, filial=filial,
+        presenca=lugar.presenca, tipo=tipo, fixa=fixa or "", inicio=agora)
     lugar.estado = Estado.EM_PAUSA
     lugar.desde = agora
     lugar.save(update_fields=["estado", "desde"])
-    return tipo
+    return pausa
+
+
+SO_A_GESTAO_TIRA = _("Só a gestão tira você desta pausa.")
 
 
 def pausar(pessoa, filial, tipo_id) -> None:
@@ -381,6 +392,11 @@ def voltar_para_a_fila(pessoa, filial) -> None:
         lugar = _lugar_na_loja(pessoa.pk, filial)
         if lugar.estado != Estado.EM_PAUSA:
             raise Recusa(_("Você não está em pausa."))
+        # Da pausa da gestão quem tira é a gestão, e escolhendo a posição
+        # (`correcoes.recolocar`, 25/09/2026).
+        if Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).exclude(
+                fixa="").exists():
+            raise Recusa(SO_A_GESTAO_TIRA)
         agora = _agora()
         Pausa.irrestritos.filter(pessoa=pessoa, fim__isnull=True).update(
             fim=agora)

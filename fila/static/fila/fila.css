@@ -328,6 +328,20 @@
 .fila-cadastro .fila-opcao > span { text-transform: uppercase; }
 select.fila-cadastro option:not([value=""]) { text-transform: uppercase; }
 select.fila-cadastro:has(option:checked:not([value=""])) { text-transform: uppercase; }
+/* As pausas da gestão (25/09/2026). A frase de apoio ocupa a linha inteira da
+   grade de opções; a lista de posições do "Recolocar" é uma coluna só, porque
+   a ordem é o que se lê ("1º · antes de Bia", "2º …"). */
+.fila-opcoes-apoio { grid-column: 1 / -1; margin: 0; font-size: 12.5px; }
+.fila-opcoes-lista { grid-template-columns: 1fr; }
+.fila-opcoes-lista .fila-opcao > span { text-transform: none; }
+/* No lugar do "Voltar para a fila" de quem está numa pausa da gestão: diz por
+   que o botão não está ali, em vez de a tela parecer quebrada. */
+.fila-aviso-gestao {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 0; padding: 14px 16px; border-radius: 12px;
+  background: var(--surface-2); color: var(--on-surface-2);
+  font-size: 14px; font-weight: 600; text-align: center;
+}
 .fila-opcoes .msec-title { grid-column: 1 / -1; padding: 0; }
 .fila-opcao {
   display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px;

@@ -79,7 +79,7 @@
   <p class="fila-numeral" aria-hidden="true"><span class="fila-numeral-n" data-minutos="{{ meu.desde.isoformat() }}">{{ meu.desde|minutos(agora) }}</span><span class="fila-numeral-sufixo">min</span></p>
   <div class="fila-estado-txt">
     <p class="fila-estado-titulo">{{ traduzir("Em pausa") }}: {{ meu.tipo_de_pausa }}</p>
-    <p class="fila-estado-apoio">{{ traduzir("Desde") }} {{ meu.desde|hora }}. {{ traduzir("Ao voltar, você entra no fim da fila.") }}</p>
+    <p class="fila-estado-apoio">{{ traduzir("Desde") }} {{ meu.desde|hora }}. {% if meu.pausa_fixa %}{{ traduzir("A gestão escolhe o seu lugar na fila.") }}{% else %}{{ traduzir("Ao voltar, você entra no fim da fila.") }}{% endif %}</p>
   </div>
 </div>
 {% endif %}

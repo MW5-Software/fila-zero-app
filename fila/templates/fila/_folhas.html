@@ -136,7 +136,14 @@
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar_pausa&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar_pausa" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("arrow-left") }}</span><span><strong>{{ traduzir("Tirar da pausa") }}</strong><small>{{ traduzir("Encerra a pausa e põe no fim da fila.") }}</small></span></a>
   </div>
-  <div data-para="na_fila em_pausa em_espera"{% if alvo and alvo.estado == "atendendo" %} hidden{% endif %}>
+  {# A pausa da GESTÃO volta pela posição escolhida (25/09/2026): no lugar de
+     "Tirar da pausa", que manda para o fim. `em_pausa_fixa` é o estado que o
+     cartão e o `tela.estado_da_folha` dão a quem está numa delas. #}
+  <div data-para="em_pausa_fixa"{% if alvo and alvo.estado != "em_pausa_fixa" %} hidden{% endif %}>
+    <a class="fila-corrigir-item" href="{{ url_fila }}?folha=recolocar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="recolocar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
+      <span class="ci">{{ icon("arrow-left") }}</span><span><strong>{{ traduzir("Recolocar na fila") }}</strong><small>{{ traduzir("Encerra a pausa da gestão e põe na posição que você escolher.") }}</small></span></a>
+  </div>
+  <div data-para="na_fila em_pausa em_pausa_fixa em_espera"{% if alvo and alvo.estado == "atendendo" %} hidden{% endif %}>
     <a class="fila-corrigir-item fila-corrigir-perigo" href="{{ url_fila }}?folha=sair&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="sair" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Para quem esqueceu de sair. Encerra o ponto.") }}</small></span></a>
   </div>
@@ -204,6 +211,16 @@
       <label class="fila-opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required><span>{{ t.nome }}</span></label>
       {% endfor %}
     </fieldset>
+    {# As pausas da GESTÃO, separadas das cadastradas: só quem gerencia as
+       passa, e só quem gerencia tira — escolhendo a posição (25/09/2026). O
+       mesmo campo `tipo`, com o nome da pausa no lugar do id. #}
+    <fieldset class="fila-opcoes fila-cadastro">
+      <legend class="msec-title">{{ traduzir("Pausas da gestão") }}</legend>
+      {% for valor, rotulo in pausas_fixas %}
+      <label class="fila-opcao"><input type="radio" name="tipo" value="{{ valor }}" required><span>{{ rotulo }}</span></label>
+      {% endfor %}
+      <p class="muted fila-opcoes-apoio">{{ traduzir("Só a gestão tira desta pausa, escolhendo a posição na fila.") }}</p>
+    </fieldset>
     {{ motivo_da_correcao() }}
   </div>
   <div class="mfoot">
@@ -231,6 +248,21 @@
   <div class="mfoot">
     <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
     <button type="submit" class="btn primary">{{ traduzir("Mudar de posição") }}</button>
+  </div>
+</form>
+{% endcall %}
+
+{% call modal("recolocar", traduzir("Recolocar na fila"), folha == "recolocar" and alvo, alvo.nome if alvo else "") %}
+<form method="post" action="{{ url_agir }}" data-acao>
+  <div class="mbody">
+    {{ csrf }}<input type="hidden" name="acao" value="recolocar">
+    <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
+    <div id="fila-posicoes">{% include "fila/_posicoes.html" %}</div>
+    {{ motivo_da_correcao() }}
+  </div>
+  <div class="mfoot">
+    <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Recolocar na fila") }}</button>
   </div>
 </form>
 {% endcall %}

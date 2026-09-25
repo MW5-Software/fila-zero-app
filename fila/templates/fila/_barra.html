@@ -24,6 +24,11 @@
   {{ botao("entrar_na_fila", traduzir("Entrar na fila"), "btn primary lg fila-principal", "log-in") }}
 {% elif meu.estado == Estado.ATENDENDO %}
   <a class="btn primary lg fila-principal" href="{{ url_fila }}?folha=finalizar" data-folha="finalizar">{{ icon("check", "sm") }}<span>{{ traduzir("Finalizar atendimento") }}</span></a>
+{% elif meu.pausa_fixa %}
+  {# Da pausa da gestão quem tira é a gestão, escolhendo a posição
+     (25/09/2026): sem o botão, e o servidor recusa o "voltar" forjado. #}
+  <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>
+  <p class="fila-aviso-gestao">{{ icon("lock", "sm") }}<span>{{ traduzir("Só a gestão tira você desta pausa.") }}</span></p>
 {% else %}
   <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>
   {{ botao("voltar", traduzir("Voltar para a fila"), "btn primary lg fila-principal", "arrow-left") }}

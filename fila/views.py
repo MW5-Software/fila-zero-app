@@ -150,6 +150,17 @@ _DO_VENDEDOR = {
     "sair": lambda r, f, p: acoes.sair_da_loja(p, f),
 }
 
+def _pausa_fixa(request) -> "str | None":
+    """A pausa da gestão escolhida na folha do gerente (25/09/2026). O campo
+    é o mesmo `tipo` das pausas cadastradas: nelas vem o id, e aqui o nome da
+    pausa fixa. Só a folha do GERENTE passa por aqui — o `pausar` do vendedor
+    lê o id e nada mais, e por isso não há como ele pedir uma destas."""
+    from .models import PausaFixa
+
+    valor = request.POST.get("tipo", "")
+    return valor if valor in PausaFixa.values else None
+
+
 def _motivo(request) -> str:
     """O motivo da correção. `motivo_da_correcao`, e não `observacao`: a folha
     de fechar já tem a observação da não venda, e os dois iriam no POST."""
@@ -174,6 +185,9 @@ _DO_GERENTE = {
         p, f, _pessoa_do_post(r), observacao=_motivo(r), request=r),
     "por_em_pausa": lambda r, f, p: correcoes.por_em_pausa(
         p, f, _pessoa_do_post(r), id_do_post(r, "tipo"),
+        fixa=_pausa_fixa(r), observacao=_motivo(r), request=r),
+    "recolocar": lambda r, f, p: correcoes.recolocar(
+        p, f, _pessoa_do_post(r), id_do_post(r, "posicao"),
         observacao=_motivo(r), request=r),
     "editar": lambda r, f, p: correcoes.editar_lancamento(
         p, f, id_do_post(r, "atendimento"), _lancamento(r),

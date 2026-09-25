@@ -26,6 +26,8 @@ class ACOES_DA_FILA:
     FILA_POSICAO_MOVIDA = "fila_posicao_movida"
     FILA_PAUSA_INICIADA = "fila_pausa_iniciada"
     FILA_POSTO_NA_FILA = "fila_posto_na_fila"
+    # Tirado da pausa da gestão e posto numa posição escolhida (25/09/2026).
+    FILA_RECOLOCADO_NA_FILA = "fila_recolocado_na_fila"
     # Os três cadastros da fila; o alvo leva o nome do cadastro na frente
     # ("Grupo de item: Sofás"), porque os três dividem as mesmas três ações.
     FILA_CADASTRO_CRIADO = "fila_cadastro_criado"
@@ -49,6 +51,7 @@ ROTULOS_DA_FILA = {
     ACOES_DA_FILA.FILA_POSICAO_MOVIDA: "Posição na fila mudada pelo gerente",
     ACOES_DA_FILA.FILA_PAUSA_INICIADA: "Pausa iniciada pelo gerente",
     ACOES_DA_FILA.FILA_POSTO_NA_FILA: "Posto na fila pelo gerente",
+    ACOES_DA_FILA.FILA_RECOLOCADO_NA_FILA: "Recolocado na fila pelo gerente",
     ACOES_DA_FILA.FILA_CADASTRO_CRIADO: "Cadastro da fila criado",
     ACOES_DA_FILA.FILA_CADASTRO_EDITADO: "Cadastro da fila editado",
     ACOES_DA_FILA.FILA_CADASTRO_REMOVIDO: "Cadastro da fila removido",

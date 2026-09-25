@@ -749,6 +749,16 @@ def _cenario_fila_posto_na_fila():
     return email_de("dona-fila"), f"Zeca em {matriz}"
 
 
+def _cenario_fila_recolocado_na_fila():
+    from fila.correcoes import por_em_pausa, recolocar
+
+    dona, zeca, matriz, _cad = _loja_com_gente_da_fila()
+    por_em_pausa(dona, matriz, zeca.pk, None, fixa="gestao",
+                 observacao="reunião com a gerência")
+    recolocar(dona, matriz, zeca.pk, 1, observacao="voltou da reunião")
+    return email_de("dona-fila"), f"Zeca em {matriz}"
+
+
 def _cenario_fila_posicao_movida():
     from contas.models import Usuario
     from fila.acoes import bater_ponto
@@ -888,6 +898,7 @@ _CENARIOS = {
     "FILA_POSICAO_MOVIDA": _cenario_fila_posicao_movida,
     "FILA_PAUSA_INICIADA": _cenario_fila_pausa_iniciada,
     "FILA_POSTO_NA_FILA": _cenario_fila_posto_na_fila,
+    "FILA_RECOLOCADO_NA_FILA": _cenario_fila_recolocado_na_fila,
     "FILA_CADASTRO_CRIADO": _cenario_fila_cadastro_criado,
     "FILA_CADASTRO_EDITADO": _cenario_fila_cadastro_editado,
     "FILA_CADASTRO_REMOVIDO": _cenario_fila_cadastro_removido,

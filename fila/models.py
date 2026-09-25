@@ -26,7 +26,8 @@ from contas.inquilino import ModeloDaEmpresa
 
 __all__ = [
     "Atendimento", "Estado", "GrupoDeItem", "ItemVendido", "LugarNaFila",
-    "MetaDeVenda", "Midia", "MotivoDeNaoVenda", "Pausa", "Presenca", "Resultado",
+    "MetaDeVenda", "Midia", "MotivoDeNaoVenda", "Pausa", "PausaFixa", "Presenca",
+    "Resultado",
     "TipoDePausa",
 ]
 
@@ -294,13 +295,29 @@ class ItemVendido(ModeloDaEmpresa):
         ]
 
 
+class PausaFixa(models.TextChoices):
+    """As pausas da GESTÃO (25/09/2026, pedido do cliente): fixas no código, e
+    não cadastro. Só quem gerencia a loja põe alguém nelas e o recoloca na
+    fila, escolhendo a posição; o vendedor não as vê e não sai delas sozinho.
+    Nos indicadores aparecem no "Tempo em pausa", mas não pesam no vendedor —
+    foi a gestão que o tirou da fila, e não ele que parou."""
+
+    ADMINISTRATIVA = "administrativa", _("Administrativa")
+    GESTAO = "gestao", _("Gestão")
+
+
 class Pausa(ModeloDaEmpresa):
     pessoa = _pessoa(_("pessoa"))
     filial = _loja()
     presenca = models.ForeignKey(Presenca, verbose_name=_("presença"),
                                  on_delete=models.PROTECT, related_name="+")
+    #: O tipo CADASTRADO, ou nulo na pausa da gestão (`fixa`). Um dos dois,
+    #: sempre, e nunca os dois: quem cobra é a restrição abaixo.
     tipo = models.ForeignKey(TipoDePausa, verbose_name=_("tipo"),
-                             on_delete=models.PROTECT, related_name="+")
+                             on_delete=models.PROTECT, related_name="+",
+                             null=True, blank=True)
+    fixa = models.CharField(_("pausa da gestão"), max_length=16, blank=True,
+                            choices=PausaFixa.choices)
     inicio = models.DateTimeField(_("início"))
     fim = models.DateTimeField(_("fim"), null=True, blank=True)
 
@@ -309,11 +326,21 @@ class Pausa(ModeloDaEmpresa):
             models.UniqueConstraint(
                 fields=["pessoa"], condition=Q(fim__isnull=True),
                 name="fila_uma_pausa_aberta_por_pessoa"),
+            models.CheckConstraint(
+                condition=(Q(tipo__isnull=False, fixa="")
+                           | Q(tipo__isnull=True, fixa__in=PausaFixa.values)),
+                name="fila_pausa_tipo_ou_fixa"),
         ]
         # O tempo em pausa dos indicadores (entrega 2) filtra por loja e
         # período.
         indexes = [models.Index(fields=["filial", "inicio"],
                                 name="fila_pausa_periodo")]
+
+    @property
+    def nome(self) -> str:
+        """O que a pausa é, para a tela e a trilha: o tipo cadastrado, ou o
+        nome da pausa da gestão."""
+        return self.tipo.nome if self.tipo_id else str(PausaFixa(self.fixa).label)
 
 
 class MetaDeVenda(ModeloDaEmpresa):
@@ -362,6 +389,7 @@ class AcaoDeCorrecao(models.TextChoices):
     TIRAR = "tirar", _("Tirou da loja")
     EDITAR = "editar", _("Corrigiu o lançamento")
     POR_NA_FILA = "por_na_fila", _("Pôs na fila")
+    RECOLOCAR = "recolocar", _("Recolocou na fila")
 
 
 class CorrecaoNaFila(ModeloDaEmpresa):
