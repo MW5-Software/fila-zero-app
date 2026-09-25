@@ -24,7 +24,7 @@
     <details class="metas-trocar-loja">
       <summary>{{ traduzir("Trocar de loja") }}{{ icon("chevron-down", "sm") }}</summary>
       <div class="metas-trocar-loja-menu">
-        {% for l, endereco in outras_lojas %}<a href="{{ endereco }}">{{ l }}</a>{% endfor %}
+        {% for l, endereco in outras_lojas %}<a href="{{ endereco }}" data-trocar-loja="{{ l.pk }}">{{ l }}</a>{% endfor %}
       </div>
     </details>
     {% endif %}

@@ -106,6 +106,49 @@ def test_o_formulario_da_loja_volta_para_a_pagina_de_onde_se_trocou(db):
     assert 'name="voltar" value="/fila"' in html
 
 
+def test_o_trocar_de_loja_da_fila_abre_o_mesmo_dialogo(db):
+    """25/09/2026, pedido do cliente: "na fila, quando troca de filial, tem que
+    ser modal igual o seletor". O "Trocar de loja" da página da fila levava à
+    página nua de confirmação; agora cada link diz ao `contexto.js` qual loja
+    é, e ele abre o diálogo do cabeçalho. O `href` continua sendo o da
+    confirmação, para a troca funcionar sem script."""
+    import re
+
+    from tests.fila_cenario import logado, nova_loja, sylvia
+
+    empresa, _matriz, _titular = sylvia()
+    centro = nova_loja(empresa, "Centro")
+    html = logado("sylvia").get("/fila").content.decode()
+
+    link = re.search(r'<a [^>]*data-trocar-loja="(\d+)"[^>]*>([^<]*)</a>', html)
+    assert link, "o link de trocar de loja não diz qual loja é"
+    assert (link.group(1), link.group(2)) == (str(centro.pk), "Centro")
+    assert f'href="{reverse("filial_trocar")}?filial_id={centro.pk}' in link.group(0)
+    assert 'id="trocar-dialogo"' in html
+
+
+def test_o_trocar_de_loja_das_metas_abre_o_mesmo_dialogo(db):
+    from tests.fila_cenario import logado, nova_loja, sylvia
+
+    empresa, _matriz, _titular = sylvia()
+    centro = nova_loja(empresa, "Centro")
+    html = logado("sylvia").get(reverse("fila_metas")).content.decode()
+
+    assert f'data-trocar-loja="{centro.pk}"' in html
+    assert 'id="trocar-dialogo"' in html
+    assert 'name="voltar" value="/fila/metas' in html
+
+
+def test_o_script_abre_o_dialogo_pelo_link_de_loja():
+    """O outro lado do contrato: o script procura o atributo que os links
+    levam. Sem este teste, renomear um dos dois deixaria o link caindo na
+    página nua sem erro nenhum."""
+    from pathlib import Path
+
+    script = Path("plataforma/static/plataforma/contexto.js").read_text()
+    assert "[data-trocar-loja]" in script
+
+
 def test_o_caminho_por_url_continua_perguntando(com_duas):
     """O diálogo é a porta nova, e não a única: `/empresa/trocar` em GET
     continua mostrando a confirmação, e só o POST age."""

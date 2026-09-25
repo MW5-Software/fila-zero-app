@@ -870,8 +870,13 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   Agora vale `filial_atual`, como na página da fila, e a `?loja=` da URL não
   escolhe nada; o POST ainda leva a loja no campo oculto, para gravar a que a
   pessoa estava VENDO. Até 1000px, onde o design system esconde o seletor do
-  cabeçalho, a tela mostra "Trocar de loja", que passa pela confirmação de
-  `filial_trocar` e volta para as metas.
+  cabeçalho, a tela mostra "Trocar de loja", que volta para as metas.
+- **O "Trocar de loja" da fila e das metas abre o diálogo do cabeçalho**
+  (25/09/2026, pedido do cliente: "tem que ser modal igual o seletor"). Cada
+  link leva `data-trocar-loja` com o id da loja, e o
+  `plataforma/static/plataforma/contexto.js` abre o MESMO diálogo, por
+  delegação no `document` (a fila troca o HTML a cada consulta). O `href`
+  continua sendo a confirmação de `filial_trocar`, que é o caminho sem script.
 - **O ranking do Início é sempre de um mês** (`?ranking_mes=`, escolhido numa
   lista desde 18/09/2026), e não do período dos números de cima.
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as

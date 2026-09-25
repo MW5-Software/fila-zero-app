@@ -75,7 +75,7 @@ def test_a_loja_e_a_do_cabecalho(rede):
 
 def test_a_tela_nao_tem_seletor_de_loja_proprio(rede):
     html = _get(_na_loja(logado("sara"), rede.centro))
-    assert "data-trocar-loja" not in html
+    assert 'name="loja" data-trocar-loja' not in html
     assert '<select class="ctl" name="loja"' not in html
 
 

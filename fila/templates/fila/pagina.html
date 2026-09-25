@@ -22,7 +22,10 @@
       <summary>{{ icon("store", "sm") }}<span>{{ filial }}</span>{{ icon("chevron-down", "sm") }}</summary>
       <div class="fila-trocar-loja-menu">
         <p>{{ traduzir("Trocar de loja") }}</p>
-        {% for loja, endereco in outras_lojas %}<a href="{{ endereco }}">{{ loja }}</a>{% endfor %}
+        {# `data-trocar-loja`: o `plataforma/static/plataforma/contexto.js`
+           abre o diálogo do cabeçalho; sem script, o `href` pergunta na
+           página de confirmação de sempre. #}
+        {% for loja, endereco in outras_lojas %}<a href="{{ endereco }}" data-trocar-loja="{{ loja.pk }}">{{ loja }}</a>{% endfor %}
       </div>
     </details>
     {% else %}
