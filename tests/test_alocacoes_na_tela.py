@@ -350,3 +350,32 @@ def test_com_duas_empresas_cada_uma_oferece_so_o_que_se_da_nela(conta):
     cargos = _opcoes(html, "aloc_cargo")
     assert "Vendedor (Alfa Ltda)" in cargos
     assert "Vendedor (Beta Ltda)" not in cargos
+
+
+class TestAPropriaPessoaNaTabela:
+    """25/09/2026, pedido do cliente: "usuário ele mesmo não aparece na
+    tabela". A lista era a de quem se pode ADMINISTRAR, e ninguém administra
+    a si mesmo por esta tela. Ela aparece agora — sem editar, senha, ativar ou
+    remover, que são de "Meu Perfil" —, e as ações continuam passando por
+    `_alcancavel`, que não a inclui."""
+
+    def _html(self, email):
+        return _entrar(email).get(reverse("usuarios")).content.decode()
+
+    def test_o_titular_e_o_gerente_se_veem(self, conta):
+        for email, pessoa in ((conta["titular"].email, conta["titular"]),
+                              ("gil@teste.com", conta["gil"])):
+            html = self._html(email)
+            linhas = html.split("<tbody")[1].split("</tbody>")[0]
+            assert email in linhas
+            assert f'data-open-modal="usuario-{pessoa.pk}-editar"' not in html
+            assert f'id="usuario-{pessoa.pk}-editar"' not in html
+            assert 'class="tag primary">você<' in html
+            assert f'href="{reverse("perfil")}"' in html
+
+    def test_continua_nao_se_editando_pelo_post(self, conta):
+        gil = conta["gil"]
+        _entrar("gil@teste.com").post(reverse("usuarios"), {
+            "acao": "editar", "id": str(gil.pk), "nome": "Gil Novo"})
+        gil.refresh_from_db()
+        assert gil.nome == "Gil"

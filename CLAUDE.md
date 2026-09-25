@@ -338,6 +338,12 @@ Vendedor. O par é `(rotulo, rotulo)`, porque é o rótulo que a coluna compara.
 folha, e não pelo dado, pelo mesmo motivo dos cadastros da fila: o nome
 gravado é o que o cabeçalho, o avatar e a trilha mostram.
 
+**A própria pessoa aparece na tabela de Usuários** (25/09/2026, pedido do
+cliente), com a etiqueta "você" e um link para "Meu Perfil", sem editar, senha,
+ativar ou remover. Só a TABELA a inclui (`_pessoas_da_tabela`): as ações
+continuam buscando o alvo por `_alcancavel`, que não a tem, e é isso que
+continua impedindo alguém de mexer na própria alocação.
+
 **Titular e MW5 não têm cargo.** As permissões deles são diretas, de
 `contas/fabrica.py`. Um cargo no dono permitiria trancá-lo para fora da própria
 conta.

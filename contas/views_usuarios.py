@@ -515,6 +515,31 @@ def _id_do_modal(acao: str, usuario_pk: int) -> str:
     return f"usuario-{usuario_pk}-{acao}"
 
 
+def _pessoas_da_tabela(request):
+    """Quem a TABELA mostra: quem se pode administrar, e a própria pessoa
+    (25/09/2026, pedido do cliente: "usuário ele mesmo não aparece na
+    tabela").
+
+    Só a tabela. As ações continuam buscando o alvo por `_alcancavel`, que lê
+    `_pessoas_desta_pessoa` — sem a própria pessoa —, e é isso que continua
+    impedindo alguém de editar a própria alocação por esta tela. A MW5 não
+    entra nem aqui: superusuário fica fora das duas.
+    """
+    from django.db.models import Q
+
+    eu = _pessoa_de(request)
+    alcancadas = _pessoas_desta_pessoa(request)
+    if eu is None:
+        return alcancadas
+    return Usuario.objects.filter(
+        Q(pk__in=alcancadas.values("pk")) | Q(pk=eu.pk), is_superuser=False)
+
+
+def _e_eu(request, usuario) -> bool:
+    eu = _pessoa_de(request)
+    return eu is not None and usuario.pk == eu.pk
+
+
 def _acoes_da_linha(request, usuario: Usuario) -> Box:
     """Os gatilhos da linha — cada um só abre o `Modal` correspondente
     (`_modais_de_usuario`); nenhum deles envia nada sozinho.
@@ -523,7 +548,18 @@ def _acoes_da_linha(request, usuario: Usuario) -> Box:
     inclusive as duas destrutivas (ativar/desativar e remover) — o mesmo
     espírito da trava de sempre, agora sobre a interação, não só sobre o
     servidor.
+
+    A linha da PRÓPRIA pessoa não tem botão nenhum: o que se muda de si mesmo
+    mora em "Meu Perfil", e o servidor recusaria de todo jeito.
     """
+    if _e_eu(request, usuario):
+        from django.utils.html import format_html
+
+        return Box(direction="row", gap="sm", wrap=False, align="end",
+                   cross="center", body=[Raw(html=format_html(
+                       '<span class="tag primary">{}</span>'
+                       '<a class="btn sm ghost" href="{}">{}</a>',
+                       _("você"), reverse("perfil"), _("Meu Perfil")))])
     botoes = [
         IconButton(icon="edit", title=_("Editar"),
                    attrs={"data-open-modal": _id_do_modal("editar", usuario.pk)}),
@@ -1226,7 +1262,7 @@ def _desenhar(
         # 131 com 25, ou seja ~4 por linha. Em SQLite local cada uma custa
         # décimos de milissegundo; em Postgres com rede, cada ida e volta é
         # ~1ms, e as 25 linhas do padrão viram +100ms de tela.
-        pessoas = (_com_ordens_da_alocacao(_com_empresa(_pessoas_desta_pessoa(request)))
+        pessoas = (_com_ordens_da_alocacao(_com_empresa(_pessoas_da_tabela(request)))
                    .prefetch_related("alocacoes__empresa", "alocacoes__filial",
                                      "alocacoes__cargo"))
 
@@ -1256,7 +1292,9 @@ def _desenhar(
         # docstring de `_modais_de_usuario`.
         modais = [_modal_criar_usuario(request, oferta)]
         for pessoa in pessoas:
-            modais.extend(_modais_de_usuario(request, pessoa, oferta))
+            # A própria pessoa está na tabela, mas não tem o que abrir aqui.
+            if not _e_eu(request, pessoa):
+                modais.extend(_modais_de_usuario(request, pessoa, oferta))
 
         pagina = site.page(
             # `full`: a tela usa a largura toda. Estas telas são tabela e
