@@ -319,6 +319,15 @@
 .fila-total .total { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--on-surface); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 
 .fila-opcoes { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* As opções que vêm de CADASTRO em CAIXA ALTA (25/09/2026, com o print da
+   folha: "está aparecendo como foi cadastrado em vez de transformar tudo em
+   maiúsculo"), como na lista do cadastro (`fila/static/fila/cadastros.css`).
+   Pela folha, e não pelo dado: o nome continua gravado como a pessoa o
+   escreveu. O grupo de item é um `<select>`: a caixa alta vale nas opções e
+   no escolhido, e não no "Escolha o grupo", que é frase e não cadastro. */
+.fila-cadastro .fila-opcao > span { text-transform: uppercase; }
+select.fila-cadastro option:not([value=""]) { text-transform: uppercase; }
+select.fila-cadastro:has(option:checked:not([value=""])) { text-transform: uppercase; }
 .fila-opcoes .msec-title { grid-column: 1 / -1; padding: 0; }
 .fila-opcao {
   display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px;

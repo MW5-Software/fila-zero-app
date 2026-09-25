@@ -1,3 +1,6 @@
+{# As opções que vêm de CADASTRO (mídias, motivos, tipos de pausa e o grupo de
+   item) levam `fila-cadastro`, e a `fila.css` as põe em CAIXA ALTA
+   (25/09/2026). Nome de pessoa (a folha de mover) não leva. #}
 {# As folhas são os modais do design system (`.overlay` + `.modal`), abertos
    pelo `mw5.js`/`fila.js` ou já abertos pelo servidor quando a URL pede
    (`?folha=`), que é o caminho sem JavaScript. #}
@@ -17,7 +20,7 @@
 <div class="fila-itens">
   {% for item in linhas %}
   <div class="item-vendido">
-    <select class="ctl" name="grupo" aria-label="{{ traduzir('Grupo de item') }}">
+    <select class="ctl fila-cadastro" name="grupo" aria-label="{{ traduzir('Grupo de item') }}">
       <option value="">{{ traduzir("Escolha o grupo") }}</option>
       {% for g in grupos %}<option value="{{ g.pk }}"{% if item and item.grupo_id == g.pk %} selected{% endif %}>{{ g.nome }}</option>{% endfor %}
     </select>
@@ -30,7 +33,7 @@
 {% endmacro %}
 
 {% macro motivos_de(escolhido=None) %}
-<fieldset class="fila-opcoes">
+<fieldset class="fila-opcoes fila-cadastro">
   <legend class="msec-title">{{ traduzir("Por que não comprou?") }}</legend>
   {% for m in motivos %}
   <label class="fila-opcao"><input type="radio" name="motivo" value="{{ m.pk }}"{% if escolhido == m.pk %} checked{% endif %}><span>{{ m.nome }}</span></label>
@@ -45,7 +48,7 @@
    `required` na correção de um lançamento que nasceu sem mídia. #}
 {% macro midias_de(escolhido=None, exigir=True) %}
 {% if midias %}
-<fieldset class="fila-opcoes fila-midias">
+<fieldset class="fila-opcoes fila-cadastro fila-midias">
   <legend class="msec-title">{{ traduzir("Como o cliente chegou?") }}</legend>
   {% for m in midias %}
   <label class="fila-opcao"><input type="radio" name="midia" value="{{ m.pk }}"{% if escolhido == m.pk %} checked{% endif %}{% if exigir %} required{% endif %}><span>{{ m.nome }}</span></label>
@@ -93,7 +96,7 @@
 <form method="post" action="{{ url_agir }}" data-acao>
   <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="pausar">
-    <fieldset class="fila-opcoes">
+    <fieldset class="fila-opcoes fila-cadastro">
       {% for t in tipos %}
       <label class="fila-opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required><span>{{ t.nome }}</span></label>
       {% endfor %}
@@ -195,7 +198,7 @@
   <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="por_em_pausa">
     <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
-    <fieldset class="fila-opcoes">
+    <fieldset class="fila-opcoes fila-cadastro">
       <legend class="msec-title">{{ traduzir("Pausa para quê?") }}</legend>
       {% for t in tipos %}
       <label class="fila-opcao"><input type="radio" name="tipo" value="{{ t.pk }}" required><span>{{ t.nome }}</span></label>

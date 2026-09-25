@@ -690,7 +690,10 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   continua no cadastro, e a lista continua saindo por ele (`padrao="ordem"`).
   E o NOME de cada item sai em CAIXA ALTA pela folha `fila/static/fila/
   cadastros.css` — pela folha, e não pelo dado: o cadastro continua gravado
-  como a pessoa escreveu, e é assim que ele aparece na folha de venda da fila.
+  como a pessoa escreveu. **Nas folhas da fila também** desde 25/09/2026 (com
+  o print da folha: "está aparecendo como foi cadastrado em vez de transformar
+  tudo em maiúsculo"): as opções que vêm de cadastro levam `fila-cadastro`, e
+  a `fila.css` as põe em caixa alta — nome de pessoa (a folha de mover) não.
 - **A mídia: por qual canal o cliente chegou** (25/09/2026, pedido do
   cliente). O quarto cadastro (`fila.Midia`, `/fila/midias`), e a coluna
   `Atendimento.midia`, na venda E na não venda. As regras moram em

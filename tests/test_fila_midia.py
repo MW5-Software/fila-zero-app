@@ -305,3 +305,25 @@ def test_a_porcentagem_da_lista_por_midia_e_a_conversao():
     assert '<span class="ind-rank-parte">67%</span>' in html
     assert '<span class="ind-rank-parte">0%</span>' in html
     assert '<span class="ind-rank-parte">75%</span>' not in html, "a fatia do total"
+
+
+def test_as_opcoes_cadastradas_saem_em_caixa_alta_nas_folhas(loja):
+    """25/09/2026, com o print da folha na mão: "aqui está aparecendo como
+    foi cadastrado em vez de transformar tudo em maiúsculo". A caixa alta dos
+    cadastros (18/09/2026) valia só para a LISTA do cadastro; agora vale também
+    para as opções das folhas da fila — mídias, motivos, tipos de pausa e o
+    grupo de item. Pela folha, e não pelo dado: o nome continua gravado como a
+    pessoa escreveu. Nome de pessoa (a folha de mover) não entra."""
+    import re
+    from pathlib import Path
+
+    _atendendo(loja)
+    html = logado("ana").get(reverse("fila")).content.decode()
+    for legenda in ("Como o cliente chegou?", "Por que não comprou?"):
+        assert re.search(r'<fieldset class="fila-opcoes fila-cadastro[^"]*">\s*'
+                         r'<legend class="msec-title">' + re.escape(legenda), html), legenda
+    assert 'class="ctl fila-cadastro" name="grupo"' in html
+
+    folha = Path("fila/static/fila/fila.css").read_text(encoding="utf-8")
+    assert re.search(r"\.fila-cadastro \.fila-opcao > span[^{]*\{\s*text-transform: uppercase", folha)
+    assert "select.fila-cadastro option" in folha
