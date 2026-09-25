@@ -26,7 +26,8 @@ from contas.inquilino import ModeloDaEmpresa
 
 __all__ = [
     "Atendimento", "Estado", "GrupoDeItem", "ItemVendido", "LugarNaFila",
-    "MetaDeVenda", "MotivoDeNaoVenda", "Pausa", "Presenca", "Resultado", "TipoDePausa",
+    "MetaDeVenda", "Midia", "MotivoDeNaoVenda", "Pausa", "Presenca", "Resultado",
+    "TipoDePausa",
 ]
 
 
@@ -162,6 +163,17 @@ class TipoDePausa(Cadastro):
         verbose_name_plural = _("tipos de pausa")
 
 
+class Midia(Cadastro):
+    """Por qual canal o cliente chegou — Instagram, indicação, passando na
+    porta (25/09/2026, pedido do cliente). Vale para a venda E para a não
+    venda: a pergunta é "que canal traz cliente que compra", e ela precisa dos
+    dois lados."""
+
+    class Meta(Cadastro.Meta):
+        verbose_name = _("mídia")
+        verbose_name_plural = _("mídias")
+
+
 def _pessoa(verbose, **extra):
     """FK para o usuário com `PROTECT`: o histórico da loja não some quando a
     pessoa sai da empresa. Quem sai é desativado (desvio D-5 do plano)."""
@@ -243,6 +255,12 @@ class Atendimento(ModeloDaEmpresa):
                                blank=True, related_name="+")
     observacao = models.CharField(_("observação"), max_length=280,
                                   blank=True)
+    #: Nula nos atendimentos de antes de 25/09/2026, e nos da empresa que não
+    #: tem mídia ativa nenhuma: a regra de exigir mora em
+    #: `fila.acoes._validar_midia`, e não no banco, por causa dos dois.
+    midia = models.ForeignKey(Midia, verbose_name=_("mídia"),
+                              on_delete=models.PROTECT, null=True,
+                              blank=True, related_name="+")
     total = models.DecimalField(_("total"), max_digits=12, decimal_places=2,
                                 default=Decimal("0"))
     fechado_por = _pessoa(_("fechado por"), null=True, blank=True)

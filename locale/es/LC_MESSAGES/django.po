@@ -1680,3 +1680,41 @@ msgstr "Ya existe \"%(nome)s\" en esta lista."
 #~ msgid "O que acontece com o vendedor depois de lançar o atendimento."
 #~ msgstr "Qué pasa con el vendedor después de registrar la atención."
 
+
+msgid "mídia"
+msgstr "medio"
+
+msgid "mídias"
+msgstr "medios"
+
+msgid "Mídias"
+msgstr "Medios"
+
+msgid "Nova mídia"
+msgstr "Nuevo medio"
+
+msgid "Por qual canal o cliente chegou: o vendedor escolhe ao lançar a venda ou a não venda."
+msgstr "Por qué canal llegó el cliente: el vendedor lo elige al registrar la venta o la no venta."
+
+msgid "Como o cliente chegou?"
+msgstr "¿Cómo llegó el cliente?"
+
+msgid "Escolha a mídia."
+msgstr "Elija el medio."
+
+msgid "Mídia não encontrada."
+msgstr "Medio no encontrado."
+
+msgid "Sem mídia"
+msgstr "Sin medio"
+
+msgid "Por mídia"
+msgstr "Por medio"
+
+msgid "%(n)s atendimento · vendas de cada canal"
+msgid_plural "%(n)s atendimentos · vendas de cada canal"
+msgstr[0] "%(n)s atención · ventas de cada canal"
+msgstr[1] "%(n)s atenciones · ventas de cada canal"
+
+msgid "%(v)s de %(n)s"
+msgstr "%(v)s de %(n)s"

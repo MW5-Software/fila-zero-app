@@ -49,6 +49,10 @@ MODULO = ModuloSpec(
         Atalho(rotulo=_("Tipos de pausa"), rota="/fila/pausas",
                permissao="fila.cadastros", grupo="Configuração",
                pai="Configurações da Fila"),
+        # A mídia, o canal por onde o cliente chegou (25/09/2026).
+        Atalho(rotulo=_("Mídias"), rota="/fila/midias",
+               permissao="fila.cadastros", grupo="Configuração",
+               pai="Configurações da Fila"),
         # Solto no grupo, ao lado da fila, e não como submenu: um `pai` com o
         # nome do módulo criaria um segundo item com o mesmo rótulo.
         Atalho(rotulo=_("Histórico da fila"), rota="/fila/historico",

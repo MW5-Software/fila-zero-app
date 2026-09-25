@@ -38,6 +38,22 @@
 </fieldset>
 {% endmacro %}
 
+{# A mídia: por qual canal o cliente chegou (25/09/2026). Vale para a venda e
+   para a não venda, e por isso mora FORA dos blocos que a folha esconde. Sem
+   mídia ativa na empresa a lista vem vazia e o campo não é desenhado — é
+   quando `acoes._validar_midia` também não o cobra. `exigir` desliga o
+   `required` na correção de um lançamento que nasceu sem mídia. #}
+{% macro midias_de(escolhido=None, exigir=True) %}
+{% if midias %}
+<fieldset class="fila-opcoes fila-midias">
+  <legend class="msec-title">{{ traduzir("Como o cliente chegou?") }}</legend>
+  {% for m in midias %}
+  <label class="fila-opcao"><input type="radio" name="midia" value="{{ m.pk }}"{% if escolhido == m.pk %} checked{% endif %}{% if exigir %} required{% endif %}><span>{{ m.nome }}</span></label>
+  {% endfor %}
+</fieldset>
+{% endif %}
+{% endmacro %}
+
 {# O motivo da correção, obrigatório (spec 2026-09-17). `required` é
    conveniência: quem decide é `correcoes.ler_observacao`. #}
 {% macro motivo_da_correcao() %}
@@ -51,6 +67,7 @@
     {{ csrf }}
     <input type="hidden" name="acao" value="{{ acao }}">
     {% if acao != "finalizar" %}<input type="hidden" name="pessoa" value="{{ pessoa_id or '' }}">{% endif %}
+    {{ midias_de() }}
     <div class="fila-resultado">
       <label class="fila-resultado-opcao fila-vendeu"><input type="radio" name="resultado" value="vendeu" required><span class="fila-resultado-icone">{{ icon("check") }}</span><span>{{ traduzir("Vendeu") }}</span></label>
       <label class="fila-resultado-opcao fila-nao-vendeu"><input type="radio" name="resultado" value="nao_vendeu" required><span class="fila-resultado-icone">{{ icon("x") }}</span><span>{{ traduzir("Não vendeu") }}</span></label>
@@ -132,6 +149,7 @@
     <input type="hidden" name="pessoa" value="{{ alvo.pessoa_id if alvo else '' }}">
     <input type="hidden" name="resultado" value="nao_vendeu">
     <div class="alert warn">{{ icon("alert") }}<div>{{ traduzir("Está atendendo. O atendimento fecha como não venda.") }}</div></div>
+    {{ midias_de() }}
     {{ motivos_de() }}
     {{ motivo_da_correcao() }}
   </div>
@@ -236,6 +254,7 @@
     {{ csrf }}<input type="hidden" name="acao" value="editar">
     <input type="hidden" name="atendimento" value="{{ editando.pk }}">
     <input type="hidden" name="resultado" value="{{ editando.resultado }}">
+    {{ midias_de(editando.midia_id, exigir=editando.midia_id is not none) }}
     {% if editando.resultado == "vendeu" %}
       {{ itens(editando.itens.all()|list + [none]) }}
     {% else %}

@@ -22,8 +22,8 @@ def test_o_modulo_esta_declarado_com_as_quatro_permissoes():
     assert spec.rota == "/fila"
     assert spec.ativo_por_padrao is True
     assert {a.rota for a in spec.atalhos} == {
-        "/fila/grupos", "/fila/motivos", "/fila/pausas", "/fila/metas",
-        "/fila/historico"}
+        "/fila/grupos", "/fila/motivos", "/fila/pausas", "/fila/midias",
+        "/fila/metas", "/fila/historico"}
     # Os indicadores moram no Início (15/09/2026): não há atalho para eles.
     assert {a.permissao for a in spec.atalhos} == {"fila.cadastros", "fila.metas",
                                                    "fila.gerenciar"}
@@ -77,7 +77,7 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
     pai = next(i for i in configuracao.children
                if i.label == "Configurações da Fila")
     assert [f.label for f in pai.children] == [
-        "Grupos de item", "Motivos de não venda", "Tipos de pausa"]
+        "Grupos de item", "Motivos de não venda", "Tipos de pausa", "Mídias"]
     assert not any(i.label in ("Fila", "Fila da vez")
                    for i in configuracao.children)
 

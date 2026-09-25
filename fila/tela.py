@@ -26,7 +26,7 @@ from .ambiente import ambiente_da_fila
 from .correcoes import lancamentos_de_hoje
 from .estado import nome_de, retrato
 from .models import (Atendimento, Estado, GrupoDeItem, LugarNaFila,
-                     MotivoDeNaoVenda, TipoDePausa)
+                     Midia, MotivoDeNaoVenda, TipoDePausa)
 
 __all__ = ["PEDACOS", "atende", "ha_quanto", "hora_local", "iniciais", "minutos",
            "pagina", "pedacos", "pessoas_na_frente", "sem_loja", "so_a_fila"]
@@ -162,7 +162,7 @@ def _lancamento_em_edicao(request, filial):
         return None
     return (Atendimento.objects.da_empresa(filial.empresa)
             .filter(pk=atendimento_id, filial=filial, fim__isnull=False)
-            .select_related("vendedor", "motivo").first())
+            .select_related("vendedor", "motivo", "midia").first())
 
 
 def _alvo_da_folha(request, filial):
@@ -267,10 +267,11 @@ def _contexto(request, filial, recusa=""):
     # abria sem o grupo marcado e a correção de um valor exigia trocar o grupo
     # (revisão final, 15/09/2026). `_validar` já aceita os que o atendimento usa.
     ativos = Q(ativo=True)
-    grupos_do_lancamento = motivo_do_lancamento = Q(pk__in=[])
+    grupos_do_lancamento = motivo_do_lancamento = midia_do_lancamento = Q(pk__in=[])
     if editando is not None:
         grupos_do_lancamento = Q(pk__in=editando.itens.values("grupo_id"))
         motivo_do_lancamento = Q(pk=editando.motivo_id)
+        midia_do_lancamento = Q(pk=editando.midia_id)
     lancamentos = list(lancamentos_de_hoje(filial)) if pode_gerenciar else []
     # Quem tem painel na RAIZ vê o link, e não só quem atende. A raiz é o
     # painel da GESTÃO para quem lê indicadores em alguma loja, e o painel do
@@ -317,6 +318,10 @@ def _contexto(request, filial, recusa=""):
         "motivos": list(MotivoDeNaoVenda.objects.da_empresa(empresa)
                         .filter(ativos | motivo_do_lancamento)),
         "tipos": list(TipoDePausa.objects.da_empresa(empresa).filter(ativo=True)),
+        # Vazia quando a empresa não tem mídia ativa: a folha não desenha o
+        # campo, e `acoes._validar_midia` não o cobra (25/09/2026).
+        "midias": list(Midia.objects.da_empresa(empresa)
+                       .filter(ativos | midia_do_lancamento)),
         "lancamentos": lancamentos,
         "folha": request.GET.get("folha", ""),
         "alvo": _alvo_da_folha(request, filial) if pode_gerenciar else None,

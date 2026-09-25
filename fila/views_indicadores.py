@@ -252,6 +252,7 @@ def _listas(recorte, n, vendedor=None):
     grupos = ind.por_grupo(recorte, vendedor)
     motivos = ind.motivos(recorte, vendedor)
     pausas = ind.pausa_por_tipo(recorte, vendedor)
+    midias = ind.midias(recorte, vendedor)
     sem_venda = sum(q for _m, q in motivos)
     return FormGrid(attrs={"data-ind": "listas"}, children=[
         _lista(_("Vendido por grupo de item"),
@@ -265,7 +266,26 @@ def _listas(recorte, n, vendedor=None):
                _("%(total)s no total") % {"total": _minutos_por_extenso(
                    sum(m for _t, m in pausas))},
                [(t, m, _minutos_por_extenso(m)) for t, m in pausas], "pausa"),
+        # Por mídia (25/09/2026): a barra é quantos atendimentos o canal
+        # trouxe, o valor diz quantos viraram venda ("2 de 3"), e a
+        # porcentagem é a CONVERSÃO — é o que responde "que canal traz
+        # cliente que compra". O valor é curto de propósito: o cartão tem um
+        # terço da largura, e "3 atend. · 2 vendas" partia o nome da mídia.
+        _lista(_("Por mídia"),
+               ngettext("%(n)s atendimento · vendas de cada canal",
+                        "%(n)s atendimentos · vendas de cada canal",
+                        n.atendimentos) % {"n": n.atendimentos},
+               [(m, q, _atendidos_e_vendas(q, v), _conversao(q, v))
+                for m, q, v in midias], "venda"),
     ])
+
+
+def _atendidos_e_vendas(atendimentos: int, vendas: int) -> str:
+    return _("%(v)s de %(n)s") % {"n": atendimentos, "v": vendas}
+
+
+def _conversao(atendimentos: int, vendas: int) -> str:
+    return f"{round(100 * vendas / atendimentos) if atendimentos else 0}%"
 
 
 #: O valor de "Todas as lojas" no campo Loja. Texto, e não vazio: vazio é o

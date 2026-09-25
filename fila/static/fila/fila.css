@@ -276,6 +276,14 @@
 .fila-lanc-hora { color: var(--on-surface-2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .fila-lanc-resultado { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; min-width: 0; }
 .fila-lanc-motivo { color: var(--on-surface-2); }
+/* A mídia do lançamento (25/09/2026): uma etiqueta de contorno depois do
+   resultado, mais apagada — é o canal, e não o que aconteceu. Etiqueta, e não
+   texto solto com um "·" na frente: no celular ela quebra para a linha de
+   baixo, e o ponto ficava sozinho no começo dela. */
+.fila-lanc-midia {
+  color: var(--on-surface-2); font-size: 12px; line-height: 1.5;
+  padding: 0 8px; border: 1px solid var(--outline); border-radius: 999px;
+}
 .fila-lanc-valor { font-weight: 800; font-variant-numeric: tabular-nums; }
 .fila-lanc > .btn { justify-self: end; }
 

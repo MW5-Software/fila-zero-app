@@ -27,7 +27,7 @@ from .auditoria import ACOES_DA_FILA
 from . import acoes
 from .acoes import (Recusa, _abrir_pausa, _depois_do_atendimento,
                     _gravar_lancamento, _fechar_atendimento, _lugar_na_loja,
-                    _sair, _travar, _validar, _voltar_ao_fim)
+                    _sair, _travar, _validar, _validar_midia, _voltar_ao_fim)
 from .estado import na_fila, nome_de
 from .models import AcaoDeCorrecao, Atendimento, CorrecaoNaFila, Estado, Pausa, Resultado
 from .periodo import inicio_do_dia
@@ -81,14 +81,17 @@ def _registrar(autor, filial, pessoa_id, acao, observacao, detalhe, agora, *,
 
 
 def descrever(atendimento) -> str:
+    # A mídia no fim, dos dois lados (25/09/2026): a correção que só troca o
+    # canal precisa aparecer no "antes/depois" da trilha.
+    midia = f" · mídia: {atendimento.midia.nome}" if atendimento.midia_id else ""
     if atendimento.resultado == Resultado.VENDEU:
         itens = "; ".join(f"{item.grupo.nome} {em_reais(item.valor)}"
                           for item in atendimento.itens.select_related("grupo")
                           .order_by("pk"))
-        return f"vendeu {em_reais(atendimento.total)} ({itens})"
+        return f"vendeu {em_reais(atendimento.total)} ({itens}){midia}"
     if atendimento.resultado == Resultado.NAO_VENDEU:
         observacao = f" ({atendimento.observacao})" if atendimento.observacao else ""
-        return f"não vendeu: {atendimento.motivo.nome}{observacao}"
+        return f"não vendeu: {atendimento.motivo.nome}{observacao}{midia}"
     return "aberto"
 
 
@@ -183,7 +186,7 @@ def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
     with transaction.atomic():
         _travar(filial)
         atendimento = (Atendimento.objects.da_empresa(filial.empresa)
-                       .select_related("vendedor", "motivo")
+                       .select_related("vendedor", "motivo", "midia")
                        .filter(pk=atendimento_id, filial=filial,
                                fim__isnull=False).first()
                        if atendimento_id is not None else None)
@@ -199,7 +202,11 @@ def editar_lancamento(autor, filial, atendimento_id, lancamento, *,
             ja_usados=frozenset(atendimento.itens.values_list("grupo_id",
                                                               flat=True)),
             ja_usado_motivo=atendimento.motivo_id)
-        _gravar_lancamento(atendimento, lancamento, grupos, motivo, total)
+        midia = _validar_midia(filial.empresa, lancamento.midia_id,
+                               ja_usada=atendimento.midia_id,
+                               pode_ficar_sem=atendimento.midia_id is None)
+        _gravar_lancamento(atendimento, lancamento, grupos, motivo, total,
+                           midia=midia)
         depois = descrever(atendimento)
         _registrar(autor, filial, atendimento.vendedor_id, AcaoDeCorrecao.EDITAR,
                    observacao, f"antes: {antes}; depois: {depois}", _agora(),
@@ -216,7 +223,7 @@ def lancamentos_de_hoje(filial, dia=None):
     return (Atendimento.objects.da_empresa(filial.empresa)
             .filter(filial=filial, fim__gte=inicio,
                     fim__lt=inicio + timedelta(days=1))
-            .select_related("vendedor", "motivo").defer("vendedor__avatar")
+            .select_related("vendedor", "motivo", "midia").defer("vendedor__avatar")
             .annotate(tem_foto=ExpressionWrapper(
                 Q(vendedor__avatar__isnull=False), output_field=BooleanField()))
             .order_by("-fim"))

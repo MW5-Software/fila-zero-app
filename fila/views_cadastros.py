@@ -39,9 +39,9 @@ from nucleo.rendering import use_environment
 from nucleo.resposta import render
 from plataforma.contexto import empresa_atual
 
-from .models import GrupoDeItem, MotivoDeNaoVenda, TipoDePausa
+from .models import GrupoDeItem, Midia, MotivoDeNaoVenda, TipoDePausa
 
-__all__ = ["grupos", "motivos", "pausas"]
+__all__ = ["grupos", "midias", "motivos", "pausas"]
 
 
 @dataclass(frozen=True)
@@ -66,6 +66,10 @@ PAUSAS = Cadastro(TipoDePausa, "fila_pausas", _("Tipos de pausa"),
                   "Tipo de pausa",
                   _("Por que o vendedor saiu da fila por um tempo."),
                   _("Novo tipo"))
+MIDIAS = Cadastro(Midia, "fila_midias", _("Mídias"), "Mídia",
+                  _("Por qual canal o cliente chegou: o vendedor escolhe ao "
+                    "lançar a venda ou a não venda."),
+                  _("Nova mídia"))
 
 NAO_ENCONTRADO = _("Cadastro não encontrado.")
 EM_USO = _("Em uso: desative em vez de remover.")
@@ -306,3 +310,9 @@ def motivos(request) -> HttpResponse:
 @exigir_modulo_ligado("fila")
 def pausas(request) -> HttpResponse:
     return _tela(request, PAUSAS)
+
+
+@exigir_permissao("fila.cadastros")
+@exigir_modulo_ligado("fila")
+def midias(request) -> HttpResponse:
+    return _tela(request, MIDIAS)

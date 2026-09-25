@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 149 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 150 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -612,7 +612,7 @@ cinco ajustes que o spec não respondia (D-1 a D-5):
 | `fila.ver` | a página `/fila` da loja e o item no menu |
 | `fila.participar` | bater o ponto, atender, lançar, pausar, sair da loja |
 | `fila.gerenciar` | corrigir a fila e os lançamentos da loja em que está |
-| `fila.cadastros` | grupos de item, motivos de não venda e tipos de pausa |
+| `fila.cadastros` | grupos de item, motivos de não venda, tipos de pausa e mídias |
 | `fila.metas` | a tela `/fila/metas`, nas lojas em que o cargo traz a permissão |
 
 Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
@@ -637,7 +637,7 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
 
 ### Onde mora cada regra
 
-- `fila/models.py` — os três cadastros, `Presenca`, `LugarNaFila` (o estado de
+- `fila/models.py` — os quatro cadastros, `Presenca`, `LugarNaFila` (o estado de
   agora, uma linha por pessoa presente), `Atendimento` com `ItemVendido`, e
   `Pausa`. **A ordem da fila é `na_fila_desde`**, e voltar para o fim é gravar
   a hora de agora. Os "um aberto por pessoa" são restrições parciais do banco.
@@ -662,7 +662,7 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   vai chamar Gerenciar Fila"; e, com o print da barra na mão, "Metas é um menu
   de Nivel 1 igual Configurações e Gerenciar Fila"). A barra ficou:
   **Configuração** — Conta, Empresas, Filiais, Usuários, Cargos e
-  **Configurações da Fila**, com os três cadastros dentro —; **Gerenciar
+  **Configurações da Fila**, com os cadastros dentro —; **Gerenciar
   Fila** — Fila da vez e Histórico da fila —; e **Metas**, sozinha, no mesmo
   degrau e em SEGUNDO lugar na barra (o cliente viu a primeira versão com ela
   no fim: "metas tem que ser o segundo item né, não o último" — o
@@ -685,12 +685,33 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   `test_grupo_de_um_filho_com_o_nome_dele_sobe_para_o_primeiro_nivel`, e quem
   prende a barra da fila é o `test_o_menu_da_fila_como_o_cliente_pediu` — os
   dois olham o menu MONTADO.
-- `fila/views_cadastros.py` — as três telas de cadastro, uma view para as três.
+- `fila/views_cadastros.py` — as quatro telas de cadastro, uma view para as quatro.
   **A coluna "Ordem" saiu da tabela** (18/09/2026, pedido do cliente): o campo
   continua no cadastro, e a lista continua saindo por ele (`padrao="ordem"`).
   E o NOME de cada item sai em CAIXA ALTA pela folha `fila/static/fila/
   cadastros.css` — pela folha, e não pelo dado: o cadastro continua gravado
   como a pessoa escreveu, e é assim que ele aparece na folha de venda da fila.
+- **A mídia: por qual canal o cliente chegou** (25/09/2026, pedido do
+  cliente). O quarto cadastro (`fila.Midia`, `/fila/midias`), e a coluna
+  `Atendimento.midia`, na venda E na não venda. As regras moram em
+  `acoes._validar_midia`:
+  - **obrigatória em todo fechamento** — o do vendedor, o do gerente que fecha
+    no lugar dele e o "tirar da loja" com atendimento aberto;
+  - **menos na empresa sem mídia ATIVA nenhuma**: a folha não desenha o campo
+    e o fechamento não o cobra — sem isto, a fila de toda empresa travaria no
+    dia em que a mídia foi ao ar, antes de alguém cadastrar a primeira;
+  - a correção do gerente troca a mídia (a desativada depois continua valendo
+    no lançamento dela), e o lançamento que nasceu sem mídia pode continuar
+    sem — corrigir o motivo dele não pode exigir inventar o canal.
+
+  A coluna é nula no banco pelos mesmos dois motivos (os atendimentos de
+  antes, e a empresa sem mídia). `_gravar_lancamento` recebe a mídia só por
+  NOME e sem padrão: um chamador novo que a esquecesse gravaria o lançamento
+  sem ela em silêncio. No Início, a lista **"Por mídia"** tem a barra pelos
+  atendimentos, o valor "vendas de atendimentos" ("2 de 3") e a porcentagem
+  da CONVERSÃO — por isso a `graficos.lista_ranqueada` aceita um quarto item,
+  a porcentagem já escrita. "Sem mídia" vai no fim, para a soma bater com o
+  total do painel.
 
 ### O que custa esquecer
 
@@ -976,7 +997,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 149 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 150 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

@@ -31,7 +31,7 @@ from plataforma.models import Filial
 
 from .estado import na_fila, nome_de, posicao_de
 from .models import (Atendimento, Estado, GrupoDeItem, ItemVendido,
-                     LugarNaFila, MotivoDeNaoVenda, Pausa, Presenca,
+                     LugarNaFila, Midia, MotivoDeNaoVenda, Pausa, Presenca,
                      Resultado, TipoDePausa)
 
 __all__ = ["ItemLancado", "Lancamento", "Recusa", "bater_ponto",
@@ -71,6 +71,9 @@ class Lancamento:
     itens: "tuple[ItemLancado, ...]" = ()
     motivo_id: "int | None" = None
     observacao: str = ""
+    #: O canal por onde o cliente chegou, na venda e na não venda
+    #: (25/09/2026). Quem confere é `_validar_midia`.
+    midia_id: "int | None" = None
 
 
 def _agora():
@@ -271,14 +274,50 @@ def _validar(empresa, lancamento, *, ja_usados=frozenset(),
     raise Recusa(_("Escolha se vendeu ou não."))
 
 
-def _gravar_lancamento(atendimento, lancamento, grupos, motivo, total) -> None:
+ESCOLHA_A_MIDIA = _("Escolha a mídia.")
+
+
+def _validar_midia(empresa, midia_id, *, ja_usada=None, pode_ficar_sem=False):
+    """A mídia do lançamento, conferida — ou `None` quando pode faltar.
+
+    **Obrigatória em todo fechamento** (25/09/2026, pedido do cliente): o do
+    vendedor, o do gerente que fecha no lugar dele e o "tirar da loja". Duas
+    saídas, as duas de propósito:
+
+    - **a empresa sem mídia ATIVA nenhuma** não é cobrada: a fila de toda
+      empresa travaria no dia em que isto fosse ao ar, antes de alguém
+      cadastrar a primeira;
+    - **`pode_ficar_sem`** é a correção de um lançamento que nasceu sem mídia:
+      corrigir o motivo dele não pode exigir inventar o canal.
+
+    `ja_usada` é a regra do grupo e do motivo na correção: a mídia que já
+    estava no lançamento continua aceita mesmo desativada depois.
+    """
+    if midia_id is None:
+        if pode_ficar_sem or not Midia.objects.da_empresa(empresa).filter(
+                ativo=True).exists():
+            return None
+        raise Recusa(ESCOLHA_A_MIDIA)
+    midia = Midia.objects.da_empresa(empresa).filter(pk=midia_id).first()
+    if midia is None or not (midia.ativo or midia.pk == ja_usada):
+        raise Recusa(_("Mídia não encontrada."))
+    return midia
+
+
+def _gravar_lancamento(atendimento, lancamento, grupos, motivo, total, *,
+                       midia) -> None:
+    # `midia` só por nome, e sem padrão: quem grava o lançamento decide a
+    # mídia de propósito, e um chamador novo que a esquecesse gravaria o
+    # lançamento sem ela em silêncio.
     atendimento.resultado = lancamento.resultado
     atendimento.motivo = motivo
+    atendimento.midia = midia
     atendimento.observacao = (lancamento.observacao.strip()[:280]
                               if motivo is not None else "")
     atendimento.total = total
-    atendimento.save(update_fields=["resultado", "motivo", "observacao",
-                                    "total", "fechado_por", "fim"])
+    atendimento.save(update_fields=["resultado", "motivo", "midia",
+                                    "observacao", "total", "fechado_por",
+                                    "fim"])
     atendimento.itens.all().delete()
     # Um a um, e não `bulk_create`: é o `save` do `ModeloDaEmpresa` que
     # preenche a conta, e o `bulk_create` o pula.
@@ -290,9 +329,11 @@ def _gravar_lancamento(atendimento, lancamento, grupos, motivo, total) -> None:
 
 def _fechar_atendimento(atendimento, lancamento, agora, fechado_por=None):
     grupos, motivo, total = _validar(atendimento.empresa, lancamento)
+    midia = _validar_midia(atendimento.empresa, lancamento.midia_id)
     atendimento.fim = agora
     atendimento.fechado_por = fechado_por
-    _gravar_lancamento(atendimento, lancamento, grupos, motivo, total)
+    _gravar_lancamento(atendimento, lancamento, grupos, motivo, total,
+                       midia=midia)
 
 
 def finalizar(pessoa, filial, lancamento) -> None:

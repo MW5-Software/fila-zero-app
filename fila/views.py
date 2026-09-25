@@ -107,11 +107,15 @@ def _lancamento(request) -> Lancamento:
     que pertence ao resultado escolhido.
     """
     resultado = request.POST.get("resultado", "")
+    # A mídia vale para os dois resultados, e mora FORA dos blocos que a
+    # folha esconde (25/09/2026).
+    midia_id = id_do_post(request, "midia")
     if resultado != Resultado.VENDEU:
         return Lancamento(
             resultado=resultado,
             motivo_id=id_do_post(request, "motivo"),
-            observacao=request.POST.get("observacao", ""))
+            observacao=request.POST.get("observacao", ""),
+            midia_id=midia_id)
     itens = []
     for grupo, valor in zip(request.POST.getlist("grupo"),
                             request.POST.getlist("valor")):
@@ -125,7 +129,7 @@ def _lancamento(request) -> Lancamento:
         if quantia is None:
             raise Recusa(_('Valor inválido: "%(valor)s".') % {"valor": valor})
         itens.append(ItemLancado(grupo_id, quantia))
-    return Lancamento(resultado=resultado, itens=tuple(itens))
+    return Lancamento(resultado=resultado, itens=tuple(itens), midia_id=midia_id)
 
 
 def _pessoa_do_post(request) -> int:

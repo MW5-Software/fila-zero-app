@@ -1,6 +1,7 @@
-"""Grupos de item, motivos de não venda e tipos de pausa (spec, "Cadastros").
+"""Grupos de item, motivos de não venda, tipos de pausa e mídias (spec,
+"Cadastros"; a mídia desde 25/09/2026).
 
-Os três são a mesma tela com outro model; o parametrizado prova os três de
+Os quatro são a mesma tela com outro model; o parametrizado prova os quatro de
 uma vez, e uma tela que divergir das outras fica vermelha sozinha.
 """
 
@@ -13,7 +14,9 @@ pytestmark = pytest.mark.django_db
 
 TELAS = [("fila_grupos", "GrupoDeItem", "Grupo de item"),
          ("fila_motivos", "MotivoDeNaoVenda", "Motivo de não venda"),
-         ("fila_pausas", "TipoDePausa", "Tipo de pausa")]
+         ("fila_pausas", "TipoDePausa", "Tipo de pausa"),
+         # A mídia, o canal por onde o cliente chegou (25/09/2026).
+         ("fila_midias", "Midia", "Mídia")]
 
 
 def _model(nome):

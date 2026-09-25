@@ -24,6 +24,7 @@ from django.db.models import (Case, CharField, Count, DateTimeField, DecimalFiel
 from django.db.models.functions import (Cast, Coalesce, Greatest, Least,
                                        NullIf, TruncDate, TruncHour)
 from django.utils import timezone
+from django.utils.translation import gettext_lazy
 
 from .estado import nome_de
 from .models import Atendimento, ItemVendido, Pausa, Presenca, Resultado
@@ -31,7 +32,7 @@ from .periodo import Periodo, inicio_do_dia
 
 __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
-           "lojas_com_permissao", "lojas_com_relatorio", "motivos", "numeros", "pausa_por_tipo",
+           "lojas_com_permissao", "lojas_com_relatorio", "midias", "motivos", "numeros", "pausa_por_tipo",
            "do_recorte", "empresas_com_relatorio", "por_dia", "por_grupo",
            "por_empresa", "por_loja", "posicao_no_mes", "posicoes_por_vendido", "ranking",
            "ranking_por_loja", "recorte_do_mes", "variacao"]
@@ -170,6 +171,30 @@ def motivos(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
         _atendimentos(recorte, vendedor).filter(resultado=Resultado.NAO_VENDEU)
         .values("motivo__nome").annotate(n=Count("pk"))
         .order_by("-n", "motivo__nome"))]
+
+
+#: O rótulo dos atendimentos sem mídia: os de antes de 25/09/2026, e os da
+#: empresa sem mídia cadastrada. Eles entram na lista para a soma dela bater
+#: com o total de atendimentos do painel.
+SEM_MIDIA = gettext_lazy("Sem mídia")
+
+
+def midias(recorte: Recorte, vendedor=None) -> "list[tuple[str, int, int]]":
+    """`(mídia, atendimentos, vendas)` por canal, do que mais trouxe gente
+    para o que menos (25/09/2026). Venda e não venda juntas: a pergunta é
+    "que canal traz cliente que COMPRA", e ela precisa dos dois lados."""
+    linhas = (_atendimentos(recorte, vendedor)
+              .values("midia__nome")
+              .annotate(n=Count("pk"),
+                        vendas=Count("pk", filter=Q(resultado=Resultado.VENDEU)))
+              .order_by("-n", "midia__nome"))
+    com, sem = [], []
+    for linha in linhas:
+        nome = linha["midia__nome"]
+        (com if nome is not None else sem).append(
+            (nome if nome is not None else str(SEM_MIDIA), linha["n"], linha["vendas"]))
+    # "Sem mídia" no fim, qualquer que seja o tamanho: é o resto, e não um canal.
+    return com + sem
 
 
 def pausa_por_tipo(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":

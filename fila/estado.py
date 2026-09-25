@@ -54,7 +54,8 @@ def versao_da_fila(filial) -> str:
     dados = _da_loja(filial).aggregate(
         linhas=Count("pk"), desde=Max("desde"), fila=Max("na_fila_desde"))
     hoje = _lancamentos_de_hoje(filial).aggregate(
-        n=Count("pk"), total=Sum("total"), motivos=Sum("motivo_id"))
+        n=Count("pk"), total=Sum("total"), motivos=Sum("motivo_id"),
+        midias=Sum("midia_id"))
 
     def marca(instante: "datetime | None") -> str:
         return str(int(instante.timestamp() * 1_000_000)) if instante else "0"
@@ -80,6 +81,7 @@ def versao_da_fila(filial) -> str:
 
     return (f"{dados['linhas']}.{marca(dados['desde'])}.{marca(dados['fila'])}"
             f".{hoje['n']}.{hoje['total'] or 0}.{hoje['motivos'] or 0}"
+            f".{hoje['midias'] or 0}"
             f".{metas['n']}.{marca(metas['quando'])}"
             f".{correcoes['n']}.{marca(correcoes['quando'])}")
 
@@ -88,8 +90,9 @@ def _lancamentos_de_hoje(filial):
     """Os atendimentos fechados hoje na loja, para a versão: a correção do
     gerente não mexe na fila, e sem isto os lançamentos e o "Seus números" das
     outras telas ficavam velhos até alguém mexer na fila (revisão final,
-    15/09/2026). Total e motivo pegam a correção de valor, de grupo e de
-    motivo; só a da observação sozinha passa sem mudar a versão."""
+    15/09/2026). Total, motivo e mídia pegam a correção de valor, de grupo,
+    de motivo e de mídia; só a da observação sozinha passa sem mudar a
+    versão."""
     from django.utils import timezone
 
     from .models import Atendimento

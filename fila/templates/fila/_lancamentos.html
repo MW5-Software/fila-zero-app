@@ -19,6 +19,7 @@
       <span class="fila-lanc-resultado">
         {% if a.resultado == "vendeu" %}<span class="pill ok">{{ traduzir("Vendeu") }}</span><span class="fila-lanc-valor">{{ a.total|reais }}</span>
         {% else %}<span class="pill neutral">{{ traduzir("Não vendeu") }}</span><span class="fila-lanc-motivo">{{ a.motivo.nome }}</span>{% endif %}
+        {% if a.midia %}<span class="fila-lanc-midia">{{ a.midia.nome }}</span>{% endif %}
       </span>
       {% if a.vendedor_id != eu_id %}
       <a class="btn sm ghost" href="{{ url_fila }}?folha=editar&atendimento={{ a.pk }}">{{ icon("edit", "sm") }}<span>{{ traduzir("Editar") }}</span></a>

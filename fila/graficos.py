@@ -113,21 +113,30 @@ def colunas(serie: str, rotulo_da_serie: str, lista: "list[Coluna]", *,
         " visivel" if visivel else "", serie, rotulo_da_serie, grade, corpo)
 
 
-def lista_ranqueada(linhas: "list[tuple[str, float, str]]", tom: str):
+def lista_ranqueada(linhas: "list[tuple]", tom: str):
     """Nome, valor escrito e a fatia do total, com a barra embaixo.
 
     A barra mede contra o MAIOR (o primeiro enche a linha, e a diferença entre
     os de baixo aparece); a porcentagem escrita é do TOTAL, que é a pergunta
     "quanto disso veio daqui". Uma cor só por lista: a ordem já diz quem é
     quem, e o arco-íris sugeria categorias que não existem.
+
+    Uma linha pode trazer um QUARTO item, a porcentagem já escrita, no lugar
+    da fatia do total: a lista "Por mídia" (25/09/2026) mostra ali a
+    conversão, e duas porcentagens lado a lado — a fatia e a conversão — não
+    diziam qual era qual.
     """
-    total = sum(float(v) for _n, v, _t in linhas) or 1
-    maior = max((float(v) for _n, v, _t in linhas), default=0) or 1
+    total = sum(float(linha[1]) for linha in linhas) or 1
+    maior = max((float(linha[1]) for linha in linhas), default=0) or 1
+
+    def parte(linha):
+        return linha[3] if len(linha) > 3 else f"{round(100 * float(linha[1]) / total)}%"
+
     itens = format_html_join("", (
         '<li><span class="ind-rank-nome">{}</span>'
         '<span class="ind-rank-valor">{}</span>'
-        '<span class="ind-rank-parte">{}%</span>'
+        '<span class="ind-rank-parte">{}</span>'
         '<span class="ind-rank-barra"><span style="width: {}%"></span></span></li>'), (
-        (nome, texto, round(100 * float(v) / total), f"{100 * float(v) / maior:.2f}")
-        for nome, v, texto in linhas))
+        (linha[0], linha[2], parte(linha), f"{100 * float(linha[1]) / maior:.2f}")
+        for linha in linhas))
     return format_html('<ol class="ind-rank" data-tom="{}">{}</ol>', tom, itens)
