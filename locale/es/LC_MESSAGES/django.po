@@ -1770,8 +1770,17 @@ msgstr "final de la fila"
 msgid "A gestão escolhe o seu lugar na fila."
 msgstr "La gestión elige su lugar en la fila."
 
-msgid "Na pausa da gestão, quem tira você da loja é a gestão."
-msgstr "En la pausa de la gestión, quien te saca de la tienda es la gestión."
+msgid "Na pausa da gestão, quem fecha o seu ponto é a gestão."
+msgstr "En la pausa de la gestión, quien cierra tu registro es la gestión."
 
 msgid "As metas de %(salva)s foram salvas. Esta tela mostra %(loja)s, a loja do cabeçalho."
 msgstr "Las metas de %(salva)s fueron guardadas. Esta pantalla muestra %(loja)s, la tienda del encabezado."
+
+msgid "Fechar o ponto"
+msgstr "Cerrar el registro"
+
+msgid "Fechou o ponto"
+msgstr "Cerró el registro"
+
+msgid "Finalize o atendimento antes de fechar o ponto."
+msgstr "Finalice la atención antes de cerrar el registro."

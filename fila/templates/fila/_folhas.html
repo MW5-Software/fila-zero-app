@@ -118,7 +118,7 @@
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=fechar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="fechar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("check") }}</span><span><strong>{{ traduzir("Fechar atendimento") }}</strong><small>{{ traduzir("Lançar o resultado no lugar do vendedor. Ele volta para o fim da fila.") }}</small></span></a>
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
-      <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Fecha o atendimento como não venda e encerra o ponto.") }}</small></span></a>
+      <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Fechar o ponto") }}</strong><small>{{ traduzir("Fecha o atendimento como não venda e encerra o ponto.") }}</small></span></a>
   </div>
   <div data-para="em_espera"{% if alvo and alvo.estado != "em_espera" %} hidden{% endif %}>
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=por_na_fila&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="por_na_fila" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
@@ -130,7 +130,7 @@
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=por_em_pausa&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="por_em_pausa" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
       <span class="ci">{{ icon("coffee") }}</span><span><strong>{{ traduzir("Pôr em pausa") }}</strong><small>{{ traduzir("Para quem saiu e não apertou Pausa.") }}</small></span></a>
   </div>
-  {# Tirar da pausa e tirar da loja abriam direto um POST; com o motivo
+  {# Tirar da pausa e fechar o ponto abriam direto um POST; com o motivo
      obrigatório (spec 2026-09-17), abrem a folha que pede o campo. #}
   <div data-para="em_pausa"{% if alvo and alvo.estado != "em_pausa" %} hidden{% endif %}>
     <a class="fila-corrigir-item" href="{{ url_fila }}?folha=tirar_pausa&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="tirar_pausa" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
@@ -145,14 +145,14 @@
   </div>
   <div data-para="na_fila em_pausa em_pausa_fixa em_espera"{% if alvo and alvo.estado == "atendendo" %} hidden{% endif %}>
     <a class="fila-corrigir-item fila-corrigir-perigo" href="{{ url_fila }}?folha=sair&pessoa={{ alvo.pessoa_id if alvo else '' }}" data-folha="sair" data-pessoa="{{ alvo.pessoa_id if alvo else '' }}" data-nome="{{ alvo.nome if alvo else '' }}">
-      <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Tirar da loja") }}</strong><small>{{ traduzir("Para quem esqueceu de sair. Encerra o ponto.") }}</small></span></a>
+      <span class="ci">{{ icon("log-out") }}</span><span><strong>{{ traduzir("Fechar o ponto") }}</strong><small>{{ traduzir("Para quem esqueceu de sair. Encerra o ponto.") }}</small></span></a>
   </div>
 </div>
 {% endcall %}
 
 {% call modal("fechar", traduzir("Fechar o atendimento"), folha == "fechar" and alvo, alvo.nome if alvo else "") %}{{ fechamento("fechar", alvo.pessoa_id if alvo else "") }}{% endcall %}
 
-{% call modal("tirar", traduzir("Tirar da loja"), folha == "tirar" and alvo, alvo.nome if alvo else "") %}
+{% call modal("tirar", traduzir("Fechar o ponto"), folha == "tirar" and alvo, alvo.nome if alvo else "") %}
 <form method="post" action="{{ url_agir }}" data-acao>
   <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="tirar">
@@ -165,7 +165,7 @@
   </div>
   <div class="mfoot">
     <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
-    <button type="submit" class="btn primary">{{ traduzir("Tirar da loja") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Fechar o ponto") }}</button>
   </div>
 </form>
 {% endcall %}
@@ -260,7 +260,7 @@
 </form>
 {% endcall %}
 
-{% call modal("sair", traduzir("Tirar da loja"), folha == "sair" and alvo, alvo.nome if alvo else "") %}
+{% call modal("sair", traduzir("Fechar o ponto"), folha == "sair" and alvo, alvo.nome if alvo else "") %}
 <form method="post" action="{{ url_agir }}" data-acao>
   <div class="mbody">
     {{ csrf }}<input type="hidden" name="acao" value="tirar">
@@ -270,7 +270,7 @@
   </div>
   <div class="mfoot">
     <button type="button" class="btn" data-modal-close>{{ traduzir("Cancelar") }}</button>
-    <button type="submit" class="btn primary">{{ traduzir("Tirar da loja") }}</button>
+    <button type="submit" class="btn primary">{{ traduzir("Fechar o ponto") }}</button>
   </div>
 </form>
 {% endcall %}

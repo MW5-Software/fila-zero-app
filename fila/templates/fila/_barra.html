@@ -9,7 +9,7 @@
   <div class="fila-secundarias">
     <button type="button" class="btn" data-folha="pausa">{{ icon("coffee", "sm") }}<span>{{ traduzir("Pausa") }}</span></button>
     {% if meu.posicao == 1 %}{{ botao("cliente_pediu", traduzir("Cliente pediu por mim"), "btn") }}{% endif %}
-    {{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}
+    {{ botao("sair", traduzir("Fechar o ponto"), "btn ghost", "log-out") }}
   </div>
   {% if meu.posicao == 1 %}
   {{ botao("atender", traduzir("Vou atender"), "btn primary lg fila-principal fila-principal-vez", "handshake") }}
@@ -19,19 +19,19 @@
 {% elif meu.estado == Estado.EM_ESPERA %}
   <div class="fila-secundarias">
     <button type="button" class="btn" data-folha="pausa">{{ icon("coffee", "sm") }}<span>{{ traduzir("Pausa") }}</span></button>
-    {{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}
+    {{ botao("sair", traduzir("Fechar o ponto"), "btn ghost", "log-out") }}
   </div>
   {{ botao("entrar_na_fila", traduzir("Entrar na fila"), "btn primary lg fila-principal", "log-in") }}
 {% elif meu.estado == Estado.ATENDENDO %}
   <a class="btn primary lg fila-principal" href="{{ url_fila }}?folha=finalizar" data-folha="finalizar">{{ icon("check", "sm") }}<span>{{ traduzir("Finalizar atendimento") }}</span></a>
 {% elif meu.pausa_fixa %}
   {# Da pausa da gestão quem tira é a gestão, escolhendo a posição
-     (25/09/2026): sem "Voltar" e sem "Sair da loja" — saindo, o vendedor
+     (25/09/2026): sem "Voltar" e sem "Fechar o ponto" — saindo, o vendedor
      batia o ponto de novo e entrava no fim da fila. O servidor recusa os dois
      forjados. #}
   <p class="fila-aviso-gestao">{{ icon("lock", "sm") }}<span>{{ traduzir("Só a gestão tira você desta pausa.") }}</span></p>
 {% else %}
-  <div class="fila-secundarias">{{ botao("sair", traduzir("Sair da loja"), "btn ghost", "log-out") }}</div>
+  <div class="fila-secundarias">{{ botao("sair", traduzir("Fechar o ponto"), "btn ghost", "log-out") }}</div>
   {{ botao("voltar", traduzir("Voltar para a fila"), "btn primary lg fila-principal", "arrow-left") }}
 {% endif %}
 {% endif %}

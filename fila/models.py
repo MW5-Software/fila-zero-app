@@ -386,7 +386,9 @@ class AcaoDeCorrecao(models.TextChoices):
     PAUSAR = "pausar", _("Pôs em pausa")
     TIRAR_PAUSA = "tirar_pausa", _("Tirou da pausa")
     FECHAR = "fechar", _("Fechou o atendimento")
-    TIRAR = "tirar", _("Tirou da loja")
+    # "Fechou o ponto", e não "Tirou da loja" (25/09/2026, pedido do cliente:
+    # "fechamento de ponto em vez de tirar da fila"). O valor gravado não muda.
+    TIRAR = "tirar", _("Fechou o ponto")
     EDITAR = "editar", _("Corrigiu o lançamento")
     POR_NA_FILA = "por_na_fila", _("Pôs na fila")
     RECOLOCAR = "recolocar", _("Recolocou na fila")

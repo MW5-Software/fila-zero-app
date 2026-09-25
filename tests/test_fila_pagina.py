@@ -702,3 +702,23 @@ def test_a_folha_corrigir_oferece_por_na_fila_para_quem_espera(loja):
     _agir(gil, acao="por_na_fila", pessoa=str(loja.ana.pk),
           motivo_da_correcao="cliente chegou")
     assert LugarNaFila.irrestritos.get(pessoa=loja.ana).estado == Estado.NA_FILA
+
+
+def test_fechar_o_ponto_e_o_nome_das_duas_saidas(loja):
+    """25/09/2026, pedido do cliente: "fechamento de ponto em vez de tirar da
+    fila". O "Sair da loja" do vendedor e o "Tirar da loja" do gerente são a
+    mesma coisa — encerram o ponto —, e passam a se chamar assim."""
+    from fila.acoes import Recusa, bater_ponto, sair_da_loja, vou_atender
+    from fila.models import AcaoDeCorrecao
+
+    bater_ponto(loja.ana, loja.matriz)
+    ana = _html(logado("ana"))
+    assert "Fechar o ponto" in ana and "Sair da loja" not in ana
+
+    gil = _html(logado("gil"))
+    assert "Fechar o ponto" in gil and "Tirar da loja" not in gil
+
+    vou_atender(loja.ana, loja.matriz)
+    with pytest.raises(Recusa, match="antes de fechar o ponto"):
+        sair_da_loja(loja.ana, loja.matriz)
+    assert AcaoDeCorrecao.TIRAR.label == "Fechou o ponto"

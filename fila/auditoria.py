@@ -44,7 +44,7 @@ class ACOES_DA_FILA:
 
 
 ROTULOS_DA_FILA = {
-    ACOES_DA_FILA.FILA_PESSOA_TIRADA: "Pessoa tirada da loja",
+    ACOES_DA_FILA.FILA_PESSOA_TIRADA: "Ponto fechado pelo gerente",
     ACOES_DA_FILA.FILA_ATENDIMENTO_FECHADO: "Atendimento fechado pelo gerente",
     ACOES_DA_FILA.FILA_PAUSA_ENCERRADA: "Pausa encerrada pelo gerente",
     ACOES_DA_FILA.FILA_LANCAMENTO_CORRIGIDO: "Lançamento corrigido",

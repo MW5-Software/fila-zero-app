@@ -325,7 +325,7 @@ def test_o_vendedor_nao_sai_da_loja_na_pausa_da_gestao(loja):
     from fila.acoes import Recusa, sair_da_loja
 
     _por_na_administrativa(loja)
-    with pytest.raises(Recusa, match="quem tira você da loja é a gestão"):
+    with pytest.raises(Recusa, match="quem fecha o seu ponto é a gestão"):
         sair_da_loja(loja.ana, loja.matriz)
     assert _pausa_aberta(loja.ana).fixa == "administrativa"
 
@@ -340,7 +340,7 @@ def test_nem_batendo_o_ponto_em_outra_loja(loja):
 
     centro = nova_loja(loja.empresa, "Centro")
     _por_na_administrativa(loja)
-    with pytest.raises(Recusa, match="quem tira você da loja é a gestão"):
+    with pytest.raises(Recusa, match="quem fecha o seu ponto é a gestão"):
         bater_ponto(loja.ana, centro)
     assert LugarNaFila.irrestritos.get(pessoa=loja.ana).filial == loja.matriz
 

@@ -283,7 +283,7 @@ def _validar_midia(empresa, midia_id, *, ja_usada=None, pode_ficar_sem=False):
     """A mídia do lançamento, conferida — ou `None` quando pode faltar.
 
     **Obrigatória em todo fechamento** (25/09/2026, pedido do cliente): o do
-    vendedor, o do gerente que fecha no lugar dele e o "tirar da loja". Duas
+    vendedor, o do gerente que fecha no lugar dele e o "fechar o ponto" do gerente. Duas
     saídas, as duas de propósito:
 
     - **a empresa sem mídia ATIVA nenhuma** não é cobrada: a fila de toda
@@ -379,11 +379,11 @@ def _abrir_pausa(lugar, filial, tipo_id, agora, *, fixa=None) -> Pausa:
 
 SO_A_GESTAO_TIRA = _("Só a gestão tira você desta pausa.")
 #: As duas portas por onde o vendedor saía da pausa da gestão sem a gestão
-#: (25/09/2026): "Sair da loja" e bater o ponto em OUTRA loja, que fecha a
+#: (25/09/2026): "Fechar o ponto" e bater o ponto em OUTRA loja, que fecha a
 #: presença desta. Com a pausa fechada junto, ele batia o ponto de novo e
-#: entrava no fim da fila. Quem tira da loja é a gestão ("Tirar da loja"), e o
+#: entrava no fim da fila. Quem fecha o ponto dele é a gestão ("Fechar o ponto" do Corrigir), e o
 #: fim do turno continua valendo — os dois passam por `_sair`, e não por aqui.
-NA_PAUSA_DA_GESTAO = _("Na pausa da gestão, quem tira você da loja é a gestão.")
+NA_PAUSA_DA_GESTAO = _("Na pausa da gestão, quem fecha o seu ponto é a gestão.")
 
 
 def _em_pausa_da_gestao(pessoa_id) -> bool:
@@ -420,7 +420,7 @@ def sair_da_loja(pessoa, filial) -> None:
         _travar(filial)
         lugar = _lugar_na_loja(pessoa.pk, filial)
         if lugar.estado == Estado.ATENDENDO:
-            raise Recusa(_("Finalize o atendimento antes de sair da loja."))
+            raise Recusa(_("Finalize o atendimento antes de fechar o ponto."))
         if _em_pausa_da_gestao(pessoa.pk):
             raise Recusa(NA_PAUSA_DA_GESTAO)
         _sair(lugar, _agora())

@@ -610,7 +610,7 @@ cinco ajustes que o spec não respondia (D-1 a D-5):
 | permissão | o que abre |
 |---|---|
 | `fila.ver` | a página `/fila` da loja e o item no menu |
-| `fila.participar` | bater o ponto, atender, lançar, pausar, sair da loja |
+| `fila.participar` | bater o ponto, atender, lançar, pausar, fechar o ponto |
 | `fila.gerenciar` | corrigir a fila e os lançamentos da loja em que está |
 | `fila.cadastros` | grupos de item, motivos de não venda, tipos de pausa e mídias |
 | `fila.metas` | a tela `/fila/metas`, nas lojas em que o cargo traz a permissão |
@@ -699,7 +699,7 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   `Atendimento.midia`, na venda E na não venda. As regras moram em
   `acoes._validar_midia`:
   - **obrigatória em todo fechamento** — o do vendedor, o do gerente que fecha
-    no lugar dele e o "tirar da loja" com atendimento aberto;
+    no lugar dele e o "Fechar o ponto" do gerente com atendimento aberto;
   - **menos na empresa sem mídia ATIVA nenhuma**: a folha não desenha o campo
     e o fechamento não o cobra — sem isto, a fila de toda empresa travaria no
     dia em que a mídia foi ao ar, antes de alguém cadastrar a primeira;
@@ -727,10 +727,10 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
     posição". O "Tirar da pausa" recusa a pausa da gestão, e o `voltar` do
     vendedor também — a barra dele mostra "Só a gestão tira você desta
     pausa." no lugar do botão.
-  - **Nem "Sair da loja", nem bater o ponto em outra loja** (25/09/2026):
+  - **Nem "Fechar o ponto", nem bater o ponto em outra loja** (25/09/2026):
     as duas fechavam a presença e a pausa junto, e o vendedor voltava batendo
     o ponto, no fim da fila, sem a gestão. Quem tira da loja é a gestão
-    ("Tirar da loja"), e o fim do turno continua valendo — os dois passam por
+    (o "Fechar o ponto" do Corrigir), e o fim do turno continua valendo — os dois passam por
     `acoes._sair`, e não pelas portas do vendedor.
   - Nas folhas, quem está numa delas tem o estado `em_pausa_fixa`
     (`tela.estado_da_folha`) — não é estado da fila, é o que troca "Tirar da
@@ -748,6 +748,11 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   - Nos indicadores aparecem no "Tempo em pausa" com o nome delas, mas **não
     pesam no vendedor**: ficam fora da coluna Pausa do ranking e do painel
     dele (`fixa=""` nas três consultas).
+
+- **"Fechar o ponto"** (25/09/2026, pedido do cliente: "fechamento de ponto
+  em vez de tirar da fila"): é o nome do "Sair da loja" do vendedor e do
+  "Tirar da loja" do gerente, que encerram o ponto. O histórico diz "Fechou o
+  ponto"; o valor gravado (`tirar`) não mudou.
 
 ### O que custa esquecer
 
