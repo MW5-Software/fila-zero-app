@@ -66,9 +66,11 @@ CONCEDE: "dict[str, tuple[str, ...]]" = {
 #: nenhum dos dois (o cliente: "supervisor não cadastrou gerente"). Ele
 #: continua sem bater o ponto, porque tem `fila.gerenciar`.
 DE_FABRICA: "tuple[tuple[str, str, str, bool, tuple[str, ...]], ...]" = (
+    # `filiais.ativar` (25/09/2026, pedido do cliente): o supervisor liga e
+    # desliga as lojas da empresa; criar, editar e remover continuam do dono.
     ("supervisor", "Supervisor", "empresa", False,
-     ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar",
-      "fila.relatorios", "fila.metas")),
+     ("usuarios.editar", "filiais.ativar", "fila.ver", "fila.participar",
+      "fila.gerenciar", "fila.relatorios", "fila.metas")),
     ("gerente", "Gerente", "filial", False,
      ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar",
       "fila.relatorios", "fila.metas")),

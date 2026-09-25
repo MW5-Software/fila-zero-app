@@ -115,7 +115,11 @@ MODULO_FILIAIS = ModuloSpec(
     grupo="Configuração",
     ordem=-3,
     rota="/filiais",
-    permissoes=("filiais.editar",),
+    # `filiais.ativar` PRIMEIRO (25/09/2026): é a menor das duas, e o menu
+    # entra pela primeira permissão do módulo — o supervisor, que só ativa e
+    # desativa loja, precisa achar a tela. `filiais.editar` é criar, editar e
+    # remover, do dono e da MW5.
+    permissoes=("filiais.ativar", "filiais.editar"),
     ativo_por_padrao=True,
 )
 

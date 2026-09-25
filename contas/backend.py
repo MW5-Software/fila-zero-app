@@ -103,6 +103,17 @@ def permissoes_de(usuario: Usuario) -> frozenset[str]:
         .distinct())
 
 
+#: A permissão que traz outra junto. `filiais.editar` — criar, editar e
+#: remover filial — pode também ligar e desligar a loja (`filiais.ativar`,
+#: 25/09/2026): a tela abre pela menor das duas, e sem isto o cargo que o dono
+#: criasse marcando só "editar" ficaria sem a tela. Aqui, e não em cada
+#: guarda, porque é por aqui que passam a permissão direta e a do cargo — o
+#: menu, a rota e as travas de `contas.lugar.pode_dar` leem a mesma resposta.
+IMPLICADAS: "dict[str, tuple[str, ...]]" = {
+    "filiais.editar": ("filiais.ativar",),
+}
+
+
 def traduzir(codenames) -> frozenset[str]:
     """Codenames de `Permission` do app de módulos -> `modulo.acao`.
 
@@ -145,6 +156,9 @@ def traduzir(codenames) -> frozenset[str]:
             continue
         concedidas.add(f"{modulo}.{acao}")
 
+    for permissao, junto in IMPLICADAS.items():
+        if permissao in concedidas:
+            concedidas.update(junto)
     return frozenset(concedidas)
 
 

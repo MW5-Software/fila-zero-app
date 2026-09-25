@@ -319,3 +319,82 @@ class TestDesativarNaoTrancaQuemEstaUsando:
             session = sessao_de_zeca.session
 
         assert filial_atual(_Requisicao()) == matriz
+
+
+class TestOSupervisorAtivaEDesativa:
+    """25/09/2026, pedido do cliente: ativar e desativar filial "tem que
+    liberar para dono da conta e supervisor". O dono já podia (`filiais.editar`
+    de fábrica); o supervisor ganha só a permissão NOVA, `filiais.ativar`:
+    abre a tela e liga/desliga a loja, e criar, editar e remover continuam do
+    dono e da MW5 — conferido no POST, e não só escondido na tela."""
+
+    @pytest.fixture
+    def rede(self, admin_do_cliente, matriz):
+        from plataforma.models import Filial
+
+        empresa = matriz.empresa
+        centro = Filial.objects.create(empresa=empresa, nome="Centro", apelido="Centro")
+        sara = Usuario.objects.create_user(email="sara-fil@teste.com", password=SENHA,
+                                           nome="Sara")
+        alocar(sara, empresa, "supervisor")
+        gil = Usuario.objects.create_user(email="gil-fil@teste.com", password=SENHA,
+                                          nome="Gil")
+        alocar(gil, empresa, "gerente", filial=centro)
+        return {"matriz": matriz, "centro": centro}
+
+    def _cliente(self, email):
+        c = Client()
+        c.post(reverse("entrar"), {"usuario": email, "senha": SENHA})
+        return c
+
+    def test_o_supervisor_abre_e_so_ve_ativar_e_desativar(self, rede):
+        html = self._cliente("sara-fil@teste.com").get(reverse("filiais")).content.decode()
+        centro = rede["centro"]
+        assert f'data-open-modal="filial-{centro.pk}-estado"' in html
+        assert f'data-open-modal="filial-{centro.pk}-editar"' not in html
+        assert f'data-open-modal="filial-{centro.pk}-remover"' not in html
+        assert 'data-open-modal="filial-criar"' not in html
+
+    def test_o_supervisor_desativa_e_ativa(self, rede):
+        cliente = self._cliente("sara-fil@teste.com")
+        centro = rede["centro"]
+        cliente.post(reverse("filiais"), {"acao": "desativar", "filial": str(centro.pk)})
+        centro.refresh_from_db()
+        assert centro.ativa is False
+        cliente.post(reverse("filiais"), {"acao": "ativar", "filial": str(centro.pk)})
+        centro.refresh_from_db()
+        assert centro.ativa is True
+
+    def test_o_supervisor_nao_cria_edita_nem_remove_pelo_post(self, rede):
+        from plataforma.models import Filial
+
+        cliente = self._cliente("sara-fil@teste.com")
+        centro = rede["centro"]
+        for dados in ({"acao": "criar", "nome": "Nova", "apelido": "Nova"},
+                      {"acao": "salvar", "filial": str(centro.pk), "nome": "Outro",
+                       "apelido": "Outro"},
+                      {"acao": "remover", "filial": str(centro.pk)}):
+            assert cliente.post(reverse("filiais"), dados).status_code == 404
+        centro.refresh_from_db()
+        assert centro.nome == "Centro"
+        assert not Filial.objects.filter(nome="Nova").exists()
+
+    def test_o_gerente_nao_abre(self, rede):
+        assert self._cliente("gil-fil@teste.com").get(reverse("filiais")).status_code == 404
+
+    def test_o_dono_continua_com_tudo(self, cliente_admin, rede):
+        html = cliente_admin.get(reverse("filiais")).content.decode()
+        centro = rede["centro"]
+        for acao in ("estado", "editar", "remover"):
+            assert f'data-open-modal="filial-{centro.pk}-{acao}"' in html
+        assert 'data-open-modal="filial-criar"' in html
+
+
+def test_quem_edita_filial_tambem_ativa(db):
+    """`filiais.editar` traz `filiais.ativar` junto (`contas.backend.
+    IMPLICADAS`): a tela abre pela menor, e o cargo que o dono criar marcando
+    só "editar" não pode ficar sem ela."""
+    from contas.backend import traduzir
+
+    assert "filiais.ativar" in traduzir(["filiais_editar"])
+    assert "filiais.editar" not in traduzir(["filiais_ativar"])

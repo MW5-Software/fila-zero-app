@@ -65,7 +65,10 @@ DE_FABRICA: dict[int, tuple[str, ...]] = {
         #: `conta.ver` (17/09/2026): a tela que mostra a conta dele, as
         #: empresas e as lojas de cada uma. É leitura.
         "cargos.editar", "conta.ver", "empresa.editar",
-        "filiais.editar",
+        #: `filiais.ativar` (25/09/2026): ligar e desligar a loja, que o
+        #: supervisor também faz. O dono já podia tudo por `filiais.editar`,
+        #: mas a tela passou a abrir pela menor das duas.
+        "filiais.ativar", "filiais.editar",
         "fila.cadastros", "fila.gerenciar", "fila.metas", "fila.participar",
         "fila.relatorios", "fila.ver",
         "usuarios.editar",

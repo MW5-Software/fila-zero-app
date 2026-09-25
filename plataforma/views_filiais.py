@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -18,6 +18,7 @@ from comum.auditoria import ACOES, registrar
 from comum.csrf import campo_csrf
 from comum.guardas_de_acesso import exigir_permissao
 from comum.personificacao import aviso as aviso_de_personificacao
+from nucleo.permissoes import pode
 from nucleo.components import (
     Alert, Badge, Box, Button, Card, Cell, Column, Form, FormGrid,
     IconButton, Modal, Option, PageHeader, Raw, Select, Table, TextInput,
@@ -128,21 +129,33 @@ def _id_do_modal(acao: str, filial_pk: int) -> str:
     return f"filial-{filial_pk}-{acao}"
 
 
-def _acoes_da_linha(filial: Filial) -> Box:
+def _pode_editar(request) -> bool:
+    """Criar, editar e remover filial: `filiais.editar`, do dono e da MW5. A
+    tela abre com `filiais.ativar` (25/09/2026), e quem tem só essa — o
+    supervisor — liga e desliga a loja e mais nada. Conferido no POST
+    (`filiais`), e não só escondido aqui."""
+    return pode(request.usuario, "filiais.editar")
+
+
+def _acoes_da_linha(filial: Filial, *, editar: bool = True) -> Box:
     # `wrap=False` e `align="end"`: a coluna de ações é estreita, e `.box`
     # nasce com `flex-wrap: wrap` — sem isto os ícones caem um embaixo do
     # outro e esticam a altura de toda linha da tabela.
+    estado = IconButton(
+        icon="x-circle" if filial.ativa else "check-circle",
+        title="Desativar" if filial.ativa else "Ativar",
+        attrs={"data-open-modal": _id_do_modal("estado", filial.pk)})
+    botoes = [estado]
+    if editar:
+        botoes = [
+            IconButton(icon="edit", title=_("Editar"),
+                       attrs={"data-open-modal": _id_do_modal("editar", filial.pk)}),
+            estado,
+            IconButton(icon="trash", title=_("Remover"),
+                       attrs={"data-open-modal": _id_do_modal("remover", filial.pk)}),
+        ]
     return Box(direction="row", gap="sm", wrap=False, align="end",
-               cross="center", body=[
-        IconButton(icon="edit", title=_("Editar"),
-                   attrs={"data-open-modal": _id_do_modal("editar", filial.pk)}),
-        IconButton(
-            icon="x-circle" if filial.ativa else "check-circle",
-            title="Desativar" if filial.ativa else "Ativar",
-            attrs={"data-open-modal": _id_do_modal("estado", filial.pk)}),
-        IconButton(icon="trash", title=_("Remover"),
-                   attrs={"data-open-modal": _id_do_modal("remover", filial.pk)}),
-    ])
+               cross="center", body=botoes)
 
 
 def _campo_de_empresa(empresas, escolhida) -> "Select | None":
@@ -187,7 +200,8 @@ def _empresa_oculta(escolhida) -> list:
     return [Raw(html=_campo_oculto("empresa", str(escolhida.pk)))]
 
 
-def _modais_de_filial(request, filial: Filial, escolhida=None) -> list[Modal]:
+def _modais_de_filial(request, filial: Filial, escolhida=None, *,
+                      editar: bool = True) -> list[Modal]:
     """Um `Modal` de editar, um de ativar/desativar e um de remover — cada
     um com o próprio `<form>`, nascendo fechado, em `overlays=`. Mesmo papel
     de `contas.views_usuarios._modais_de_usuario`."""
@@ -203,7 +217,7 @@ def _modais_de_filial(request, filial: Filial, escolhida=None) -> list[Modal]:
         acao_de_estado, rotulo_de_estado = "ativar", "Ativar"
         aviso_de_estado = Alert(tone="info", message=f'Ativar "{filial}" de novo?')
 
-    return [
+    modais = [
         Modal(id=_id_do_modal("editar", filial.pk), title=f"Editar {filial}",
               size="lg", body=Form(action=reverse("filiais"), children=[
                   Raw(html=campo_csrf(request)),
@@ -241,6 +255,9 @@ def _modais_de_filial(request, filial: Filial, escolhida=None) -> list[Modal]:
                   Button(label=_("Remover"), variant="danger", type="submit"),
               ])),
     ]
+    # Quem só ativa e desativa (o supervisor, 25/09/2026) recebe só a folha
+    # de ativar/desativar: as outras nem viajam na página.
+    return modais if editar else [modais[1]]
 
 
 def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
@@ -250,6 +267,7 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
 
         escolhida = empresa_do_pedido(request)
         empresas = empresas_da_conta(empresa_atual(request))
+        editar = _pode_editar(request)
 
         conteudo = [
             aviso_de_personificacao(request),
@@ -257,8 +275,9 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
                        subtitle="As unidades desta empresa, e quem pode "
                                 "escolhê-las no cabeçalho.",
                        actions=[
-                           Button(label=_("Nova filial"), variant="primary",
-                                  attrs={"data-open-modal": "filial-criar"}),
+                           *([Button(label=_("Nova filial"), variant="primary",
+                                     attrs={"data-open-modal": "filial-criar"})]
+                             if editar else []),
                            *botoes(request),
                        ]),
         ]
@@ -299,14 +318,14 @@ def _desenhar(request, erro: "str | None" = None) -> HttpResponse:
                 # Filtros salvos (item 27): os desta pessoa nesta tela.
                 listagem.barra,
                 Table(columns=_colunas_da_lista(listagem), rows=filiais_existentes,
-                      row_actions=_acoes_da_linha),
+                      row_actions=lambda f: _acoes_da_linha(f, editar=editar)),
                 listagem.paginacao,
             ],
         ))
 
-        modais = [_modal_criar_filial(request, empresas, escolhida)]
+        modais = [_modal_criar_filial(request, empresas, escolhida)] if editar else []
         for filial in filiais_existentes:
-            modais.extend(_modais_de_filial(request, filial, escolhida))
+            modais.extend(_modais_de_filial(request, filial, escolhida, editar=editar))
 
         pagina = site.page(
             # `full`: a tela usa a largura toda — mesmo motivo de
@@ -486,7 +505,12 @@ ACOES_COM_FILIAL = {
 }
 
 
-@exigir_permissao("filiais.editar")
+#: As ações que pedem `filiais.editar`. Ativar e desativar pedem só a
+#: permissão da tela, `filiais.ativar` (25/09/2026).
+_SO_QUEM_EDITA = {"criar", "salvar", "remover"}
+
+
+@exigir_permissao("filiais.ativar")
 @exigir_modulo_ligado("filiais")
 def filiais(request) -> HttpResponse:
     """A tela de Filiais: uma rota, um `acao` no corpo do POST decide o quê."""
@@ -503,6 +527,9 @@ def filiais(request) -> HttpResponse:
         return _desenhar(request)
 
     acao = request.POST.get("acao", "")
+    if acao in _SO_QUEM_EDITA and not _pode_editar(request):
+        # A mesma resposta da barreira para o que não se pode: não existe.
+        return HttpResponseNotFound()
 
     sem_filial = ACOES_SEM_FILIAL.get(acao)
     if sem_filial is not None:

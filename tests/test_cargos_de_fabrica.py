@@ -51,9 +51,10 @@ def test_as_permissoes_iniciais(titular):
     # atende e corrige, o vendedor atende. O representante não está na loja.
     # O supervisor traz `fila_participar` desde 25/09/2026 só para poder
     # conceder Vendedor e Gerente (`contas.lugar.pode_dar`); ele não atende.
+    # `filiais_ativar` desde 25/09/2026: o supervisor liga e desliga as lojas.
     assert _permissoes(cargos["supervisor"]) == {
-        "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
-        "fila_relatorios", "fila_metas"}
+        "usuarios_editar", "filiais_ativar", "fila_ver", "fila_participar",
+        "fila_gerenciar", "fila_relatorios", "fila_metas"}
     assert _permissoes(cargos["gerente"]) == {
         "usuarios_editar", "fila_ver", "fila_participar", "fila_gerenciar",
         "fila_relatorios", "fila_metas"}

@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 152 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 153 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -400,6 +400,16 @@ O que custa quando se esquece:
   - protegida por qualquer tabela de negócio com `PROTECT` — perguntado ao
     próprio Django, porque a base não conhece os módulos;
   - se for a última ativa da empresa.
+- **O supervisor ativa e desativa filial** (25/09/2026, pedido do cliente:
+  "tem que liberar para dono da conta e supervisor"). A tela abre por
+  `filiais.ativar` — a primeira do módulo, para o menu —, e quem tem só essa
+  vê e usa o ativar/desativar; criar, editar e remover pedem `filiais.editar`,
+  conferido no POST (404 para quem não tem). O titular traz as duas de
+  fábrica; o Supervisor, `filiais.ativar`. Quem tem `filiais.editar` tem a
+  outra junto (`contas.backend.IMPLICADAS`, na tradução por onde passam a
+  permissão direta e a do cargo) — senão o cargo que o dono criasse marcando
+  só "editar" perderia a tela. A `contas/0009` levou as duas a todo titular e
+  a nova ao Supervisor de fábrica.
 - **A tela de Filiais tem o seletor de EMPRESA** (23/09/2026, pedido do
   cliente: "quando eu for criar filial num dono de conta com mais de uma
   empresa, preciso de um seletor para dizer de qual filial é aquela empresa").
@@ -1068,7 +1078,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 152 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 153 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a
