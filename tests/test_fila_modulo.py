@@ -103,8 +103,10 @@ def test_o_modulo_nasce_ligado():
     ("vendedor", {"fila_ver", "fila_participar"}),
     ("gerente", {"fila_ver", "fila_participar", "fila_gerenciar",
                  "fila_relatorios", "fila_metas"}),
-    ("supervisor", {"fila_ver", "fila_gerenciar", "fila_relatorios",
-                    "fila_metas"}),
+    # `fila_participar` desde 25/09/2026: sem ela o supervisor não concedia
+    # Vendedor nem Gerente. Ele não bate o ponto, porque gerencia.
+    ("supervisor", {"fila_ver", "fila_participar", "fila_gerenciar",
+                    "fila_relatorios", "fila_metas"}),
     ("representante", set()),
     ("cliente", set()),
 ])

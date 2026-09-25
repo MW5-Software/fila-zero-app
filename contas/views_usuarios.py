@@ -668,27 +668,40 @@ def _pessoa_de(request) -> "Usuario | None":
     return usuario_de(getattr(request, "usuario", None))
 
 
-def _lugares_oferecidos(request) -> tuple[list, dict, dict]:
+def _lugares_oferecidos(request) -> tuple[list, dict, dict, bool]:
     """O que o bloco de Alocações oferece: `(empresas, filiais por empresa,
-    cargos por conta)`.
+    cargos por conta, se "Todas as filiais" vale)`.
 
-    A tela OFERECE o que quem edita alcança (`contas.lugar`); quem RECUSA é o
-    POST, por `pode_dar`, que também confere permissão e alcance do cargo. Por
-    isso aqui não se filtra cargo por permissão: uma caixa que mostrasse menos
-    cargos que o POST aceita seria a mesma regra escrita duas vezes, e as duas
-    divergiriam na primeira mudança.
+    **A caixa só oferece o que o POST aceita** (25/09/2026, pedido do cliente:
+    "gerente tá podendo cadastrar qualquer usuário"). Até então ela oferecia
+    todos os cargos da conta e "Todas as filiais", e só o POST dizia não — o
+    gerente via Supervisor na lista e escolhia. A pergunta é feita ao PRÓPRIO
+    `pode_dar`, e não a uma cópia da regra: um cargo aparece se quem edita
+    pode dá-lo em algum dos lugares oferecidos. O POST continua conferindo
+    linha a linha, porque a caixa não sabe qual filial será escolhida junto.
     """
-    from contas.lugar import empresas_da_pessoa, filiais_da_pessoa
+    from contas.lugar import empresas_da_pessoa, filiais_da_pessoa, pode_dar
     from contas.models import Cargo
 
     editor = _pessoa_de(request)
     empresas = list(empresas_da_pessoa(editor).order_by("razao_social"))
     filiais = {e.pk: list(filiais_da_pessoa(editor, e)) for e in empresas}
-    cargos: dict = {}
+    da_conta: dict = {}
     for cargo in Cargo.objects.filter(
             conta_id__in={e.conta_id for e in empresas}).order_by("rotulo"):
-        cargos.setdefault(cargo.conta_id, []).append(cargo)
-    return empresas, filiais, cargos
+        da_conta.setdefault(cargo.conta_id, []).append(cargo)
+    cargos: dict = {}
+    na_empresa_inteira = False
+    for empresa in empresas:
+        for cargo in da_conta.get(empresa.conta_id, []):
+            if pode_dar(editor, empresa, None, cargo):
+                na_empresa_inteira = True
+            elif not any(pode_dar(editor, empresa, f, cargo)
+                         for f in filiais[empresa.pk]):
+                continue
+            if cargo not in cargos.get(empresa.conta_id, []):
+                cargos.setdefault(empresa.conta_id, []).append(cargo)
+    return empresas, filiais, cargos, na_empresa_inteira
 
 
 def _linha_de_alocacao(oferta, alocacao=None) -> str:
@@ -706,7 +719,7 @@ def _linha_de_alocacao(oferta, alocacao=None) -> str:
     from django.utils.html import format_html, format_html_join
     from django.utils.safestring import mark_safe
 
-    empresas, filiais, cargos = oferta
+    empresas, filiais, cargos, na_empresa_inteira = oferta
     varias = len(empresas) > 1
     empresa_atual = str(alocacao.empresa_id) if alocacao else ""
     filial_atual = str(alocacao.filial_id or "") if alocacao else ""
@@ -721,11 +734,20 @@ def _linha_de_alocacao(oferta, alocacao=None) -> str:
         return f"{rotulo} ({empresa})" if varias else rotulo
 
     pares_empresa = [("", "Empresa…")] + [(str(e.pk), str(e)) for e in empresas]
-    pares_filial = [("", "Todas as filiais")] + [
+    # O valor em branco é a empresa inteira no POST. Quem não pode alocar
+    # na empresa inteira (o gerente de uma loja) não o vê com esse nome: ele
+    # vira o "escolha" de sempre, e o POST recusa se vier assim mesmo.
+    vazio = "Todas as filiais" if na_empresa_inteira else "Filial…"
+    pares_filial = [("", vazio)] + [
         (str(f.pk), de(e, str(f))) for e in empresas for f in filiais[e.pk]]
     pares_cargo = [("", "Cargo…")] + [
         (str(c.pk), de(e, c.rotulo)) for e in empresas
         for c in cargos.get(e.conta_id, [])]
+    # O cargo que a alocação JÁ tem fica na caixa mesmo que quem edita não
+    # possa dá-lo: sem ele, o `<select>` cairia em "Cargo…" e salvar o modal
+    # por outro motivo apagaria a linha em silêncio.
+    if alocacao is not None and cargo_atual not in {v for v, _r in pares_cargo}:
+        pares_cargo.append((cargo_atual, de(alocacao.empresa, alocacao.cargo.rotulo)))
     return format_html(
         '<div class="ct-aloc-linha">'
         '<select name="aloc_empresa" aria-label="Empresa">{}</select>'

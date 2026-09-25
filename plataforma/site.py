@@ -248,7 +248,10 @@ class SiteDoProduto(Site):
         from .trocar import modal_de_troca
 
         niveis = getattr(cabecalho.context, "levels", ())
-        tem = {nivel.name for nivel in niveis if nivel.options}
+        # Mais de uma opção, e não "alguma": desde 25/09/2026 a filial aparece
+        # no cabeçalho mesmo quando é uma só, e com uma só não há para onde
+        # trocar — o diálogo seria peso morto do mesmo jeito.
+        tem = {nivel.name for nivel in niveis if len(nivel.options) > 1}
         if not tem:
             return []
         return [modal_de_troca(self.pedido,

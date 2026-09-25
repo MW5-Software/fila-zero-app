@@ -242,6 +242,20 @@ class TestNiveisDeContexto:
 
         assert niveis_de_contexto(_pedido(ana)) == []
 
+    def test_quem_alcanca_uma_filial_so_tambem_ve_a_filial(self, ana, loja):
+        """25/09/2026, pedido do cliente: "não tá mostrando o seletor de filial
+        quando é só uma". A filial é o lugar em que a pessoa está — é ela que
+        decide o que a pessoa pode —, e sem o seletor o cabeçalho não dizia em
+        que loja a sessão estava. A empresa continua escondida com uma só."""
+        from plataforma.contexto import niveis_de_contexto
+
+        alocar(ana, loja.empresa, "vendedor", filial=loja)
+
+        niveis = niveis_de_contexto(_pedido(ana))
+        assert [n.nivel for n in niveis] == [1]
+        assert [o.valor for o in niveis[0].opcoes] == [str(loja.pk)]
+        assert niveis[0].atual == str(loja.pk)
+
     def test_a_MW5_escolhe_entre_as_contas(self, ana):
         from contas.models import Nivel
         from plataforma.contexto import niveis_de_contexto

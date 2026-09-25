@@ -195,9 +195,11 @@ class TestNoCabecalhoDeVerdade:
         # coisas dele. Para a MW5 é que vale "Conta" (ver a classe abaixo).
         assert ">Bandeira</label>" in html
         assert ">Empresa</label>" not in html
-        # O segundo rótulo da marca ("Loja") não aparece: cada empresa deste
-        # cenário só tem a Matriz, e não há filial para escolher.
-        assert ">Loja</label>" not in html
+        # O segundo rótulo da marca ("Loja") também manda: cada empresa deste
+        # cenário só tem a Matriz, e desde 25/09/2026 a filial aparece mesmo
+        # sendo uma só — é o lugar em que a sessão está.
+        assert ">Loja</label>" in html
+        assert ">Filial</label>" not in html
 
     def test_o_seletor_do_cabecalho_chega_na_rota_que_troca(self, cliente_logado):
         """O laço fechado: o `name` que o cabeçalho manda é o `name` que a
@@ -267,14 +269,21 @@ class TestOSeletorDeFilial:
         assert ">Sul</option>" in html
         assert 'name="empresa_id"' not in html
 
-    def test_membro_numa_filial_so_nao_tem_seletor(self, db):
+    def test_membro_numa_filial_so_ve_a_filial_em_que_esta(self, db):
+        """Era o contrário até 25/09/2026 ("um seletor de uma opção é um botão
+        que não faz nada"), e o cliente pediu a volta: "não tá mostrando o
+        seletor de filial quando é só uma". A empresa continua escondida."""
         from tests.conftest import alocar
 
-        _t, alfa, norte, _s = self._conta()
+        _t, alfa, norte, sul = self._conta()
         ana = Usuario.objects.create_user(email="ana-uma@teste.com", password=SENHA)
-        alocar(ana, alfa, "vendedor", filial=norte)
+        alocar(ana, alfa, "representante", filial=norte)
 
-        assert 'name="filial_id"' not in self._html("ana-uma@teste.com")
+        html = self._html("ana-uma@teste.com")
+        assert 'name="filial_id"' in html
+        assert f'value="{norte.pk}" selected' in html
+        assert ">Sul</option>" not in html
+        assert 'name="empresa_id"' not in html
 
     def test_titular_escolhe_entre_as_filiais_da_empresa_dele(self, db):
         self._conta()

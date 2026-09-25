@@ -60,11 +60,15 @@ CONCEDE: "dict[str, tuple[str, ...]]" = {
 #: regra mora em `fila.tela.atende` — não é a AUSÊNCIA de `fila.participar`,
 #: que continua na lista do Gerente de propósito: `contas.lugar.pode_dar` exige
 #: que quem aloca tenha as permissões do cargo, e sem ela o gerente deixaria de
-#: poder conceder o cargo de Vendedor.
+#: poder conceder o cargo de Vendedor. **O Supervisor também a traz** desde
+#: 25/09/2026, pelo mesmo motivo: a lista `CONCEDE` dele diz Vendedor e
+#: Gerente, os dois trazem `fila.participar`, e sem ela o Supervisor não criava
+#: nenhum dos dois (o cliente: "supervisor não cadastrou gerente"). Ele
+#: continua sem bater o ponto, porque tem `fila.gerenciar`.
 DE_FABRICA: "tuple[tuple[str, str, str, bool, tuple[str, ...]], ...]" = (
     ("supervisor", "Supervisor", "empresa", False,
-     ("usuarios.editar", "fila.ver", "fila.gerenciar", "fila.relatorios",
-      "fila.metas")),
+     ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar",
+      "fila.relatorios", "fila.metas")),
     ("gerente", "Gerente", "filial", False,
      ("usuarios.editar", "fila.ver", "fila.participar", "fila.gerenciar",
       "fila.relatorios", "fila.metas")),

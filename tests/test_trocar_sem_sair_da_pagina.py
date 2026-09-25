@@ -63,9 +63,12 @@ def test_so_vem_o_formulario_do_nivel_que_a_pessoa_troca(com_duas):
     campo `filial_id` escondido numa página de quem não troca de loja é um
     campo que ninguém esperava ali."""
     html = _home(com_duas)
+    # Só o DIÁLOGO: desde 25/09/2026 o cabeçalho mostra a loja mesmo quando é
+    # uma só, e o `<select name="filial_id">` dele é esperado lá.
+    dialogo = html.split('id="trocar-dialogo"')[1]
 
-    assert f'action="{reverse("filial_trocar")}"' not in html
-    assert 'name="filial_id"' not in html
+    assert f'action="{reverse("filial_trocar")}"' not in dialogo
+    assert 'name="filial_id"' not in dialogo
 
 
 def test_quem_nao_tem_o_que_trocar_nao_recebe_o_dialogo(db):

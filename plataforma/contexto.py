@@ -251,13 +251,14 @@ def _e_da_mw5(user) -> bool:
 
 
 def niveis_de_contexto(request) -> "list[NivelDeContexto]":
-    """O contexto do cabeçalho: **a empresa e a filial, cada uma só quando há o
-    que escolher**.
+    """O contexto do cabeçalho: **a empresa quando há o que escolher, e a
+    filial sempre que a pessoa está numa**.
 
     A empresa aparece para quem alcança mais de uma: a MW5 (e aí a pergunta é
     "qual CONTA estou olhando") e, desde 17/09/2026, o titular cuja conta tem
     várias empresas. A filial aparece para quem alcança
-    mais de uma DENTRO da empresa atual (14/09/2026): desde a virada dos cargos,
+    alguma DENTRO da empresa atual (uma só inclusive, desde 25/09/2026; antes
+    era "mais de uma", de 14/09/2026): desde a virada dos cargos,
     o que a pessoa pode depende da filial em que está, e o cabeçalho é onde ela
     escolhe.
 
@@ -272,7 +273,7 @@ def niveis_de_contexto(request) -> "list[NivelDeContexto]":
     atual = empresa_atual(request)
     niveis = []
 
-    # **Sem seletor quando não há o que selecionar**, nível a nível. Um
+    # **Sem seletor de EMPRESA quando não há o que selecionar**. Um
     # seletor de uma opção é um botão que não faz nada, ocupando o lugar em
     # que a pessoa procura o que faz. O nome da empresa continua aparecendo,
     # porque quem o mostra é a marca, não este seletor.
@@ -293,8 +294,14 @@ def niveis_de_contexto(request) -> "list[NivelDeContexto]":
             opcoes=[OpcaoDeContexto(str(e.pk), str(e)) for e in empresas],
         ))
 
+    # **A filial aparece mesmo quando é uma só** (25/09/2026, pedido do
+    # cliente: "não tá mostrando o seletor de filial quando é só uma"). A
+    # empresa esconde porque o nome dela já está na marca; a filial não está
+    # em lugar nenhum, e é ela que decide o que a pessoa pode (o cargo é da
+    # alocação NA filial). Sem ela, o gerente de uma loja só não via em que
+    # loja a sessão estava.
     filiais = list(filiais_de(user, atual)) if atual is not None else []
-    if len(filiais) > 1:
+    if filiais:
         filial = filial_atual(request)
         niveis.append(NivelDeContexto(
             nivel=1,

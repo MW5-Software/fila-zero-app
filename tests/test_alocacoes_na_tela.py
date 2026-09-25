@@ -267,6 +267,25 @@ class TestOQueCadaCargoPodeConceder:
                (conta["alfa"], conta["norte"], cargos["vendedor"]))
         assert Usuario.objects.filter(email="novo-vend@teste.com").exists()
 
+    @pytest.mark.parametrize("cargo", ["gerente", "vendedor"])
+    def test_o_supervisor_de_fabrica_cria_o_que_a_lista_dele_diz(self, conta, cargo):
+        """25/09/2026, pedido do cliente: "supervisor não cadastrou gerente".
+        A lista dele dizia Gerente e Vendedor, mas `pode_dar` também exige que
+        quem concede tenha TODAS as permissões do cargo, e o Supervisor de
+        fábrica não trazia `fila.participar`, que os dois trazem: ele não
+        criava nenhum dos dois."""
+        email = f"novo-{cargo}-da-sara@teste.com"
+        _criar(_entrar("sara@teste.com"), email,
+               (conta["alfa"], conta["norte"], conta["cargos"][cargo]))
+
+        assert _lugares(Usuario.objects.get(email=email)) == {("Norte", cargo)}
+
+    def test_o_supervisor_ainda_nao_cria_supervisor(self, conta):
+        _criar(_entrar("sara@teste.com"), "outra-sara@teste.com",
+               (conta["alfa"], None, conta["cargos"]["supervisor"]))
+
+        assert not Usuario.objects.filter(email="outra-sara@teste.com").exists()
+
     def test_sem_lista_o_gerente_continua_como_antes(self, conta):
         gil, cargos = conta["gil"], conta["cargos"]
         cargos["gerente"].pode_conceder.clear()
@@ -274,3 +293,44 @@ class TestOQueCadaCargoPodeConceder:
         _criar(cliente, "outro-rep@teste.com",
                (conta["alfa"], conta["norte"], cargos["representante"]))
         assert Usuario.objects.filter(email="outro-rep@teste.com").exists()
+
+
+def _opcoes(html, campo):
+    """Os rótulos oferecidos na caixa `campo` da linha em branco do cadastro."""
+    import re
+
+    lista = re.search(r'id="aloc-lista-nova">(.*?)</div><button', html, re.S)
+    assert lista, "a tela não trouxe o bloco de alocações do cadastro"
+    caixa = re.search(rf'<select name="{campo}"[^>]*>(.*?)</select>',
+                      lista.group(1), re.S)
+    return [r for r in re.findall(r">([^<]*)</option>", caixa.group(1))]
+
+
+class TestATelaSoOfereceOQueOPostAceita:
+    """25/09/2026, pedido do cliente: "gerente tá podendo cadastrar qualquer
+    usuário". O POST já recusava, mas a caixa oferecia todos os cargos da conta
+    e "Todas as filiais", e só dizia não depois de salvar. Quem filtra é o
+    próprio `pode_dar`, e não uma segunda regra."""
+
+    def _html(self, email):
+        return _entrar(email).get(reverse("usuarios")).content.decode()
+
+    def test_o_gerente_so_ve_vendedor_e_a_loja_dele(self, conta):
+        html = self._html("gil@teste.com")
+
+        assert _opcoes(html, "aloc_cargo") == ["Cargo…", "Vendedor"]
+        assert _opcoes(html, "aloc_filial") == ["Filial…", "Norte"]
+
+    def test_o_supervisor_ve_gerente_e_vendedor(self, conta):
+        html = self._html("sara@teste.com")
+
+        assert _opcoes(html, "aloc_cargo") == ["Cargo…", "Gerente", "Vendedor"]
+        assert "Todas as filiais" in _opcoes(html, "aloc_filial")
+
+    def test_o_titular_continua_vendo_todos(self, conta):
+        html = self._html(conta["titular"].email)
+
+        assert _opcoes(html, "aloc_cargo") == [
+            "Cargo…", "Cliente", "Gerente", "Representante", "Supervisor",
+            "Vendedor"]
+        assert "Todas as filiais" in _opcoes(html, "aloc_filial")

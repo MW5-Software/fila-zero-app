@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 147 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 148 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -301,6 +301,11 @@ e Gerente. Lista vazia é a regra de antes (só permissões e alcance), e por
 isso a lista é uma trava A MAIS, nunca a menos — marcar Supervisor na lista
 do Gerente não o faz poder dar Supervisor. A semeadura preenche a lista dos
 cargos de fábrica que estiverem vazios, inclusive nas contas que já existem.
+Por ser trava a mais, quem concede continua precisando de TODAS as permissões
+do cargo concedido: o Supervisor de fábrica não trazia `fila.participar`, que
+Vendedor e Gerente trazem, e não criava nenhum dos dois (25/09/2026, o
+cliente: "supervisor não cadastrou gerente"). Ele a traz desde então, e
+`fila/0009` a levou às contas que já existiam.
 
 **A tela de Usuários procura por CARGO, e não por nível** (18/09/2026, pedido
 do cliente): a coluna e o filtro eram NÍVEL, e como quase todo mundo é MEMBRO,
@@ -369,8 +374,12 @@ O que custa quando se esquece:
   campo (`Filial.e_matriz`), porque o titular pode renomeá-la. A Matriz não se
   remove.
 - **`Filial.empresa` é obrigatória**, e a filial é o lugar da alocação. O
-  cabeçalho mostra o seletor de filial para quem alcança mais de uma, e o id
-  forjado na sessão cai na primeira filial permitida.
+  cabeçalho mostra o seletor de filial para quem alcança alguma — uma só
+  inclusive, desde 25/09/2026 (o cliente: "não tá mostrando o seletor de
+  filial quando é só uma"; a filial decide o que a pessoa pode, e sem ele a
+  tela não dizia em que loja a sessão estava) —, e o id forjado na sessão cai
+  na primeira filial permitida. O seletor de EMPRESA continua só para quem
+  alcança mais de uma: o nome dela já está na marca.
 - **A tela de Filiais enxerga só a empresa do contexto**
   (`plataforma/views_filiais.py`, `_filiais_da_empresa`), e só por isso o
   titular tem `filiais.editar`. Uma filial não se remove em três casos, e
@@ -588,7 +597,9 @@ cinco ajustes que o spec não respondia (D-1 a D-5):
 | `fila.metas` | a tela `/fila/metas`, nas lojas em que o cargo traz a permissão |
 
 Vendedor traz `ver` e `participar`; Gerente, `ver`, `participar` e
-`gerenciar`; Supervisor, `ver` e `gerenciar`; o titular, as quatro
+`gerenciar`; Supervisor, `ver`, `participar` e `gerenciar` (a `participar`
+desde 25/09/2026, só para poder conceder Vendedor e Gerente — ele não bate o
+ponto, porque gerencia); o titular, as quatro
 (`contas/cargos_de_fabrica.py`, `contas/fabrica.py`). **`fila.ver` vem primeiro
 no `ModuloSpec`** porque o menu entra pela primeira permissão do módulo e some
 com os atalhos de quem não a tem.
@@ -933,7 +944,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 147 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 148 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

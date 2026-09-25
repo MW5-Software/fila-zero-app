@@ -73,6 +73,23 @@ def so_a_fila(user) -> bool:
     return "fila.participar" in permissoes and permissoes <= _SO_DO_VENDEDOR
 
 
+def _tem_numeros(usuario, r) -> bool:
+    """Se a página mostra "Seus números": a quem atende, a quem já está na
+    loja, e a quem gerencia só com o parâmetro `meta_para_gestor` ligado — a
+    MESMA gente que tem meta (`fila.metas._participa`).
+
+    Era `fila.participar`, e desde 25/09/2026 o Supervisor também a traz, só
+    para poder conceder Vendedor e Gerente (`contas/cargos_de_fabrica.py`):
+    com a regra antiga ele passaria a ver um bloco de números que nunca terá.
+    """
+    from plataforma.parametro_catalogo import valor_de
+
+    if atende(usuario) or r.meu is not None:
+        return True
+    return (pode(usuario, "fila.participar") and pode(usuario, "fila.gerenciar")
+            and bool(valor_de("meta_para_gestor")))
+
+
 def atende(usuario) -> bool:
     """Se `usuario` bate ponto nesta loja — e quem gerencia a loja não atende.
 
@@ -274,7 +291,7 @@ def _contexto(request, filial, recusa=""):
                          for loja in filiais_de(request.usuario, empresa)
                          if loja.pk != filial.pk],
         "meus": (_meus_numeros(pessoa, filial)
-                 if pode(request.usuario, "fila.participar") else None),
+                 if _tem_numeros(request.usuario, r) else None),
         "resumo": _resumo(lancamentos),
         "Estado": Estado,
         "filial": filial,

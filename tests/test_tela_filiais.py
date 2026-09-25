@@ -105,6 +105,11 @@ class TestALista:
 
         html = cliente_admin.get(
             reverse("filiais"), {"f:situacao:igual": "0"}).content.decode()
+        import re
+
+        # Sem o seletor de filial do cabeçalho, que desde 25/09/2026 aparece
+        # mesmo com uma filial só — o que se testa aqui é a TABELA.
+        html = re.sub(r'<form class="ctx".*?</form>', "", html, flags=re.S)
         assert ">X<" in html
         assert "Matriz" not in html
 
