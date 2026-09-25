@@ -53,7 +53,8 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
     assert "Vendas" not in grupos and "Cadastro" not in grupos
 
     assert [(i.label, i.href) for i in grupos["Gerenciar Fila"].children] == [
-        ("Fila da vez", "/fila"),
+        # "Fila Zero", e não "Fila da vez" (25/09/2026, pedido do cliente).
+        ("Fila Zero", "/fila"),
         ("Histórico da fila", "/fila/historico"),
     ]
 

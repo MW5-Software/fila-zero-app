@@ -722,3 +722,10 @@ def test_fechar_o_ponto_e_o_nome_das_duas_saidas(loja):
     with pytest.raises(Recusa, match="antes de fechar o ponto"):
         sair_da_loja(loja.ana, loja.matriz)
     assert AcaoDeCorrecao.TIRAR.label == "Fechou o ponto"
+
+
+def test_a_pagina_se_chama_fila_zero(loja):
+    """25/09/2026, pedido do cliente: "fila da vez trocar por fila zero"."""
+    html = _html(logado("gil"))
+    assert "<title>Fila Zero — Matriz" in html
+    assert "Fila da vez" not in html

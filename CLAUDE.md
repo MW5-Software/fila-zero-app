@@ -663,7 +663,8 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
   de Nivel 1 igual Configurações e Gerenciar Fila"). A barra ficou:
   **Configuração** — Conta, Empresas, Filiais, Usuários, Cargos e
   **Configurações da Fila**, com os cadastros dentro —; **Gerenciar
-  Fila** — Fila da vez e Histórico da fila —; e **Metas**, sozinha, no mesmo
+  Fila** — Fila Zero (era "Fila da vez" até 25/09/2026, pedido do
+  cliente) e Histórico da fila —; e **Metas**, sozinha, no mesmo
   degrau e em SEGUNDO lugar na barra (o cliente viu a primeira versão com ela
   no fim: "metas tem que ser o segundo item né, não o último" — o
   `ordem=-1` do atalho é o que a põe ali, e o comentário em `fila/modulo.py`

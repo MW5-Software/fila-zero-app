@@ -2,7 +2,7 @@
 {# O miolo da página da fila, posto dentro do shell do sistema (`fila.tela`).
    Os ids `fila-*` são os pedaços que o script troca a cada consulta. #}
 <div class="fila" id="fila" data-estado-url="{{ url_estado }}" data-agir-url="{{ url_agir }}" data-versao="{{ r.versao }}">
-  <h1 class="visually-hidden">{{ traduzir("Fila da vez") }}, {{ filial }}</h1>
+  <h1 class="visually-hidden">{{ traduzir("Fila Zero") }}, {{ filial }}</h1>
 
   <div id="fila-recusa" class="alert warn fila-recusa" role="alert"{% if not recusa %} hidden{% endif %}>{{ icon("alert") }}<div>{{ recusa }}</div></div>
 

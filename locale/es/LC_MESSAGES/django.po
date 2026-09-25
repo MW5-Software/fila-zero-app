@@ -1784,3 +1784,6 @@ msgstr "Cerró el registro"
 
 msgid "Finalize o atendimento antes de fechar o ponto."
 msgstr "Finalice la atención antes de cerrar el registro."
+
+msgid "Fila Zero"
+msgstr "Fila Zero"

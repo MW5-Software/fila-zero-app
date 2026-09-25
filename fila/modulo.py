@@ -18,7 +18,8 @@ from plataforma.declaracao import Atalho, ModuloSpec
 
 MODULO = ModuloSpec(
     chave="fila",
-    rotulo=_("Fila da vez"),
+    # "Fila Zero", e não "Fila da vez" (25/09/2026, pedido do cliente).
+    rotulo=_("Fila Zero"),
     icone="users",
     # "Gerenciar fila", e não "Vendas" (23/09/2026, pedido do cliente): o grupo
     # reúne as telas de quem TOCA a fila — a página da loja, o histórico das

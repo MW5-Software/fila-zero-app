@@ -401,7 +401,7 @@ def pagina(request, filial, recusa=""):
     env = ambiente_da_fila()
     contexto = _contexto(request, filial, recusa)
     return _no_shell(
-        request, f"Fila da vez — {filial}",
+        request, f"Fila Zero — {filial}",
         Raw(html=env.get_template("fila/pagina.html").render(**contexto)),
         Raw(html=env.get_template("fila/_folhas.html").render(**contexto)))
 
@@ -419,7 +419,7 @@ def pedacos(request, filial) -> "tuple[str, dict[str, str]]":
 def sem_loja(request):
     from nucleo.components import EmptyState
 
-    return _no_shell(request, "Fila da vez", EmptyState(
+    return _no_shell(request, "Fila Zero", EmptyState(
         icon="store", title="Você ainda não está em nenhuma loja",
         message=("Peça a quem cuida da equipe para alocar você na loja em "
                  "que trabalha, na tela de Usuários.")))

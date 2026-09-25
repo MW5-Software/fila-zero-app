@@ -11,7 +11,7 @@ class FilaConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "fila"
-    verbose_name = "Fila da vez"
+    verbose_name = "Fila Zero"
 
     def ready(self) -> None:
         from comum.auditoria import declarar_acoes
@@ -34,7 +34,7 @@ class FilaConfig(AppConfig):
         # As ações da fila na trilha: declaradas aqui, e não na base, que não
         # conhece os módulos de negócio (`fila/auditoria.py`).
         declarar_acoes(ACOES_DA_FILA, ROTULOS_DA_FILA)
-        # A caixa "Fila da vez" na tela de Empresas: o fluxo mora na tabela da
+        # A caixa "Fila Zero" na tela de Empresas: o fluxo mora na tabela da
         # fila (`fila.FluxoDaEmpresa`), e não numa coluna da empresa.
         registrar_caixa(CaixaDaEmpresa(chave="fila_fluxo", desenhar=caixa,
                                        gravar=gravar_do_post))

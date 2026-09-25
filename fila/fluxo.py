@@ -45,12 +45,12 @@ def definir_fluxo(empresa, fluxo: str) -> None:
 
 
 def caixa(empresa):
-    """A caixa "Fila da vez" do formulário da empresa (`empresa` é `None` ao
+    """A caixa "Fila Zero" do formulário da empresa (`empresa` é `None` ao
     criar)."""
     from nucleo.components import Box, FormGrid, Option, SectionLabel, Select
 
     return Box(body=[
-        SectionLabel(label=_("Fila da vez")),
+        SectionLabel(label=_("Fila Zero")),
         FormGrid(children=[Select(
             name=CAMPO, label=_("Depois de lançar o atendimento"),
             span=12, value=fluxo_de(empresa),
