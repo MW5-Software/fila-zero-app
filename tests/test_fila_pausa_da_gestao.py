@@ -177,6 +177,18 @@ def test_recolocar_com_a_fila_vazia(loja):
     assert _ordem(loja.matriz) == ["Ana"]
 
 
+def test_com_a_fila_vazia_a_folha_so_oferece_o_primeiro_lugar(loja):
+    from fila.acoes import sair_da_loja
+
+    _por_na_administrativa(loja)
+    sair_da_loja(loja.bia, loja.matriz)
+    sair_da_loja(loja.caio, loja.matriz)
+    html = logado("gil").get(reverse("fila")).content.decode()
+    folha = html.split('id="fila-posicoes"')[1].split("</fieldset>")[0]
+    assert "1º · primeiro da fila" in folha
+    assert folha.count('name="posicao"') == 1
+
+
 @pytest.mark.parametrize("posicao", [None, 0, 4])
 def test_a_posicao_e_obrigatoria_e_dentro_da_fila(loja, posicao):
     from fila.acoes import Recusa
@@ -223,7 +235,12 @@ def test_pela_pagina_o_gerente_poe_e_recoloca(loja):
     assert 'data-estado="em_pausa_fixa"' in html
     folha = html.split('id="folha-recolocar"')[1].split("</form>")[0]
     assert 'name="posicao" value="1"' in folha and 'name="posicao" value="3"' in folha
-    assert "fim da fila" in folha
+    # Pela pessoa que fica NA FRENTE, como se fala numa fila (25/09/2026, com
+    # o print do cliente: "ficou meio confuso"). Era "2º · antes de Caio".
+    assert "1º · primeiro da fila" in folha
+    assert "2º · depois de Bia" in folha
+    assert "3º · depois de Caio (fim da fila)" in folha
+    assert "antes de" not in folha
 
     cliente.post(reverse("fila_agir"), {
         "acao": "recolocar", "pessoa": str(loja.ana.pk), "posicao": "2",
@@ -292,6 +309,6 @@ def test_as_posicoes_do_recolocar_seguem_a_fila_de_agora(loja):
     _por_na_administrativa(loja, loja.caio)
     dados = cliente.get(reverse("fila_estado"), {"versao": "velha"}).json()
     posicoes = dados["html"]["posicoes"]
-    assert "antes de Ana" in posicoes and "antes de Bia" in posicoes
+    assert "2º · depois de Ana" in posicoes
+    assert "3º · depois de Bia (fim da fila)" in posicoes
     assert "Caio" not in posicoes
-    assert "3º · fim da fila" in posicoes

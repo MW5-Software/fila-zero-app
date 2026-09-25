@@ -1758,8 +1758,11 @@ msgstr "Solo la gestión saca de esta pausa, eligiendo la posición en la fila."
 msgid "Em qual lugar da fila?"
 msgstr "¿En qué lugar de la fila?"
 
-msgid "antes de"
-msgstr "antes de"
+msgid "primeiro da fila"
+msgstr "primero de la fila"
+
+msgid "depois de"
+msgstr "después de"
 
 msgid "fim da fila"
 msgstr "final de la fila"

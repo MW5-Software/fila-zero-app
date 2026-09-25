@@ -3,12 +3,16 @@
    posições desenhadas quando a página abriu ficavam velhas — o gerente via
    "2º · antes de Caio" com o próprio Caio na pausa. Quem está em pausa não
    está em `r.fila`, e por isso nunca aparece aqui. #}
+{#
+   Cada lugar se diz pela pessoa que fica NA FRENTE, como se fala numa fila
+   (25/09/2026, com o print do cliente: "ficou meio confuso"): era "2º · antes
+   de Caio", que obrigava a pensar ao contrário. #}
 {% if pode_gerenciar %}
 <fieldset class="fila-opcoes fila-opcoes-lista">
   <legend class="msec-title">{{ traduzir("Em qual lugar da fila?") }}</legend>
+  <label class="fila-opcao"><input type="radio" name="posicao" value="1" required><span>1º · {{ traduzir("primeiro da fila") }}</span></label>
   {% for l in r.fila %}
-  <label class="fila-opcao"><input type="radio" name="posicao" value="{{ loop.index }}" required><span>{{ loop.index }}º · {{ traduzir("antes de") }} {{ l.nome }}</span></label>
+  <label class="fila-opcao"><input type="radio" name="posicao" value="{{ loop.index + 1 }}" required><span>{{ loop.index + 1 }}º · {{ traduzir("depois de") }} {{ l.nome }}{% if loop.last %} ({{ traduzir("fim da fila") }}){% endif %}</span></label>
   {% endfor %}
-  <label class="fila-opcao"><input type="radio" name="posicao" value="{{ r.fila|length + 1 }}" required><span>{{ r.fila|length + 1 }}º · {{ traduzir("fim da fila") }}</span></label>
 </fieldset>
 {% endif %}
