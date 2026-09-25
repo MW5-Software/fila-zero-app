@@ -401,7 +401,9 @@ def pagina(request, filial, recusa=""):
     env = ambiente_da_fila()
     contexto = _contexto(request, filial, recusa)
     return _no_shell(
-        request, f"Fila Zero — {filial}",
+        # Só a loja: o nome do produto já vai no fim de todo título, e
+        # "Fila Zero — Matriz — Fila Zero" repetia (25/09/2026).
+        request, str(filial),
         Raw(html=env.get_template("fila/pagina.html").render(**contexto)),
         Raw(html=env.get_template("fila/_folhas.html").render(**contexto)))
 
