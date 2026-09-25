@@ -222,3 +222,43 @@ def test_a_filial_de_entrada_e_a_mesma_da_sessao(db):
     from plataforma import contexto
 
     assert "filial_de_entrada(" in inspect.getsource(contexto._decidir_filial)
+
+
+def test_a_loja_de_chegada_nao_custa_uma_consulta_por_empresa(db):
+    """A MW5 enxerga todas as empresas da instalação, e o diálogo de troca vai
+    em toda página: com duas consultas por empresa, 200 clientes eram ~400
+    consultas a mais por página, só para escrever `data-chegada` (revisão de
+    código de 25/09/2026). Para quem enxerga todas as filiais das empresas —
+    a MW5 e o titular — é uma consulta só, e a resposta é a mesma."""
+    import json
+
+    from django.db import connection
+    from django.test import RequestFactory
+    from django.test.utils import CaptureQueriesContext
+
+    from contas.models import Usuario
+    from comum.sessao import CHAVE as CHAVE_USUARIO
+    from plataforma.models import Empresa, Filial
+    from plataforma.trocar import _chegada_por_empresa
+
+    mw5 = Usuario.objects.create_superuser(email="mw5-chegada@teste.com",
+                                           password="x")
+    pedido = RequestFactory().get("/")
+    pedido.session = {CHAVE_USUARIO: str(mw5.pk)}
+
+    def criar(n):
+        for i in range(n):
+            e = Empresa.objects.create(razao_social=f"Empresa {len(criadas)} Ltda")
+            Filial.objects.create(empresa=e, nome="Aaa", apelido="Aaa")
+            criadas.append(e)
+
+    criadas = []
+    criar(2)
+    with CaptureQueriesContext(connection) as poucas:
+        _chegada_por_empresa(pedido)
+    criar(8)
+    with CaptureQueriesContext(connection) as muitas:
+        chegada = json.loads(_chegada_por_empresa(pedido))
+    assert len(muitas) <= len(poucas)
+    # A Matriz vem antes da "Aaa", que a passa no alfabeto.
+    assert all(chegada[str(e.pk)] == "Matriz" for e in criadas)

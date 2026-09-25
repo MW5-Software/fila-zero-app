@@ -334,3 +334,19 @@ class TestATelaSoOfereceOQueOPostAceita:
             "Cargo…", "Cliente", "Gerente", "Representante", "Supervisor",
             "Vendedor"]
         assert "Todas as filiais" in _opcoes(html, "aloc_filial")
+
+
+def test_com_duas_empresas_cada_uma_oferece_so_o_que_se_da_nela(conta):
+    """A caixa guardava o que se pode dar por CONTA, e repetia a lista em toda
+    empresa: gerente na Alfa e só vendedor na Beta, o Gil via "Vendedor
+    (Beta Ltda)" e o POST recusava (revisão de código de 25/09/2026). Agora
+    é por empresa, que é o que `pode_dar` responde."""
+    beta = Empresa.objects.create(razao_social="Beta Ltda", dono=conta["titular"])
+    centro_beta = Filial.objects.create(empresa=beta, nome="Centro B", apelido="Centro B")
+    Alocacao.objects.create(pessoa=conta["gil"], empresa=beta, filial=centro_beta,
+                            cargo=conta["cargos"]["vendedor"])
+
+    html = _entrar("gil@teste.com").get(reverse("usuarios")).content.decode()
+    cargos = _opcoes(html, "aloc_cargo")
+    assert "Vendedor (Alfa Ltda)" in cargos
+    assert "Vendedor (Beta Ltda)" not in cargos

@@ -1772,3 +1772,6 @@ msgstr "La gestión elige su lugar en la fila."
 
 msgid "Na pausa da gestão, quem tira você da loja é a gestão."
 msgstr "En la pausa de la gestión, quien te saca de la tienda es la gestión."
+
+msgid "As metas de %(salva)s foram salvas. Esta tela mostra %(loja)s, a loja do cabeçalho."
+msgstr "Las metas de %(salva)s fueron guardadas. Esta pantalla muestra %(loja)s, la tienda del encabezado."

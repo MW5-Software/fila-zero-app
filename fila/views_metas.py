@@ -283,7 +283,8 @@ def metas(request) -> HttpResponse:
     mes = regras.mes_do_texto(dados.get("mes"))
 
     if request.method != "POST":
-        return _desenhar(request, loja, mes, permitidas, editor)
+        return _desenhar(request, loja, mes, permitidas, editor,
+                         aviso=_aviso_de_outra_loja(request, loja, permitidas))
 
     linhas = regras.pessoas_da_lista(loja, mes, editor)
     chaves = ["loja", *(str(l.pessoa.pk) for l in linhas)]
@@ -309,7 +310,30 @@ def metas(request) -> HttpResponse:
                          digitados=digitados, erros=invalidos.erros,
                          aviso=Alert(tone="danger",
                                      message=_("Corrija os valores marcados. Nada foi salvo.")))
+    # A loja gravada é a que a pessoa estava VENDO, e a tela depois do
+    # redirecionamento é a do CABEÇALHO: com o cabeçalho trocado noutra aba,
+    # a pessoa não via os valores que acabou de digitar e achava que não
+    # tinha salvado (revisão de 25/09/2026). O aviso diz onde salvou, uma vez.
+    from plataforma.contexto import filial_atual
+
+    atual = filial_atual(request)
+    if atual is None or atual.pk != loja.pk:
+        request.session[_SALVO_EM_OUTRA] = loja.pk
     return HttpResponseRedirect(_endereco(mes))
+
+
+#: A loja salva quando ela não era a do cabeçalho, lida uma vez pelo GET.
+_SALVO_EM_OUTRA = "metas_salvas_em_outra_loja"
+
+
+def _aviso_de_outra_loja(request, loja, permitidas):
+    salva = request.session.pop(_SALVO_EM_OUTRA, None)
+    outra = next((l for l in permitidas if l.pk == salva), None)
+    if outra is None or outra.pk == loja.pk:
+        return None
+    return Alert(tone="info", message=_(
+        "As metas de %(salva)s foram salvas. Esta tela mostra %(loja)s, a "
+        "loja do cabeçalho.") % {"salva": outra, "loja": loja})
 
 
 def _desenhar_sem_loja(request) -> HttpResponse:

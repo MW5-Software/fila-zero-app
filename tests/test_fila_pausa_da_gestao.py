@@ -401,3 +401,18 @@ def test_as_posicoes_do_mover_seguem_a_fila_de_agora(loja):
     mover = cliente.get(reverse("fila_estado"), {"versao": "velha"}).json()["html"]["mover"]
     assert "1º · Bia" in mover and "2º · Caio" in mover
     assert "Ana" not in mover
+
+
+def test_a_troca_das_posicoes_nao_apaga_a_escolha():
+    """A versão da loja muda com qualquer venda, correção ou meta, e trocar a
+    lista de posições a cada mudança apagava a posição já marcada, sem aviso
+    (revisão de código de 25/09/2026). O `fila.js` só troca quando as opções
+    são outras, e marca de novo a mesma. Conferido no navegador com a trava e
+    sem ela; a suíte não roda navegador, e este teste prende a trava no
+    lugar."""
+    from pathlib import Path
+
+    script = Path("fila/static/fila/fila.js").read_text(encoding="utf-8")
+    assert 'trocarPosicoes(el("fila-" + nome), nome, html[nome])' in script
+    assert "opcoesDe(chegou.content) === opcoesDe(lugar)" in script
+    assert "opcao.checked = true" in script

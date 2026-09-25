@@ -370,3 +370,32 @@ def test_os_campos_de_valor_tem_a_mascara(rede):
     html = _get(logado("gil"))
     assert 'name="valor_loja" inputmode="numeric" data-valor' in html
     assert "/static/fila/valor.js" in html and "/static/fila/metas.js" in html
+
+
+def test_salvar_a_loja_que_nao_e_a_do_cabecalho_avisa_onde_salvou(rede):
+    """O POST grava a loja que a pessoa estava VENDO, mesmo com o cabeçalho
+    trocado noutra aba; o redirecionamento mostra a do cabeçalho. Sem aviso,
+    a pessoa não via os valores que acabou de digitar e achava que não tinha
+    salvado (revisão de código de 25/09/2026)."""
+    from fila.metas import meta_da_loja
+
+    sara = _na_loja(logado("sara"), rede.matriz)
+    resposta = sara.post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "90.000,00"}, follow=True)
+    html = resposta.content.decode()
+
+    mes = timezone.localdate().replace(day=1)
+    assert meta_da_loja(rede.centro, mes) == Decimal("90000")
+    assert (f"As metas de {rede.centro} foram salvas. Esta tela mostra "
+            f"{rede.matriz}, a loja do cabeçalho.") in html
+    # Uma vez só: recarregar a tela não repete o aviso.
+    assert "foram salvas" not in sara.get(reverse("fila_metas")).content.decode()
+
+
+def test_salvar_a_loja_do_cabecalho_nao_avisa(rede):
+    sara = _na_loja(logado("sara"), rede.centro)
+    html = sara.post(reverse("fila_metas"), {
+        "acao": "salvar", "mes": _mes_atual(), "loja": str(rede.centro.pk),
+        "valor_loja": "90.000,00"}, follow=True).content.decode()
+    assert "foram salvas" not in html

@@ -676,7 +676,11 @@ def _pessoa_de(request) -> "Usuario | None":
 
 def _lugares_oferecidos(request) -> tuple[list, dict, dict, bool]:
     """O que o bloco de Alocações oferece: `(empresas, filiais por empresa,
-    cargos por conta, se "Todas as filiais" vale)`.
+    cargos por EMPRESA, se "Todas as filiais" vale)`.
+
+    Por empresa, e não por conta: o mesmo Gil pode ser gerente na Alfa e só
+    vendedor na Beta, da mesma conta, e a lista por conta oferecia "Vendedor
+    (Beta)" que o POST recusava (revisão de 25/09/2026).
 
     **A caixa só oferece o que o POST aceita** (25/09/2026, pedido do cliente:
     "gerente tá podendo cadastrar qualquer usuário"). Até então ela oferecia
@@ -705,8 +709,7 @@ def _lugares_oferecidos(request) -> tuple[list, dict, dict, bool]:
             elif not any(pode_dar(editor, empresa, f, cargo)
                          for f in filiais[empresa.pk]):
                 continue
-            if cargo not in cargos.get(empresa.conta_id, []):
-                cargos.setdefault(empresa.conta_id, []).append(cargo)
+            cargos.setdefault(empresa.pk, []).append(cargo)
     return empresas, filiais, cargos, na_empresa_inteira
 
 
@@ -748,7 +751,7 @@ def _linha_de_alocacao(oferta, alocacao=None) -> str:
         (str(f.pk), de(e, str(f))) for e in empresas for f in filiais[e.pk]]
     pares_cargo = [("", "Cargo…")] + [
         (str(c.pk), de(e, c.rotulo)) for e in empresas
-        for c in cargos.get(e.conta_id, [])]
+        for c in cargos.get(e.pk, [])]
     # O cargo que a alocação JÁ tem fica na caixa mesmo que quem edita não
     # possa dá-lo: sem ele, o `<select>` cairia em "Cargo…" e salvar o modal
     # por outro motivo apagaria a linha em silêncio.

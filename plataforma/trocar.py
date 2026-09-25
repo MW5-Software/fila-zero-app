@@ -67,21 +67,19 @@ def _empresa_de_agora(request) -> str:
 
 def _chegada_por_empresa(request) -> str:
     """`{id da empresa: nome da loja em que se cai}`, em JSON, para a troca de
-    EMPRESA dizer "Empresa - Loja" antes de trocar. A loja sai de
-    `filial_de_entrada`, a mesma função que a sessão usa depois da troca."""
+    EMPRESA dizer "Empresa - Loja" antes de trocar. A loja sai da regra de
+    `filial_de_entrada`, a mesma que a sessão usa depois da troca, e de uma
+    vez para todas as empresas (`filiais_de_entrada`)."""
     import json
 
     from comum.sessao import identidade_da_sessao
 
-    from .contexto import empresas_de, filiais_de, filial_de_entrada
+    from .contexto import empresas_de, filiais_de_entrada
 
     pessoa = identidade_da_sessao(request)
-    chegada = {}
-    for empresa in empresas_de(pessoa):
-        filial = filial_de_entrada(filiais_de(pessoa, empresa))
-        if filial is not None:
-            chegada[str(empresa.pk)] = str(filial)
-    return json.dumps(chegada, ensure_ascii=False)
+    chegada = filiais_de_entrada(pessoa, empresas_de(pessoa))
+    return json.dumps({str(pk): str(f) for pk, f in chegada.items()},
+                      ensure_ascii=False)
 
 
 def modal_de_troca(request, *, com_empresa: bool = True,

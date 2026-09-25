@@ -195,6 +195,36 @@ def _decidir_filial(request) -> "Filial | None":
     return filial_de_entrada(permitidas)
 
 
+def filiais_de_entrada(user, empresas) -> "dict[int, Filial]":
+    """`{id da empresa: filial em que se cai}` para várias empresas de uma vez
+    — o diálogo de troca de empresa (`plataforma.trocar`) diz a loja de
+    chegada de cada uma, e vai em toda página.
+
+    Quem enxerga TODAS as filiais ativas das empresas que alcança — a MW5 e o
+    titular, dono de todas as dele — resolve numa consulta só: a ordem das
+    filiais (`-e_matriz`, `nome`) já é a de `filial_de_entrada`, a Matriz e
+    depois a primeira. Com uma consulta por empresa, a MW5 com 200 clientes
+    fazia ~400 a mais por página (revisão de 25/09/2026). O membro alcança
+    poucas empresas e pelas alocações, e pergunta a cada uma pelo caminho de
+    sempre.
+    """
+    from contas.identidade import usuario_de
+    from contas.models import Nivel
+
+    pessoa = usuario_de(user)
+    empresas = list(empresas)
+    if pessoa is None or not empresas:
+        return {}
+    if pessoa.is_superuser or pessoa.nivel <= Nivel.TITULAR:
+        chegada: dict = {}
+        for filial in (Filial.objects.filter(empresa__in=empresas, ativa=True)
+                       .order_by("empresa_id", *Filial._meta.ordering)):
+            chegada.setdefault(filial.empresa_id, filial)
+        return chegada
+    return {e.pk: f for e in empresas
+            if (f := filial_de_entrada(filiais_de(user, e))) is not None}
+
+
 def filial_de_entrada(permitidas) -> "Filial | None":
     """Em que filial se cai numa empresa sem escolha gravada: a Matriz, ou a
     primeira que se alcança. Pública porque o diálogo de troca

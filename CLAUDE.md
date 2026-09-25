@@ -741,7 +741,10 @@ do cargo NESSE lugar: o gerente de uma loja não tem `fila.gerenciar` em outra.
     "Mudar de posição" também (`fila/_mover.html`), e o `fila.js` bloqueia
     de novo a posição de quem está sendo movido quando a lista é trocada com
     a folha aberta. As posições dizem quem fica na FRENTE ("2º · depois de
-    Caio"), e não "antes de".
+    Caio"), e não "antes de". **A troca não apaga a posição marcada**
+    (revisão de código de 25/09/2026): a versão muda com qualquer venda, e o
+    `fila.js` (`trocarPosicoes`) só troca a lista quando as OPÇÕES são outras,
+    e marca de novo a mesma opção se ela ainda existir com o mesmo texto.
   - Nos indicadores aparecem no "Tempo em pausa" com o nome delas, mas **não
     pesam no vendedor**: ficam fora da coluna Pausa do ranking e do painel
     dele (`fixa=""` nas três consultas).
@@ -936,7 +939,9 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
   que abria na primeira loja da lista e não conversava com o do cabeçalho.
   Agora vale `filial_atual`, como na página da fila, e a `?loja=` da URL não
   escolhe nada; o POST ainda leva a loja no campo oculto, para gravar a que a
-  pessoa estava VENDO. Até 1000px, onde o design system esconde o seletor do
+  pessoa estava VENDO — e quando ela não é a do cabeçalho, a tela depois de
+  salvar avisa uma vez onde salvou (revisão de 25/09/2026). Até 1000px, onde
+  o design system esconde o seletor do
   cabeçalho, a tela mostra "Trocar de loja", que volta para as metas.
 - **O "Trocar de loja" da fila e das metas abre o diálogo do cabeçalho**
   (25/09/2026, pedido do cliente: "tem que ser modal igual o seletor"). Cada

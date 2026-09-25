@@ -51,15 +51,47 @@
     return n ? n.textContent.trim() : "";
   }
 
+  // As posições do "Recolocar na fila" e do "Mudar de posição" (revisão de
+  // 25/09/2026). A versão da loja muda com qualquer venda, correção ou meta,
+  // e trocar a lista a cada mudança apagava a posição que o gerente já tinha
+  // marcado, sem aviso. Duas travas: só troca quando as OPÇÕES são outras
+  // (comparadas pelo texto de cada uma, e não pelo HTML, que o navegador
+  // reescreve), e depois de trocar marca de novo a mesma opção, se ela ainda
+  // existir com o mesmo texto ("2º · depois de Caio") — com outro texto, a
+  // escolha não vale mais, e fica em branco de propósito.
+  function opcoesDe(raiz) {
+    return Array.prototype.map.call(raiz.querySelectorAll("label"), function (rotulo) {
+      return rotulo.textContent.trim();
+    }).join("\n");
+  }
+
+  function trocarPosicoes(lugar, nome, novo) {
+    if (!lugar || typeof novo !== "string") return;
+    var chegou = document.createElement("template");
+    chegou.innerHTML = novo;
+    if (opcoesDe(chegou.content) === opcoesDe(lugar)) return;
+    var marcada = lugar.querySelector("input[type=radio]:checked");
+    var texto = marcada && marcada.closest("label") ? marcada.closest("label").textContent.trim() : "";
+    lugar.innerHTML = novo;
+    if (!texto) return;
+    lugar.querySelectorAll("input[type=radio]").forEach(function (opcao) {
+      var rotulo = opcao.closest("label");
+      if (rotulo && rotulo.textContent.trim() === texto) opcao.checked = true;
+    });
+  }
+
   // Troca os pedaços e marca os dois únicos momentos com movimento: a vez
   // que chega e a posição que muda.
   function trocar(html, novaVersao) {
     if (!html) return;
     var eraVez = !!document.querySelector("#fila-painel .painel-sua-vez");
     var posicaoAntes = numeroDaPosicao();
-    ["painel", "lista", "barra", "lancamentos", "meus", "posicoes", "mover"].forEach(function (nome) {
+    ["painel", "lista", "barra", "lancamentos", "meus"].forEach(function (nome) {
       var lugar = el("fila-" + nome);
       if (lugar && typeof html[nome] === "string") lugar.innerHTML = html[nome];
+    });
+    ["posicoes", "mover"].forEach(function (nome) {
+      trocarPosicoes(el("fila-" + nome), nome, html[nome]);
     });
     // O "Mudar de posição" aberto: a lista nova veio com a posição de quem
     // está sendo movido HABILITADA (o servidor desenha para o alvo da URL).
