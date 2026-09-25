@@ -491,6 +491,12 @@ O que custa quando se esquece:
   As duas medidas saíram do navegador (Chrome headless, print lido por
   script): o par com +0px do centro do cabeçalho e a letra com +0px do centro
   da pílula.
+- **As duas pílulas nunca passam uma por cima da outra** (25/09/2026, com o
+  print do cliente: "viu aqui que ficou grudado?"). Os 240px de mínimo de
+  cada uma somam 488px com o vão, e abaixo de ~1340px a faixa do meio é menor
+  que isso (321px a 1001px, e 75px de sobreposição). A `.ctx-mid` virou
+  contêiner, e com duas pílulas cada uma tem no máximo `50cqw - 4px` — o
+  mínimo também cede. Medido: 8px de vão e o par no centro de 1001px a 1600px.
 - Abaixo de 1000px o design system esconde a faixa de contexto inteira
   (`.ctx-mid { display: none }`): no celular ninguém troca de empresa nem de
   loja pelo cabeçalho. É de lá, e continua como estava.

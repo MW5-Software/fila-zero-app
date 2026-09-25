@@ -502,6 +502,29 @@
   font-size: 13px;
   background-position: right 13px center, right 8px center;
 }
+/* As duas pílulas nunca passam uma por cima da outra (25/09/2026, com o print
+   do cliente: "viu aqui que ficou grudado?").
+
+   Os 240px de mínimo acima somam 488px com o vão, e a faixa do meio é 2/4 do
+   cabeçalho: abaixo de ~1340px ela é menor que isso, e a segunda pílula
+   entrava por cima da primeira (medido no navegador: 321px de faixa a
+   1001px, e 75px de sobreposição). A faixa vira contêiner, e com DUAS
+   pílulas cada uma fica com no máximo metade dela, menos meio vão (o `gap`
+   de 8px do `.ctx`). O mínimo também cede: se ficasse em 240px, continuaria
+   empurrando uma sobre a outra, e o `<select>` corta o nome comprido sozinho.
+   Com uma pílula só, ela pode ocupar a faixa inteira.
+
+   Num navegador sem `cqw` estas declarações são descartadas e vale a regra de
+   cima, como era antes. */
+.ctx-mid { container-type: inline-size; }
+.ctx .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+  min-width: min(240px, 100cqw);
+  max-width: min(420px, 100cqw);
+}
+.ctx:has(> .ctx-nivel + .ctx-nivel) .ctx-nivel:has(> .ctx-sel) > .ctx-sel {
+  min-width: min(240px, calc(50cqw - 4px));
+  max-width: min(420px, calc(50cqw - 4px));
+}
 /* Pelo id do seletor, e não pela ordem dos níveis: quem alcança uma empresa
    só e várias filiais tem UM nível na faixa, e ele é o da filial. Pela ordem,
    essa pessoa veria o ícone de empresa na loja dela. */

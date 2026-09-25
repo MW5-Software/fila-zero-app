@@ -124,3 +124,22 @@ def test_o_realce_do_teclado_acompanha_o_do_rato(css):
     fundo do `:hover`, quem não usa rato não vê onde está."""
     regra = ".ctx .ctx-sel option:hover,\n  .ctx .ctx-sel option:focus {"
     assert regra in css
+
+
+def test_as_duas_pilulas_nunca_passam_uma_por_cima_da_outra(css):
+    """25/09/2026, com o print do cliente: "viu aqui que ficou grudado?".
+
+    Cada pílula tem 240px de mínimo, e as duas somam 488px com o vão; a faixa
+    do meio do cabeçalho é 2/4 da largura, e abaixo de ~1340px ela é MENOR que
+    isso (medido: 321px a 1001px, e a segunda pílula entrava 75px por cima da
+    primeira). A faixa vira contêiner, e com as duas pílulas nela cada uma
+    tem no MÁXIMO metade dela menos meio vão — o mínimo de 240px também cede,
+    senão ele continuaria empurrando uma sobre a outra."""
+    faixa = css.split(".ctx-mid {")[1].split("}")[0]
+    assert "container-type: inline-size" in faixa
+
+    duas = css.split(".ctx:has(> .ctx-nivel + .ctx-nivel) .ctx-nivel:has(> .ctx-sel) > .ctx-sel {")
+    assert len(duas) > 1, "falta a regra do par de pílulas"
+    bloco = duas[1].split("}")[0]
+    assert "min-width: min(240px, calc(50cqw - 4px))" in bloco
+    assert "max-width: min(420px, calc(50cqw - 4px))" in bloco
