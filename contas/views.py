@@ -76,6 +76,16 @@ def entrar(request) -> HttpResponse:
 
     marca = marca_da_instalacao()
     if request.method != "POST":
+        # **Quem já entrou não vê o formulário** (25/09/2026, o cliente: "eu
+        # tô logado e se eu acessar /entrar ele vai para o login"): a tela
+        # dizia "entre" a quem estava dentro, e parecia que a sessão tinha
+        # caído. Vai para onde o login o mandaria. Quem decide é
+        # `identidade_da_sessao`, que relê o banco: a sessão de quem foi
+        # desativado vê o formulário, e não um laço entre /entrar e a raiz.
+        from comum.sessao import identidade_da_sessao
+
+        if identidade_da_sessao(request) is not None:
+            return HttpResponseRedirect(destino_depois_de_entrar_para(request))
         # `?idioma=es` por LINK, e só aqui. Antes do login não há conta, não
         # há coluna e não há o que um pedido forjado consiga: a escolha vale
         # para a sessão anônima e some com ela. Exigir POST antes da entrada

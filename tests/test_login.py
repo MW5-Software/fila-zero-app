@@ -137,6 +137,34 @@ class TestEntrar:
         assert "minha-senha-secreta" not in html
 
 
+class TestQuemJaEntrouNaoVeOLogin:
+    """25/09/2026, o cliente: "eu tô logado e se eu acessar /entrar ele vai
+    para o login, mas eu já estava logado". O GET de `/entrar` desenhava o
+    formulário sem olhar a sessão, e a pessoa logada parecia deslogada."""
+
+    def test_quem_ja_entrou_vai_para_onde_o_login_mandaria(self, ana):
+        c = Client()
+        c.post(reverse("entrar"), {"usuario": "ana@teste.com", "senha": "segredo-de-teste"})
+
+        resposta = c.get(reverse("entrar"))
+        assert resposta.status_code == 302
+        assert resposta["Location"] == "/"
+        assert c.session.get("usuario_id") == str(ana.pk)
+
+    def test_sessao_de_quem_foi_desativado_ve_o_formulario(self, ana):
+        """A sessão guarda o id, mas quem decide é o banco a cada pedido: a
+        pessoa desativada tem de poder ver o login, e não um laço de
+        redirecionamentos entre `/entrar` e a raiz."""
+        c = Client()
+        c.post(reverse("entrar"), {"usuario": "ana@teste.com", "senha": "segredo-de-teste"})
+        ana.is_active = False
+        ana.save()
+
+        resposta = c.get(reverse("entrar"))
+        assert resposta.status_code == 200
+        assert 'name="usuario"' in resposta.content.decode()
+
+
 class TestSair:
     def test_sair_esvazia_a_sessao(self, ana):
         c = Client()
