@@ -128,8 +128,21 @@
 
 /* --- As lojas ---------------------------------------------------------- */
 
-.relatorio-lojas { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 24px;
-  align-items: center; padding: 16px 20px; }
+.relatorio-lojas { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 32px;
+  align-items: center; padding: 22px 26px; }
+.relatorio-lojas .relatorio-rosca { width: 130px; height: 130px; }
+/* Ao lado da rosca a tabela tem menos largura: o respiro lateral encolhe um
+   pouco, e o nome não quebra (a bolinha da cor ficava sozinha numa linha). */
+.relatorio-lojas { grid-template-columns: 130px minmax(0, 1fr); gap: 24px; }
+.relatorio-lojas .relatorio-tabela th, .relatorio-lojas .relatorio-tabela td {
+  padding-left: 9px; padding-right: 9px; }
+.relatorio-tabela th, .relatorio-tabela td.nome { white-space: nowrap; }
+/* No A4 o cartão é ~90px mais estreito que na tela, e a tabela das lojas
+   encostava na borda dele: a rosca e o vão cedem no papel. */
+@media print {
+  .relatorio-lojas { grid-template-columns: 104px minmax(0, 1fr); gap: 16px; padding: 20px 18px; }
+  .relatorio-lojas .relatorio-rosca { width: 104px; height: 104px; }
+}
 .ponto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px;
   vertical-align: 1px; }
 .relatorio-empresas { margin-top: 12px; }
@@ -140,13 +153,18 @@
 .relatorio-tabela thead { display: table-header-group; }
 /* O `thead th` do design system é caixa alta com fundo: no papel, com os
    cartões em volta, ele pesava mais que os números. */
+/* O respiro das células (28/09/2026, o cliente: "a parte da tabela está
+   muito apertada, sem respiro pros dados"): eram 7px em cima e embaixo e 8px
+   só à direita, e os números de colunas vizinhas se encostavam. */
 .relatorio-tabela th { text-transform: none; letter-spacing: 0; background: none; text-align: left;
-  font-weight: 600; font-size: 10.5px; color: var(--on-surface-2); padding: 0 8px 7px 0;
+  font-weight: 600; font-size: 10.5px; color: var(--on-surface-2); padding: 0 14px 10px;
   border-bottom: 1px solid var(--outline); }
-.relatorio-tabela td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--outline-2); vertical-align: middle;
+.relatorio-tabela td { padding: 12px 14px; font-size: 12px; line-height: 1.35; border-bottom: 1px solid var(--outline-2); vertical-align: middle;
   background: none; }
 .relatorio-tabela tbody tr { background: none; break-inside: avoid; }
 .relatorio-tabela tbody tr:last-child td { border-bottom: 0; }
+.relatorio-tabela th:first-child, .relatorio-tabela td:first-child { padding-left: 4px; }
+.relatorio-tabela th:last-child, .relatorio-tabela td:last-child { padding-right: 4px; }
 .relatorio-tabela .num { text-align: right; white-space: nowrap; }
 .relatorio-tabela .forte { font-weight: 700; }
 .relatorio-tabela .nome { font-weight: 600; }
@@ -181,7 +199,8 @@
 .podio-1 .barra > span { background: var(--on-primary); }
 .podio-3 .podio-posicao { background: color-mix(in srgb, var(--warn) 22%, var(--surface)); }
 
-.relatorio-ranking .posicao { width: 2.6em; color: var(--on-surface-2); font-weight: 600; }
+.relatorio-ranking { margin-top: 6px; }
+.relatorio-ranking .posicao { width: 3em; color: var(--on-surface-2); font-weight: 600; }
 .relatorio-ranking td.bateu { color: var(--ok); font-weight: 700; }
 
 /* --- As listas, duas a duas -------------------------------------------- */
@@ -200,8 +219,15 @@
 
 .relatorio-lancamentos { break-before: page; page-break-before: always; break-inside: auto; }
 @media screen { .relatorio-lancamentos { margin-top: 40px; } }
-.relatorio-lancamentos .relatorio-tabela { font-size: 10.5px; }
-.relatorio-lancamentos td { padding: 5px 8px 5px 0; }
+.relatorio-lancamentos td { padding: 9px 12px; font-size: 11px; }
+.relatorio-lancamentos th { padding-left: 12px; padding-right: 12px; }
+/* Com a faixa alternada, a primeira e a última coluna precisam de folga
+   DENTRO da faixa, senão o texto encosta na borda dela. */
+.relatorio-lancamentos th:first-child, .relatorio-lancamentos td:first-child { padding-left: 12px; }
+.relatorio-lancamentos th:last-child, .relatorio-lancamentos td:last-child { padding-right: 12px; }
+.relatorio-lancamentos tbody tr:nth-child(even) td:first-child { border-radius: 8px 0 0 8px; }
+.relatorio-lancamentos tbody tr:nth-child(even) td:last-child { border-radius: 0 8px 8px 0; }
+.relatorio-lancamentos td { border-bottom: 0; }
 .relatorio-lancamentos tbody tr:nth-child(even) td {
   background: color-mix(in srgb, var(--primary) 4%, var(--surface)); }
 .relatorio-lancamentos .quando { white-space: nowrap; font-weight: 600; }
