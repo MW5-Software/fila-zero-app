@@ -989,8 +989,14 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
 Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
 `docs/superpowers/plans/2026-09-28-relatorios-da-fila.md`.
 
-- **`/fila/relatorios`**, em Gerenciar Fila, por `fila.relatorios` — a
-  permissão do painel: quem lê os números na tela lê os mesmos no papel.
+- **"Relatórios" é item de PRIMEIRO nível da barra**, depois de Gerenciar
+  Fila, com dois filhos: **Relatórios por mídia** (`/fila/relatorios/midias`)
+  e **Relatórios gerais** (`/fila/relatorios/gerais`, o visual) — pedido do
+  cliente de 28/09/2026: "tirar o menu relatório de dentro do subnível, e
+  colocar ele no nível 1". As duas telas são uma só view com o tipo
+  (`views_relatorios._tela`), por `fila.relatorios` — a permissão do painel:
+  quem lê os números na tela lê os mesmos no papel. O `/fila/relatorios` de
+  antes redireciona para o de mídias, com os filtros, para link salvo.
 - **O recorte é o do painel** (`views_indicadores.escolha_do_pedido`, extraída
   para as duas telas): o dono vê todas as lojas, o supervisor as da empresa,
   o gerente as dele; a loja forjada cai dentro do alcance.
@@ -1019,13 +1025,12 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
 - **Nenhum texto vira fórmula no Excel** (`relatorio_saida._nada_e_formula`):
   o openpyxl grava como fórmula todo texto que começa com "=", e a observação
   da não venda é o vendedor quem digita.
-- **A tela gera, por enquanto, o relatório das LOJAS POR MÍDIA**
-  (`fila/relatorio_midias.py`, 28/09/2026): o cliente trouxe a planilha que a
-  rede montava à mão — uma linha por loja com atendimentos, vendas, uma
-  coluna por mídia e o aproveitamento, e a linha "Aproveitamento Empresa" —
-  e pediu que a tela gerasse ESTE, guardando o visual para voltar "logo
-  mais". O visual (`fila/relatorio.py`, `fila/relatorio_saida.py`) continua
-  no código e nos testes; voltar é religar em `views_relatorios.relatorios`.
+- **O relatório das LOJAS POR MÍDIA** (`fila/relatorio_midias.py`,
+  28/09/2026): o cliente trouxe a planilha que a rede montava à mão — uma
+  linha por loja com atendimentos, vendas, uma coluna por mídia e o
+  aproveitamento, e a linha "Aproveitamento Empresa". Por algumas horas ele
+  foi o ÚNICO da tela, com o visual guardado; o visual voltou no mesmo dia
+  como "Relatórios gerais", quando o menu ganhou os dois.
   - As colunas são as mídias ATIVAS na ordem do cadastro, as desativadas que
     trouxeram alguém no período e "Sem mídia" quando houve atendimento sem
     ela — é ela que faz as colunas somarem os atendimentos (a planilha antiga

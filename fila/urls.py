@@ -17,4 +17,8 @@ urlpatterns = [
     path("fila/metas", views_metas.metas, name="fila_metas"),
     path("fila/historico", views_historico.historico, name="fila_historico"),
     path("fila/relatorios", views_relatorios.relatorios, name="fila_relatorios"),
+    path("fila/relatorios/midias", views_relatorios.relatorios_midias,
+         name="fila_relatorios_midias"),
+    path("fila/relatorios/gerais", views_relatorios.relatorios_gerais,
+         name="fila_relatorios_gerais"),
 ]

@@ -118,6 +118,36 @@ class SiteDoProduto(Site):
     #: idioma poder emitir o token CSRF do formulário dele.
     pedido: Any = None
 
+    def visible_nav(self, *, path: str = "/", user: Any = None):
+        """Só o item de endereço MAIS ESPECÍFICO fica marcado (28/09/2026).
+
+        O design system marca todo item cujo endereço é prefixo do caminho, e
+        o "Fila Zero" (`/fila`) é prefixo de `/fila/historico`,
+        `/fila/metas` e `/fila/relatorios/gerais`: com o relatório aberto, a
+        barra acendia dois itens e abria o grupo "Gerenciar Fila" junto com
+        o dos relatórios — não dizia onde a pessoa estava. Aqui, e não no
+        `nucleo`, que é porte verbatim: o vencedor é o endereço mais longo
+        que casa, e só ele responde `True` ao `_is_active` do pai.
+        """
+        enderecos = []
+        pilha = list(self.nav)
+        while pilha:
+            item = pilha.pop()
+            pilha.extend(item.children)
+            if Site._is_active(item.href, path):
+                enderecos.append(item.href.rstrip("/"))
+        self._marcado = max(enderecos, key=len, default=None)
+        try:
+            return super().visible_nav(path=path, user=user)
+        finally:
+            self._marcado = None
+
+    def _is_active(self, href: str, path: str) -> bool:
+        vencedor = getattr(self, "_marcado", None)
+        if vencedor is None:
+            return Site._is_active(href, path)
+        return bool(href) and href.rstrip("/") == vencedor
+
     def header(self, **argumentos):
         """O cabeçalho da casa: o do design system, com o seletor de idioma.
 

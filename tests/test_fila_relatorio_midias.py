@@ -176,7 +176,7 @@ class TestATela:
     """A tela de Relatórios gera ESTE relatório; o visual ficou guardado."""
 
     def _get(self, cliente, **params):
-        return cliente.get(reverse("fila_relatorios"), params)
+        return cliente.get(reverse("fila_relatorios_midias"), params)
 
     def _na_loja(self, cliente, loja):
         from plataforma.contexto import CHAVE
@@ -185,6 +185,13 @@ class TestATela:
         sessao[CHAVE] = loja.pk
         sessao.save()
         return cliente
+
+    def test_o_endereco_antigo_leva_as_midias(self, rede):
+        """`/fila/relatorios` era a tela única até o menu ganhar os dois
+        relatórios: o link salvo cai no de mídias, com os mesmos filtros."""
+        resposta = logado("sylvia").get("/fila/relatorios", {"periodo": "ontem"})
+        assert resposta.status_code == 302
+        assert resposta["Location"] == "/fila/relatorios/midias?periodo=ontem"
 
     def test_o_pdf_da_tela_e_o_das_midias(self, rede):
         papel = self._get(logado("sylvia"), formato="impressao").content.decode()

@@ -2063,3 +2063,12 @@ msgstr "Aprovechamiento"
 
 msgid "Embaixo de cada mídia, a parte dela nos clientes da rede. O tom de cada número é a parte da mídia nos atendimentos da loja. ▲ aproveitou mais que a empresa."
 msgstr "Debajo de cada medio, su parte en los clientes de la red. El tono de cada número es la parte del medio en las atenciones de la tienda. ▲ aprovechó más que la empresa."
+
+msgid "Relatórios por mídia"
+msgstr "Informes por medio"
+
+msgid "Relatórios gerais"
+msgstr "Informes generales"
+
+msgid "Atendimentos, vendas e aproveitamento de cada loja, por mídia, em PDF ou Excel."
+msgstr "Atenciones, ventas y aprovechamiento de cada tienda, por medio, en PDF o Excel."

@@ -666,3 +666,35 @@ def test_o_cadastro_segue_a_ordem_do_trabalho(db):
     assert rotulos[0] == "Administração"
 
 
+
+
+def test_so_o_item_mais_especifico_fica_marcado(db):
+    """Com "Relatórios gerais" aberto, a barra marcava TAMBÉM "Fila Zero"
+    (28/09/2026): o design system marca todo item cujo endereço é prefixo do
+    caminho, e `/fila` é prefixo de `/fila/relatorios/gerais` — e de
+    `/fila/historico` e `/fila/metas`, desde sempre. Dois itens acesos não
+    dizem onde a pessoa está, e o grupo errado abria junto. A casa marca só o
+    de endereço mais longo; `/fila` continua marcado na própria `/fila` e numa
+    sub-rota que ninguém mais reivindica."""
+    from nucleo.layout import NavItem
+    from plataforma.marca import marca_da_instalacao
+    from plataforma.site import SiteDoProduto
+
+    site = SiteDoProduto(brand=marca_da_instalacao(), nav=[
+        NavItem(label="Gerenciar Fila", icon="folder", children=[
+            NavItem(label="Fila Zero", href="/fila"),
+            NavItem(label="Histórico", href="/fila/historico")]),
+        NavItem(label="Relatórios", icon="folder", children=[
+            NavItem(label="Gerais", href="/fila/relatorios/gerais")]),
+    ])
+
+    def marcados(path):
+        return [f.label for g in site.visible_nav(path=path) for f in g.children
+                if f.active]
+
+    assert marcados("/fila/relatorios/gerais") == ["Gerais"]
+    assert marcados("/fila/historico") == ["Histórico"]
+    assert marcados("/fila") == ["Fila Zero"]
+    assert marcados("/fila/estado") == ["Fila Zero"]
+    grupos = {g.label: g.is_open for g in site.visible_nav(path="/fila/relatorios/gerais")}
+    assert grupos == {"Gerenciar Fila": False, "Relatórios": True}

@@ -23,7 +23,8 @@ def test_o_modulo_esta_declarado_com_as_quatro_permissoes():
     assert spec.ativo_por_padrao is True
     assert {a.rota for a in spec.atalhos} == {
         "/fila/grupos", "/fila/motivos", "/fila/pausas", "/fila/midias",
-        "/fila/metas", "/fila/historico", "/fila/relatorios"}
+        "/fila/metas", "/fila/historico", "/fila/relatorios/midias",
+        "/fila/relatorios/gerais"}
     # Os indicadores moram no Início (15/09/2026): não há atalho para eles.
     assert {a.permissao for a in spec.atalhos} == {"fila.cadastros", "fila.metas",
                                                    "fila.gerenciar", "fila.relatorios"}
@@ -56,7 +57,15 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
         # "Fila Zero", e não "Fila da vez" (25/09/2026, pedido do cliente).
         ("Fila Zero", "/fila"),
         ("Histórico da fila", "/fila/historico"),
-        ("Relatórios", "/fila/relatorios"),
+    ]
+
+    # **Relatórios é de PRIMEIRO nível** (28/09/2026, pedido do cliente: "tirar
+    # o menu relatório de dentro do subnível, e colocar ele no nível 1, com
+    # subníveis de relatórios por mídia e relatórios gerais"). Era a terceira
+    # linha de "Gerenciar Fila".
+    assert [(i.label, i.href) for i in grupos["Relatórios"].children] == [
+        ("Relatórios por mídia", "/fila/relatorios/midias"),
+        ("Relatórios gerais", "/fila/relatorios/gerais"),
     ]
 
     # **Metas é de PRIMEIRO nível**, no mesmo degrau de "Configuração" e
@@ -89,8 +98,8 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
     # cadastros do cliente (ordem negativa), e o módulo da fila (ordem 0) fica
     # DEPOIS dela.
     assert [g for g in grupos if g in
-            ("Configuração", "Gerenciar Fila", "Metas")] == [
-        "Configuração", "Metas", "Gerenciar Fila"]
+            ("Configuração", "Gerenciar Fila", "Metas", "Relatórios")] == [
+        "Configuração", "Metas", "Gerenciar Fila", "Relatórios"]
 
 
 @pytest.mark.django_db

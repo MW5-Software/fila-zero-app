@@ -456,7 +456,7 @@ class TestOPapel:
 
 class TestATela:
     def _get(self, cliente, **params):
-        return cliente.get(reverse("fila_relatorios"), params)
+        return cliente.get(reverse("fila_relatorios_gerais"), params)
 
     def _na_loja(self, cliente, loja):
         from plataforma.contexto import CHAVE
@@ -471,6 +471,19 @@ class TestATela:
         assert self._get(logado("sara")).status_code == 200
         assert self._get(self._na_loja(logado("gil"), rede.centro)).status_code == 200
         assert self._get(logado("ana")).status_code == 404
+
+    def test_os_gerais_sao_o_relatorio_visual(self, rede):
+        """"Relatórios gerais" é o visual (28/09/2026): ele saiu da tela quando
+        o de mídias entrou, e voltou com o menu de dois relatórios."""
+        papel = self._get(logado("sylvia"), formato="impressao").content.decode()
+        assert "<h2>Vendas no período</h2>" in papel
+        planilha = self._get(logado("sylvia"), formato="xlsx")
+        assert "relatorio-midias" not in planilha["Content-Disposition"]
+        assert 'filename="relatorio-' in planilha["Content-Disposition"]
+
+    def test_cada_tela_manda_para_ela_mesma(self, rede):
+        html = self._get(logado("sylvia")).content.decode()
+        assert 'action="/fila/relatorios/gerais"' in html and "Relatórios gerais" in html
 
     # O alcance pela tela e o Excel pela tela moram em
     # test_fila_relatorio_midias.py desde 28/09/2026: a tela passou a gerar o

@@ -59,9 +59,17 @@ MODULO = ModuloSpec(
         Atalho(rotulo=_("Histórico da fila"), rota="/fila/historico",
                permissao="fila.gerenciar", grupo="Gerenciar Fila"),
         # Os relatórios (28/09/2026): de quem lê os indicadores, e por isso
-        # pela mesma permissão do painel.
-        Atalho(rotulo=_("Relatórios"), rota="/fila/relatorios",
-               permissao="fila.relatorios", grupo="Gerenciar Fila"),
+        # pela mesma permissão do painel. **De primeiro nível**, com os dois
+        # relatórios dentro (pedido do cliente no mesmo dia: "tirar o menu
+        # relatório de dentro do subnível, e colocar ele no nível 1, com
+        # subníveis de relatórios por mídia e relatórios gerais"); era a
+        # terceira linha de "Gerenciar Fila". O grupo tem dois destinos, com
+        # outros nomes, e por isso continua grupo (`plataforma/menu.py`), e
+        # entra DEPOIS de "Gerenciar Fila" por chegar depois na mesma ordem.
+        Atalho(rotulo=_("Relatórios por mídia"), rota="/fila/relatorios/midias",
+               permissao="fila.relatorios", grupo="Relatórios"),
+        Atalho(rotulo=_("Relatórios gerais"), rota="/fila/relatorios/gerais",
+               permissao="fila.relatorios", grupo="Relatórios"),
         # **Metas é de primeiro nível** (23/09/2026; o cliente pediu "Metas vai
         # ser um Menu de Nível 1", e corrigiu com o print da barra: "igual
         # Configurações e Gerenciar Fila"). Era filha do "Fila da vez", e virou
