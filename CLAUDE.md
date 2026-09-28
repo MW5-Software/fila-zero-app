@@ -1002,7 +1002,8 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
   28/09/2026, pedido do cliente: "padronizar os relatórios"). DENTRO da faixa
   azul de cada um — "o relatório é um só", o cliente, com a primeira versão
   numa faixa branca por cima —, a logo do cliente (ou o nome da empresa, sem
-  logo) e os filtros: Período, Empresa e Lojas, esta como a pessoa escolheu
+  logo; direto sobre o azul, sem placa, porque a da Sylvia tem letras
+  brancas) e os filtros: Período, Empresa e Lojas, esta como a pessoa escolheu
   ("Todas as lojas"). No rodapé, em TODA folha: quem emitiu e quando, a logo
   do KRONOS e "Página X de Y".
   - O rodapé mora na MARGEM da folha (`@page` com `@bottom-left/center/
