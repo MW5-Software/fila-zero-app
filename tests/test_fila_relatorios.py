@@ -472,27 +472,10 @@ class TestATela:
         assert self._get(self._na_loja(logado("gil"), rede.centro)).status_code == 200
         assert self._get(logado("ana")).status_code == 404
 
-    def test_gerente_so_ve_a_loja_dele(self, rede):
-        gil = self._na_loja(logado("gil"), rede.centro)
-        html = self._get(gil).content.decode()
-        assert "Centro" in html and f'value="{rede.matriz.pk}"' not in html
-        # A loja forjada cai na dele: o PDF sai só com o Centro.
-        papel = self._get(gil, formato="impressao", loja=str(rede.matriz.pk)).content.decode()
-        assert "Centro" in papel and "Matriz" not in papel.split("<h2>Resumo</h2>")[0]
-
-    def test_o_dono_ve_todas_e_escolhe_uma(self, rede):
-        dono = logado("sylvia")
-        papel = self._get(dono, formato="impressao").content.decode()
-        assert "Matriz e Centro" in papel or "Centro e Matriz" in papel
-        so_centro = self._get(dono, formato="impressao", loja=str(rede.centro.pk)).content.decode()
-        cabecalho = so_centro.split("</header>")[0]
-        assert "</header>" in so_centro
-        assert "Centro" in cabecalho and "Matriz" not in cabecalho
-
-    def test_o_excel_pela_tela(self, rede):
-        resposta = self._get(logado("sylvia"), formato="xlsx", periodo="mes_passado")
-        assert resposta["Content-Type"].startswith("application/vnd.openxmlformats")
-        assert "mes-passado" in resposta["Content-Disposition"]
+    # O alcance pela tela e o Excel pela tela moram em
+    # test_fila_relatorio_midias.py desde 28/09/2026: a tela passou a gerar o
+    # relatório das lojas por mídia, e o visual ficou guardado (testado aqui
+    # pelas funções, e não pela tela).
 
     def test_a_tela_sem_javascript(self, rede):
         html = self._get(logado("sylvia")).content.decode()

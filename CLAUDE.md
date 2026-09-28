@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 154 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 155 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -1019,6 +1019,29 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
 - **Nenhum texto vira fórmula no Excel** (`relatorio_saida._nada_e_formula`):
   o openpyxl grava como fórmula todo texto que começa com "=", e a observação
   da não venda é o vendedor quem digita.
+- **A tela gera, por enquanto, o relatório das LOJAS POR MÍDIA**
+  (`fila/relatorio_midias.py`, 28/09/2026): o cliente trouxe a planilha que a
+  rede montava à mão — uma linha por loja com atendimentos, vendas, uma
+  coluna por mídia e o aproveitamento, e a linha "Aproveitamento Empresa" —
+  e pediu que a tela gerasse ESTE, guardando o visual para voltar "logo
+  mais". O visual (`fila/relatorio.py`, `fila/relatorio_saida.py`) continua
+  no código e nos testes; voltar é religar em `views_relatorios.relatorios`.
+  - As colunas são as mídias ATIVAS na ordem do cadastro, as desativadas que
+    trouxeram alguém no período e "Sem mídia" quando houve atendimento sem
+    ela — é ela que faz as colunas somarem os atendimentos (a planilha antiga
+    não fechava: 52 de 66 numa loja). Por NOME, para "Todas as empresas" não
+    repetir o mesmo canal.
+  - A regra é a do painel (`indicadores._atendimentos`), e o teste confere os
+    totais contra `indicadores.numeros` e `indicadores.midias`.
+  - **É um mapa de calor** (no mesmo dia, "dá para deixar mais bonitinho?"):
+    o tom de cada número é a parte da mídia nos atendimentos DA LOJA
+    (`relatorio_midias._papel`, até 85% da cor da marca — com 0,7 × a parte,
+    na primeira versão, o canal de metade da loja saía pálido e o mapa não
+    se lia). Embaixo de cada mídia, a parte dela na rede; o aproveitamento
+    tem barra, e a loja acima da empresa ganha ▲ e o verde do tema. O topo e
+    a linha da empresa são a faixa da cor da marca, como a capa do visual.
+  - PDF em A4 deitado; no papel a letra e o respiro encolhem, senão nove
+    mídias passavam da folha e o PDF saía com barra de rolagem desenhada.
 
 ### O turno da loja (23/09/2026)
 
@@ -1114,7 +1137,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 154 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 155 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

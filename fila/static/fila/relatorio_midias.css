@@ -1,0 +1,123 @@
+/* O relatório das lojas por mídia (28/09/2026). A planilha da rede, com a
+   mesma leitura, e no mesmo dia ("dá para deixar mais bonitinho?") um mapa
+   de calor: o tom de cada mídia é a parte dela nos atendimentos da loja, em
+   `--tom` (0 a 85% da cor da marca), escrito célula a célula pelo servidor.
+   O topo é a faixa da marca, como a capa do relatório visual. Só tokens do
+   tema: cada cliente imprime com a própria cor. */
+
+@page { size: A4 landscape; margin: 10mm 10mm 12mm; }
+
+.relatorio-midias, .relatorio-midias * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* `body.` pela especificidade: o `body.papel` da folha da impressão é o
+   mesmo elemento e zera a margem. */
+body.relatorio-midias { margin: 0; padding: 28px 32px 40px; background: var(--surface);
+  color: var(--on-surface); font-family: var(--font-body); font-size: 12.5px;
+  font-variant-numeric: tabular-nums; }
+@media print { body.relatorio-midias { padding: 0; } }
+
+/* --- O topo: quem, quando, e a rede em três números -------------------- */
+
+.rm-topo { position: relative; overflow: hidden; display: flex; align-items: center;
+  justify-content: space-between; gap: 24px; padding: 22px 28px; border-radius: 16px 16px 0 0;
+  color: var(--on-primary);
+  background:
+    radial-gradient(80% 140% at 100% 0%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 60%),
+    var(--primary); }
+.rm-quem h1 { margin: 0; color: inherit; font-family: var(--font-display); font-size: 26px;
+  font-weight: 800; letter-spacing: -.02em; }
+.rm-quem p { margin: 3px 0 0; font-size: 13px; opacity: .9; }
+.rm-quem .rm-periodo { font-size: 12px; opacity: .75; }
+.rm-rede { display: flex; gap: 10px; margin: 0; }
+.rm-rede div { min-width: 116px; padding: 10px 16px; border-radius: 14px;
+  background: color-mix(in srgb, var(--on-primary) 13%, transparent); }
+.rm-rede dt { font-size: 11px; opacity: .85; }
+.rm-rede dd { margin: 2px 0 0; font-family: var(--font-display); font-size: 22px; font-weight: 800;
+  letter-spacing: -.01em; }
+
+/* --- A tabela ---------------------------------------------------------- */
+
+/* A moldura rola de lado na tela estreita; a página, não. */
+/* O topo e a tabela são uma peça só (28/09/2026, pedido do cliente: "junta
+   o azul com a tabela, tira aquele espaço"): a faixa arredonda em cima, a
+   moldura embaixo, e não há vão nem borda entre as duas. */
+.rm-moldura { margin-top: 0; overflow-x: auto; border: 1px solid var(--outline-2); border-top: 0;
+  border-radius: 0 0 16px 16px; }
+.rm-tabela { width: 100%; border-collapse: collapse; }
+.rm-tabela th, .rm-tabela td { padding: 10px 9px; text-align: center; white-space: nowrap;
+  border-bottom: 1px solid var(--outline-2); }
+/* O `thead th` do design system é caixa alta, cinza e `sticky`: aqui é letra
+   normal, e o fundo fica — preso no alto ao rolar, sem fundo, as linhas
+   passariam por baixo dele à vista. */
+.rm-tabela thead th { background: var(--surface); color: var(--on-surface); text-transform: none;
+  letter-spacing: 0; font-family: var(--font-display); font-size: 12px; font-weight: 800;
+  vertical-align: bottom; border-bottom: 2px solid var(--outline); white-space: normal; }
+.rm-tabela thead th span { display: block; margin-top: 2px; font-family: var(--font-body);
+  font-size: 10px; font-weight: 500; color: var(--on-surface-2); }
+.rm-tabela tbody tr { break-inside: avoid; }
+/* O nome da loja alinha com o título da faixa azul (os 28px do padding
+   dela), e não com a borda da moldura: colado na borda, o conteúdo parecia
+   sem margem à esquerda (28/09/2026, pedido do cliente). */
+.rm-tabela .rm-loja { text-align: left; font-weight: 700; padding-left: 28px; }
+.rm-tabela tbody .rm-loja { font-family: var(--font-display); font-size: 13px; }
+
+/* O calor: a célula leva a cor da marca na proporção da parte da mídia na
+   loja, com um vão branco entre as células para cada uma ser lida sozinha. */
+/* `--tom: 0%` é o padrão; cada célula traz o dela no `style`. */
+.rm-calor { --tom: 0%; }
+.rm-tabela td.rm-calor { font-weight: 600; border: 2px solid var(--surface); border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) var(--tom), var(--surface)); }
+.rm-tabela td.rm-forte { color: var(--on-primary); font-weight: 800; }
+.rm-tabela td.rm-zero { color: color-mix(in srgb, var(--on-surface-2) 55%, var(--surface)); font-weight: 400; }
+
+.rm-tabela td.rm-aproveitamento { min-width: 130px; }
+/* A última coluna tem a mesma folga da primeira, espelhando a faixa azul. */
+.rm-tabela tr > :last-child { padding-right: 28px; }
+.rm-barra { display: inline-block; vertical-align: middle; width: 64px; height: 6px; margin-right: 8px;
+  border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.rm-barra > span { display: block; height: 100%; border-radius: 999px; background: var(--on-surface-2); }
+.rm-valor { display: inline-block; min-width: 62px; text-align: right; font-weight: 800; }
+.rm-acima .rm-valor { color: var(--ok); }
+.rm-acima .rm-barra > span { background: var(--ok); }
+
+/* A linha da empresa: a faixa cheia da marca, como o topo. */
+.rm-tabela tfoot th, .rm-tabela tfoot td { background: var(--primary); color: var(--on-primary);
+  font-weight: 800; font-size: 13px; padding-top: 13px; padding-bottom: 13px; border-bottom: 0; }
+.rm-tabela tfoot .rm-valor { font-size: 15px; }
+
+/* O `footer` do design system é a barra de rodapé do shell (borda, altura,
+   recuo): aqui ele é só a última linha do papel. */
+.rm-rodape { position: static; height: auto; border: 0; background: none; padding: 0 28px; display: flex;
+  justify-content: space-between; gap: 16px; margin-top: 12px; color: var(--on-surface-2);
+  font-size: 10.5px; }
+.rm-rodape p { margin: 0; }
+.rm-rodape p:last-child { white-space: nowrap; }
+
+/* No papel não há rolagem: com nove mídias a tabela passava da largura do
+   A4 deitado e o PDF saía com a barra de rolagem desenhada e as últimas
+   colunas cortadas. A letra e o respiro encolhem, e o cabeçalho pode quebrar
+   em duas linhas ("Já" / "Cliente"); os números não quebram. */
+@media print {
+  /* `clip`, e não `hidden`: recorta a linha azul da empresa no canto
+     arredondado sem virar caixa de rolagem, que o papel desenharia. */
+  .rm-moldura { overflow: clip; }
+  .rm-topo { padding: 16px 22px; }
+  .rm-quem h1 { font-size: 22px; }
+  .rm-rede dd { font-size: 18px; }
+  .rm-tabela { font-size: 10.5px; }
+  .rm-tabela th, .rm-tabela td { padding: 7px 6px; }
+  .rm-tabela .rm-loja { padding-left: 22px; }
+  .rm-tabela tr > :last-child { padding-right: 22px; }
+  .rm-rodape { padding: 0 22px; }
+  .rm-tabela thead th { white-space: normal; font-size: 10.5px; }
+  .rm-tabela td.rm-aproveitamento { min-width: 0; }
+  .rm-barra { width: 36px; margin-right: 5px; }
+  .rm-valor { min-width: 0; }
+  .rm-tabela tfoot th, .rm-tabela tfoot td { font-size: 11px; }
+}
+
+/* No celular os três números da rede descem para baixo do título. */
+@media screen and (max-width: 760px) {
+  body.relatorio-midias { padding: 16px; }
+  .rm-topo { flex-direction: column; align-items: flex-start; }
+  .rm-rede { flex-wrap: wrap; }
+}

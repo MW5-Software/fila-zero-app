@@ -24,12 +24,11 @@ from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
 from plataforma.contexto import empresa_atual
-from plataforma.marca import logo_da_empresa_de
 
 from . import indicadores as ind
+from . import relatorio_midias as por_midia
 from .estado import nome_de
-from .relatorio import PADRAO, PERIODOS, montar, periodo_escolhido
-from .relatorio_saida import em_impressao, em_xlsx
+from .relatorio import PADRAO, PERIODOS, periodo_escolhido
 from .views_indicadores import TODAS, escolha_do_pedido
 
 __all__ = ["relatorios"]
@@ -84,10 +83,14 @@ def relatorios(request) -> HttpResponse:
 
     if escolha is not None and escolha.lojas and formato in ("xlsx", "impressao"):
         rotulo = str(escolha.empresa) if escolha.escolhida else _("Todas as empresas")
-        relatorio = montar(escolha.recorte, rotulo_da_empresa=rotulo,
-                           gerado_por=nome_de(pessoa))
-        return em_xlsx(relatorio) if formato == "xlsx" else em_impressao(
-            relatorio, com_logo=logo_da_empresa_de(request) is not None)
+        # A tela gera o relatório das lojas por mídia (28/09/2026, pedido do
+        # cliente, com a planilha que a rede já usava). O relatório visual
+        # (`fila.relatorio.montar`, `fila.relatorio_saida`) ficou GUARDADO:
+        # o código e os testes continuam, e voltar é religar aqui.
+        relatorio = por_midia.montar(escolha.recorte, rotulo_da_empresa=rotulo,
+                                     gerado_por=nome_de(pessoa))
+        return (por_midia.em_xlsx(relatorio) if formato == "xlsx"
+                else por_midia.em_impressao(relatorio))
 
     with use_environment(ambiente()):
         site = montar_site(request)

@@ -1,0 +1,76 @@
+{# O relatório das lojas por mídia no papel (28/09/2026): a planilha que a
+   rede montava à mão — uma linha por loja, uma coluna por canal e a linha da
+   empresa embaixo —, e no mesmo dia, com "dá para deixar mais bonitinho?",
+   um mapa de calor: o tom de cada célula é a parte daquela mídia nos
+   atendimentos da loja (`relatorio_midias._papel`). O topo é a faixa da cor
+   da marca, como a capa do relatório visual, para os dois serem da mesma
+   família. A4 deitado. Fora do shell: o navegador salva em PDF pelo próprio
+   diálogo. Nome de loja e de mídia é DADO, e sai escapado pelo autoescape do
+   ambiente da fila. #}
+<!DOCTYPE html>
+<html lang="{{ idioma }}">
+<head>
+<meta charset="utf-8">
+<title>{{ r.titulo }} — {{ r.empresa }}</title>
+<link rel="stylesheet" href="/tema.css">
+<link rel="stylesheet" href="{{ folha_do_sistema }}">
+<link rel="stylesheet" href="{{ folha_da_impressao }}">
+<link rel="stylesheet" href="{{ folha_do_relatorio }}">
+</head>
+<body class="papel relatorio-midias">
+
+<div class="rm-topo">
+  <div class="rm-quem">
+    <h1>{{ r.titulo }}</h1>
+    <p>{{ r.empresa }}</p>
+    <p class="rm-periodo">{{ r.periodo }}</p>
+  </div>
+  <dl class="rm-rede">
+    <div><dt>{{ traduzir("Atendimentos") }}</dt><dd>{{ r.total.atendimentos }}</dd></div>
+    <div><dt>{{ traduzir("Vendas") }}</dt><dd>{{ r.total.vendas }}</dd></div>
+    <div><dt>{{ traduzir("Aproveitamento") }}</dt><dd>{{ porcento(r.total.aproveitamento) }}</dd></div>
+  </dl>
+</div>
+
+<div class="rm-moldura">
+<table class="rm-tabela">
+  <thead><tr>
+    <th class="rm-loja">{{ traduzir("Loja") }}</th>
+    <th>{{ traduzir("Atendimentos") }}</th>
+    <th>{{ traduzir("Vendas") }}</th>
+    {% for m in p.midias %}<th class="rm-midia">{{ m.nome }}<span>{{ m.parte }}</span></th>{% endfor %}
+    <th class="rm-aproveitamento">{{ traduzir("Aproveitamento") }}</th>
+  </tr></thead>
+  <tbody>
+  {% for x in p.linhas %}{% set l = x.linha %}
+    <tr>
+      <td class="rm-loja">{{ l.nome }}</td>
+      <td>{{ l.atendimentos }}</td><td>{{ l.vendas }}</td>
+      {% for c in x.celulas %}
+      <td class="rm-calor{% if c.tom >= 45 %} rm-forte{% endif %}{% if not c.n %} rm-zero{% endif %}"
+          style="--tom: {{ c.tom }}%">{{ c.n }}</td>
+      {% endfor %}
+      <td class="rm-aproveitamento{% if x.acima %} rm-acima{% endif %}">
+        <span class="rm-barra"><span style="width: {{ '%.1f'|format(x.barra) }}%"></span></span>
+        <span class="rm-valor">{% if x.acima %}▲ {% endif %}{{ porcento(l.aproveitamento) }}</span>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr>
+    <th class="rm-loja">{{ r.total.nome }}</th>
+    <td>{{ r.total.atendimentos }}</td><td>{{ r.total.vendas }}</td>
+    {% for n in r.total.por_midia %}<td>{{ n }}</td>{% endfor %}
+    <td class="rm-aproveitamento"><span class="rm-valor">{{ porcento(r.total.aproveitamento) }}</span></td>
+  </tr></tfoot>
+</table>
+</div>
+
+<footer class="rm-rodape">
+  <p>{{ traduzir("Embaixo de cada mídia, a parte dela nos clientes da rede. O tom de cada número é a parte da mídia nos atendimentos da loja. ▲ aproveitou mais que a empresa.") }}</p>
+  <p>{{ traduzir("Gerado por %(quem)s em %(quando)s")|format(quem=r.gerado_por, quando=gerado_em) }}</p>
+</footer>
+
+<script>window.print();</script>
+</body>
+</html>

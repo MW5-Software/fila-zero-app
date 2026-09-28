@@ -2051,3 +2051,15 @@ msgstr "%(mes)s de %(ano)s"
 
 msgid "Últimos %(n)s dias"
 msgstr "Últimos %(n)s días"
+
+msgid "Aproveitamento Empresa"
+msgstr "Aprovechamiento de la empresa"
+
+msgid "Lojas por mídia"
+msgstr "Tiendas por medio"
+
+msgid "Aproveitamento"
+msgstr "Aprovechamiento"
+
+msgid "Embaixo de cada mídia, a parte dela nos clientes da rede. O tom de cada número é a parte da mídia nos atendimentos da loja. ▲ aproveitou mais que a empresa."
+msgstr "Debajo de cada medio, su parte en los clientes de la red. El tono de cada número es la parte del medio en las atenciones de la tienda. ▲ aprovechó más que la empresa."
