@@ -132,12 +132,16 @@
   <ol class="relatorio-podio">
     {% for v in p.podio %}
     <li class="podio-{{ v.posicao }}">
-      <span class="podio-posicao">{{ v.posicao }}º</span>
-      <span class="podio-nome">{{ v.nome }}</span>
-      <span class="podio-loja">{{ v.loja }}</span>
-      <span class="podio-vendido">{{ v.vendido }}</span>
-      <span class="podio-apoio">{{ traduzir("%(v)s vendas de %(n)s atendimentos")|format(v=v.vendas, n=v.atendimentos) }}</span>
-      <span class="podio-apoio">{{ traduzir("Conversão") }} {{ v.conversao }}</span>
+      <div class="podio-topo">
+        <span class="podio-posicao">{{ v.posicao }}º</span>
+        <span class="podio-quem"><span class="podio-nome">{{ v.nome }}</span><span class="podio-loja">{{ v.loja }}</span></span>
+        <span class="podio-vendido">{{ v.vendido }}</span>
+      </div>
+      <dl class="podio-numeros">
+        <div><dt>{{ traduzir("Vendas") }}</dt><dd>{{ v.vendas }}</dd></div>
+        <div><dt>{{ traduzir("Atendimentos") }}</dt><dd>{{ v.atendimentos }}</dd></div>
+        <div><dt>{{ traduzir("Conversão") }}</dt><dd>{{ v.conversao }}</dd></div>
+      </dl>
       {% if p.com_meta and v.meta is not none %}
       <span class="podio-meta"><span class="barra"><span style="width: {{ '%.1f'|format([v.meta, 100]|min) }}%"></span></span>
         <span>{{ traduzir("%(pct)s da meta")|format(pct=formatar(v.meta, "porcento")) }}</span></span>

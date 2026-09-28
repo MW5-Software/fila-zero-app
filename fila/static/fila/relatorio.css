@@ -196,22 +196,41 @@ body.relatorio {
 
 .relatorio-podio { list-style: none; margin: 0 0 14px; padding: 0; display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.relatorio-podio li { position: relative; display: flex; flex-direction: column; padding: 16px 16px 14px; }
-.podio-posicao { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
-  margin-bottom: 10px; font-family: var(--font-display); font-weight: 800; font-size: 13px;
+/* O cartão se arruma pela PRÓPRIA largura (28/09/2026, o cliente: "os
+   cards poderiam ser melhor aproveitados, estão com muito espaço vazio"):
+   com tudo empilhado à esquerda, um cartão de 600px na tela larga era dois
+   terços vazio. Largo, o vendido vai à direita do nome e os três números
+   lado a lado ocupam a linha; estreito (o A4), o vendido desce. */
+.relatorio-podio li { position: relative; display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 20px; container-type: inline-size; }
+.podio-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.podio-quem { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.podio-posicao { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  flex: none; font-family: var(--font-display); font-weight: 800; font-size: 13px;
   background: var(--surface-2); color: var(--on-surface); }
-.podio-nome { font-family: var(--font-display); font-size: 15px; font-weight: 800; }
+.podio-nome { font-family: var(--font-display); font-size: 16px; font-weight: 800; }
 .podio-loja { font-size: 11px; color: var(--on-surface-2); }
-.podio-vendido { margin: 12px 0 4px; font-family: var(--font-display); font-size: 20px; font-weight: 800;
-  letter-spacing: -.01em; }
-.podio-apoio { font-size: 11px; color: var(--on-surface-2); }
-.podio-meta { display: grid; gap: 4px; margin-top: 10px; font-size: 10.5px; font-weight: 600; }
+.podio-vendido { font-family: var(--font-display); font-size: 22px; font-weight: 800;
+  letter-spacing: -.01em; white-space: nowrap; }
+.podio-numeros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0;
+  padding-top: 12px; border-top: 1px solid var(--outline-2); }
+.podio-numeros dt { font-size: 10.5px; color: var(--on-surface-2); }
+.podio-numeros dd { margin: 2px 0 0; font-family: var(--font-display); font-size: 15px; font-weight: 800; }
+.podio-meta { display: grid; gap: 4px; font-size: 10.5px; font-weight: 600; }
+/* Depois das regras de base, senão perde para elas pela ordem da folha. */
+@container (max-width: 330px) {
+  .podio-vendido { flex-basis: 100%; margin-top: 4px; }
+  /* Em terços iguais, "Atendimentos" encostava em "Conversão" no A4: no
+     tamanho do conteúdo, com o vão que sobrar entre eles. */
+  .podio-numeros { grid-template-columns: repeat(3, auto); justify-content: space-between; }
+}
 /* O primeiro vai na cor da marca, e a medalha dele no amarelo do tema — o
    mesmo `--warn` da faixa do primeiro no ranking do Início. */
 .relatorio-podio .podio-1 { border-color: transparent; color: var(--on-primary);
   background: radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 65%), var(--primary); }
 .podio-1 .podio-posicao { background: var(--warn-bg); color: var(--warn); }
-.podio-1 .podio-loja, .podio-1 .podio-apoio { color: inherit; opacity: .82; }
+.podio-1 .podio-loja, .podio-1 .podio-numeros dt { color: inherit; opacity: .82; }
+.podio-1 .podio-numeros { border-top-color: color-mix(in srgb, var(--on-primary) 22%, transparent); }
 .podio-1 .barra { background: color-mix(in srgb, var(--on-primary) 22%, transparent); }
 .podio-1 .barra > span { background: var(--on-primary); }
 .podio-3 .podio-posicao { background: color-mix(in srgb, var(--warn) 22%, var(--surface)); }
