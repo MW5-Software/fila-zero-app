@@ -13,12 +13,17 @@
 @page { size: A4; margin: 12mm 11mm 14mm; }
 
 .relatorio, .relatorio * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.relatorio {
-  max-width: 860px; margin: 0 auto; padding: 28px 20px 48px;
+/* A página inteira na tela (28/09/2026, o cliente com o relatório aberto no
+   monitor: "o relatório tem que ser a página inteira"). Era uma coluna de
+   860px encostada à esquerda — o `body.papel` da folha da impressão zera a
+   margem, e o `margin: auto` daqui nem centralizava. `body.relatorio` pela
+   especificidade: é o mesmo elemento. */
+body.relatorio {
+  max-width: none; margin: 0; padding: 28px 32px 48px;
   background: var(--surface); color: var(--on-surface);
   font-family: var(--font-body); font-size: 12px; font-variant-numeric: tabular-nums;
 }
-@media print { .relatorio { padding: 0; max-width: none; } }
+@media print { body.relatorio { padding: 0; } }
 
 /* --- A capa ------------------------------------------------------------ */
 
@@ -245,6 +250,26 @@
 .relatorio-rodape { display: flex; justify-content: space-between; gap: 16px; margin-top: 28px;
   padding-top: 12px; border-top: 1px solid var(--outline-2); color: var(--on-surface-2); font-size: 10.5px; }
 .relatorio-rodape p { margin: 0; }
+
+/* No celular (o link do PDF abre na tela antes de imprimir): uma coluna, e
+   a tabela larga rola dentro dela, e não a página inteira — em 390px a
+   página tinha 741px de largura. Só na tela: o A4 continua com o desenho de
+   cima. */
+@media screen and (max-width: 760px) {
+  body.relatorio { padding: 16px 16px 32px; }
+  .relatorio-capa { padding: 20px 20px 60px; border-radius: 18px; }
+  .relatorio-capa-topo { flex-wrap: wrap; }
+  .relatorio-chamada { font-size: 30px; margin-top: 22px; }
+  .relatorio-placar { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: -40px 8px 0; }
+  .relatorio-numero:last-child { grid-column: 1 / -1; }
+  .relatorio-valor { font-size: 16px; }
+  .relatorio-visao, .relatorio-listas, .relatorio-podio { grid-template-columns: minmax(0, 1fr); }
+  .relatorio-lojas { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 16px; }
+  .relatorio-tabela { display: block; overflow-x: auto; }
+  .relatorio-rodape { flex-direction: column; gap: 4px; }
+  .relatorio-grafico { padding-left: 42px; }
+  .grafico-eixo span { font-size: 7.5px; }
+}
 
 /* A tela (e não o papel): os campos numa linha que quebra no celular, e os
    dois botões juntos. */
