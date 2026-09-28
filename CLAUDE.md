@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 153 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 154 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -984,6 +984,26 @@ Spec `docs/superpowers/specs/2026-09-15-fila-metas-design.md`; plano
 - **No painel, a meta e o vendido saem das mesmas lojas**: em "Todas as
   lojas", uma loja sem meta não faz a meta das outras parecer batida.
 
+### Os relatórios (28/09/2026)
+
+Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
+`docs/superpowers/plans/2026-09-28-relatorios-da-fila.md`.
+
+- **`/fila/relatorios`**, em Gerenciar Fila, por `fila.relatorios` — a
+  permissão do painel: quem lê os números na tela lê os mesmos no papel.
+- **O recorte é o do painel** (`views_indicadores.escolha_do_pedido`, extraída
+  para as duas telas): o dono vê todas as lojas, o supervisor as da empresa,
+  o gerente as dele; a loja forjada cai dentro do alcance.
+- **O relatório é DADO** (`fila/relatorio.py`: seções de colunas tipadas), e o
+  Excel e o papel (`fila/relatorio_saida.py`) desenham o mesmo dado. Toda conta
+  sai de `fila/indicadores.py`; a única nova é `lancamentos_do_recorte`.
+- **O % da meta só nos períodos de mês**, e a pausa da gestão fora da pausa do
+  vendedor, como no painel.
+- **O Excel grava número** (moeda e porcentagem na célula), e não texto como a
+  exportação das listas: relatório de números é para somar.
+- **O PDF é a impressão do navegador**, como as listas, com o cabeçalho da
+  tabela repetido em cada página.
+
 ### O turno da loja (23/09/2026)
 
 - **O turno é por FILIAL** (`fila.TurnoDaLoja`, uma linha por loja que tenha
@@ -1078,7 +1098,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 153 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 154 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

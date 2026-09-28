@@ -1817,3 +1817,105 @@ msgstr "Poner en atención"
 
 msgid "Use quando o 1º da fila foi atender e esqueceu de marcar no sistema. Ele passa a atender, e a fila anda."
 msgstr "Úselo cuando el 1º de la fila fue a atender y olvidó marcarlo en el sistema. Pasa a atender, y la fila avanza."
+
+msgid "Diário (hoje)"
+msgstr "Diario (hoy)"
+
+msgid "Semanal (últimos 7 dias)"
+msgstr "Semanal (últimos 7 días)"
+
+msgid "Mensal (este mês)"
+msgstr "Mensual (este mes)"
+
+msgid "Relatório da fila"
+msgstr "Informe de la fila"
+
+msgid "Relatórios"
+msgstr "Informes"
+
+msgid "Relatório"
+msgstr "Informe"
+
+msgid "Resumo"
+msgstr "Resumen"
+
+msgid "Comparação"
+msgstr "Comparación"
+
+msgid "Motivos"
+msgstr "Motivos"
+
+msgid "Grupos"
+msgstr "Grupos"
+
+msgid "Pausas"
+msgstr "Pausas"
+
+msgid "Lançamentos"
+msgstr "Registros"
+
+msgid "Onde"
+msgstr "Dónde"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Indicador"
+msgstr "Indicador"
+
+msgid "Neste período"
+msgstr "En este período"
+
+msgid "No período anterior"
+msgstr "En el período anterior"
+
+msgid "Variação"
+msgstr "Variación"
+
+msgid "Data e hora"
+msgstr "Fecha y hora"
+
+msgid "Resultado"
+msgstr "Resultado"
+
+msgid "Observação"
+msgstr "Observación"
+
+msgid "Fechado por"
+msgstr "Cerrado por"
+
+msgid "Sim"
+msgstr "Sí"
+
+msgid "Minutos"
+msgstr "Minutos"
+
+msgid "Gerado por"
+msgstr "Generado por"
+
+msgid "Gerado em"
+msgstr "Generado en"
+
+msgid "Lojas"
+msgstr "Tiendas"
+
+msgid "Mídia"
+msgstr "Medio"
+
+msgid "Tipo de pausa"
+msgstr "Tipo de pausa"
+
+msgid "Gerar PDF"
+msgstr "Generar PDF"
+
+msgid "Gerar Excel"
+msgstr "Generar Excel"
+
+msgid "Nenhuma loja em que você tira relatório."
+msgstr "Ninguna tienda en la que usted saca informes."
+
+msgid "Os números das lojas que você acompanha, em PDF ou Excel."
+msgstr "Los números de las tiendas que usted acompaña, en PDF o Excel."
+
+msgid "a"
+msgstr "a"

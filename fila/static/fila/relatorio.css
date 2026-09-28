@@ -6,9 +6,15 @@
 .relatorio-onde, .relatorio-periodo { margin: 4px 0; color: var(--on-surface-2); }
 .relatorio-secao { margin-top: 28px; }
 .relatorio-secao h2 { font-size: 16px; margin: 0 0 8px; }
+/* O título da seção nunca fica sozinho no pé da página, com a tabela na
+   seguinte (visto no PDF salvo pelo Chrome: "Pausas" órfão na página 1). */
+.relatorio-secao h2 { break-after: avoid; page-break-after: avoid; }
 .relatorio table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .relatorio th, .relatorio td { padding: 6px 8px; border-bottom: 1px solid var(--outline-2); text-align: left; }
 .relatorio .num { text-align: right; font-variant-numeric: tabular-nums; }
+/* A primeira coluna (a data nos lançamentos, o nome nas outras) e os números
+   não quebram linha: "01/09/2026" partido em dois lia como duas datas. */
+.relatorio td:first-child, .relatorio td.num { white-space: nowrap; }
 .relatorio thead { display: table-header-group; }
 .relatorio tr { break-inside: avoid; }
 .relatorio-vazio { color: var(--on-surface-2); margin: 0; }

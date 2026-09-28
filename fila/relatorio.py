@@ -122,6 +122,13 @@ def _resumo(recorte) -> Secao:
     return Secao(_("Resumo"), _numeros(_("Onde")), linhas)
 
 
+def _variacao_por_extenso(valor: float, unidade: str) -> str:
+    """"+12,5 %" e "-7,5 p.p.". A vírgula decimal entra SÓ no número: trocar
+    o ponto da frase inteira escrevia a unidade da conversão "p,p," (visto
+    no PDF salvo pelo Chrome, 28/09/2026)."""
+    return f"{valor:+.1f}".replace(".", ",") + f" {unidade}"
+
+
 def _comparacao(recorte, anterior) -> Secao:
     """Cada indicador neste período, no anterior e a variação. Aba própria
     porque mistura unidades numa coluna só; por isso os valores já vão
@@ -130,7 +137,7 @@ def _comparacao(recorte, anterior) -> Secao:
 
     def var(atual, antes, *, pontos=False):
         v = ind.variacao(atual, antes, pontos=pontos)
-        return "—" if v is None else f"{v.valor:+.1f} {v.unidade}".replace(".", ",")
+        return "—" if v is None else _variacao_por_extenso(v.valor, v.unidade)
 
     linhas = [
         (_("Atendimentos"), str(n.atendimentos), str(a.atendimentos),

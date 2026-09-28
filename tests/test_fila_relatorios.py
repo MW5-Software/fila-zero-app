@@ -209,6 +209,30 @@ class TestOConteudo:
         assert _secao(r, "Lançamentos").linhas == []
         assert _secao(r, "Resumo").linhas[0].numeros.atendimentos == 0
 
+    def test_a_variacao_da_conversao_diz_pontos(self, rede):
+        """Visto no PDF salvo pelo Chrome: a troca do ponto decimal pela
+        vírgula pegava também os pontos da unidade, e a conversão saía
+        "-7,5 p,p,"."""
+        from fila.relatorio import montar
+
+        # Datas fixas, com venda nos DOIS períodos: sem o anterior, a variação
+        # é "—" e o teste não provaria nada.
+        agora = local(2026, 9, 15, 12)
+        atendimento(rede, rede.ana, rede.matriz, local(2026, 9, 10, 10), valor="100")
+        atendimento(rede, rede.ana, rede.matriz, local(2026, 9, 10, 11))
+        atendimento(rede, rede.ana, rede.matriz, local(2026, 8, 10, 10), valor="300")
+        r = montar(_recorte(rede, "mes", agora=agora), rotulo_da_empresa="x",
+                   gerado_por="x", agora=agora)
+        linhas = {l[0]: l[3] for l in _secao(r, "Comparação").linhas}
+        assert linhas["Conversão"] == "-50,0 p.p."
+        assert linhas["Vendido"] == "-66,7 %"
+
+    def test_a_variacao_escreve_a_virgula_no_numero(self):
+        from fila.relatorio import _variacao_por_extenso
+
+        assert _variacao_por_extenso(-7.5, "p.p.") == "-7,5 p.p."
+        assert _variacao_por_extenso(12.25, "%") == "+12,2 %"
+
     def test_formatar(self):
         from fila.relatorio import formatar
 
