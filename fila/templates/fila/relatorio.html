@@ -4,7 +4,9 @@
    como a impressão das listas (`comum.exportacao`): o navegador salva em PDF
    pelo próprio diálogo, sem motor de PDF na imagem.
 
-   A capa na cor da marca com a FRASE do período, os cinco números em
+   A capa na cor da marca com o NOME do período ("Setembro de 2026" — era
+   uma frase longa com o resultado, que o cliente trocou por uma chamada),
+   os cinco números em
    cartões, o período dia a dia, as roscas da conversão e das lojas, o pódio,
    as listas e, por último e em página própria, os lançamentos. Os gráficos são
    HTML e SVG desenhados aqui, sem script, pelo mesmo motivo de
@@ -27,12 +29,13 @@
   <div class="relatorio-capa-topo">
     {% if com_logo %}<span class="relatorio-logo"><img src="/marca/empresa/menu" alt="{{ r.empresa }}"></span>{% endif %}
     <div class="relatorio-quem">
-      <h1>{{ r.titulo }}</h1>
-      <p>{{ r.empresa }} — {{ r.lojas }}</p>
+      <p class="relatorio-titulo">{{ r.titulo }}</p>
+      <p>{{ r.empresa }}</p>
     </div>
-    <p class="relatorio-quando">{{ r.periodo }}</p>
+    <p class="relatorio-quando">{{ p.tipo }}</p>
   </div>
-  <p class="relatorio-frase">{{ p.frase }}</p>
+  <h1 class="relatorio-chamada">{{ p.chamada[0] }}</h1>
+  <p class="relatorio-apoio">{{ p.chamada[1] }}</p>
 </header>
 
 <dl class="relatorio-placar">

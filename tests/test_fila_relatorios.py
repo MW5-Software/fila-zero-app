@@ -338,30 +338,43 @@ class TestOPapel:
         return montar(_recorte(rede, "mes", agora=agora), rotulo_da_empresa="Sylvia Design",
                       gerado_por="Sylvia", agora=agora)
 
-    def test_a_frase_do_periodo(self, rede):
-        """O papel DIZ o resultado numa frase que o dono lê em voz alta ou cola
-        numa mensagem (28/09/2026, "o relatório pode ser mais bonito")."""
-        from fila.relatorio import frase_do_periodo
+    def test_a_chamada_do_mes(self, rede):
+        """A capa abre com o NOME do período, e o intervalo e as lojas embaixo
+        (28/09/2026: o cliente trocou a frase longa do resultado, que repetia
+        os números dos cartões, por uma chamada)."""
+        from fila.relatorio import chamada_do_periodo
 
-        assert frase_do_periodo(self._setembro(rede)) == (
-            "De 1 a 15 de setembro de 2026, as 2 lojas atenderam 2 clientes e "
-            "venderam R$ 100,00 — 66,7% a menos que de 1 a 15 de agosto de 2026.")
+        assert chamada_do_periodo(self._setembro(rede)) == (
+            "Setembro de 2026", "De 1 a 15 de setembro de 2026 · Matriz e Centro")
 
-    def test_a_frase_de_uma_loja_e_de_um_dia_sem_atendimento(self, rede):
-        from fila.relatorio import frase_do_periodo, montar
+    @pytest.mark.parametrize("chave, titulo, apoio", [
+        ("hoje", "15 de setembro de 2026", "Matriz"),
+        ("ontem", "14 de setembro de 2026", "Matriz"),
+        ("7dias", "Últimos 7 dias", "De 9 a 15 de setembro de 2026 · Matriz"),
+        ("mes_passado", "Agosto de 2026", "De 1 a 31 de agosto de 2026 · Matriz"),
+    ])
+    def test_a_chamada_de_cada_periodo(self, rede, chave, titulo, apoio):
+        from fila.relatorio import chamada_do_periodo, montar
 
         agora = local(2026, 9, 15, 12)
-        r = montar(_recorte(rede, "hoje", lojas=(rede.matriz,), agora=agora),
+        r = montar(_recorte(rede, chave, lojas=(rede.matriz,), agora=agora),
                    rotulo_da_empresa="x", gerado_por="x", agora=agora)
-        assert frase_do_periodo(r) == (
-            "Em 15 de setembro de 2026, a loja Matriz não atendeu nenhum cliente.")
+        assert chamada_do_periodo(r) == (titulo, apoio)
+
+    def test_muitas_lojas_viram_numero(self):
+        from fila.relatorio import _lojas_por_extenso
+
+        assert _lojas_por_extenso(("A", "B", "C")) == "A, B e C"
+        assert _lojas_por_extenso(("A", "B", "C", "D")) == "4 lojas"
 
     def test_o_papel(self, rede):
         from fila.relatorio_saida import em_impressao
 
         r = self._setembro(rede)
         html = em_impressao(r, com_logo=True).content.decode()
-        assert '<p class="relatorio-frase">De 1 a 15 de setembro de 2026' in html
+        assert '<h1 class="relatorio-chamada">Setembro de 2026</h1>' in html
+        assert '<p class="relatorio-quando">Mensal (este mês)</p>' in html
+        assert "De 1 a 15 de setembro de 2026 · Matriz e Centro" in html
         assert html.count('class="relatorio-numero"') == 5
         assert "▼" in html
         titulos = ["Vendas no período", "Lojas", "Vendedores", "Motivos de não venda", "Mídias",
@@ -470,9 +483,10 @@ class TestATela:
     def test_o_dono_ve_todas_e_escolhe_uma(self, rede):
         dono = logado("sylvia")
         papel = self._get(dono, formato="impressao").content.decode()
-        assert "Matriz, Centro" in papel or "Centro, Matriz" in papel
+        assert "Matriz e Centro" in papel or "Centro e Matriz" in papel
         so_centro = self._get(dono, formato="impressao", loja=str(rede.centro.pk)).content.decode()
-        cabecalho = so_centro.split("<h2>Resumo</h2>")[0]
+        cabecalho = so_centro.split("</header>")[0]
+        assert "</header>" in so_centro
         assert "Centro" in cabecalho and "Matriz" not in cabecalho
 
     def test_o_excel_pela_tela(self, rede):

@@ -1005,7 +1005,10 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
   tabela repetido em cada página.
 - **O papel é visual** (28/09/2026, o cliente com a primeira versão na mão:
   "tá muito simples, quero algo visualmente elegante, moderno, visual"): a
-  capa na cor da marca com a FRASE do período (`relatorio.frase_do_periodo`),
+  capa na cor da marca com o NOME do período ("Setembro de 2026", "Últimos 7
+  dias", ou a data num dia só) e o intervalo e as lojas embaixo
+  (`relatorio.chamada_do_periodo` — era uma frase longa com o resultado, que
+  repetia os cartões, e o cliente a trocou por uma chamada no mesmo dia),
   os cinco números em cartões com a variação, o gráfico do período dia a dia
   (`indicadores.por_dia`), as roscas da conversão e das lojas, o pódio dos três
   primeiros e, em página própria, os lançamentos. Tudo HTML e SVG desenhado no

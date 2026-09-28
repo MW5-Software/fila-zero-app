@@ -29,7 +29,7 @@ from .periodo import periodo_anterior, periodo_do_pedido
 from .valores import em_reais
 
 __all__ = ["Coluna", "PADRAO", "PERIODOS", "Relatorio", "Secao", "formatar",
-           "frase_do_periodo", "montar", "periodo_escolhido", "placar"]
+           "chamada_do_periodo", "montar", "periodo_escolhido", "placar"]
 
 #: Os períodos que o cliente pediu ("diário, semanal, mensal, mês passado"),
 #: mais o ontem, que é o diário de quem fecha o dia na manhã seguinte. As
@@ -82,16 +82,17 @@ class Relatorio:
     secoes: "tuple[Secao, ...]"
     nome_do_arquivo: str
     #: O que o papel precisa além das seções (28/09/2026): os números do
-    #: período e do anterior, para a frase e o placar, os dois intervalos em
-    #: dia local e os nomes das lojas.
+    #: período e do anterior, para o placar, o intervalo em dia local e os
+    #: nomes das lojas, para a chamada da capa.
     total: "ind.Numeros | None" = None
     anterior: "ind.Numeros | None" = None
     intervalo: "tuple | None" = None
-    intervalo_anterior: "tuple | None" = None
     nomes_das_lojas: tuple = ()
     #: O período fatia a fatia (`indicadores.por_dia`: por dia, ou por hora
     #: num dia só), para o gráfico do papel.
     serie: tuple = ()
+    #: A chave do período (`mes`, `7dias`…), para a chamada da capa.
+    chave: str = ""
 
 
 class LinhaDoResumo(NamedTuple):
@@ -99,8 +100,8 @@ class LinhaDoResumo(NamedTuple):
     numeros: "ind.Numeros"
 
 
-#: Os meses por extenso, para a frase do período. Aqui, e não os do Django:
-#: a frase começa pelo número do dia, e o nome do mês vai em minúscula.
+#: Os meses por extenso, para a chamada da capa. Aqui, e não os do Django:
+#: no meio da data ("1 a 28 de setembro") o nome do mês vai em minúscula.
 MESES = (gettext_lazy("janeiro"), gettext_lazy("fevereiro"), gettext_lazy("março"),
          gettext_lazy("abril"), gettext_lazy("maio"), gettext_lazy("junho"),
          gettext_lazy("julho"), gettext_lazy("agosto"), gettext_lazy("setembro"),
@@ -131,38 +132,37 @@ def _dias(periodo) -> tuple:
             timezone.localtime(periodo.ate - timedelta(microseconds=1)).date())
 
 
-def frase_do_periodo(relatorio: "Relatorio") -> str:
-    """O resultado do período numa frase (28/09/2026, "o relatório pode ser
-    mais bonito"): é a primeira coisa do papel, e o que o dono lê em voz alta
-    ou cola numa mensagem. A comparação é do VENDIDO, contra o período
-    anterior, que é o que se pergunta primeiro."""
-    n, a = relatorio.total, relatorio.anterior
-    lojas = relatorio.nomes_das_lojas
-    uma = len(lojas) == 1
-    sujeito = (_("a loja %(loja)s") % {"loja": lojas[0]} if uma
-               else _("as %(n)s lojas") % {"n": len(lojas)})
-    quando = _intervalo_por_extenso(*relatorio.intervalo)
-    quando = quando[:1].upper() + quando[1:]
-    if not n.atendimentos:
-        verbo = _("não atendeu nenhum cliente") if uma else _("não atenderam nenhum cliente")
-        return f"{quando}, {sujeito} {verbo}."
-    clientes = (_("1 cliente") if n.atendimentos == 1
-                else _("%(n)s clientes") % {"n": n.atendimentos})
-    feito = (_("atendeu %(clientes)s e vendeu %(valor)s") if uma
-             else _("atenderam %(clientes)s e venderam %(valor)s")) % {
-                 "clientes": clientes, "valor": em_reais(n.vendido)}
-    frase = f"{quando}, {sujeito} {feito}"
-    v = ind.variacao(n.vendido, a.vendido) if a is not None else None
-    if v is None:
-        return frase + "."
-    antes = _intervalo_por_extenso(*relatorio.intervalo_anterior)
-    if v.valor == 0:
-        comparacao = _("o mesmo que %(antes)s") % {"antes": antes}
+def _lojas_por_extenso(nomes) -> str:
+    """"Matriz e Centro", "A, B e C"; com mais de três, o número: a lista
+    inteira de uma rede não cabe numa linha da capa."""
+    if len(nomes) > 3:
+        return _("%(n)s lojas") % {"n": len(nomes)}
+    if len(nomes) <= 1:
+        return "".join(nomes)
+    return _("%(lista)s e %(ultima)s") % {"lista": ", ".join(nomes[:-1]), "ultima": nomes[-1]}
+
+
+def _maiuscula(texto: str) -> str:
+    return texto[:1].upper() + texto[1:]
+
+
+def chamada_do_periodo(relatorio: "Relatorio") -> "tuple[str, str]":
+    """(título, apoio) da capa: "Setembro de 2026", e embaixo "De 1 a 28 de
+    setembro de 2026 · Matriz e Centro". Era uma frase longa com o resultado
+    ("…as 2 lojas atenderam 173 clientes e venderam…"), e o cliente a trocou
+    por uma chamada no mesmo dia (28/09/2026): os números já estão nos
+    cartões logo abaixo, e a frase os dizia duas vezes."""
+    de, ate = relatorio.intervalo
+    lojas = _lojas_por_extenso(relatorio.nomes_das_lojas)
+    if de == ate:
+        # Um dia só: a data É o título, e o apoio fica com as lojas.
+        return _maiuscula(_dia_por_extenso(de)), lojas
+    if relatorio.chave in ("mes", "mes_passado"):
+        titulo = _("%(mes)s de %(ano)s") % {"mes": _maiuscula(str(MESES[de.month - 1])),
+                                            "ano": de.year}
     else:
-        comparacao = (_("%(pct)s a mais que %(antes)s") if v.valor > 0
-                      else _("%(pct)s a menos que %(antes)s")) % {
-                          "pct": formatar(abs(v.valor), "porcento"), "antes": antes}
-    return f"{frase} — {comparacao}."
+        titulo = _("Últimos %(n)s dias") % {"n": (ate - de).days + 1}
+    return titulo, f"{_maiuscula(_intervalo_por_extenso(de, ate))} · {lojas}"
 
 
 class NumeroDoPlacar(NamedTuple):
@@ -368,6 +368,6 @@ def montar(recorte, *, rotulo_da_empresa: str, gerado_por: str, agora=None) -> R
                                 f"{recorte.periodo.chave.replace('_', '-')}-"
                                 f"{timezone.localtime(agora):%Y-%m-%d}"),
         total=ind.numeros(recorte), anterior=ind.numeros(anterior),
-        intervalo=_dias(recorte.periodo), intervalo_anterior=_dias(anterior.periodo),
+        intervalo=_dias(recorte.periodo),
         nomes_das_lojas=tuple(str(l) for l in recorte.lojas),
-        serie=tuple(ind.por_dia(recorte)))
+        serie=tuple(ind.por_dia(recorte)), chave=recorte.periodo.chave)

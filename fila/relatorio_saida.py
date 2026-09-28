@@ -93,7 +93,7 @@ def _papel(relatorio: Relatorio) -> dict:
     """O que o papel desenha, arrumado a partir do MESMO relatório da
     planilha (28/09/2026). Não há conta aqui: só ordem, fatias para as barras
     e o texto de cada linha."""
-    from .relatorio import (frase_do_periodo, grupos_do_lancamento,
+    from .relatorio import (PERIODOS, chamada_do_periodo, grupos_do_lancamento,
                             motivo_do_lancamento, placar)
 
     secoes = {s.chave: s for s in relatorio.secoes}
@@ -178,7 +178,8 @@ def _papel(relatorio: Relatorio) -> dict:
     marcas = [{"altura": k * passo * 100 / topo, "texto": dinheiro_curto(k * passo)}
               for k in range(1, round(topo / passo) + 1)] if maior_dia else []
 
-    return {"frase": frase_do_periodo(relatorio), "placar": placar(relatorio),
+    return {"chamada": chamada_do_periodo(relatorio),
+            "tipo": dict(PERIODOS).get(relatorio.chave, ""), "placar": placar(relatorio),
             "dias": dias, "marcas": marcas,
             "conversao": float(total.conversao) if total.conversao is not None else None,
             "podio": ranking[:3], "resto": ranking[3:],

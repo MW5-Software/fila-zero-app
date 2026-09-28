@@ -2039,3 +2039,15 @@ msgstr "vendido"
 
 msgid "%(pct)s da meta"
 msgstr "%(pct)s de la meta"
+
+msgid "%(n)s lojas"
+msgstr "%(n)s tiendas"
+
+msgid "%(lista)s e %(ultima)s"
+msgstr "%(lista)s y %(ultima)s"
+
+msgid "%(mes)s de %(ano)s"
+msgstr "%(mes)s de %(ano)s"
+
+msgid "Últimos %(n)s dias"
+msgstr "Últimos %(n)s días"
