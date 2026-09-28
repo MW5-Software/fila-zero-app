@@ -93,7 +93,7 @@ def _papel(relatorio: Relatorio) -> dict:
     """O que o papel desenha, arrumado a partir do MESMO relatório da
     planilha (28/09/2026). Não há conta aqui: só ordem, fatias para as barras
     e o texto de cada linha."""
-    from .relatorio import (PERIODOS, chamada_do_periodo, grupos_do_lancamento,
+    from .relatorio import (chamada_do_periodo, grupos_do_lancamento,
                             motivo_do_lancamento, placar)
 
     secoes = {s.chave: s for s in relatorio.secoes}
@@ -179,7 +179,7 @@ def _papel(relatorio: Relatorio) -> dict:
               for k in range(1, round(topo / passo) + 1)] if maior_dia else []
 
     return {"chamada": chamada_do_periodo(relatorio),
-            "tipo": dict(PERIODOS).get(relatorio.chave, ""), "placar": placar(relatorio),
+            "placar": placar(relatorio),
             "dias": dias, "marcas": marcas,
             "conversao": float(total.conversao) if total.conversao is not None else None,
             "podio": ranking[:3], "resto": ranking[3:],
@@ -188,9 +188,14 @@ def _papel(relatorio: Relatorio) -> dict:
             "com_meta": com_meta, "listas": listas, "lancamentos": lancamentos}
 
 
-def em_impressao(relatorio: Relatorio, *, com_logo: bool = False) -> HttpResponse:
+def em_impressao(relatorio: Relatorio, *, com_logo: bool = False,
+                 lojas: "str | None" = None) -> HttpResponse:
     """`com_logo` diz se a empresa tem logo: sem ele, `/marca/empresa/menu`
-    responde 404 e o papel sairia com o ícone de imagem quebrada na capa."""
+    responde 404 e o papel sairia com o ícone de imagem quebrada no topo.
+    `lojas` é o filtro de loja como a pessoa o escolheu ("Todas as lojas");
+    sem ele, o topo lista as lojas do recorte."""
+    from .moldura import moldura_de
+
     from django.utils.translation import get_language
 
     from comum.estaticos import versionado
@@ -198,7 +203,11 @@ def em_impressao(relatorio: Relatorio, *, com_logo: bool = False) -> HttpRespons
     from .ambiente import ambiente_da_fila
 
     html = ambiente_da_fila().get_template("fila/relatorio.html").render(
-        r=relatorio, p=_papel(relatorio), formatar=formatar, com_logo=com_logo,
+        r=relatorio, p=_papel(relatorio), formatar=formatar,
+        mo=moldura_de(empresa=relatorio.empresa, periodo=relatorio.periodo,
+                      lojas=lojas or relatorio.lojas, gerado_por=relatorio.gerado_por,
+                      gerado_em=relatorio.gerado_em, com_logo=com_logo),
+        folha_da_moldura=versionado("/static/fila/moldura.css"),
         idioma=get_language() or "pt-BR",
         gerado_em=_("%(data)s às %(hora)s") % {
             "data": timezone.localtime(relatorio.gerado_em).strftime("%d/%m/%Y"),

@@ -373,15 +373,17 @@ class TestOPapel:
         r = self._setembro(rede)
         html = em_impressao(r, com_logo=True).content.decode()
         assert '<h1 class="relatorio-chamada">Setembro de 2026</h1>' in html
-        assert '<p class="relatorio-quando">Mensal (este mês)</p>' in html
-        assert "De 1 a 15 de setembro de 2026 · Matriz e Centro" in html
+        # O tipo do período, as datas e as lojas estão nos filtros dentro da
+        # capa (a moldura padrão), e não mais numa pílula e numa linha de apoio.
+        assert "<dd>Mensal (este mês)\n01/09/2026 a 15/09/2026</dd>" in html
+        assert "<dd>Matriz, Centro</dd>" in html
         assert html.count('class="relatorio-numero"') == 5
         assert "▼" in html
         titulos = ["Vendas no período", "Lojas", "Vendedores", "Motivos de não venda", "Mídias",
                    "Grupos de item", "Pausas", "Lançamentos"]
         posicoes = [html.index(f"<h2>{t}</h2>") for t in titulos]
         assert posicoes == sorted(posicoes), "as seções na ordem, lançamentos por último"
-        assert "Sylvia Design" in html and "Gerado por Sylvia" in html
+        assert "Sylvia Design" in html and "Emitido em 15/09/2026 às 12:00 por Sylvia" in html
         assert "R$ 100,00" in html
         assert "window.print()" in html
 

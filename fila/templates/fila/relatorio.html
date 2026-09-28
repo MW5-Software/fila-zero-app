@@ -13,6 +13,7 @@
    `fila/graficos.py`. Nomes de loja e de pessoa são DADO e saem escapados pelo
    autoescape do ambiente da fila. Só tokens do tema, e toda variação leva a
    seta além da cor, para o papel impresso em preto e branco. #}
+{% import "fila/_moldura.html" as moldura %}
 <!DOCTYPE html>
 <html lang="{{ idioma }}">
 <head>
@@ -22,20 +23,23 @@
 <link rel="stylesheet" href="{{ folha_do_sistema }}">
 <link rel="stylesheet" href="{{ folha_da_impressao }}">
 <link rel="stylesheet" href="{{ folha_do_relatorio }}">
+<link rel="stylesheet" href="{{ folha_da_moldura }}">
+{{ moldura.estilo(mo) }}
 </head>
 <body class="papel relatorio">
 
 <header class="relatorio-capa">
+  {# A logo do cliente e os filtros moram DENTRO da capa (a moldura padrão,
+     `fila/templates/fila/_moldura.html`). A linha de apoio embaixo da
+     chamada saiu: ela dizia as datas e as lojas, que os filtros já dizem. #}
   <div class="relatorio-capa-topo">
-    {% if com_logo %}<span class="relatorio-logo"><img src="/marca/empresa/menu" alt="{{ r.empresa }}"></span>{% endif %}
     <div class="relatorio-quem">
+      {{ moldura.logo(mo) }}
       <p class="relatorio-titulo">{{ r.titulo }}</p>
-      <p>{{ r.empresa }}</p>
     </div>
-    <p class="relatorio-quando">{{ p.tipo }}</p>
+    {{ moldura.filtros(mo) }}
   </div>
   <h1 class="relatorio-chamada">{{ p.chamada[0] }}</h1>
-  <p class="relatorio-apoio">{{ p.chamada[1] }}</p>
 </header>
 
 <dl class="relatorio-placar">
@@ -212,11 +216,7 @@
   {% else %}<p class="relatorio-vazio">{{ traduzir("Nenhum atendimento fechado no período.") }}</p>{% endif %}
 </section>
 
-<footer class="relatorio-rodape">
-  <p>{{ r.periodo }}</p>
-  {# Uma frase só, e não "Gerado por" + "em" soltos: a ordem das palavras é do idioma. #}
-  <p>{{ traduzir("Gerado por %(quem)s em %(quando)s")|format(quem=r.gerado_por, quando=gerado_em) }}</p>
-</footer>
+{{ moldura.rodape(mo) }}
 
 <script>window.print();</script>
 </body>

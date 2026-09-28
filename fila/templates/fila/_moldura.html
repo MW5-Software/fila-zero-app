@@ -1,0 +1,26 @@
+{# A moldura padrão dos relatórios (28/09/2026; `fila/moldura.py`). As peças
+   são as mesmas nos dois relatórios: a folha do `@page` com os três cantos do
+   rodapé na margem de cada folha, a logo do cliente (ou o nome da empresa,
+   sem logo) e os filtros — estes DENTRO da faixa azul de cada relatório ("o
+   relatório é um só", o cliente, com a primeira versão numa faixa branca por
+   cima) —, e o rodapé da TELA, porque o do papel é o da margem. #}
+{% macro estilo(mo) %}<style>{{ mo.folha }}</style>{% endmacro %}
+
+{% macro logo(mo) %}
+{% if mo.com_logo %}<img class="moldura-logo" src="/marca/empresa/menu" alt="{{ mo.empresa }}">
+{% else %}<p class="moldura-empresa">{{ mo.empresa }}</p>{% endif %}
+{% endmacro %}
+
+{% macro filtros(mo) %}
+<dl class="moldura-filtros">
+  {% for rotulo, valor in mo.filtros %}<div><dt>{{ rotulo }}</dt><dd>{{ valor }}</dd></div>{% endfor %}
+</dl>
+{% endmacro %}
+
+{% macro rodape(mo) %}
+<footer class="moldura-rodape">
+  <p>{{ mo.emitido }}</p>
+  <img src="/static/plataforma/marca/kronos-footer.png" alt="KRONOS">
+  <p></p>
+</footer>
+{% endmacro %}

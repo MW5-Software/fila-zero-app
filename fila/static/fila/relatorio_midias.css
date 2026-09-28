@@ -23,10 +23,11 @@ body.relatorio-midias { margin: 0; padding: 28px 32px 40px; background: var(--su
   background:
     radial-gradient(80% 140% at 100% 0%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 60%),
     var(--primary); }
+/* Na faixa, de cima para baixo: a logo do cliente, o título e os filtros
+   (a moldura padrão, `fila/moldura.css`). */
+.rm-quem { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
 .rm-quem h1 { margin: 0; color: inherit; font-family: var(--font-display); font-size: 26px;
   font-weight: 800; letter-spacing: -.02em; }
-.rm-quem p { margin: 3px 0 0; font-size: 13px; opacity: .9; }
-.rm-quem .rm-periodo { font-size: 12px; opacity: .75; }
 .rm-rede { display: flex; gap: 10px; margin: 0; }
 .rm-rede div { min-width: 116px; padding: 10px 16px; border-radius: 14px;
   background: color-mix(in srgb, var(--on-primary) 13%, transparent); }
@@ -84,13 +85,9 @@ body.relatorio-midias { margin: 0; padding: 28px 32px 40px; background: var(--su
   font-weight: 800; font-size: 13px; padding-top: 13px; padding-bottom: 13px; border-bottom: 0; }
 .rm-tabela tfoot .rm-valor { font-size: 15px; }
 
-/* O `footer` do design system é a barra de rodapé do shell (borda, altura,
-   recuo): aqui ele é só a última linha do papel. */
-.rm-rodape { position: static; height: auto; border: 0; background: none; padding: 0 28px; display: flex;
-  justify-content: space-between; gap: 16px; margin-top: 12px; color: var(--on-surface-2);
-  font-size: 10.5px; }
-.rm-rodape p { margin: 0; }
-.rm-rodape p:last-child { white-space: nowrap; }
+/* A legenda do mapa de calor, logo embaixo da tabela. Quem emitiu e quando
+   saíram daqui para o rodapé da moldura (`fila/moldura.py`). */
+.rm-legenda { margin: 10px 28px 0; color: var(--on-surface-2); font-size: 10.5px; }
 
 /* No papel não há rolagem: com nove mídias a tabela passava da largura do
    A4 deitado e o PDF saía com a barra de rolagem desenhada e as últimas
@@ -107,7 +104,7 @@ body.relatorio-midias { margin: 0; padding: 28px 32px 40px; background: var(--su
   .rm-tabela th, .rm-tabela td { padding: 7px 6px; }
   .rm-tabela .rm-loja { padding-left: 22px; }
   .rm-tabela tr > :last-child { padding-right: 22px; }
-  .rm-rodape { padding: 0 22px; }
+  .rm-legenda { margin: 8px 22px 0; }
   .rm-tabela thead th { white-space: normal; font-size: 10.5px; }
   .rm-tabela td.rm-aproveitamento { min-width: 0; }
   .rm-barra { width: 36px; margin-right: 5px; }

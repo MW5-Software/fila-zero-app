@@ -2072,3 +2072,9 @@ msgstr "Informes generales"
 
 msgid "Atendimentos, vendas e aproveitamento de cada loja, por mídia, em PDF ou Excel."
 msgstr "Atenciones, ventas y aprovechamiento de cada tienda, por medio, en PDF o Excel."
+
+msgid "Página %(pagina)s de %(paginas)s"
+msgstr "Página %(pagina)s de %(paginas)s"
+
+msgid "Emitido em %(data)s às %(hora)s por %(quem)s"
+msgstr "Emitido el %(data)s a las %(hora)s por %(quem)s"

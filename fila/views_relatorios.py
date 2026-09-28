@@ -86,14 +86,19 @@ _TIPOS = {
 
 
 def _gerar(request, tipo, escolha, rotulo, pessoa, formato) -> HttpResponse:
+    # O topo da moldura mostra o filtro de loja como a pessoa o escolheu:
+    # "Todas as lojas" quando ela podia escolher entre várias e não escolheu;
+    # com uma loja só no alcance não houve escolha, e vale o nome dela.
+    moldura = {"com_logo": logo_da_empresa_de(request) is not None,
+               "lojas": (str(escolha.loja) if escolha.loja
+                         else _("Todas as lojas") if len(escolha.permitidas) > 1 else None)}
     if tipo == "midias":
         relatorio = por_midia.montar(escolha.recorte, rotulo_da_empresa=rotulo,
                                      gerado_por=nome_de(pessoa))
         return (por_midia.em_xlsx(relatorio) if formato == "xlsx"
-                else por_midia.em_impressao(relatorio))
+                else por_midia.em_impressao(relatorio, **moldura))
     relatorio = montar(escolha.recorte, rotulo_da_empresa=rotulo, gerado_por=nome_de(pessoa))
-    return em_xlsx(relatorio) if formato == "xlsx" else em_impressao(
-        relatorio, com_logo=logo_da_empresa_de(request) is not None)
+    return em_xlsx(relatorio) if formato == "xlsx" else em_impressao(relatorio, **moldura)
 
 
 def _tela(request, tipo: str) -> HttpResponse:

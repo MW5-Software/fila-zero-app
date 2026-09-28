@@ -7,6 +7,7 @@
    família. A4 deitado. Fora do shell: o navegador salva em PDF pelo próprio
    diálogo. Nome de loja e de mídia é DADO, e sai escapado pelo autoescape do
    ambiente da fila. #}
+{% import "fila/_moldura.html" as moldura %}
 <!DOCTYPE html>
 <html lang="{{ idioma }}">
 <head>
@@ -16,14 +17,16 @@
 <link rel="stylesheet" href="{{ folha_do_sistema }}">
 <link rel="stylesheet" href="{{ folha_da_impressao }}">
 <link rel="stylesheet" href="{{ folha_do_relatorio }}">
+<link rel="stylesheet" href="{{ folha_da_moldura }}">
+{{ moldura.estilo(mo) }}
 </head>
 <body class="papel relatorio-midias">
 
 <div class="rm-topo">
   <div class="rm-quem">
+    {{ moldura.logo(mo) }}
     <h1>{{ r.titulo }}</h1>
-    <p>{{ r.empresa }}</p>
-    <p class="rm-periodo">{{ r.periodo }}</p>
+    {{ moldura.filtros(mo) }}
   </div>
   <dl class="rm-rede">
     <div><dt>{{ traduzir("Atendimentos") }}</dt><dd>{{ r.total.atendimentos }}</dd></div>
@@ -66,10 +69,8 @@
 </table>
 </div>
 
-<footer class="rm-rodape">
-  <p>{{ traduzir("Embaixo de cada mídia, a parte dela nos clientes da rede. O tom de cada número é a parte da mídia nos atendimentos da loja. ▲ aproveitou mais que a empresa.") }}</p>
-  <p>{{ traduzir("Gerado por %(quem)s em %(quando)s")|format(quem=r.gerado_por, quando=gerado_em) }}</p>
-</footer>
+<p class="rm-legenda">{{ traduzir("Embaixo de cada mídia, a parte dela nos clientes da rede. O tom de cada número é a parte da mídia nos atendimentos da loja. ▲ aproveitou mais que a empresa.") }}</p>
+{{ moldura.rodape(mo) }}
 
 <script>window.print();</script>
 </body>

@@ -96,7 +96,9 @@ def montar(recorte, *, rotulo_da_empresa: str, gerado_por: str, agora=None) -> R
     linhas = tuple(linha_de(str(l), [l.pk]) for l in recorte.lojas)
     total = linha_de(_("Aproveitamento Empresa"), [l.pk for l in recorte.lojas])
     return RelatorioDeMidias(
-        titulo=_("Lojas por mídia"), empresa=rotulo_da_empresa,
+        # O nome do item do menu (28/09/2026, pedido do cliente); era "Lojas
+        # por mídia".
+        titulo=_("Relatórios por mídia"), empresa=rotulo_da_empresa,
         lojas=", ".join(str(l) for l in recorte.lojas),
         periodo=_periodo_por_extenso(recorte.periodo),
         gerado_por=gerado_por, gerado_em=agora, midias=midias, linhas=linhas, total=total,
@@ -186,7 +188,12 @@ def porcento_curto(valor) -> str:
     return "—" if valor is None else f"{valor:.1f}%".replace(".", ",")
 
 
-def em_impressao(r: RelatorioDeMidias) -> HttpResponse:
+def em_impressao(r: RelatorioDeMidias, *, com_logo: bool = False,
+                 lojas: "str | None" = None) -> HttpResponse:
+    """A moldura é a mesma do relatório geral (`fila/moldura.py`); `com_logo`
+    e `lojas` têm o sentido de lá."""
+    from .moldura import moldura_de
+
     from django.utils.translation import get_language
 
     from comum.estaticos import versionado
@@ -195,6 +202,9 @@ def em_impressao(r: RelatorioDeMidias) -> HttpResponse:
 
     html = ambiente_da_fila().get_template("fila/relatorio_midias.html").render(
         r=r, p=_papel(r), porcento=porcento, gerado_em=_gerado_em(r), idioma=get_language() or "pt-BR",
+        mo=moldura_de(empresa=r.empresa, periodo=r.periodo, lojas=lojas or r.lojas,
+                      gerado_por=r.gerado_por, gerado_em=r.gerado_em, com_logo=com_logo),
+        folha_da_moldura=versionado("/static/fila/moldura.css"),
         folha_do_sistema=versionado("/static/nucleo/mw5.css"),
         folha_da_impressao=versionado("/static/plataforma/impressao.css"),
         folha_do_relatorio=versionado("/static/fila/relatorio_midias.css"))

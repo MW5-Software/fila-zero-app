@@ -359,7 +359,9 @@ def montar(recorte, *, rotulo_da_empresa: str, gerado_por: str, agora=None) -> R
     ))
     lojas = ", ".join(str(l) for l in recorte.lojas)
     return Relatorio(
-        titulo=_("Relatório da fila"), empresa=rotulo_da_empresa, lojas=lojas,
+        # O nome do item do menu (28/09/2026, pedido do cliente: "mudar o nome
+        # do relatório para o nome dos menus novos"); era "Relatório da fila".
+        titulo=_("Relatórios gerais"), empresa=rotulo_da_empresa, lojas=lojas,
         periodo=_periodo_por_extenso(recorte.periodo), gerado_por=gerado_por,
         gerado_em=agora, secoes=secoes,
         # O sublinhado da chave vira hífen: "mes_passado" num nome de arquivo

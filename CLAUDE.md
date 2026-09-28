@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 155 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 156 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -997,6 +997,24 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
   (`views_relatorios._tela`), por `fila.relatorios` — a permissão do painel:
   quem lê os números na tela lê os mesmos no papel. O `/fila/relatorios` de
   antes redireciona para o de mídias, com os filtros, para link salvo.
+- **Os dois saem na MESMA moldura** (`fila/moldura.py`,
+  `fila/templates/fila/_moldura.html`, `fila/static/fila/moldura.css`;
+  28/09/2026, pedido do cliente: "padronizar os relatórios"). DENTRO da faixa
+  azul de cada um — "o relatório é um só", o cliente, com a primeira versão
+  numa faixa branca por cima —, a logo do cliente (ou o nome da empresa, sem
+  logo) e os filtros: Período, Empresa e Lojas, esta como a pessoa escolheu
+  ("Todas as lojas"). No rodapé, em TODA folha: quem emitiu e quando, a logo
+  do KRONOS e "Página X de Y".
+  - O rodapé mora na MARGEM da folha (`@page` com `@bottom-left/center/
+    right`): só ali o Chrome sabe `counter(page)` e `counter(pages)`, e numerar
+    de outro jeito pediria motor de PDF no servidor. O texto vai numa string
+    de CSS com o escape de `texto_de_css` — o nome de quem emitiu é dado, e
+    uma aspa ou um "</style>" nele quebraria a folha.
+  - A logo vai EMBUTIDA (`logo_do_kronos`, um SVG do tamanho do rodapé com o
+    PNG dentro): pelo endereço, o Chrome não a desenhou na margem (medido), e
+    a margem não aceita tamanho — o PNG tem 482×336.
+  - O período sai em duas linhas no topo (tipo e datas): numa linha só ele
+    empurrava "Lojas" para outra fileira no A4 em pé.
 - **O recorte é o do painel** (`views_indicadores.escolha_do_pedido`, extraída
   para as duas telas): o dono vê todas as lojas, o supervisor as da empresa,
   o gerente as dele; a loja forjada cai dentro do alcance.
@@ -1142,7 +1160,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 155 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 156 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a
