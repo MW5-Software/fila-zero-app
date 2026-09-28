@@ -7,7 +7,7 @@
 {% macro estilo(mo) %}<style>{{ mo.folha }}</style>{% endmacro %}
 
 {% macro logo(mo) %}
-{% if mo.com_logo %}<span class="moldura-placa"><img class="moldura-logo" src="/marca/empresa/menu" alt="{{ mo.empresa }}"></span>
+{% if mo.com_logo %}<img class="moldura-logo" src="/marca/empresa/menu" alt="{{ mo.empresa }}">
 {% else %}<p class="moldura-empresa">{{ mo.empresa }}</p>{% endif %}
 {% endmacro %}
 

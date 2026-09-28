@@ -6,28 +6,16 @@
    PAPEL é o `@page` que a própria página traz, na margem de cada folha; o
    `.moldura-rodape` é o da tela. Só tokens do tema. */
 
-/* A logo num cartão DISCRETO (28/09/2026; o cliente não gostou da placa
-   branca: "num gostei muito desse fundo não"). Quase toda logo é desenhada
-   para fundo claro — a da Sylvia Design em boa resolução (766 px, do site
-   dela) tem letras escuras e fundo branco sólido —, então algum fundo claro
-   ela precisa; o que incomodava era o branco puro colado no azul.
+/* A logo direto sobre a faixa azul, SEM fundo nenhum (28/09/2026). O
+   cliente passou por três fundos — a placa branca, a mesma sem placa com a
+   logo de letras brancas em baixa resolução, e um cartão discreto — e
+   decidiu: "tira esse fundo". Para isso a logo cadastrada precisa ser
+   própria para fundo escuro: letras claras e fundo transparente, em
+   resolução boa (a da Sylvia foi gerada a partir da de 766 px do site
+   dela). Uma logo de fundo branco, aqui, vira um retângulo branco.
 
-   O cartão é branco tingido do azul da marca, com a borda clara e uma
-   sombra leve, e a logo é MULTIPLICADA sobre ele (`mix-blend-mode`): o
-   branco dela vira o tom do cartão, e o desenho continua como é. O
-   `isolation` prende a mistura ao cartão — sem ele, ela misturaria com o
-   azul da faixa atrás e a logo escureceria.
-
-   56px de altura e até 340px de largura ("a logo tem que ser maior"). A
-   logo precisa ter resolução para isso: a primeira que usamos (232 px, do
-   topo do site) borrava esticada. */
-.moldura-placa { display: inline-flex; flex: none; isolation: isolate; padding: 8px 14px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--sidebar-brand-bg) 88%, var(--primary));
-  border: 1px solid color-mix(in srgb, var(--on-primary) 45%, transparent);
-  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--on-surface) 70%, transparent); }
-.moldura-logo { display: block; height: 56px; max-width: 340px; object-fit: contain;
-  mix-blend-mode: multiply; }
+   56px de altura e até 340px de largura ("a logo tem que ser maior"). */
+.moldura-logo { display: block; flex: none; height: 56px; max-width: 340px; object-fit: contain; }
 .moldura-empresa { margin: 0; flex: none; font-family: var(--font-display); font-size: 16px;
   font-weight: 800; color: inherit; white-space: nowrap; }
 
@@ -55,7 +43,6 @@
 @media print {
   .moldura-rodape { display: none; }
   .moldura-logo { height: 44px; max-width: 280px; }
-  .moldura-placa { padding: 6px 12px; box-shadow: none; }
   .moldura-filtros div { padding: 0 10px; }
   .moldura-filtros dt { font-size: 9.5px; }
   .moldura-filtros dd { font-size: 11px; }
