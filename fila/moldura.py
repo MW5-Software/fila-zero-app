@@ -52,6 +52,13 @@ class Moldura:
     def logo_do_rodape(self) -> str:
         return logo_do_kronos()
 
+    @property
+    def pagina_da_tela(self) -> str:
+        """Na tela o relatório é uma folha só: "Página 1 de 1" no canto
+        direito, que ficava vazio (pedido do cliente, com o print da tela). No
+        papel quem numera é a margem de cada folha."""
+        return _("Página %(pagina)s de %(paginas)s") % {"pagina": 1, "paginas": 1}
+
 
 def texto_de_css(texto: str) -> str:
     """`texto` como string de CSS, entre aspas. O nome de quem emitiu é dado

@@ -89,3 +89,14 @@ class TestOTopo:
             assert '<p class="moldura-empresa">Sylvia Design</p>' in sem[nome], nome
         # A logo saiu da capa azul do relatório geral: aparece uma vez só.
         assert com["gerais"].count("/marca/empresa/menu") == 1
+
+
+class TestORodapeDaTela:
+    def test_a_tela_diz_pagina_1_de_1(self, rede):
+        """Na tela o relatório é uma folha só, e o canto direito do rodapé
+        ficava vazio (28/09/2026, o cliente, com o print da tela: "não tá
+        aparecendo a paginação na direita do footer"). No papel, cada folha
+        continua com o número dela, pela margem."""
+        for nome, html in _os_dois(rede).items():
+            rodape = html.split('<footer class="moldura-rodape">')[1].split("</footer>")[0]
+            assert "<p>Página 1 de 1</p>" in rodape, nome
