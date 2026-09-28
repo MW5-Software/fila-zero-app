@@ -1,0 +1,15 @@
+/* O relatório no papel (28/09/2026). Só tokens do tema, como toda folha da
+   fila. O cabeçalho da tabela se repete em cada página impressa
+   (`table-header-group`): numa lista de lançamentos de várias páginas, sem
+   ele a segunda página é uma coluna de números sem nome. */
+.relatorio { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.relatorio-onde, .relatorio-periodo { margin: 4px 0; color: var(--on-surface-2); }
+.relatorio-secao { margin-top: 28px; }
+.relatorio-secao h2 { font-size: 16px; margin: 0 0 8px; }
+.relatorio table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.relatorio th, .relatorio td { padding: 6px 8px; border-bottom: 1px solid var(--outline-2); text-align: left; }
+.relatorio .num { text-align: right; font-variant-numeric: tabular-nums; }
+.relatorio thead { display: table-header-group; }
+.relatorio tr { break-inside: avoid; }
+.relatorio-vazio { color: var(--on-surface-2); margin: 0; }
+@media print { .relatorio { padding: 0; } }

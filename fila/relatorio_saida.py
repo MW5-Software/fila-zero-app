@@ -70,3 +70,19 @@ def em_xlsx(relatorio: Relatorio) -> HttpResponse:
     resposta["Content-Disposition"] = f'attachment; filename="{relatorio.nome_do_arquivo}.xlsx"'
     livro.save(resposta)
     return resposta
+
+
+def em_impressao(relatorio: Relatorio) -> HttpResponse:
+    from django.utils.translation import get_language
+
+    from comum.estaticos import versionado
+
+    from .ambiente import ambiente_da_fila
+
+    html = ambiente_da_fila().get_template("fila/relatorio.html").render(
+        r=relatorio, formatar=formatar, idioma=get_language() or "pt-BR",
+        gerado_em=timezone.localtime(relatorio.gerado_em).strftime("%d/%m/%Y %H:%M"),
+        folha_do_sistema=versionado("/static/nucleo/mw5.css"),
+        folha_da_impressao=versionado("/static/plataforma/impressao.css"),
+        folha_do_relatorio=versionado("/static/fila/relatorio.css"))
+    return HttpResponse(html)

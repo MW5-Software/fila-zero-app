@@ -266,3 +266,33 @@ class TestOExcel:
         livro = self._abrir(em_xlsx(montar(_recorte(rede, "hoje"),
                                            rotulo_da_empresa="x", gerado_por="x")))
         assert livro["Lançamentos"].max_row == 1   # só o cabeçalho
+
+
+class TestOPapel:
+    def test_as_secoes_e_o_cabecalho(self, rede):
+        from fila.relatorio import montar
+        from fila.relatorio_saida import em_impressao
+
+        atendimento(rede, rede.ana, rede.matriz, timezone.now(), valor="1200")
+        r = montar(_recorte(rede), rotulo_da_empresa="Sylvia Design", gerado_por="Sylvia")
+        html = em_impressao(r).content.decode()
+        for titulo in ("Resumo", "Comparação", "Vendedores", "Motivos", "Mídias",
+                       "Grupos", "Pausas", "Lançamentos"):
+            assert f"<h2>{titulo}</h2>" in html
+        assert "Sylvia Design" in html and r.periodo in html and "Gerado por Sylvia" in html
+        assert "R$ 1.200,00" in html
+        assert "window.print()" in html
+        # Os lançamentos por último: é a seção longa.
+        assert html.index("<h2>Lançamentos</h2>") > html.index("<h2>Pausas</h2>")
+
+    def test_nome_com_html_sai_escapado(self, rede):
+        from fila.relatorio import montar
+        from fila.relatorio_saida import em_impressao
+
+        rede.centro.apelido = "A&B <Centro>"
+        rede.centro.save()
+        atendimento(rede, rede.caio, rede.centro, timezone.now(), valor="10")
+        html = em_impressao(montar(_recorte(rede), rotulo_da_empresa="x",
+                                   gerado_por="x")).content.decode()
+        assert "A&amp;B &lt;Centro&gt;" in html
+        assert "<Centro>" not in html

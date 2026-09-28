@@ -1,0 +1,41 @@
+{# O relatório no papel (28/09/2026). Fora do shell, como a impressão das
+   listas (`comum.exportacao`): o navegador salva em PDF pelo próprio diálogo,
+   sem motor de PDF na imagem. Nomes de loja e de pessoa são DADO e saem
+   escapados pelo autoescape do ambiente da fila. #}
+<!DOCTYPE html>
+<html lang="{{ idioma }}">
+<head>
+<meta charset="utf-8">
+<title>{{ r.titulo }} — {{ r.empresa }}</title>
+<link rel="stylesheet" href="/tema.css">
+<link rel="stylesheet" href="{{ folha_do_sistema }}">
+<link rel="stylesheet" href="{{ folha_da_impressao }}">
+<link rel="stylesheet" href="{{ folha_do_relatorio }}">
+</head>
+<body class="papel relatorio">
+<header class="papel-cabecalho">
+  <h1>{{ r.titulo }}</h1>
+  <p class="relatorio-onde"><strong>{{ r.empresa }}</strong> · {{ r.lojas }}</p>
+  <p class="relatorio-periodo">{{ r.periodo }}</p>
+  <p class="papel-carimbo">{{ traduzir("Gerado por") }} {{ r.gerado_por }} · {{ gerado_em }}</p>
+</header>
+{% for s in r.secoes %}
+<section class="relatorio-secao">
+  <h2>{{ s.titulo }}</h2>
+  {% if s.linhas %}
+  <table>
+    <thead><tr>{% for c in s.colunas %}<th{% if c.tipo != "texto" %} class="num"{% endif %}>{{ c.rotulo }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for linha in s.linhas %}
+      <tr>{% for c in s.colunas %}<td{% if c.tipo != "texto" %} class="num"{% endif %}>{{ formatar(c.valor(linha), c.tipo) }}</td>{% endfor %}</tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="relatorio-vazio">{{ traduzir("Nada no período.") }}</p>
+  {% endif %}
+</section>
+{% endfor %}
+<script>window.print();</script>
+</body>
+</html>
