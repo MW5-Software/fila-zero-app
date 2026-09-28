@@ -13,3 +13,9 @@
 .relatorio tr { break-inside: avoid; }
 .relatorio-vazio { color: var(--on-surface-2); margin: 0; }
 @media print { .relatorio { padding: 0; } }
+
+/* A tela (e não o papel): os campos numa linha que quebra no celular, e os
+   dois botões juntos. */
+.relatorio-form { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.relatorio-form .f { min-width: 200px; flex: 1 1 200px; }
+.relatorio-botoes { display: flex; gap: 8px; flex-wrap: wrap; }

@@ -23,10 +23,10 @@ def test_o_modulo_esta_declarado_com_as_quatro_permissoes():
     assert spec.ativo_por_padrao is True
     assert {a.rota for a in spec.atalhos} == {
         "/fila/grupos", "/fila/motivos", "/fila/pausas", "/fila/midias",
-        "/fila/metas", "/fila/historico"}
+        "/fila/metas", "/fila/historico", "/fila/relatorios"}
     # Os indicadores moram no Início (15/09/2026): não há atalho para eles.
     assert {a.permissao for a in spec.atalhos} == {"fila.cadastros", "fila.metas",
-                                                   "fila.gerenciar"}
+                                                   "fila.gerenciar", "fila.relatorios"}
 
 
 @pytest.mark.django_db
@@ -56,6 +56,7 @@ def test_o_menu_da_fila_como_o_cliente_pediu():
         # "Fila Zero", e não "Fila da vez" (25/09/2026, pedido do cliente).
         ("Fila Zero", "/fila"),
         ("Histórico da fila", "/fila/historico"),
+        ("Relatórios", "/fila/relatorios"),
     ]
 
     # **Metas é de PRIMEIRO nível**, no mesmo degrau de "Configuração" e

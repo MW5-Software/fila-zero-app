@@ -240,5 +240,8 @@ def montar(recorte, *, rotulo_da_empresa: str, gerado_por: str, agora=None) -> R
         titulo=_("Relatório da fila"), empresa=rotulo_da_empresa, lojas=lojas,
         periodo=_periodo_por_extenso(recorte.periodo), gerado_por=gerado_por,
         gerado_em=agora, secoes=secoes,
-        nome_do_arquivo=slugify(f"relatorio-{rotulo_da_empresa}-{recorte.periodo.chave}-"
+        # O sublinhado da chave vira hífen: "mes_passado" num nome de arquivo
+        # em que todo o resto é separado por hífen parecia outro campo.
+        nome_do_arquivo=slugify(f"relatorio-{rotulo_da_empresa}-"
+                                f"{recorte.periodo.chave.replace('_', '-')}-"
                                 f"{timezone.localtime(agora):%Y-%m-%d}"))

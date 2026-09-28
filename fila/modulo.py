@@ -58,6 +58,10 @@ MODULO = ModuloSpec(
         # nome do módulo criaria um segundo item com o mesmo rótulo.
         Atalho(rotulo=_("Histórico da fila"), rota="/fila/historico",
                permissao="fila.gerenciar", grupo="Gerenciar Fila"),
+        # Os relatórios (28/09/2026): de quem lê os indicadores, e por isso
+        # pela mesma permissão do painel.
+        Atalho(rotulo=_("Relatórios"), rota="/fila/relatorios",
+               permissao="fila.relatorios", grupo="Gerenciar Fila"),
         # **Metas é de primeiro nível** (23/09/2026; o cliente pediu "Metas vai
         # ser um Menu de Nível 1", e corrigiu com o print da barra: "igual
         # Configurações e Gerenciar Fila"). Era filha do "Fila da vez", e virou

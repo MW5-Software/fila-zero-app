@@ -18,6 +18,8 @@ loja só não há escolha, e ela é o recorte.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import math
 from datetime import timedelta
 
@@ -337,6 +339,40 @@ def _lojas_do_pedido(request, permitidas):
     if uma:
         return uma, uma[0]
     return list(permitidas), None
+
+
+@dataclass(frozen=True)
+class Escolha:
+    """O recorte que o pedido escolheu, dentro do alcance da pessoa. Uma porta
+    só para o painel e os relatórios (28/09/2026): o papel e a tela precisam
+    do MESMO recorte, e duas cópias desta regra divergiriam na primeira
+    mudança."""
+
+    empresa: object
+    empresas: tuple
+    escolhida: object
+    permitidas: list
+    lojas: list
+    loja: object
+    recorte: "ind.Recorte"
+
+
+def escolha_do_pedido(request, empresa, permitidas, periodo) -> Escolha:
+    from contas.identidade import usuario_de
+
+    pessoa = usuario_de(request.usuario)
+    empresas, escolhida = _empresas_do_pedido(request, pessoa)
+    if escolhida is None:
+        # "Todas as empresas": as lojas de cada uma, pela mesma pergunta de
+        # sempre (`lojas_com_relatorio`), e o campo Loja fica com todas.
+        permitidas = [loja for e in empresas
+                      for loja in ind.lojas_com_relatorio(pessoa, e)]
+    elif escolhida.pk != empresa.pk:
+        empresa = escolhida
+        permitidas = ind.lojas_com_relatorio(pessoa, escolhida)
+    lojas, loja = _lojas_do_pedido(request, permitidas)
+    return Escolha(empresa, tuple(empresas), escolhida, list(permitidas), lojas, loja,
+                   ind.Recorte(empresa, tuple(lojas), periodo, tuple(empresas)))
 
 
 def _filtros(request, periodo, permitidas, loja, empresas=(), empresa=None):
@@ -680,18 +716,12 @@ def blocos_dos_indicadores(request, empresa, permitidas) -> list:
     from contas.identidade import usuario_de
 
     periodo = periodo_do_pedido(request.GET)
+    # O recorte pela porta que os relatórios também usam (28/09/2026).
+    escolha = escolha_do_pedido(request, empresa, permitidas, periodo)
     pessoa = usuario_de(request.usuario)
-    empresas, escolhida = _empresas_do_pedido(request, pessoa)
-    if escolhida is None:
-        # "Todas as empresas": as lojas de cada uma, pela mesma pergunta de
-        # sempre (`lojas_com_relatorio`), e o campo Loja fica com todas.
-        permitidas = [loja for e in empresas
-                      for loja in ind.lojas_com_relatorio(pessoa, e)]
-    elif escolhida.pk != empresa.pk:
-        empresa = escolhida
-        permitidas = ind.lojas_com_relatorio(pessoa, escolhida)
-    lojas, loja = _lojas_do_pedido(request, permitidas)
-    recorte = ind.Recorte(empresa, tuple(lojas), periodo, tuple(empresas))
+    empresa, empresas, escolhida = escolha.empresa, escolha.empresas, escolha.escolhida
+    permitidas, lojas, loja = escolha.permitidas, escolha.lojas, escolha.loja
+    recorte = escolha.recorte
     anterior = ind.Recorte(empresa, tuple(lojas), periodo_anterior(periodo),
                            tuple(empresas))
     n, a = ind.numeros(recorte), ind.numeros(anterior)
