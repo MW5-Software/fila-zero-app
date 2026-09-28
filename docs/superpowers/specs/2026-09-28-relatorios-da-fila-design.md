@@ -71,7 +71,8 @@ acreditar.
    ticket médio, "cliente pediu", tempo em pausa e % da meta.
    - O **% da meta só nos períodos de mês** (`mes`, `mes_passado`): a meta é
      mensal, e dividir o vendido de 7 dias pela meta do mês seria número
-     errado com cara de certo. Nos outros períodos a coluna sai "—".
+     errado com cara de certo. Nos outros períodos a coluna não aparece
+     (uma coluna sempre "—" só ocuparia lugar).
    - A **pausa não conta as pausas da gestão**, como no ranking do painel.
 3. **Motivos, mídias, grupos e pausas**
    - motivos de não venda (`indicadores.motivos`, com "Fechado sem
@@ -143,4 +144,7 @@ headless e o Excel aberto por script.
 
 - envio por e-mail e relatório agendado;
 - intervalo de datas livre (o painel também não tem desde 17/09/2026);
-- gráficos no PDF — o relatório é de números; os gráficos continuam no painel.
+- ~~gráficos no PDF~~ — saiu do "fora do escopo" no mesmo dia: com a primeira
+  versão na mão, o cliente pediu "algo visualmente elegante, moderno, visual".
+  O papel ganhou capa, cartões, o gráfico do período, roscas e pódio (ver o
+  CLAUDE.md, §10, "Os relatórios").

@@ -1,24 +1,219 @@
-/* O relatório no papel (28/09/2026). Só tokens do tema, como toda folha da
-   fila. O cabeçalho da tabela se repete em cada página impressa
-   (`table-header-group`): numa lista de lançamentos de várias páginas, sem
-   ele a segunda página é uma coluna de números sem nome. */
-.relatorio { max-width: 1100px; margin: 0 auto; padding: 24px; }
-.relatorio-onde, .relatorio-periodo { margin: 4px 0; color: var(--on-surface-2); }
-.relatorio-secao { margin-top: 28px; }
-.relatorio-secao h2 { font-size: 16px; margin: 0 0 8px; }
-/* O título da seção nunca fica sozinho no pé da página, com a tabela na
-   seguinte (visto no PDF salvo pelo Chrome: "Pausas" órfão na página 1). */
-.relatorio-secao h2 { break-after: avoid; page-break-after: avoid; }
-.relatorio table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.relatorio th, .relatorio td { padding: 6px 8px; border-bottom: 1px solid var(--outline-2); text-align: left; }
-.relatorio .num { text-align: right; font-variant-numeric: tabular-nums; }
-/* A primeira coluna (a data nos lançamentos, o nome nas outras) e os números
-   não quebram linha: "01/09/2026" partido em dois lia como duas datas. */
-.relatorio td:first-child, .relatorio td.num { white-space: nowrap; }
-.relatorio thead { display: table-header-group; }
-.relatorio tr { break-inside: avoid; }
-.relatorio-vazio { color: var(--on-surface-2); margin: 0; }
-@media print { .relatorio { padding: 0; } }
+/* O relatório no papel (28/09/2026). Redesenhado duas vezes no mesmo dia: a
+   primeira versão, de linhas finas e sem cor, o cliente achou "muito simples"
+   e pediu "algo visualmente elegante, moderno, visual".
+
+   A capa leva a cor da MARCA do cliente (`--primary`), com a frase do período
+   em destaque; os números vão em cartões que sobem sobre ela; o período, as
+   lojas e a conversão viram gráfico. Só tokens do tema: cada cliente imprime
+   com a própria cor, e `test_variavel_de_cor_existe` cobra. Os tons claros
+   saem de `color-mix`, e não de cor nova. `print-color-adjust: exact` porque
+   o Chrome tira o fundo na impressão por padrão, e sem ele a capa sairia
+   branca com letra branca. */
+
+@page { size: A4; margin: 12mm 11mm 14mm; }
+
+.relatorio, .relatorio * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.relatorio {
+  max-width: 860px; margin: 0 auto; padding: 28px 20px 48px;
+  background: var(--surface); color: var(--on-surface);
+  font-family: var(--font-body); font-size: 12px; font-variant-numeric: tabular-nums;
+}
+@media print { .relatorio { padding: 0; max-width: none; } }
+
+/* --- A capa ------------------------------------------------------------ */
+
+/* A capa é um `<header>`, e o do design system é `sticky` com `z-index: 20`
+   e borda embaixo: sem desfazer os três, ela ficava por cima dos cartões dos
+   números (que sobem sobre ela) e grudava no alto ao rolar a tela. */
+.relatorio-capa {
+  position: relative; top: auto; z-index: 0; border-bottom: 0;
+  overflow: hidden; border-radius: 22px;
+  padding: 26px 30px 70px; color: var(--on-primary);
+  background:
+    radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 60%),
+    radial-gradient(60% 90% at 0% 100%, color-mix(in srgb, var(--primary-strong) 80%, transparent), transparent 70%),
+    var(--primary);
+}
+/* Os anéis no canto são o eco das roscas lá de baixo: decoração que conversa
+   com o conteúdo, e não enfeite solto. */
+.relatorio-capa::after {
+  content: ""; position: absolute; right: -70px; top: -70px; width: 240px; height: 240px;
+  border-radius: 50%; border: 28px solid color-mix(in srgb, var(--on-primary) 9%, transparent);
+  pointer-events: none;
+}
+.relatorio-capa-topo { position: relative; display: flex; align-items: center; gap: 16px; z-index: 1; }
+.relatorio-logo { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 12px;
+  background: var(--surface); }
+.relatorio-logo img { height: 30px; max-width: 130px; object-fit: contain; display: block; }
+.relatorio-quem { flex: 1; min-width: 0; }
+.relatorio-quem h1 { margin: 0; font-family: var(--font-display); font-size: 19px; font-weight: 800;
+  letter-spacing: -.01em; color: inherit; }
+.relatorio-quem p { margin: 2px 0 0; font-size: 12px; opacity: .82; }
+.relatorio-quando { margin: 0; padding: 6px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--on-primary) 16%, transparent); white-space: nowrap; }
+.relatorio-frase {
+  position: relative; z-index: 1; max-width: 30em; margin: 26px 0 0;
+  font-family: var(--font-display); font-size: 25px; line-height: 1.28; font-weight: 800;
+  letter-spacing: -.02em; color: inherit;
+}
+
+/* --- Os números: cartões que sobem sobre a capa ------------------------ */
+
+.relatorio-placar { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 10px; margin: -44px 18px 0; }
+.relatorio-numero { margin: 0; padding: 14px 14px 12px; border-radius: 16px; background: var(--surface);
+  border: 1px solid var(--outline-2); box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--primary) 55%, transparent); }
+.relatorio-numero dt { font-size: 11px; font-weight: 600; color: var(--on-surface-2); }
+.relatorio-valor { margin: 6px 0 8px; font-family: var(--font-display); font-size: 18px; font-weight: 800;
+  letter-spacing: -.01em; white-space: nowrap; }
+.relatorio-variacao { display: inline-block; margin: 0; padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.relatorio-variacao.sobe { color: var(--ok); background: var(--ok-bg); }
+.relatorio-variacao.desce { color: var(--danger); background: var(--danger-bg); }
+.relatorio-variacao.igual { color: var(--on-surface-2); background: var(--surface-2); }
+.relatorio-comparado { margin: 10px 18px 0; color: var(--on-surface-2); font-size: 10.5px; }
+
+/* --- As seções --------------------------------------------------------- */
+
+.relatorio-secao { margin-top: 26px; break-inside: avoid; }
+.relatorio-secao h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px;
+  font-family: var(--font-display); font-size: 15px; font-weight: 800; letter-spacing: -.01em;
+  break-after: avoid; page-break-after: avoid; }
+.relatorio-secao h2::before { content: ""; width: 4px; height: 16px; border-radius: 4px; background: var(--primary); }
+.relatorio-vazio { margin: 0; color: var(--on-surface-2); }
+
+.relatorio-bloco, .relatorio-lista, .relatorio-lojas, .relatorio-podio li {
+  border-radius: 18px; border: 1px solid var(--outline-2); background: var(--surface); break-inside: avoid;
+}
+
+/* --- O período e a conversão ------------------------------------------- */
+
+.relatorio-visao { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 14px; }
+.relatorio-bloco { padding: 18px 18px 14px; }
+.relatorio-bloco-conversao { display: flex; flex-direction: column; align-items: center; }
+.relatorio-bloco-conversao h2 { align-self: flex-start; }
+.relatorio-legenda-rosca { margin: 8px 0 0; font-size: 11px; color: var(--on-surface-2); text-align: center; }
+
+.relatorio-grafico { padding-left: 50px; }
+.grafico-area { position: relative; height: 170px; display: flex; align-items: flex-end; gap: 3px;
+  border-bottom: 1px solid var(--outline); }
+.grafico-marca { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--outline-2); }
+.grafico-marca > span { position: absolute; right: calc(100% + 8px); top: -7px; font-size: 9.5px;
+  color: var(--on-surface-2); white-space: nowrap; }
+.grafico-coluna { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.grafico-barra { position: relative; width: 100%; min-height: 2px; border-radius: 5px 5px 2px 2px;
+  background: color-mix(in srgb, var(--primary) 30%, var(--surface)); }
+.grafico-coluna.maior .grafico-barra {
+  background: linear-gradient(180deg, var(--accent), var(--primary)); }
+.grafico-destaque { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  padding: 3px 8px; border-radius: 999px; background: var(--on-surface); color: var(--surface);
+  font-size: 9.5px; font-weight: 700; white-space: nowrap; }
+.grafico-eixo { display: flex; gap: 3px; margin-top: 6px; }
+.grafico-eixo span { flex: 1; min-width: 0; font-size: 9px; color: var(--on-surface-2); text-align: left;
+  white-space: nowrap; overflow: visible; }
+
+/* --- As roscas --------------------------------------------------------- */
+
+.relatorio-rosca { width: 150px; height: 150px; display: block; }
+.rosca-trilho, .rosca-pedaco { fill: none; stroke-width: 5.2; transform: rotate(-90deg);
+  transform-origin: 21px 21px; }
+.rosca-trilho { stroke: var(--surface-2); }
+.rosca-pedaco { stroke: var(--primary); stroke-linecap: butt; }
+.rosca-centro { font-family: var(--font-display); font-size: 6px; font-weight: 800; fill: var(--on-surface);
+  text-anchor: middle; dominant-baseline: middle; }
+.rosca-apoio { font-size: 3px; fill: var(--on-surface-2); text-anchor: middle; dominant-baseline: middle; }
+/* O vendido da rede é um número comprido ("R$ 166.056,00"): no tamanho da
+   conversão ele passaria do furo da rosca. */
+.relatorio-lojas .rosca-centro { font-size: 3.2px; }
+
+/* --- As lojas ---------------------------------------------------------- */
+
+.relatorio-lojas { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 24px;
+  align-items: center; padding: 16px 20px; }
+.ponto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px;
+  vertical-align: 1px; }
+.relatorio-empresas { margin-top: 12px; }
+
+/* --- As tabelas -------------------------------------------------------- */
+
+.relatorio-tabela { width: 100%; border-collapse: collapse; }
+.relatorio-tabela thead { display: table-header-group; }
+/* O `thead th` do design system é caixa alta com fundo: no papel, com os
+   cartões em volta, ele pesava mais que os números. */
+.relatorio-tabela th { text-transform: none; letter-spacing: 0; background: none; text-align: left;
+  font-weight: 600; font-size: 10.5px; color: var(--on-surface-2); padding: 0 8px 7px 0;
+  border-bottom: 1px solid var(--outline); }
+.relatorio-tabela td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--outline-2); vertical-align: middle;
+  background: none; }
+.relatorio-tabela tbody tr { background: none; break-inside: avoid; }
+.relatorio-tabela tbody tr:last-child td { border-bottom: 0; }
+.relatorio-tabela .num { text-align: right; white-space: nowrap; }
+.relatorio-tabela .forte { font-weight: 700; }
+.relatorio-tabela .nome { font-weight: 600; }
+
+.barra-col { width: 20%; padding-left: 6px !important; }
+.barra { display: block; height: 7px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-2); }
+.barra > span { display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--accent)); }
+
+/* --- O pódio ----------------------------------------------------------- */
+
+.relatorio-podio { list-style: none; margin: 0 0 14px; padding: 0; display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.relatorio-podio li { position: relative; display: flex; flex-direction: column; padding: 16px 16px 14px; }
+.podio-posicao { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+  margin-bottom: 10px; font-family: var(--font-display); font-weight: 800; font-size: 13px;
+  background: var(--surface-2); color: var(--on-surface); }
+.podio-nome { font-family: var(--font-display); font-size: 15px; font-weight: 800; }
+.podio-loja { font-size: 11px; color: var(--on-surface-2); }
+.podio-vendido { margin: 12px 0 4px; font-family: var(--font-display); font-size: 20px; font-weight: 800;
+  letter-spacing: -.01em; }
+.podio-apoio { font-size: 11px; color: var(--on-surface-2); }
+.podio-meta { display: grid; gap: 4px; margin-top: 10px; font-size: 10.5px; font-weight: 600; }
+/* O primeiro vai na cor da marca, e a medalha dele no amarelo do tema — o
+   mesmo `--warn` da faixa do primeiro no ranking do Início. */
+.relatorio-podio .podio-1 { border-color: transparent; color: var(--on-primary);
+  background: radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--accent) 50%, transparent), transparent 65%), var(--primary); }
+.podio-1 .podio-posicao { background: var(--warn-bg); color: var(--warn); }
+.podio-1 .podio-loja, .podio-1 .podio-apoio { color: inherit; opacity: .82; }
+.podio-1 .barra { background: color-mix(in srgb, var(--on-primary) 22%, transparent); }
+.podio-1 .barra > span { background: var(--on-primary); }
+.podio-3 .podio-posicao { background: color-mix(in srgb, var(--warn) 22%, var(--surface)); }
+
+.relatorio-ranking .posicao { width: 2.6em; color: var(--on-surface-2); font-weight: 600; }
+.relatorio-ranking td.bateu { color: var(--ok); font-weight: 700; }
+
+/* --- As listas, duas a duas -------------------------------------------- */
+
+.relatorio-listas { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.relatorio-lista { padding: 16px 18px 10px; }
+.relatorio-rank { list-style: none; margin: 0; padding: 0; }
+.relatorio-rank li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 5px;
+  padding: 6px 0 8px; break-inside: avoid; }
+.relatorio-rank .num { text-align: right; white-space: nowrap; font-weight: 600; }
+.relatorio-rank .barra { grid-column: 1 / -1; height: 6px; }
+.relatorio-rank[data-tom="perda"] .barra > span { background: var(--danger); }
+.relatorio-rank[data-tom="neutra"] .barra > span { background: var(--on-surface-2); }
+
+/* --- Os lançamentos: a lista longa, em página própria ------------------- */
+
+.relatorio-lancamentos { break-before: page; page-break-before: always; break-inside: auto; }
+@media screen { .relatorio-lancamentos { margin-top: 40px; } }
+.relatorio-lancamentos .relatorio-tabela { font-size: 10.5px; }
+.relatorio-lancamentos td { padding: 5px 8px 5px 0; }
+.relatorio-lancamentos tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--primary) 4%, var(--surface)); }
+.relatorio-lancamentos .quando { white-space: nowrap; font-weight: 600; }
+.relatorio-lancamentos .detalhe { color: var(--on-surface-2); }
+.resultado { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 10px; font-weight: 700;
+  white-space: nowrap; }
+.resultado.vendeu { color: var(--ok); background: var(--ok-bg); }
+.resultado.nao-vendeu { color: var(--on-surface-2); background: var(--surface-2); }
+
+.relatorio-rodape { display: flex; justify-content: space-between; gap: 16px; margin-top: 28px;
+  padding-top: 12px; border-top: 1px solid var(--outline-2); color: var(--on-surface-2); font-size: 10.5px; }
+.relatorio-rodape p { margin: 0; }
 
 /* A tela (e não o papel): os campos numa linha que quebra no celular, e os
    dois botões juntos. */

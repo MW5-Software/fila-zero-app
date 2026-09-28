@@ -1,7 +1,16 @@
-{# O relatório no papel (28/09/2026). Fora do shell, como a impressão das
-   listas (`comum.exportacao`): o navegador salva em PDF pelo próprio diálogo,
-   sem motor de PDF na imagem. Nomes de loja e de pessoa são DADO e saem
-   escapados pelo autoescape do ambiente da fila. #}
+{# O relatório no papel (28/09/2026; redesenhado no mesmo dia, duas vezes: "o
+   relatório pode ser mais bonito" e, com a primeira versão na mão, "tá muito
+   simples, quero algo visualmente elegante, moderno, visual"). Fora do shell,
+   como a impressão das listas (`comum.exportacao`): o navegador salva em PDF
+   pelo próprio diálogo, sem motor de PDF na imagem.
+
+   A capa na cor da marca com a FRASE do período, os cinco números em
+   cartões, o período dia a dia, as roscas da conversão e das lojas, o pódio,
+   as listas e, por último e em página própria, os lançamentos. Os gráficos são
+   HTML e SVG desenhados aqui, sem script, pelo mesmo motivo de
+   `fila/graficos.py`. Nomes de loja e de pessoa são DADO e saem escapados pelo
+   autoescape do ambiente da fila. Só tokens do tema, e toda variação leva a
+   seta além da cor, para o papel impresso em preto e branco. #}
 <!DOCTYPE html>
 <html lang="{{ idioma }}">
 <head>
@@ -13,29 +22,195 @@
 <link rel="stylesheet" href="{{ folha_do_relatorio }}">
 </head>
 <body class="papel relatorio">
-<header class="papel-cabecalho">
-  <h1>{{ r.titulo }}</h1>
-  <p class="relatorio-onde"><strong>{{ r.empresa }}</strong> · {{ r.lojas }}</p>
-  <p class="relatorio-periodo">{{ r.periodo }}</p>
-  <p class="papel-carimbo">{{ traduzir("Gerado por") }} {{ r.gerado_por }} · {{ gerado_em }}</p>
+
+<header class="relatorio-capa">
+  <div class="relatorio-capa-topo">
+    {% if com_logo %}<span class="relatorio-logo"><img src="/marca/empresa/menu" alt="{{ r.empresa }}"></span>{% endif %}
+    <div class="relatorio-quem">
+      <h1>{{ r.titulo }}</h1>
+      <p>{{ r.empresa }} — {{ r.lojas }}</p>
+    </div>
+    <p class="relatorio-quando">{{ r.periodo }}</p>
+  </div>
+  <p class="relatorio-frase">{{ p.frase }}</p>
 </header>
-{% for s in r.secoes %}
+
+<dl class="relatorio-placar">
+  {% for n in p.placar %}
+  <div class="relatorio-numero">
+    <dt>{{ n.rotulo }}</dt>
+    <dd class="relatorio-valor">{{ n.valor }}</dd>
+    {% if n.variacao %}<dd class="relatorio-variacao {{ 'sobe' if n.sobe else 'desce' }}">{{ n.variacao }}</dd>
+    {% else %}<dd class="relatorio-variacao igual">—</dd>{% endif %}
+  </div>
+  {% endfor %}
+</dl>
+<p class="relatorio-comparado">{{ traduzir("A variação compara com o período anterior de mesma duração.") }}</p>
+
+{# A rosca: cada pedaço é um círculo com `pathLength=100`, e por isso a fatia
+   e o início são porcentagens diretas; o `-90°` da folha põe o começo no alto. #}
+{% macro rosca(pedacos, centro, apoio) %}
+<svg class="relatorio-rosca" viewBox="0 0 42 42" role="img" aria-label="{{ centro }}">
+  <circle class="rosca-trilho" cx="21" cy="21" r="15.9155" pathLength="100"></circle>
+  {% for cor, fatia, inicio in pedacos %}{% if fatia > 0 %}
+  <circle class="rosca-pedaco" cx="21" cy="21" r="15.9155" pathLength="100" style="stroke: {{ cor }}"
+          stroke-dasharray="{{ '%.2f'|format(fatia) }} {{ '%.2f'|format(100 - fatia) }}"
+          stroke-dashoffset="{{ '%.2f'|format(-inicio) }}"></circle>
+  {% endif %}{% endfor %}
+  <text x="21" y="{{ 21 if apoio else 22.5 }}" class="rosca-centro">{{ centro }}</text>
+  {% if apoio %}<text x="21" y="26.5" class="rosca-apoio">{{ apoio }}</text>{% endif %}
+</svg>
+{% endmacro %}
+
+<section class="relatorio-secao relatorio-visao">
+  <div class="relatorio-bloco">
+    <h2>{{ traduzir("Vendas no período") }}</h2>
+    <div class="relatorio-grafico">
+      <div class="grafico-area">
+        {% for m in p.marcas %}<span class="grafico-marca" style="bottom: {{ '%.2f'|format(m.altura) }}%"><span>{{ m.texto }}</span></span>{% endfor %}
+        {% for d in p.dias %}
+        <span class="grafico-coluna{% if d.maior %} maior{% endif %}" title="{{ d.rotulo }}: {{ d.valor }}">
+          <span class="grafico-barra" style="height: {{ '%.2f'|format(d.altura) }}%">{% if d.maior %}<span class="grafico-destaque">{{ d.valor }}</span>{% endif %}</span>
+        </span>
+        {% endfor %}
+      </div>
+      <div class="grafico-eixo">
+        {% for d in p.dias %}<span>{{ d.rotulo if d.com_rotulo else "" }}</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="relatorio-bloco relatorio-bloco-conversao">
+    <h2>{{ traduzir("Conversão") }}</h2>
+    {{ rosca([("var(--primary)", p.conversao or 0, 0)], formatar(p.conversao, "porcento"), "") }}
+    <p class="relatorio-legenda-rosca">{{ traduzir("%(v)s vendas de %(n)s atendimentos")|format(v=r.total.vendas, n=r.total.atendimentos) }}</p>
+  </div>
+</section>
+
 <section class="relatorio-secao">
-  <h2>{{ s.titulo }}</h2>
-  {% if s.linhas %}
-  <table>
-    <thead><tr>{% for c in s.colunas %}<th{% if c.tipo != "texto" %} class="num"{% endif %}>{{ c.rotulo }}</th>{% endfor %}</tr></thead>
+  <h2>{{ traduzir("Lojas") }}</h2>
+  <div class="relatorio-lojas">
+    {{ rosca(p.pedacos_das_lojas, formatar(r.total.vendido, "dinheiro"), traduzir("vendido")) }}
+    <table class="relatorio-tabela">
+      <thead><tr>
+        <th>{{ traduzir("Loja") }}</th><th class="num">{{ traduzir("Atendimentos") }}</th>
+        <th class="num">{{ traduzir("Vendas") }}</th><th class="num">{{ traduzir("Conversão") }}</th>
+        <th class="num">{{ traduzir("Vendido") }}</th><th class="num">{{ traduzir("Parte do total") }}</th>
+      </tr></thead>
+      <tbody>
+      {% for l in p.lojas %}
+        <tr>
+          <td class="nome"><span class="ponto" style="background: {{ l.cor }}"></span>{{ l.nome }}</td>
+          <td class="num">{{ l.n.atendimentos }}</td><td class="num">{{ l.n.vendas }}</td>
+          <td class="num">{{ formatar(l.n.conversao, "porcento") }}</td>
+          <td class="num forte">{{ formatar(l.n.vendido, "dinheiro") }}</td>
+          <td class="num">{{ formatar(l.fatia, "porcento") }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if p.empresas %}
+  <table class="relatorio-tabela relatorio-empresas">
+    <thead><tr><th>{{ traduzir("Empresa") }}</th><th class="num">{{ traduzir("Atendimentos") }}</th>
+      <th class="num">{{ traduzir("Vendas") }}</th><th class="num">{{ traduzir("Vendido") }}</th></tr></thead>
     <tbody>
-    {% for linha in s.linhas %}
-      <tr>{% for c in s.colunas %}<td{% if c.tipo != "texto" %} class="num"{% endif %}>{{ formatar(c.valor(linha), c.tipo) }}</td>{% endfor %}</tr>
+    {% for e in p.empresas %}
+      <tr><td class="nome">{{ e.nome }}</td><td class="num">{{ e.n.atendimentos }}</td>
+        <td class="num">{{ e.n.vendas }}</td><td class="num forte">{{ formatar(e.n.vendido, "dinheiro") }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
-  {% else %}
-  <p class="relatorio-vazio">{{ traduzir("Nada no período.") }}</p>
   {% endif %}
 </section>
-{% endfor %}
+
+<section class="relatorio-secao">
+  <h2>{{ traduzir("Vendedores") }}</h2>
+  {% if p.ranking %}
+  <ol class="relatorio-podio">
+    {% for v in p.podio %}
+    <li class="podio-{{ v.posicao }}">
+      <span class="podio-posicao">{{ v.posicao }}º</span>
+      <span class="podio-nome">{{ v.nome }}</span>
+      <span class="podio-loja">{{ v.loja }}</span>
+      <span class="podio-vendido">{{ v.vendido }}</span>
+      <span class="podio-apoio">{{ traduzir("%(v)s vendas de %(n)s atendimentos")|format(v=v.vendas, n=v.atendimentos) }}</span>
+      <span class="podio-apoio">{{ traduzir("Conversão") }} {{ v.conversao }}</span>
+      {% if p.com_meta and v.meta is not none %}
+      <span class="podio-meta"><span class="barra"><span style="width: {{ '%.1f'|format([v.meta, 100]|min) }}%"></span></span>
+        <span>{{ traduzir("%(pct)s da meta")|format(pct=formatar(v.meta, "porcento")) }}</span></span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% if p.resto %}
+  <table class="relatorio-tabela relatorio-ranking">
+    <thead><tr>
+      <th class="posicao"></th><th>{{ traduzir("Vendedor") }}</th><th>{{ traduzir("Loja") }}</th>
+      <th class="num">{{ traduzir("Vendido") }}</th><th class="barra-col"></th>
+      <th class="num">{{ traduzir("Vendas") }}</th><th class="num">{{ traduzir("Conversão") }}</th>
+      {% if p.com_meta %}<th class="num">{{ traduzir("Meta") }}</th>{% endif %}
+    </tr></thead>
+    <tbody>
+    {% for v in p.resto %}
+      <tr>
+        <td class="posicao">{{ v.posicao }}º</td><td class="nome">{{ v.nome }}</td><td>{{ v.loja }}</td>
+        <td class="num forte">{{ v.vendido }}</td>
+        <td class="barra-col"><span class="barra"><span style="width: {{ '%.1f'|format(v.barra) }}%"></span></span></td>
+        <td class="num">{{ traduzir("%(v)s de %(n)s")|format(v=v.vendas, n=v.atendimentos) }}</td>
+        <td class="num">{{ v.conversao }}</td>
+        {% if p.com_meta %}<td class="num{% if v.meta is not none and v.meta >= 100 %} bateu{% endif %}">{{ formatar(v.meta, "porcento") }}</td>{% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% else %}<p class="relatorio-vazio">{{ traduzir("Ninguém fechou atendimento no período.") }}</p>{% endif %}
+</section>
+
+<div class="relatorio-listas">
+  {% for titulo, linhas, tom in p.listas %}
+  <section class="relatorio-secao relatorio-lista">
+    <h2>{{ titulo }}</h2>
+    {% if linhas %}
+    <ol class="relatorio-rank" data-tom="{{ tom }}">
+      {% for l in linhas %}
+      <li><span class="nome">{{ l.nome }}</span><span class="num">{{ l.texto }}</span>
+        <span class="barra"><span style="width: {{ '%.1f'|format(l.barra) }}%"></span></span></li>
+      {% endfor %}
+    </ol>
+    {% else %}<p class="relatorio-vazio">{{ traduzir("Nada no período.") }}</p>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+<section class="relatorio-secao relatorio-lancamentos">
+  <h2>{{ traduzir("Lançamentos") }}</h2>
+  {% if p.lancamentos %}
+  <table class="relatorio-tabela">
+    <thead><tr>
+      <th>{{ traduzir("Quando") }}</th><th>{{ traduzir("Loja") }}</th><th>{{ traduzir("Vendedor") }}</th>
+      <th>{{ traduzir("Resultado") }}</th><th class="num">{{ traduzir("Valor") }}</th>
+      <th>{{ traduzir("Detalhe") }}</th><th>{{ traduzir("Mídia") }}</th>
+    </tr></thead>
+    <tbody>
+    {% for a in p.lancamentos %}
+      <tr>
+        <td class="quando">{{ a.quando }}</td><td>{{ a.loja }}</td><td>{{ a.vendedor }}</td>
+        <td><span class="resultado {{ 'vendeu' if a.vendeu else 'nao-vendeu' }}">{{ traduzir("Vendeu") if a.vendeu else traduzir("Não vendeu") }}</span></td>
+        <td class="num">{{ a.valor }}</td><td class="detalhe">{{ a.detalhe }}</td><td>{{ a.midia }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="relatorio-vazio">{{ traduzir("Nenhum atendimento fechado no período.") }}</p>{% endif %}
+</section>
+
+<footer class="relatorio-rodape">
+  <p>{{ r.periodo }}</p>
+  {# Uma frase só, e não "Gerado por" + "em" soltos: a ordem das palavras é do idioma. #}
+  <p>{{ traduzir("Gerado por %(quem)s em %(quando)s")|format(quem=r.gerado_por, quando=gerado_em) }}</p>
+</footer>
+
 <script>window.print();</script>
 </body>
 </html>

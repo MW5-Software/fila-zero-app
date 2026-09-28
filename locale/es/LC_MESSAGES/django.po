@@ -1919,3 +1919,123 @@ msgstr "Los números de las tiendas que usted acompaña, en PDF o Excel."
 
 msgid "a"
 msgstr "a"
+
+msgid "Ontem"
+msgstr "Ayer"
+
+msgid "Mês passado"
+msgstr "Mes pasado"
+
+msgid "janeiro"
+msgstr "enero"
+
+msgid "fevereiro"
+msgstr "febrero"
+
+msgid "março"
+msgstr "marzo"
+
+msgid "abril"
+msgstr "abril"
+
+msgid "maio"
+msgstr "mayo"
+
+msgid "junho"
+msgstr "junio"
+
+msgid "julho"
+msgstr "julio"
+
+msgid "agosto"
+msgstr "agosto"
+
+msgid "setembro"
+msgstr "septiembre"
+
+msgid "outubro"
+msgstr "octubre"
+
+msgid "novembro"
+msgstr "noviembre"
+
+msgid "dezembro"
+msgstr "diciembre"
+
+msgid "%(dia)s de %(mes)s"
+msgstr "%(dia)s de %(mes)s"
+
+msgid "%(data)s de %(ano)s"
+msgstr "%(data)s de %(ano)s"
+
+msgid "em %(dia)s"
+msgstr "el %(dia)s"
+
+msgid "de %(de)s a %(ate)s"
+msgstr "del %(de)s al %(ate)s"
+
+msgid "a loja %(loja)s"
+msgstr "la tienda %(loja)s"
+
+msgid "as %(n)s lojas"
+msgstr "las %(n)s tiendas"
+
+msgid "não atendeu nenhum cliente"
+msgstr "no atendió a ningún cliente"
+
+msgid "não atenderam nenhum cliente"
+msgstr "no atendieron a ningún cliente"
+
+msgid "1 cliente"
+msgstr "1 cliente"
+
+msgid "%(n)s clientes"
+msgstr "%(n)s clientes"
+
+msgid "atendeu %(clientes)s e vendeu %(valor)s"
+msgstr "atendió a %(clientes)s y vendió %(valor)s"
+
+msgid "atenderam %(clientes)s e venderam %(valor)s"
+msgstr "atendieron a %(clientes)s y vendieron %(valor)s"
+
+msgid "o mesmo que %(antes)s"
+msgstr "lo mismo que %(antes)s"
+
+msgid "%(pct)s a mais que %(antes)s"
+msgstr "%(pct)s más que %(antes)s"
+
+msgid "%(pct)s a menos que %(antes)s"
+msgstr "%(pct)s menos que %(antes)s"
+
+msgid "%(v)s de %(n)s (%(c)s)"
+msgstr "%(v)s de %(n)s (%(c)s)"
+
+msgid "%(data)s às %(hora)s"
+msgstr "%(data)s a las %(hora)s"
+
+msgid "A variação compara com o período anterior de mesma duração."
+msgstr "La variación compara con el período anterior de la misma duración."
+
+msgid "Parte do total"
+msgstr "Parte del total"
+
+msgid "Ninguém fechou atendimento no período."
+msgstr "Nadie cerró atención en el período."
+
+msgid "Detalhe"
+msgstr "Detalle"
+
+msgid "Gerado por %(quem)s em %(quando)s"
+msgstr "Generado por %(quem)s el %(quando)s"
+
+msgid "Vendas no período"
+msgstr "Ventas en el período"
+
+msgid "%(v)s vendas de %(n)s atendimentos"
+msgstr "%(v)s ventas de %(n)s atenciones"
+
+msgid "vendido"
+msgstr "vendido"
+
+msgid "%(pct)s da meta"
+msgstr "%(pct)s de la meta"

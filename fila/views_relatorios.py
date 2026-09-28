@@ -24,6 +24,7 @@ from nucleo.layout import Crumb
 from nucleo.rendering import use_environment
 from nucleo.resposta import render
 from plataforma.contexto import empresa_atual
+from plataforma.marca import logo_da_empresa_de
 
 from . import indicadores as ind
 from .estado import nome_de
@@ -85,7 +86,8 @@ def relatorios(request) -> HttpResponse:
         rotulo = str(escolha.empresa) if escolha.escolhida else _("Todas as empresas")
         relatorio = montar(escolha.recorte, rotulo_da_empresa=rotulo,
                            gerado_por=nome_de(pessoa))
-        return em_xlsx(relatorio) if formato == "xlsx" else em_impressao(relatorio)
+        return em_xlsx(relatorio) if formato == "xlsx" else em_impressao(
+            relatorio, com_logo=logo_da_empresa_de(request) is not None)
 
     with use_environment(ambiente()):
         site = montar_site(request)

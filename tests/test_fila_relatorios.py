@@ -243,6 +243,19 @@ class TestOConteudo:
         assert formatar(3, "inteiro") == "3"
 
 
+def test_os_cinco_periodos_em_castelhano():
+    """"Ontem" e "Mês passado" ficaram de fora do `.po`, e o seletor saía com
+    três opções em castelhano e duas em português (revisão final)."""
+    from django.utils import translation
+
+    from fila.relatorio import PERIODOS
+
+    with translation.override("es"):
+        rotulos = [str(r) for _chave, r in PERIODOS]
+    assert rotulos == ["Diario (hoy)", "Ayer", "Semanal (últimos 7 días)",
+                       "Mensual (este mes)", "Mes pasado"]
+
+
 class TestOExcel:
     def _abrir(self, resposta):
         from io import BytesIO
@@ -250,6 +263,27 @@ class TestOExcel:
         from openpyxl import load_workbook
 
         return load_workbook(BytesIO(resposta.content))
+
+    def test_texto_digitado_nao_vira_formula(self, rede):
+        """A observação da não venda é o vendedor quem digita, e o relatório
+        vai para a mão do gerente. O openpyxl grava como FÓRMULA todo texto
+        que começa com "=": um `=HYPERLINK(...)` na observação viraria um link
+        vivo na planilha de quem a abre (revisão final de 28/09/2026). O
+        nome da loja é dado do cliente também, e passa pela mesma porta."""
+        from fila.relatorio import montar
+        from fila.relatorio_saida import em_xlsx
+
+        rede.centro.apelido = "=1+1"
+        rede.centro.save()
+        a = atendimento(rede, rede.caio, rede.centro, timezone.now())
+        a.observacao = '=HYPERLINK("http://x";"ver")'
+        a.save()
+        livro = self._abrir(em_xlsx(montar(_recorte(rede), rotulo_da_empresa="x",
+                                           gerado_por="x")))
+        celulas = [c for folha in livro.worksheets for linha in folha.iter_rows()
+                   for c in linha if isinstance(c.value, str) and c.value.startswith("=")]
+        assert celulas, "o texto com = tem de chegar na planilha"
+        assert {c.data_type for c in celulas} == {"s"}
 
     def test_as_abas_e_o_cabecalho(self, rede):
         from fila.relatorio import montar
@@ -293,21 +327,106 @@ class TestOExcel:
 
 
 class TestOPapel:
-    def test_as_secoes_e_o_cabecalho(self, rede):
+    def _setembro(self, rede):
+        """Setembro até o dia 15 ao meio-dia, com venda nos DOIS períodos."""
         from fila.relatorio import montar
+
+        agora = local(2026, 9, 15, 12)
+        atendimento(rede, rede.ana, rede.matriz, local(2026, 9, 10, 10), valor="100")
+        atendimento(rede, rede.caio, rede.centro, local(2026, 9, 10, 11))
+        atendimento(rede, rede.ana, rede.matriz, local(2026, 8, 10, 10), valor="300")
+        return montar(_recorte(rede, "mes", agora=agora), rotulo_da_empresa="Sylvia Design",
+                      gerado_por="Sylvia", agora=agora)
+
+    def test_a_frase_do_periodo(self, rede):
+        """O papel DIZ o resultado numa frase que o dono lê em voz alta ou cola
+        numa mensagem (28/09/2026, "o relatório pode ser mais bonito")."""
+        from fila.relatorio import frase_do_periodo
+
+        assert frase_do_periodo(self._setembro(rede)) == (
+            "De 1 a 15 de setembro de 2026, as 2 lojas atenderam 2 clientes e "
+            "venderam R$ 100,00 — 66,7% a menos que de 1 a 15 de agosto de 2026.")
+
+    def test_a_frase_de_uma_loja_e_de_um_dia_sem_atendimento(self, rede):
+        from fila.relatorio import frase_do_periodo, montar
+
+        agora = local(2026, 9, 15, 12)
+        r = montar(_recorte(rede, "hoje", lojas=(rede.matriz,), agora=agora),
+                   rotulo_da_empresa="x", gerado_por="x", agora=agora)
+        assert frase_do_periodo(r) == (
+            "Em 15 de setembro de 2026, a loja Matriz não atendeu nenhum cliente.")
+
+    def test_o_papel(self, rede):
         from fila.relatorio_saida import em_impressao
 
-        atendimento(rede, rede.ana, rede.matriz, timezone.now(), valor="1200")
-        r = montar(_recorte(rede), rotulo_da_empresa="Sylvia Design", gerado_por="Sylvia")
-        html = em_impressao(r).content.decode()
-        for titulo in ("Resumo", "Comparação", "Vendedores", "Motivos", "Mídias",
-                       "Grupos", "Pausas", "Lançamentos"):
-            assert f"<h2>{titulo}</h2>" in html
-        assert "Sylvia Design" in html and r.periodo in html and "Gerado por Sylvia" in html
-        assert "R$ 1.200,00" in html
+        r = self._setembro(rede)
+        html = em_impressao(r, com_logo=True).content.decode()
+        assert '<p class="relatorio-frase">De 1 a 15 de setembro de 2026' in html
+        assert html.count('class="relatorio-numero"') == 5
+        assert "▼" in html
+        titulos = ["Vendas no período", "Lojas", "Vendedores", "Motivos de não venda", "Mídias",
+                   "Grupos de item", "Pausas", "Lançamentos"]
+        posicoes = [html.index(f"<h2>{t}</h2>") for t in titulos]
+        assert posicoes == sorted(posicoes), "as seções na ordem, lançamentos por último"
+        assert "Sylvia Design" in html and "Gerado por Sylvia" in html
+        assert "R$ 100,00" in html
         assert "window.print()" in html
-        # Os lançamentos por último: é a seção longa.
-        assert html.index("<h2>Lançamentos</h2>") > html.index("<h2>Pausas</h2>")
+
+    def test_o_grafico_por_dia(self, rede):
+        """Uma coluna por dia do período, e o dia vazio aparece com zero: o
+        gráfico que pula o dia ruim esconde justamente ele. A coluna mais alta
+        é o maior dia, e só ela leva o destaque."""
+        from fila.relatorio_saida import _papel
+
+        dias = _papel(self._setembro(rede))["dias"]
+        assert [d["rotulo"] for d in dias][:2] == ["01/09", "02/09"] and len(dias) == 15
+        maior = [d for d in dias if d["maior"]]
+        assert [d["rotulo"] for d in maior] == ["10/09"]
+        assert 0 < maior[0]["altura"] <= 100
+        assert all(d["altura"] == 0 for d in dias if d["rotulo"] != "10/09")
+
+    def test_dia_sem_venda_nao_inventa_escala(self, rede):
+        from fila.relatorio import montar
+        from fila.relatorio_saida import _papel
+
+        agora = local(2026, 9, 15, 12)
+        r = montar(_recorte(rede, "hoje", agora=agora), rotulo_da_empresa="x",
+                   gerado_por="x", agora=agora)
+        p = _papel(r)
+        assert p["marcas"] == [] and len(p["dias"]) == 24
+        assert _papel(self._setembro(rede))["marcas"], "com venda, a escala aparece"
+
+    def test_as_roscas(self, rede):
+        """A conversão e a parte de cada loja no vendido saem como rosca; o
+        pedaço de cada loja começa onde o da anterior terminou."""
+        from fila.relatorio_saida import _papel
+
+        p = _papel(self._setembro(rede))
+        assert p["conversao"] == 50.0
+        matriz, centro = p["lojas"]
+        assert (matriz["fatia"], matriz["inicio"]) == (100.0, 0.0)
+        assert (centro["fatia"], centro["inicio"]) == (0.0, 100.0)
+        assert matriz["cor"] == "var(--chart-1)" and centro["cor"] == "var(--chart-2)"
+
+    def test_o_podio(self, rede):
+        """Os três primeiros no pódio, o resto na tabela a partir do 4º."""
+        from fila.relatorio_saida import _papel, em_impressao
+
+        r = self._setembro(rede)
+        p = _papel(r)
+        assert [v["posicao"] for v in p["podio"]] == [1, 2]
+        assert p["podio"][0]["nome"] == "Ana" and p["resto"] == []
+        html = em_impressao(r).content.decode()
+        assert 'class="relatorio-podio"' in html
+        assert 'class="relatorio-grafico"' in html
+        assert html.count('class="relatorio-rosca"') == 2
+
+    def test_sem_logo_nao_desenha_imagem_quebrada(self, rede):
+        from fila.relatorio_saida import em_impressao
+
+        r = self._setembro(rede)
+        assert "/marca/empresa/menu" not in em_impressao(r, com_logo=False).content.decode()
+        assert 'src="/marca/empresa/menu"' in em_impressao(r, com_logo=True).content.decode()
 
     def test_nome_com_html_sai_escapado(self, rede):
         from fila.relatorio import montar

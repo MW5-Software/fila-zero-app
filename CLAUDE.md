@@ -1003,6 +1003,19 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
   exportação das listas: relatório de números é para somar.
 - **O PDF é a impressão do navegador**, como as listas, com o cabeçalho da
   tabela repetido em cada página.
+- **O papel é visual** (28/09/2026, o cliente com a primeira versão na mão:
+  "tá muito simples, quero algo visualmente elegante, moderno, visual"): a
+  capa na cor da marca com a FRASE do período (`relatorio.frase_do_periodo`),
+  os cinco números em cartões com a variação, o gráfico do período dia a dia
+  (`indicadores.por_dia`), as roscas da conversão e das lojas, o pódio dos três
+  primeiros e, em página própria, os lançamentos. Tudo HTML e SVG desenhado no
+  servidor, só com tokens do tema, e `print-color-adjust: exact` — sem ele o
+  Chrome tira o fundo na impressão e a capa sai branca com letra branca. A
+  capa é um `<header>`, e o do design system é `sticky` com `z-index`: a folha
+  desfaz os dois, senão ela cobre os cartões que sobem sobre ela.
+- **Nenhum texto vira fórmula no Excel** (`relatorio_saida._nada_e_formula`):
+  o openpyxl grava como fórmula todo texto que começa com "=", e a observação
+  da não venda é o vendedor quem digita.
 
 ### O turno da loja (23/09/2026)
 
