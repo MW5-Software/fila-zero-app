@@ -6,15 +6,18 @@
    PAPEL é o `@page` que a própria página traz, na margem de cada folha; o
    `.moldura-rodape` é o da tela. Só tokens do tema. */
 
-/* A logo direto sobre a faixa azul, SEM placa. A primeira versão a punha
-   numa placa branca, e a logo da Sylvia Design (a do site dela) tem as
-   letras em BRANCO com o símbolo dourado: na placa, o nome sumia; no azul,
-   ela se lê como foi desenhada. Uma logo escura sumiria aqui — é o preço, e
-   a logo de cada cliente é escolhida pela MW5 na tela de Empresas. */
-/* 56px de altura e até 340px de largura (28/09/2026, o cliente: "a logo tem
-   que ser maior"): com 40px e 170px de teto, a logo deitada da Sylvia (5 por
-   1) batia no teto da largura e saía com 33px de altura. */
+/* A logo numa placa clara, com respiro e cantos arredondados. É para fundo
+   claro que as logos são desenhadas — a da Sylvia Design em boa resolução
+   (766 px, do site dela) tem letras escuras e FUNDO BRANCO, e sem a placa
+   ela virava um recorte branco seco sobre o azul. A placa é da cor em que a
+   logo mora no menu (`--sidebar-brand-bg`, a faixa do logo da barra).
+
+   56px de altura e até 340px de largura (28/09/2026, o cliente: "a logo tem
+   que ser maior"). A logo precisa ter resolução para isso: a primeira que
+   usamos (232 px, do topo do site) borrava esticada — "parece que perdeu
+   qualidade", o cliente. */
 .moldura-logo { display: block; flex: none; height: 56px; max-width: 340px; object-fit: contain;
+  padding: 8px 14px; border-radius: 12px; background: var(--sidebar-brand-bg);
   box-sizing: content-box; }
 .moldura-empresa { margin: 0; flex: none; font-family: var(--font-display); font-size: 16px;
   font-weight: 800; color: inherit; white-space: nowrap; }
