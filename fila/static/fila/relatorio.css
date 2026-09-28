@@ -166,9 +166,16 @@ body.relatorio {
 /* O respiro das células (28/09/2026, o cliente: "a parte da tabela está
    muito apertada, sem respiro pros dados"): eram 7px em cima e embaixo e 8px
    só à direita, e os números de colunas vizinhas se encostavam. */
-.relatorio-tabela th { text-transform: none; letter-spacing: 0; background: none; text-align: left;
-  font-weight: 600; font-size: 10.5px; color: var(--on-surface-2); padding: 0 14px 10px;
-  border-bottom: 1px solid var(--outline); }
+/* O `thead th` do design system também é `position: sticky`: o cabeçalho
+   fica preso no alto ao rolar a tela, e sem fundo as linhas passavam POR
+   BAIXO dele à vista — texto sobre texto (28/09/2026, print do cliente). O
+   fundo é o da página, e o `z-index` o põe acima das pílulas das linhas. */
+.relatorio-tabela th { text-transform: none; letter-spacing: 0; background: var(--surface); z-index: 1;
+  text-align: left;
+  font-weight: 600; font-size: 10.5px; color: var(--on-surface-2); padding: 8px 14px 10px;
+  /* Linha por sombra, e não por borda: numa tabela de bordas colapsadas a
+     borda não acompanha a célula presa, e o cabeçalho grudado ficava sem ela. */
+  border-bottom: 0; box-shadow: inset 0 -1px 0 var(--outline); }
 .relatorio-tabela td { padding: 12px 14px; font-size: 12px; line-height: 1.35; border-bottom: 1px solid var(--outline-2); vertical-align: middle;
   background: none; }
 .relatorio-tabela tbody tr { background: none; break-inside: avoid; }
@@ -242,6 +249,10 @@ body.relatorio {
   background: color-mix(in srgb, var(--primary) 4%, var(--surface)); }
 .relatorio-lancamentos .quando { white-space: nowrap; font-weight: 600; }
 .relatorio-lancamentos .detalhe { color: var(--on-surface-2); }
+/* Valor e Detalhe se encostavam: um alinha à direita e o outro à
+   esquerda, e o vão entre os dois era só o respiro das células (pedido do
+   cliente, 28/09/2026). */
+.relatorio-lancamentos th.num, .relatorio-lancamentos td.num { padding-right: 32px; }
 .resultado { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 10px; font-weight: 700;
   white-space: nowrap; }
 .resultado.vendeu { color: var(--ok); background: var(--ok-bg); }
