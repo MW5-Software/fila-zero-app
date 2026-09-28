@@ -217,3 +217,52 @@ class TestOConteudo:
         assert formatar(None, "porcento") == "—"
         assert formatar(timedelta(minutes=90), "minutos") == "90 min"
         assert formatar(3, "inteiro") == "3"
+
+
+class TestOExcel:
+    def _abrir(self, resposta):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        return load_workbook(BytesIO(resposta.content))
+
+    def test_as_abas_e_o_cabecalho(self, rede):
+        from fila.relatorio import montar
+        from fila.relatorio_saida import em_xlsx
+
+        agora = timezone.now()
+        atendimento(rede, rede.ana, rede.matriz, agora, valor="1200",
+                    itens=[(rede.cad.grupo, "1200")])
+        r = montar(_recorte(rede), rotulo_da_empresa="Sylvia Design", gerado_por="Sylvia")
+        resposta = em_xlsx(r)
+        assert resposta["Content-Type"].startswith(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        assert f'filename="{r.nome_do_arquivo}.xlsx"' in resposta["Content-Disposition"]
+        livro = self._abrir(resposta)
+        assert livro.sheetnames == ["Relatório", "Resumo", "Comparação", "Vendedores",
+                                    "Motivos", "Mídias", "Grupos", "Pausas", "Lançamentos"]
+        capa = {linha[0]: linha[1] for linha in livro["Relatório"].iter_rows(values_only=True)}
+        assert capa["Empresa"] == "Sylvia Design" and capa["Gerado por"] == "Sylvia"
+
+    def test_dinheiro_e_numero_e_nao_texto(self, rede):
+        from fila.relatorio import montar
+        from fila.relatorio_saida import em_xlsx
+
+        atendimento(rede, rede.ana, rede.matriz, timezone.now(), valor="1200")
+        livro = self._abrir(em_xlsx(montar(_recorte(rede), rotulo_da_empresa="x",
+                                           gerado_por="x")))
+        resumo = livro["Resumo"]
+        cabecalho = [c.value for c in resumo[1]]
+        vendido = resumo.cell(row=2, column=cabecalho.index("Vendido") + 1)
+        conversao = resumo.cell(row=2, column=cabecalho.index("Conversão") + 1)
+        assert vendido.value == 1200 and "R$" in vendido.number_format
+        assert conversao.value == 1.0 and "%" in conversao.number_format
+
+    def test_excel_do_recorte_vazio_abre(self, rede):
+        from fila.relatorio import montar
+        from fila.relatorio_saida import em_xlsx
+
+        livro = self._abrir(em_xlsx(montar(_recorte(rede, "hoje"),
+                                           rotulo_da_empresa="x", gerado_por="x")))
+        assert livro["Lançamentos"].max_row == 1   # só o cabeçalho
