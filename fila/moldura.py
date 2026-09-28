@@ -32,9 +32,10 @@ __all__ = ["Moldura", "folha_da_pagina", "logo_do_kronos", "moldura_de", "texto_
 #: (R48: o rodapé é a assinatura de quem fez, e não troca por cliente).
 _LOGO = Path(__file__).resolve().parent.parent / "plataforma/static/plataforma/marca/kronos-footer.png"
 #: Altura da logo no papel, em px de CSS; a largura segue a proporção. Era
-#: 30, e o cliente: "tem que aumentar a logo do footer para ser legível" — a
-#: marca é empilhada, e a 30px o "ERP | CRM" de baixo não se lia.
-_ALTURA_DA_LOGO = 46
+#: 30, e o cliente pediu duas vezes: "tem que aumentar a logo do footer para
+#: ser legível" (foi a 46) e "maior, a logo do Kronos tem que ser legível" —
+#: a marca é empilhada, e o nome e o "ERP | CRM" são uma fração da altura.
+_ALTURA_DA_LOGO = 64
 
 
 @dataclass(frozen=True)
@@ -103,8 +104,8 @@ def folha_da_pagina(emitido: str) -> str:
     o tamanho e o resto da margem são de cada relatório."""
     return mark_safe(
         "@page {\n"
-        # 46px de logo são ~12mm: a margem de baixo cresce para ela caber.
-        "  margin-bottom: 20mm;\n"
+        # 64px de logo são ~17mm: a margem de baixo cresce para ela caber.
+        "  margin-bottom: 24mm;\n"
         f"  @bottom-left {{ content: {texto_de_css(emitido)}; font: 9px sans-serif; "
         "color: #555; vertical-align: middle; }\n"
         f'  @bottom-center {{ content: url("{logo_do_kronos()}"); vertical-align: middle; }}\n'

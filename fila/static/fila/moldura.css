@@ -36,7 +36,7 @@
   margin-top: 28px; padding: 14px 4px 0; border-top: 1px solid var(--outline-2);
   color: var(--on-surface-2); font-size: 11px; }
 .moldura-rodape p { margin: 0; }
-.moldura-rodape img { height: 42px; }
+.moldura-rodape img { height: 56px; }
 
 @media print {
   .moldura-rodape { display: none; }
