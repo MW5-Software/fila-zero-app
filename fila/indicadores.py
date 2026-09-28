@@ -32,7 +32,7 @@ from .periodo import Periodo, inicio_do_dia
 
 __all__ = ["ORDENAVEIS_DO_RANKING", "ORDENAVEIS_DO_RANKING_COM_META", "PADRAO_DO_RANKING", "Esquecido", "Fatia",
            "Numeros", "Posicao", "Recorte", "Variacao", "esquecidos",
-           "lojas_com_permissao", "lojas_com_relatorio", "midias", "motivos", "numeros", "pausa_por_tipo",
+           "lancamentos_do_recorte", "lojas_com_permissao", "lojas_com_relatorio", "midias", "motivos", "numeros", "pausa_por_tipo",
            "do_recorte", "empresas_com_relatorio", "por_dia", "por_grupo",
            "por_empresa", "por_loja", "posicao_no_mes", "posicoes_por_vendido", "ranking",
            "ranking_por_loja", "recorte_do_mes", "variacao"]
@@ -224,6 +224,23 @@ def pausa_por_tipo(recorte: Recorte, vendedor=None) -> "list[tuple[str, int]]":
     contas = [((linha["tipo__nome"] or str(fixas[linha["fixa"]])),
                int(linha["total"].total_seconds() // 60)) for linha in linhas]
     return sorted(contas, key=lambda par: (-par[1], par[0]))
+
+
+def lancamentos_do_recorte(recorte: Recorte):
+    """Os atendimentos FECHADOS no período, um por linha, do mais antigo para
+    o mais novo — a seção "Lançamentos" do relatório (28/09/2026). Pela mesma
+    porta das outras contas (`_atendimentos`: entra pela hora do fim, aberto
+    não entra), para a lista e os totais saírem do mesmo recorte. Uma
+    consulta por tabela, e não por linha: num mês da rede inteira são
+    centenas de linhas."""
+    from django.db.models import Prefetch
+
+    itens = ItemVendido.irrestritos.select_related("grupo").order_by("pk")
+    return (_atendimentos(recorte)
+            .select_related("filial", "vendedor", "motivo", "midia", "fechado_por")
+            .defer("vendedor__avatar", "fechado_por__avatar")
+            .prefetch_related(Prefetch("itens", queryset=itens))
+            .order_by("fim", "pk"))
 
 
 class Fatia(NamedTuple):

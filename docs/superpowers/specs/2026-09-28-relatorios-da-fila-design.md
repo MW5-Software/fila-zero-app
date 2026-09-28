@@ -61,7 +61,8 @@ acreditar.
 
 1. **Resumo**
    - total do recorte: atendimentos, vendas, conversão, vendido e ticket
-     médio (`indicadores.numeros`), com a variação contra o período anterior
+     médio (`indicadores.numeros`) e, numa seção à parte (Comparação), cada
+     indicador neste período, no anterior e a variação
      (`periodo.periodo_anterior`, `indicadores.variacao`);
    - uma linha por loja (`indicadores.por_loja`), e uma por empresa em "Todas
      as empresas" (`indicadores.por_empresa`).
@@ -91,11 +92,14 @@ acreditar.
 
 ## Os formatos
 
-- **Excel** (`openpyxl`, já dependência): um arquivo com uma aba por seção —
-  Resumo, Vendedores, Motivos, Mídias, Grupos, Pausas, Lançamentos. Valores
-  numéricos saem como número (e não texto), com formato de moeda nas colunas de
-  dinheiro e de porcentagem na conversão, para quem abre poder somar e filtrar.
-  Nome do arquivo: `relatorio-<empresa>-<período>-<data>.xlsx`.
+- **Excel** (`openpyxl`, já dependência): um arquivo com a aba **Relatório**
+  (empresa, lojas, período, quem gerou e quando) e uma aba por seção —
+  Resumo, Comparação, Vendedores, Motivos, Mídias, Grupos, Pausas,
+  Lançamentos. A comparação com o período anterior é aba própria porque
+  mistura unidades (contagem, R$ e pontos de conversão) numa coluna só.
+  Valores numéricos saem como número (e não texto), com formato de moeda nas
+  colunas de dinheiro e de porcentagem na conversão, para quem abre poder
+  somar e filtrar. Nome do arquivo: `relatorio-<empresa>-<período>-<data>.xlsx`.
 - **PDF**: a página de impressão, como as listas (`comum.exportacao`): sem
   shell e sem menu, chama `window.print()`, e o navegador salva em PDF — sem
   motor de PDF na imagem, pelo mesmo motivo escrito em `comum/exportacao.py`.
