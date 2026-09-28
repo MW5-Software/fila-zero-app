@@ -51,7 +51,14 @@ body.relatorio-midias { margin: 0; padding: 28px 32px 40px; background: var(--su
    passariam por baixo dele à vista. */
 .rm-tabela thead th { background: var(--surface); color: var(--on-surface); text-transform: none;
   letter-spacing: 0; font-family: var(--font-display); font-size: 12px; font-weight: 800;
-  vertical-align: bottom; border-bottom: 2px solid var(--outline); white-space: normal; }
+  vertical-align: bottom; border-bottom: 0; box-shadow: inset 0 -2px 0 var(--outline);
+  white-space: normal; }
+/* Um vão entre o cabeçalho e a primeira linha (28/09/2026, o cliente:
+   "descolar as linhas da tabela com o index da tabela"): as células do calor
+   encostavam no fio do cabeçalho. O vão é uma borda da cor do fundo na
+   primeira linha, e por isso o fio do cabeçalho virou sombra: numa tabela de
+   bordas colapsadas, a borda mais grossa engoliria a de baixo do cabeçalho. */
+.rm-tabela tbody tr:first-child td { border-top: 8px solid var(--surface); }
 .rm-tabela thead th span { display: block; margin-top: 2px; font-family: var(--font-body);
   font-size: 10px; font-weight: 500; color: var(--on-surface-2); }
 .rm-tabela tbody tr { break-inside: avoid; }

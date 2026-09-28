@@ -17,6 +17,16 @@
 </dl>
 {% endmacro %}
 
+{# A impressão espera a página carregar, com a logo do rodapé já na página:
+   a logo da margem é imagem, e o `window.print()` solto no fim do corpo
+   disparava antes dela ficar pronta — o PDF saía sem ela (medido: um dos
+   dois relatórios saiu sem a logo na mesma conferência). O `<img>` escondido
+   é o que faz o `load` esperar por ela. #}
+{% macro imprimir(mo) %}
+<img src="{{ mo.logo_do_rodape }}" alt="" hidden>
+<script>window.addEventListener("load", function () { window.print(); });</script>
+{% endmacro %}
+
 {% macro rodape(mo) %}
 <footer class="moldura-rodape">
   <p>{{ mo.emitido }}</p>

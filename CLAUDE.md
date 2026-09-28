@@ -1016,6 +1016,11 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
     a margem não aceita tamanho — o PNG tem 482×336.
   - O período sai em duas linhas no topo (tipo e datas): numa linha só ele
     empurrava "Lojas" para outra fileira no A4 em pé.
+  - **A impressão espera a página carregar** (`_moldura.html`, macro
+    `imprimir`), com a logo do rodapé num `<img>` escondido: o
+    `window.print()` solto no fim do corpo disparava antes da imagem da
+    margem ficar pronta, e o PDF saía sem a logo (um dos dois relatórios, na
+    mesma conferência).
 - **O recorte é o do painel** (`views_indicadores.escolha_do_pedido`, extraída
   para as duas telas): o dono vê todas as lojas, o supervisor as da empresa,
   o gerente as dele; a loja forjada cai dentro do alcance.
