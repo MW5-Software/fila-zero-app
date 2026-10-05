@@ -394,7 +394,18 @@ class TestAFilaEUmaTelaDoSistema:
         assert "/static/fila/fila.js?v=" in html
 
 
-def test_seus_numeros_mostram_so_a_propria_pessoa(loja):
+def _hoje(relogio):
+    """Põe o relógio das ações no começo de HOJE. "Seus números" são do mês
+    de verdade, e o relógio de `fila_cenario` começa em 15/09/2026: estes
+    testes passaram enquanto o mês real era setembro e quebraram no dia 1º de
+    outubro, com a venda gravada num mês que a tela não mostra mais."""
+    from django.utils import timezone
+
+    relogio[0] = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def test_seus_numeros_mostram_so_a_propria_pessoa(loja, relogio):
+    _hoje(relogio)
     ana = logado("ana")
     _agir(ana, acao="ponto")
     _agir(ana, acao="atender")
@@ -518,7 +529,8 @@ def _meta(loja, pessoa, valor, filial=None):
         mes=timezone.localdate().replace(day=1), valor=Decimal(valor))
 
 
-def test_seus_numeros_mostram_a_meta_da_propria_pessoa(loja):
+def test_seus_numeros_mostram_a_meta_da_propria_pessoa(loja, relogio):
+    _hoje(relogio)
     _meta(loja, loja.ana, "4000")
     ana = logado("ana")
     _agir(ana, acao="ponto")

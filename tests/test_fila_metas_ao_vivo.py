@@ -74,8 +74,14 @@ def test_a_tela_entrega_ao_script_quem_esta_na_loja():
     caio = pessoa_na_loja("caio", empresa, centro)
     # Caio tem meta na Matriz e hoje está no Centro: ele aparece na lista da
     # Matriz, e é justamente quem NÃO pode receber parte da meta de lá.
+    # O mês de VERDADE, que é o que a tela abre: com setembro fixo, o teste
+    # quebrou no dia 1º de outubro de 2026 — a meta de Caio ficou num mês que
+    # a tela não mostra, e ele sumiu da lista.
+    from django.utils import timezone
+
     MetaDeVenda.irrestritos.create(empresa=empresa, filial=matriz, pessoa=caio,
-                                   mes=date(2026, 9, 1), valor=Decimal("500"))
+                                   mes=timezone.localdate().replace(day=1),
+                                   valor=Decimal("500"))
     html = logado("sylvia").get("/fila/metas").content.decode()
 
     assert "data-campo-loja" in html
