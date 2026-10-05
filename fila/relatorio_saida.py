@@ -189,7 +189,7 @@ def _papel(relatorio: Relatorio) -> dict:
 
 
 def em_impressao(relatorio: Relatorio, *, com_logo: bool = False,
-                 lojas: "str | None" = None) -> HttpResponse:
+                 lojas: "str | None" = None, imprimir: bool = True) -> HttpResponse:
     """`com_logo` diz se a empresa tem logo: sem ele, `/marca/empresa/menu`
     responde 404 e o papel sairia com o ícone de imagem quebrada no topo.
     `lojas` é o filtro de loja como a pessoa o escolheu ("Todas as lojas");
@@ -207,7 +207,7 @@ def em_impressao(relatorio: Relatorio, *, com_logo: bool = False,
         mo=moldura_de(empresa=relatorio.empresa, periodo=relatorio.periodo,
                       lojas=lojas or relatorio.lojas, gerado_por=relatorio.gerado_por,
                       gerado_em=relatorio.gerado_em, com_logo=com_logo),
-        folha_da_moldura=versionado("/static/fila/moldura.css"),
+        folha_da_moldura=versionado("/static/fila/moldura.css"), imprimir=imprimir,
         idioma=get_language() or "pt-BR",
         gerado_em=_("%(data)s às %(hora)s") % {
             "data": timezone.localtime(relatorio.gerado_em).strftime("%d/%m/%Y"),

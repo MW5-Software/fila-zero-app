@@ -44,8 +44,9 @@ def _opcoes(pares, escolhido) -> str:
 
 
 def _formulario(acao, chave, escolha, empresas_alcancadas) -> str:
-    """Sem JavaScript: um GET com os campos e dois botões que mandam o
-    `formato`. O PDF abre noutra aba, para a tela continuar ali."""
+    """Sem JavaScript: um GET com os campos e o "Filtrar", que manda `ver=1` —
+    é ele que faz o relatório aparecer embaixo (05/10/2026). O PDF e o Excel
+    saíram daqui: ficam em cima do relatório, depois de a pessoa vê-lo."""
     campos = [format_html(
         '<label class="f"><span class="lbl">{}</span><select class="ctl" name="periodo">{}</select></label>',
         _("Período"), _opcoes(PERIODOS, chave))]
@@ -64,11 +65,37 @@ def _formulario(acao, chave, escolha, empresas_alcancadas) -> str:
     return format_html(
         '<form method="get" action="{}" class="relatorio-form">{}'
         '<div class="relatorio-botoes">'
-        '<button class="btn primary" type="submit" name="formato" value="impressao" formtarget="_blank">{}</button>'
-        '<button class="btn" type="submit" name="formato" value="xlsx">{}</button>'
+        '<button class="btn primary" type="submit" name="ver" value="1">{}</button>'
         '</div></form>',
-        acao, format_html_join("", "{}", ((c,) for c in campos)),
-        _("Gerar PDF"), _("Gerar Excel"))
+        acao, format_html_join("", "{}", ((c,) for c in campos)), _("Filtrar"))
+
+
+def _previa(acao, consulta: str) -> str:
+    """O relatório filtrado, embaixo do filtro, e os dois botões em cima dele
+    (05/10/2026, o cliente: "eu escolho o filtro e clico em filtrar, o
+    relatório aparece em HTML primeiro embaixo do filtro para o cara ver,
+    passar o mouse, ver os dados; daí, se ele quiser, vai ter os dois botões
+    gerar PDF e Excel em cima").
+
+    O relatório vem num QUADRO (`<iframe>`), e não costurado na página: é a
+    MESMA página do PDF, só sem chamar a impressão (`formato=previa`) — o que
+    a pessoa vê é o que vai para o papel, e as folhas do relatório (o `@page`,
+    o `body.relatorio`) não se misturam com as da tela do sistema. A altura
+    do quadro segue o conteúdo pelo `relatorio_previa.js`; sem ele, o quadro
+    tem altura fixa e rola por dentro."""
+    def endereco(formato):
+        return f"{acao}?{consulta}&formato={formato}" if consulta else f"{acao}?formato={formato}"
+
+    return format_html(
+        '<section class="relatorio-previa">'
+        '<div class="relatorio-acoes">'
+        '<a class="btn primary" href="{}" target="_blank" rel="noopener">{}</a>'
+        '<a class="btn" href="{}">{}</a>'
+        '</div>'
+        '<iframe class="relatorio-quadro" src="{}" title="{}"></iframe>'
+        '</section>',
+        endereco("impressao"), _("Gerar PDF"), endereco("xlsx"), _("Gerar Excel"),
+        endereco("previa"), _("Prévia do relatório"))
 
 
 #: Os dois relatórios da tela (28/09/2026, pedido do cliente: "tirar o menu
@@ -86,12 +113,24 @@ _TIPOS = {
 
 
 def _gerar(request, tipo, escolha, rotulo, pessoa, formato) -> HttpResponse:
+    resposta = _arquivo(request, tipo, escolha, rotulo, pessoa, formato)
+    if formato == "previa":
+        # O middleware nega toda página dentro de quadro (DENY, contra quem
+        # tentasse vestir a nossa num site de fora); a prévia é a única que a
+        # própria casa põe num quadro, e só na mesma origem.
+        resposta["X-Frame-Options"] = "SAMEORIGIN"
+    return resposta
+
+
+def _arquivo(request, tipo, escolha, rotulo, pessoa, formato) -> HttpResponse:
     # O topo da moldura mostra o filtro de loja como a pessoa o escolheu:
     # "Todas as lojas" quando ela podia escolher entre várias e não escolheu;
     # com uma loja só no alcance não houve escolha, e vale o nome dela.
     moldura = {"com_logo": logo_da_empresa_de(request) is not None,
                "lojas": (str(escolha.loja) if escolha.loja
-                         else _("Todas as lojas") if len(escolha.permitidas) > 1 else None)}
+                         else _("Todas as lojas") if len(escolha.permitidas) > 1 else None),
+               # A prévia é a página do PDF sem chamar a impressão.
+               "imprimir": formato != "previa"}
     if tipo == "midias":
         relatorio = por_midia.montar(escolha.recorte, rotulo_da_empresa=rotulo,
                                      gerado_por=nome_de(pessoa))
@@ -112,23 +151,33 @@ def _tela(request, tipo: str) -> HttpResponse:
     formato = request.GET.get("formato")
     escolha = escolha_do_pedido(request, empresa, permitidas, periodo) if permitidas else None
 
-    if escolha is not None and escolha.lojas and formato in ("xlsx", "impressao"):
+    if escolha is not None and escolha.lojas and formato in ("xlsx", "impressao", "previa"):
         rotulo = str(escolha.empresa) if escolha.escolhida else _("Todas as empresas")
         return _gerar(request, tipo, escolha, rotulo, pessoa, formato)
 
     info = _TIPOS[tipo]
     with use_environment(ambiente()):
         site = montar_site(request)
-        corpo = (Alert(tone="info", message=_("Nenhuma loja em que você tira relatório."))
-                 if escolha is None or not escolha.lojas else
-                 Card(body=Raw(html=_formulario(reverse(info["rota"]), chave, escolha,
-                                                ind.empresas_com_relatorio(pessoa)))))
+        acao = reverse(info["rota"])
+        if escolha is None or not escolha.lojas:
+            corpo = [Alert(tone="info", message=_("Nenhuma loja em que você tira relatório."))]
+        else:
+            corpo = [Card(body=Raw(html=_formulario(acao, chave, escolha,
+                                                    ind.empresas_com_relatorio(pessoa))))]
+            if request.GET.get("ver"):
+                # Os filtros que a pessoa escolheu viajam para o quadro e para
+                # os dois botões; o `ver` e o `formato` são da tela, não deles.
+                consulta = request.GET.copy()
+                consulta.pop("ver", None)
+                consulta.pop("formato", None)
+                corpo.append(Raw(html=_previa(acao, consulta.urlencode())))
         pagina = site.page(
             title=str(info["titulo"]), width="full",
             stylesheets=["/static/fila/relatorio.css"],
+            scripts=["/static/fila/relatorio_previa.js"],
             content=[aviso_de_personificacao(request),
                      PageHeader(title=str(info["titulo"]), subtitle=str(info["apoio"])),
-                     corpo],
+                     *corpo],
             # Um pedaço só: "Relatórios / Relatórios gerais" repetia a palavra
             # e não cabia na faixa do cabeçalho (saía "Rel… / Relatór…").
             crumbs=[Crumb(str(info["titulo"]))], user=request.usuario)

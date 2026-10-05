@@ -218,6 +218,7 @@
 
 {{ moldura.rodape(mo) }}
 
-{{ moldura.imprimir(mo) }}
+{# A prévia na tela é esta mesma página, sem chamar a impressão. #}
+{% if imprimir %}{{ moldura.imprimir(mo) }}{% endif %}
 </body>
 </html>

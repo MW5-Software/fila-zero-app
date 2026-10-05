@@ -51,9 +51,9 @@
       <td>{{ l.atendimentos }}</td><td>{{ l.vendas }}</td>
       {% for c in x.celulas %}
       <td class="rm-calor{% if c.tom >= 45 %} rm-forte{% endif %}{% if not c.n %} rm-zero{% endif %}"
-          style="--tom: {{ c.tom }}%">{{ c.n }}</td>
+          style="--tom: {{ c.tom }}%" title="{{ c.titulo }}">{{ c.n }}</td>
       {% endfor %}
-      <td class="rm-aproveitamento{% if x.acima %} rm-acima{% endif %}">
+      <td class="rm-aproveitamento{% if x.acima %} rm-acima{% endif %}" title="{{ x.resumo }}">
         <span class="rm-barra"><span style="width: {{ '%.1f'|format(x.barra) }}%"></span></span>
         <span class="rm-valor">{% if x.acima %}▲ {% endif %}{{ porcento(l.aproveitamento) }}</span>
       </td>
@@ -72,6 +72,7 @@
 <p class="rm-legenda">{{ traduzir("Embaixo de cada mídia, a parte dela nos clientes da rede. O tom de cada número é a parte da mídia nos atendimentos da loja. ▲ aproveitou mais que a empresa.") }}</p>
 {{ moldura.rodape(mo) }}
 
-{{ moldura.imprimir(mo) }}
+{# A prévia na tela é esta mesma página, sem chamar a impressão. #}
+{% if imprimir %}{{ moldura.imprimir(mo) }}{% endif %}
 </body>
 </html>

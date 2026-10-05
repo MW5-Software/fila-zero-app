@@ -497,5 +497,6 @@ class TestATela:
         assert '<form' in html and 'method="get"' in html
         for chave in ("hoje", "ontem", "7dias", "mes", "mes_passado"):
             assert f'value="{chave}"' in html
-        assert 'name="formato" value="impressao"' in html
-        assert 'name="formato" value="xlsx"' in html
+        # O formulário filtra; o PDF e o Excel ficam em cima do relatório
+        # filtrado (05/10/2026, ver test_fila_relatorio_previa.py).
+        assert 'name="ver" value="1"' in html

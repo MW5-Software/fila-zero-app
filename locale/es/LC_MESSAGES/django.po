@@ -2078,3 +2078,17 @@ msgstr "Página %(pagina)s de %(paginas)s"
 
 msgid "Emitido em %(data)s às %(hora)s por %(quem)s"
 msgstr "Emitido el %(data)s a las %(hora)s por %(quem)s"
+
+msgid "Filtrar"
+msgstr "Filtrar"
+
+msgid "Prévia do relatório"
+msgstr "Vista previa del informe"
+
+msgid "%(midia)s em %(loja)s: %(n)s de %(total)s atendimentos (%(pct)s)"
+msgstr "%(midia)s en %(loja)s: %(n)s de %(total)s atenciones (%(pct)s)"
+
+msgid "%(loja)s: %(v)s venda de %(n)s atendimentos"
+msgid_plural "%(loja)s: %(v)s vendas de %(n)s atendimentos"
+msgstr[0] "%(loja)s: %(v)s venta de %(n)s atenciones"
+msgstr[1] "%(loja)s: %(v)s ventas de %(n)s atenciones"

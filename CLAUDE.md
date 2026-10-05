@@ -121,7 +121,7 @@ de que a regra vale:** é a base sem módulo de negócio, e a suíte passa intei
   Quem grava lá dentro é o módulo de negócio. **Não é código e não entra no
   git**: é estado, como o banco, e sai no mesmo backup que ele. Avatar e logo
   continuam sendo bytes em tabela, porque são poucos e pequenos.
-- **`tests/`** — 156 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
+- **`tests/`** — 157 arquivos. Rodam em ~6 min (Postgres, `KRONOS_BANCO`
   obrigatório).
 
 ## 4. As regras com número
@@ -997,6 +997,23 @@ Spec `docs/superpowers/specs/2026-09-28-relatorios-da-fila-design.md`; plano
   (`views_relatorios._tela`), por `fila.relatorios` — a permissão do painel:
   quem lê os números na tela lê os mesmos no papel. O `/fila/relatorios` de
   antes redireciona para o de mídias, com os filtros, para link salvo.
+- **A tela filtra e MOSTRA o relatório antes do arquivo** (05/10/2026,
+  pedido do cliente: "eu escolho o filtro e clico em filtrar, o relatório
+  aparece em HTML primeiro embaixo do filtro para o cara ver, passar o mouse,
+  ver os dados; daí vai ter os dois botões gerar PDF e Excel em cima"). O
+  formulário só tem "Filtrar" (`ver=1`); filtrado, o relatório aparece num
+  QUADRO (`<iframe>`) com a mesma página do PDF sem a impressão
+  (`formato=previa`) — o que se vê é o que vai para o papel, e as folhas do
+  relatório não se misturam com as da tela. "Gerar PDF" e "Gerar Excel" ficam
+  em cima, com os mesmos filtros (`views_relatorios._previa`).
+  - A prévia é a ÚNICA resposta com `X-Frame-Options: SAMEORIGIN`: o
+    middleware nega quadro a toda página, e esta é a que a casa põe num.
+  - A altura do quadro segue o conteúdo (`fila/static/fila/relatorio_previa.js`),
+    zerada antes de medir — a altura de dentro nunca é menor que a do quadro,
+    e sem zerar ele só crescia. Sem script, fica com a altura de uma folha.
+  - Passar o mouse: cada número de mídia diz o que é ("Instagram em Matriz:
+    19 de 58 atendimentos (32,8%)"), e o aproveitamento, vendas de
+    atendimentos; no geral, cada dia do gráfico já dizia o valor.
 - **Os dois saem na MESMA moldura** (`fila/moldura.py`,
   `fila/templates/fila/_moldura.html`, `fila/static/fila/moldura.css`;
   28/09/2026, pedido do cliente: "padronizar os relatórios"). DENTRO da faixa
@@ -1166,7 +1183,7 @@ docker compose up -d banco          # Postgres em 127.0.0.1:5440
 export KRONOS_BANCO=postgresql://kronos:kronos@127.0.0.1:5440/kronos
 DJANGO_DEBUG=1 .venv/bin/python manage.py migrate
 DJANGO_DEBUG=1 .venv/bin/python manage.py runserver
-DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 156 arquivos
+DJANGO_DEBUG=1 .venv/bin/python -m pytest -q      # ~6 min, 157 arquivos
 ```
 
 As portas são próprias de propósito: banco na **5440** e app na **8005** (a

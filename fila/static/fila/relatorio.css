@@ -300,3 +300,12 @@ body.relatorio {
 .relatorio-form { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
 .relatorio-form .f { min-width: 200px; flex: 1 1 200px; }
 .relatorio-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* A prévia na tela (05/10/2026): o relatório filtrado embaixo do filtro, com
+   "Gerar PDF" e "Gerar Excel" em cima dele. O quadro tem a altura de uma
+   folha até o `relatorio_previa.js` acertá-la pelo conteúdo. */
+.relatorio-previa { margin-top: 16px; }
+.relatorio-acoes { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 12px; }
+.relatorio-quadro { display: block; width: 100%; height: 1100px; border: 1px solid var(--outline-2);
+  border-radius: 14px; background: var(--surface); }
